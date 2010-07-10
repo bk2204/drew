@@ -59,6 +59,10 @@ drew::SHA1::SHA1()
 #define EXPANSION(i) \
 	(blk[(i)&15]=ROL(blk[((i)+13)&15]^blk[((i)+8)&15]^blk[((i)+2)&15]^blk[(i)&15],1))
 
+/* This implementation uses a circular buffer to create the expansions of blk.
+ * While it appears that this would be slower, it instead is significantly
+ * faster (174 MiB/s vs. 195 MiB/s).
+ */
 void drew::SHA1::Transform(quantum_t *state, const uint8_t *block)
 {
 	uint32_t blk[block_size/sizeof(uint32_t)];
