@@ -1,0 +1,4 @@
+TODO
+----
+
+* PRNG state must be thread-local.

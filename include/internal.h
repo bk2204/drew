@@ -1,0 +1,9 @@
+#ifndef DREW_INTERNAL_H
+#define DREW_INTERNAL_H
+
+#define _POSIX_C_SOURCE 200809L
+#define _XOPEN_SOURCE 700
+#define _BSD_SOURCE 1
+#define DREW_IN_BUILD 1
+
+#endif
