@@ -5,10 +5,15 @@
 #include <endian.h>
 
 #include "md5.hh"
-#define HASH_NAME drew::MD5
 #include "hash-plugin.hh"
 
-PLUGIN_INFO("MD5");
+extern "C" {
+PLUGIN_STRUCTURE(md5, drew::MD5)
+PLUGIN_DATA_START()
+PLUGIN_DATA(md5, "MD5")
+PLUGIN_DATA_END()
+PLUGIN_INTERFACE()
+}
 
 #define F(x, y, z) ((z)^((x)&((y)^(z)))) /*(((x)&(y))|((~(x))&(z)))*/
 #define G(x, y, z) F(z, x, y)

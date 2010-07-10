@@ -16,10 +16,15 @@
 #include <endian.h>
 
 #include "md4.hh"
-#define HASH_NAME drew::MD4
 #include "hash-plugin.hh"
 
-PLUGIN_INFO("MD4");
+extern "C" {
+PLUGIN_STRUCTURE(md4, drew::MD4)
+PLUGIN_DATA_START()
+PLUGIN_DATA(md4, "MD4")
+PLUGIN_DATA_END()
+PLUGIN_INTERFACE()
+}
 
 #define F(x, y, z) ((z)^((x)&((y)^(z)))) /*(((x)&(y))|((~(x))&(z)))*/
 #define G(x, y, z) (((x)&(y))|((z)&((x)|(y))))

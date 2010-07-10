@@ -15,10 +15,15 @@
 #include <endian.h>
 
 #include "ripe160.hh"
-#define HASH_NAME drew::RIPEMD160
 #include "hash-plugin.hh"
 
-PLUGIN_INFO("RIPEMD160");
+extern "C" {
+PLUGIN_STRUCTURE(rmd160, drew::RIPEMD160)
+PLUGIN_DATA_START()
+PLUGIN_DATA(rmd160, "RIPEMD-160")
+PLUGIN_DATA_END()
+PLUGIN_INTERFACE()
+}
 
 /* 32-bit rotate-left. */
 static inline uint32_t ROL(uint32_t x, int n)

@@ -16,10 +16,15 @@
 #include <endian.h>
 
 #include "sha1.hh"
-#define HASH_NAME drew::SHA1
 #include "hash-plugin.hh"
 
-PLUGIN_INFO("SHA1");
+extern "C" {
+PLUGIN_STRUCTURE(sha1, drew::SHA1)
+PLUGIN_DATA_START()
+PLUGIN_DATA(sha1, "SHA1")
+PLUGIN_DATA_END()
+PLUGIN_INTERFACE()
+}
 
 static inline uint32_t ff(uint32_t x, uint32_t y, uint32_t z)
 {
