@@ -1,3 +1,4 @@
 testsuite
 *.o
 *.so*
+plugins/*

@@ -72,14 +72,16 @@ $i: $i.cc
 .endfor
 
 plugins: ${PLUGINS}
+	[ -d plugins ] || mkdir plugins
+	cp ${.ALLSRC} plugins
 
 clean:
 	${RM} -f *.o
 	${RM} -f ${TEST_EXE}
 	${RM} -f ${PLUG_EXE}
-	${RM} -f ${MD_SONAME}
+	${RM} -f ${MD_SONAME} ${MD_OBJS}
 	${RM} -f ${DREW_SONAME} ${DREW_SYMLINK}
-	${RM} -f ${PLUGINS}
+	${RM} -fr ${PLUGINS} plugins/
 
 test: ${TEST_EXE}
 	env LD_LIBRARY_PATH=. ./${TEST_EXE} -x | \
