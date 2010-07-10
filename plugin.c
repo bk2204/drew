@@ -22,7 +22,7 @@ static int drew_loader__load_info(drew_loader_t *ldr, int aid)
 	*(void **)(&plugin_info) = dlsym(ldr->entry[aid].handle,
 			"drew_plugin_info");
 	if (dlerror() != NULL)
-		return -EINVAL;
+		return -DREW_ERR_RESOLUTION;
 
 	id = plugin_info(ldr, DREW_LOADER_LOOKUP_NAME, 0, ldr->entry[aid].name);
 	if (id < 0)
@@ -30,22 +30,22 @@ static int drew_loader__load_info(drew_loader_t *ldr, int aid)
 
 	nplugins = plugin_info(ldr, DREW_LOADER_GET_NPLUGINS, 0, NULL);
 	if (nplugins < 0)
-		return -EINVAL;
+		return -DREW_ERR_ENUMERATION;
 
 	type = plugin_info(ldr, DREW_LOADER_GET_TYPE, id, NULL);
 	if (type < 0)
-		return -EINVAL;
+		return -DREW_ERR_ENUMERATION;
 
 	size = plugin_info(ldr, DREW_LOADER_GET_FUNCTBL_SIZE, id, NULL);
 	if (size < 0)
-		return -EINVAL;
+		return -DREW_ERR_ENUMERATION;
 	
 	functbl = malloc(size);
 	if (!functbl)
 		return -ENOMEM;
 
 	if (plugin_info(ldr, DREW_LOADER_GET_FUNCTBL, id, functbl) < 0)
-		return -EINVAL;
+		return -DREW_ERR_FUNCTION;
 
 	ldr->entry[aid].id = id;
 	ldr->entry[aid].type = type;

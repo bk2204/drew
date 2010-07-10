@@ -37,6 +37,13 @@ typedef void drew_loader_t;
 
 #define DREW_TYPE_HASH 1
 
+/* The system dynamic loader failed. */
+#define DREW_ERR_RESOLUTION		0x10001
+/* There was an error getting information from the plugin. */
+#define DREW_ERR_ENUMERATION	0x10002
+/* There was an error getting function information from the plugin. */
+#define DREW_ERR_FUNCTION		0x10003
+
 int drew_loader_new(drew_loader_t **ldr);
 int drew_loader_free(drew_loader_t **ldr);
 int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
