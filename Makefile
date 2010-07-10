@@ -48,6 +48,8 @@ all: ${PLUG_EXE} ${DREW_SONAME}
 .include "impl/hash/Makefile"
 .include "libmd/Makefile"
 
+standard: ${DREW_SONAME} ${MD_SONAME} plugins testsuite test/test-hash
+
 ${DREW_SONAME}: plugin.c
 	${CC} ${CFLAGS} ${LIBCFLAGS} -shared -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
@@ -70,6 +72,9 @@ ${PLUG_EXE}: ${PLUG_OBJ} ${DREW_SONAME}
 $i: $i.cc
 	${CXX} ${PLUGINCFLAGS} ${CFLAGS} -o ${.TARGET} ${.ALLSRC}
 .endfor
+
+test/test-hash: test/test-hash.o ${DREW_SONAME} 
+	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
 plugins: ${PLUGINS}
 	[ -d plugins ] || mkdir plugins

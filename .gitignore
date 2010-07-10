@@ -1,4 +1,5 @@
 testsuite
+test/test-hash
 *.o
 *.so*
 plugins/*
