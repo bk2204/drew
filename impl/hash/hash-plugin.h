@@ -61,6 +61,11 @@ int drew_plugin_info(void *ldr, int op, int id, void *p) \
 		case DREW_LOADER_GET_FUNCTBL: \
 			memcpy(p, plugin_data[id].functbl, sizeof(struct plugin_functbl)); \
 			return 0; \
+		case DREW_LOADER_GET_NAME_SIZE: \
+			return strlen(plugin_data[id].name) + 1; \
+		case DREW_LOADER_GET_NAME: \
+			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1); \
+			return 0; \
 		default: \
 			return -EINVAL; \
 	} \

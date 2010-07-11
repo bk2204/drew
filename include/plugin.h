@@ -9,7 +9,8 @@ extern "C" {
 typedef struct {
 	int version;
 	int flags;
-	char *name;
+	char *name;		/* Name of the plugin. */
+	char *aname;	/* Algorithm name. */
 	void *handle;
 	int id;
 	int nplugins;
@@ -34,6 +35,8 @@ typedef void drew_loader_t;
 #define DREW_LOADER_GET_TYPE 4
 #define DREW_LOADER_GET_FUNCTBL_SIZE 5
 #define DREW_LOADER_GET_FUNCTBL 6
+#define DREW_LOADER_GET_NAME_SIZE 7
+#define DREW_LOADER_GET_NAME 8
 
 #define DREW_TYPE_HASH 1
 
@@ -51,6 +54,8 @@ int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
 int drew_loader_get_nplugins(const drew_loader_t *ldr, int id);
 int drew_loader_get_type(const drew_loader_t *ldr, int id);
 int drew_loader_get_functbl(const drew_loader_t *ldr, int id, const void **tbl);
+int drew_loader_get_algo_name(const drew_loader_t *ldr, int id,
+		const char **namep);
 int drew_loader_lookup_by_name(const drew_loader_t *ldr, const char *name,
 		int start, int end);
 int drew_loader_lookup_by_type(const drew_loader_t *ldr, int type, int start,

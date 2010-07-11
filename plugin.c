@@ -9,13 +9,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int drew_loader__load_info(drew_loader_t *ldr, int aid)
+typedef int (*plugin_api_t)(void *, int, int, void *);
+
+static int drew_loader__load_info(drew_loader_t *ldr, int aid, int id)
 {
-	int (*plugin_info)(void *, int, int, void *);
-	int id = 0;
+	plugin_api_t plugin_info;
 	int type = 0;
 	int nplugins = 0;
 	int size = 0;
+	int namesize = 0;
+	char *aname;
 	void *functbl = 0;
 
 	dlerror();
@@ -24,13 +27,18 @@ static int drew_loader__load_info(drew_loader_t *ldr, int aid)
 	if (dlerror() != NULL)
 		return -DREW_ERR_RESOLUTION;
 
-	id = plugin_info(ldr, DREW_LOADER_LOOKUP_NAME, 0, ldr->entry[aid].name);
-	if (id < 0)
-		return -EINVAL;
+	if (id == -1) {
+		id = plugin_info(ldr, DREW_LOADER_LOOKUP_NAME, 0, ldr->entry[aid].name);
+		if (id < 0)
+			return -EINVAL;
+	}
 
 	nplugins = plugin_info(ldr, DREW_LOADER_GET_NPLUGINS, 0, NULL);
 	if (nplugins < 0)
 		return -DREW_ERR_ENUMERATION;
+
+	if (id >= nplugins)
+		return -EINVAL;
 
 	type = plugin_info(ldr, DREW_LOADER_GET_TYPE, id, NULL);
 	if (type < 0)
@@ -47,10 +55,24 @@ static int drew_loader__load_info(drew_loader_t *ldr, int aid)
 	if (plugin_info(ldr, DREW_LOADER_GET_FUNCTBL, id, functbl) < 0)
 		return -DREW_ERR_FUNCTION;
 
+	/* Includes terminating NUL. */
+	namesize = plugin_info(ldr, DREW_LOADER_GET_NAME_SIZE, id, NULL);
+	if (namesize < 0)
+		return -DREW_ERR_ENUMERATION;
+
+	aname = malloc(namesize);
+	if (!aname)
+		return -ENOMEM;
+
+	if (plugin_info(ldr, DREW_LOADER_GET_NAME, id, aname) < 0)
+		return -DREW_ERR_ENUMERATION;
+	aname[namesize-1] = '\0'; /* Just in case. */
+
 	ldr->entry[aid].id = id;
 	ldr->entry[aid].type = type;
 	ldr->entry[aid].nplugins = nplugins;
 	ldr->entry[aid].size = size;
+	ldr->entry[aid].aname = aname;
 	ldr->entry[aid].functbl = functbl;
 
 	return 0;
@@ -176,6 +198,7 @@ int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
 	void *handle = NULL;
 	int id = -1;
 	int err = 0;
+	int i;
 
 	if ((err = drew_loader__lookup_plugin(ldr, &handle, plugin, path)))
 		goto errout;
@@ -192,8 +215,22 @@ int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
 	ldr->entry[id].handle = handle;
 	ldr->entry[id].name = strdup(plugin);
 
-	if ((err = drew_loader__load_info(ldr, id)))
+	if ((err = drew_loader__load_info(ldr, id, 0)))
 		goto errout;
+
+	for (i = 1; i < ldr->entry[id].nplugins; i++) {
+		int nid;
+
+		err = -ENOMEM;
+		nid = drew_loader__alloc_entry(ldr);
+		if (nid < 0)
+			goto errout;
+
+		ldr->entry[nid].handle = handle;
+		ldr->entry[nid].name = strdup(plugin);
+		if ((err = drew_loader__load_info(ldr, nid, i)))
+			goto errout;
+	}
 	return id;
 errout:
 	if (id >= 0) {
@@ -209,7 +246,11 @@ errout:
 
 int drew_loader_get_nplugins(const drew_loader_t *ldr, int id)
 {
-	if (!ldr || !drew_loader__is_valid_id(ldr, id))
+	if (!ldr)
+		return -EINVAL;
+	if (id == -1)
+		return ldr->nentries;
+	if (!drew_loader__is_valid_id(ldr, id))
 		return -EINVAL;
 
 	return ldr->entry[id].nplugins;
@@ -221,6 +262,16 @@ int drew_loader_get_type(const drew_loader_t *ldr, int id)
 		return -EINVAL;
 
 	return ldr->entry[id].type;
+}
+
+int drew_loader_get_algo_name(const drew_loader_t *ldr, int id,
+		const char **namep)
+{
+	if (!ldr || !drew_loader__is_valid_id(ldr, id))
+		return -EINVAL;
+
+	*namep = ldr->entry[id].aname;
+	return 0;
 }
 
 int drew_loader_get_functbl(const drew_loader_t *ldr, int id, const void **tbl)
@@ -249,7 +300,7 @@ int drew_loader_lookup_by_name(const drew_loader_t *ldr, const char *name,
 	for (i = start; i < end; i++) {
 		if (!drew_loader__is_valid_id(ldr, i))
 			continue;
-		if (!strcmp(ldr->entry[i].name, name))
+		if (!strcmp(ldr->entry[i].aname, name))
 			return i;
 	}
 
