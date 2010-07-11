@@ -7,6 +7,7 @@
 /* This code implements a test driver for several different message digest
  * algorithms.  This implementation requires ANSI C and POSIX 1003.1-2001.
  */
+
 #include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -86,14 +87,13 @@ int main(int argc, char **argv)
 	int error = 0;
 	int i;
 	int mode = 0;
+	int nplugins = 0;
 	drew_loader_t *ldr = NULL;
 
 	drew_loader_new(&ldr);
 
 	for (i = 1; i < argc; i++) {
 		int id;
-		const void *functbl;
-		struct plugin_functbl *tbl;
 
 		if (!mode) {
 			if (!strcmp(argv[i], "-s"))
@@ -107,20 +107,33 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-		printf("%s: ", argv[i]);
 		id = drew_loader_load_plugin(ldr, argv[i], "./plugins");
 		if (id < 0) {
-			printf("failed to load (error %d (%s))\n", -id, strerror(-id));
+			printf("%s: failed to load (error %d (%s))\n", argv[i], -id,
+					strerror(-id));
 			error++;
 			continue;
 		}
-			
-		drew_loader_get_functbl(ldr, id, &functbl);
+	}
+
+	nplugins = drew_loader_get_nplugins(ldr, -1);
+
+	for (i = 0; i < nplugins; i++) {
+		const void *functbl;
+		struct plugin_functbl *tbl;
+		const char *name;
+
+		if (drew_loader_get_type(ldr, i) != DREW_TYPE_HASH)
+			continue;
+
+		drew_loader_get_functbl(ldr, i, &functbl);
+		drew_loader_get_algo_name(ldr, i, &name);
+		printf("%s: ", name);
 		tbl = (struct plugin_functbl *)functbl;
 
 		switch (mode) {
 			case MODE_SPEED:
-				speed_test(argv[i], tbl);
+				speed_test(name, tbl);
 				break;
 			case MODE_TEST:
 			case MODE_TEST_INTERNAL:
