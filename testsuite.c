@@ -18,7 +18,7 @@
 #include "md5.h"
 #include "ripe160.h"
 #include "sha1.h"
-//#include "sha256.h"
+#include "sha256.h"
 
 static const char *strings[]={
 	"",
@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 		TESTSUITE(MD5);
 		TESTSUITE(RMD160);
 		TESTSUITE(SHA1);
-		//TESTSUITE(SHA256);
+		TESTSUITE(SHA256);
 	}
 	else {
 		//if (strcmp(argv[1], "-s"))
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 		TIMETEST(MD5);
 		TIMETEST(RMD160);
 		TIMETEST(SHA1);
-		//TIMETEST(SHA256);
+		TIMETEST(SHA256);
 	}
 	return 0;
 }
