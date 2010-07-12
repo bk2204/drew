@@ -5,6 +5,7 @@
 #include <endian.h>
 
 #include "sha256.hh"
+#include "testcase.hh"
 #include "hash-plugin.hh"
 
 extern "C" {
@@ -15,6 +16,60 @@ PLUGIN_DATA(sha256, "SHA-256")
 PLUGIN_DATA(sha224, "SHA-224")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE()
+
+static int sha256test(void *)
+{
+	int res = 0;
+
+	using namespace drew;
+	
+	res |= !HashTestCase<SHA256>("", 0).Test("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+	res <<= 1;
+	res |= !HashTestCase<SHA256>("a", 1).Test("ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb");
+	res <<= 1;
+	res |= !HashTestCase<SHA256>("abc", 1).Test("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+	res <<= 1;
+	res |= !HashTestCase<SHA256>("message digest", 1).Test("f7846f55cf23e14eebeab5b4e1550cad5b509e3348fbc4efa3a1413d393cb650");
+	res <<= 1;
+	res |= !HashTestCase<SHA256>("abcdefghijklmnopqrstuvwxyz", 1).Test("71c480df93d6ae2f1efad1447c66c9525e316218cf51fc8d9ed832f2daf18b73");
+	res <<= 1;
+	res |= !HashTestCase<SHA256>("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", 1).Test("db4bfcbd4da0cd85a60c3c37d3fbd8805c77f15fc6b1fdfe614ee0a7c8fdb4c0");
+	res <<= 1;
+	res |= !HashTestCase<SHA256>("12345678901234567890123456789012345678901234567890123456789012345678901234567890", 1).Test("f371bc4a311f2b009eef952dd83ca80e2b60026c8e935592d0f9c308453c813e");
+	res <<= 1;
+	res |= !HashTestCase<SHA256>("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 1).Test("248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1");
+	res <<= 1;
+	res |= !HashTestCase<SHA256>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 15625).Test("cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0");
+
+	return res;
+}
+
+static int sha224test(void *)
+{
+	int res = 0;
+
+	using namespace drew;
+	
+	//res |= !HashTestCase<SHA224>("", 0).Test("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+	//res <<= 1;
+	//res |= !HashTestCase<SHA224>("a", 1).Test("ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb");
+	//res <<= 1;
+	res |= !HashTestCase<SHA224>("abc", 1).Test("23097d223405d8228642a477bda255b32aadbce4bda0b3f7e36c9da7");
+	res <<= 1;
+	//res |= !HashTestCase<SHA224>("message digest", 1).Test("f7846f55cf23e14eebeab5b4e1550cad5b509e3348fbc4efa3a1413d393cb650");
+	//res <<= 1;
+	//res |= !HashTestCase<SHA224>("abcdefghijklmnopqrstuvwxyz", 1).Test("71c480df93d6ae2f1efad1447c66c9525e316218cf51fc8d9ed832f2daf18b73");
+	//res <<= 1;
+	//res |= !HashTestCase<SHA224>("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", 1).Test("db4bfcbd4da0cd85a60c3c37d3fbd8805c77f15fc6b1fdfe614ee0a7c8fdb4c0");
+	//res <<= 1;
+	//res |= !HashTestCase<SHA224>("12345678901234567890123456789012345678901234567890123456789012345678901234567890", 1).Test("f371bc4a311f2b009eef952dd83ca80e2b60026c8e935592d0f9c308453c813e");
+	//res <<= 1;
+	res |= !HashTestCase<SHA224>("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 1).Test("75388b16512776cc5dba5da1fd890150b0c6455cb4f58b1952522525");
+	res <<= 1;
+	res |= !HashTestCase<SHA224>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 15625).Test("20794655980c91d8bbb4c1ea97618a4bf03f42581948b2ee4ee7ad67");
+
+	return res;
+}
 }
 
 /* 32-bit rotate-right. */

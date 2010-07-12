@@ -15,6 +15,7 @@
 #include <endian.h>
 
 #include "ripe160.hh"
+#include "testcase.hh"
 #include "hash-plugin.hh"
 
 extern "C" {
@@ -23,6 +24,29 @@ PLUGIN_DATA_START()
 PLUGIN_DATA(rmd160, "RIPEMD-160")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE()
+
+static int rmd160test(void *)
+{
+	int res = 0;
+
+	using namespace drew;
+	
+	res |= !HashTestCase<RIPEMD160>("", 0).Test("9c1185a5c5e9fc54612808977ee8f548b2258d31");
+	res <<= 1;
+	res |= !HashTestCase<RIPEMD160>("a", 1).Test("0bdc9d2d256b3ee9daae347be6f4dc835a467ffe");
+	res <<= 1;
+	res |= !HashTestCase<RIPEMD160>("abc", 1).Test("8eb208f7e05d987a9b044a8e98c6b087f15a0bfc");
+	res <<= 1;
+	res |= !HashTestCase<RIPEMD160>("message digest", 1).Test("5d0689ef49d2fae572b881b123a85ffa21595f36");
+	res <<= 1;
+	res |= !HashTestCase<RIPEMD160>("abcdefghijklmnopqrstuvwxyz", 1).Test("f71c27109c692c1b56bbdceb5b9d2865b3708dbc");
+	res <<= 1;
+	res |= !HashTestCase<RIPEMD160>("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", 1).Test("b0e20b6e3116640286ed3a87a5713079b21f5189");
+	res <<= 1;
+	res |= !HashTestCase<RIPEMD160>("12345678901234567890123456789012345678901234567890123456789012345678901234567890", 1).Test("9b752e45573d4b39f4dbd3323cab82bf63326bfb");
+
+	return res;
+}
 }
 
 /* 32-bit rotate-left. */

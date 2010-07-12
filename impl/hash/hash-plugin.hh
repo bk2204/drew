@@ -58,6 +58,8 @@ static void prefix ## transform(void *, void *state, const uint8_t *data) \
 	hname::Transform(st, data); \
 } \
  \
-PLUGIN_FUNCTBL(prefix, prefix ## info, prefix ## init, prefix ## update, prefix ## pad, prefix ## final, prefix ## transform);
+static int prefix ## test(void *); \
+ \
+PLUGIN_FUNCTBL(prefix, prefix ## info, prefix ## init, prefix ## update, prefix ## pad, prefix ## final, prefix ## transform, prefix ## test);
 
 #endif

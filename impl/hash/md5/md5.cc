@@ -5,6 +5,7 @@
 #include <endian.h>
 
 #include "md5.hh"
+#include "testcase.hh"
 #include "hash-plugin.hh"
 
 extern "C" {
@@ -13,6 +14,29 @@ PLUGIN_DATA_START()
 PLUGIN_DATA(md5, "MD5")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE()
+
+static int md5test(void *)
+{
+	int res = 0;
+
+	using namespace drew;
+	
+	res |= !HashTestCase<MD5>("", 0).Test("d41d8cd98f00b204e9800998ecf8427e");
+	res <<= 1;
+	res |= !HashTestCase<MD5>("a", 1).Test("0cc175b9c0f1b6a831c399e269772661");
+	res <<= 1;
+	res |= !HashTestCase<MD5>("abc", 1).Test("900150983cd24fb0d6963f7d28e17f72");
+	res <<= 1;
+	res |= !HashTestCase<MD5>("message digest", 1).Test("f96b697d7cb7938d525a2f31aaf161d0");
+	res <<= 1;
+	res |= !HashTestCase<MD5>("abcdefghijklmnopqrstuvwxyz", 1).Test("c3fcd3d76192e4007dfb496cca67e13b");
+	res <<= 1;
+	res |= !HashTestCase<MD5>("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", 1).Test("d174ab98d277d9f5a5611c2c9f419d9f");
+	res <<= 1;
+	res |= !HashTestCase<MD5>("12345678901234567890123456789012345678901234567890123456789012345678901234567890", 1).Test("57edf4a22be3c955ac49da2e2107b67a");
+
+	return res;
+}
 }
 
 #define F(x, y, z) ((z)^((x)&((y)^(z)))) /*(((x)&(y))|((~(x))&(z)))*/

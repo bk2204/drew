@@ -25,6 +25,7 @@ struct plugin_functbl {
 	void (*pad)(void *);
 	void (*final)(void *, uint8_t *);
 	void (*transform)(void *, void *, const uint8_t *);
+	int (*test)(void *);
 };
 
 struct plugin_info {
@@ -48,6 +49,15 @@ struct context {
 double sec_from_timespec(const struct timespec *ts)
 {
 	return ts->tv_sec + (ts->tv_nsec / 1000000000.0);
+}
+
+int internal_test(const char *name, const struct plugin_functbl *functbl)
+{
+	int result;
+	
+	result = functbl->test(NULL);
+	printf("self-test %s (result code %d)\n", result ? "failed" : "ok", result);
+	return 0;
 }
 
 int speed_test(const char *name, const struct plugin_functbl *functbl)
@@ -137,6 +147,7 @@ int main(int argc, char **argv)
 				break;
 			case MODE_TEST:
 			case MODE_TEST_INTERNAL:
+				internal_test(name, tbl);
 			default:
 				break;
 		}

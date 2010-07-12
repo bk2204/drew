@@ -23,12 +23,13 @@ struct plugin_functbl {
 	void (*pad)(void *);
 	void (*final)(void *, uint8_t *);
 	void (*transform)(void *, void *, const uint8_t *);
+	int (*test)(void *);
 };
 
-#define PLUGIN_FUNCTBL(prefix, info, init, update, pad, final, transform) \
+#define PLUGIN_FUNCTBL(prefix, info, init, update, pad, final, transform, test) \
 \
 static struct plugin_functbl prefix ## functbl = { \
-	info, init, update, pad, final, transform \
+	info, init, update, pad, final, transform, test \
 };
 
 struct plugin {

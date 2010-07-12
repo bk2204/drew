@@ -15,6 +15,7 @@
 #include <endian.h>
 
 #include "sha1.hh"
+#include "testcase.hh"
 #include "hash-plugin.hh"
 
 extern "C" {
@@ -25,6 +26,56 @@ PLUGIN_DATA(sha1, "SHA-1")
 PLUGIN_DATA(sha0, "SHA-0")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE()
+
+static int sha1test(void *)
+{
+	int res = 0;
+
+	using namespace drew;
+	
+	res |= !HashTestCase<SHA1>("", 0).Test("da39a3ee5e6b4b0d3255bfef95601890afd80709");
+	res <<= 1;
+	res |= !HashTestCase<SHA1>("a", 1).Test("86f7e437faa5a7fce15d1ddcb9eaeaea377667b8");
+	res <<= 1;
+	res |= !HashTestCase<SHA1>("abc", 1).Test("a9993e364706816aba3e25717850c26c9cd0d89d");
+	res <<= 1;
+	res |= !HashTestCase<SHA1>("message digest", 1).Test("c12252ceda8be8994d5fa0290a47231c1d16aae3");
+	res <<= 1;
+	res |= !HashTestCase<SHA1>("abcdefghijklmnopqrstuvwxyz", 1).Test("32d10c7b8cf96570ca04ce37f2a19d84240d3a89");
+	res <<= 1;
+	res |= !HashTestCase<SHA1>("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", 1).Test("761c457bf73b14d27e9e9265c46f4b4dda11f940");
+	res <<= 1;
+	res |= !HashTestCase<SHA1>("12345678901234567890123456789012345678901234567890123456789012345678901234567890", 1).Test("50abf5706a150990a08b2c5ea40fa0e585554732");
+	res <<= 1;
+	res |= !HashTestCase<SHA1>("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 1).Test("84983e441c3bd26ebaae4aa1f95129e5e54670f1");
+	res <<= 1;
+	res |= !HashTestCase<SHA1>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 15625).Test("34aa973cd4c4daa4f61eeb2bdbad27316534016f");
+
+	return res;
+}
+
+static int sha0test(void *)
+{
+	int res = 0;
+
+	using namespace drew;
+	
+	//res |= !HashTestCase<SHA0>("", 0).Test("da39a3ee5e6b4b0d3255bfef95601890afd80709");
+	//res <<= 1;
+	//res |= !HashTestCase<SHA0>("a", 1).Test("86f7e437faa5a7fce15d1ddcb9eaeaea377667b8");
+	//res <<= 1;
+	res |= !HashTestCase<SHA0>("abc", 1).Test("0164b8a914cd2a5e74c4f7ff082c4d97f1edf880");
+	//res <<= 1;
+	//res |= !HashTestCase<SHA0>("message digest", 1).Test("c12252ceda8be8994d5fa0290a47231c1d16aae3");
+	//res <<= 1;
+	//res |= !HashTestCase<SHA0>("abcdefghijklmnopqrstuvwxyz", 1).Test("32d10c7b8cf96570ca04ce37f2a19d84240d3a89");
+	//res <<= 1;
+	//res |= !HashTestCase<SHA0>("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", 1).Test("761c457bf73b14d27e9e9265c46f4b4dda11f940");
+	//res <<= 1;
+	//res |= !HashTestCase<SHA0>("12345678901234567890123456789012345678901234567890123456789012345678901234567890", 1).Test("50abf5706a150990a08b2c5ea40fa0e585554732");
+
+	return res;
+}
 }
 
 static inline uint32_t ff(uint32_t x, uint32_t y, uint32_t z)
