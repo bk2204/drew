@@ -94,7 +94,7 @@ class Hash
 	protected:
 		virtual void Transform(const uint8_t *data) = 0;
 		T m_len[2];
-		T m_hash[Size/sizeof(T)];
+		T m_hash[BufSize/sizeof(T)];
 		uint8_t m_buf[BlkSize];
 		size_t m_off;
 	private:
