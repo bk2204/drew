@@ -50,7 +50,8 @@ static inline uint32_t ROL(uint32_t x, int n)
 	return ((x<<n)|(x>>(32-n)));
 }
 
-drew::SHA::SHA()
+template<int Rotate>
+drew::SHA<Rotate>::SHA()
 {
 	m_hash[0] = 0x67452301;
 	m_hash[1] = 0xefcdab89;
@@ -70,7 +71,7 @@ drew::SHA::SHA()
  * faster (174 MiB/s vs. 195 MiB/s).
  */
 template<int Rotate>
-void drew::SHA::Transform(quantum_t *state, const uint8_t *block)
+void drew::SHA<Rotate>::Transform(quantum_t *state, const uint8_t *block)
 {
 	uint32_t blk[block_size/sizeof(uint32_t)];
 	size_t i;
@@ -101,30 +102,30 @@ void drew::SHA::Transform(quantum_t *state, const uint8_t *block)
 	OP(ff, blk[13], c, d, e, a, b);
 	OP(ff, blk[14], b, c, d, e, a);
 	OP(ff, blk[15], a, b, c, d, e);
-	OP(ff, EXPANSION1(16), e, a, b, c, d);
-	OP(ff, EXPANSION1(17), d, e, a, b, c);
-	OP(ff, EXPANSION1(18), c, d, e, a, b);
-	OP(ff, EXPANSION1(19), b, c, d, e, a);
+	OP(ff, EXPANSION(16), e, a, b, c, d);
+	OP(ff, EXPANSION(17), d, e, a, b, c);
+	OP(ff, EXPANSION(18), c, d, e, a, b);
+	OP(ff, EXPANSION(19), b, c, d, e, a);
 	for (i=20; i<40; i+=5) {
-		OP(gg, EXPANSION1(i  ), a, b, c, d, e);
-		OP(gg, EXPANSION1(i+1), e, a, b, c, d);
-		OP(gg, EXPANSION1(i+2), d, e, a, b, c);
-		OP(gg, EXPANSION1(i+3), c, d, e, a, b);
-		OP(gg, EXPANSION1(i+4), b, c, d, e, a);
+		OP(gg, EXPANSION(i  ), a, b, c, d, e);
+		OP(gg, EXPANSION(i+1), e, a, b, c, d);
+		OP(gg, EXPANSION(i+2), d, e, a, b, c);
+		OP(gg, EXPANSION(i+3), c, d, e, a, b);
+		OP(gg, EXPANSION(i+4), b, c, d, e, a);
 	}
 	for (i=40; i<60; i+=5) {
-		OP(hh, EXPANSION1(i  ), a, b, c, d, e);
-		OP(hh, EXPANSION1(i+1), e, a, b, c, d);
-		OP(hh, EXPANSION1(i+2), d, e, a, b, c);
-		OP(hh, EXPANSION1(i+3), c, d, e, a, b);
-		OP(hh, EXPANSION1(i+4), b, c, d, e, a);
+		OP(hh, EXPANSION(i  ), a, b, c, d, e);
+		OP(hh, EXPANSION(i+1), e, a, b, c, d);
+		OP(hh, EXPANSION(i+2), d, e, a, b, c);
+		OP(hh, EXPANSION(i+3), c, d, e, a, b);
+		OP(hh, EXPANSION(i+4), b, c, d, e, a);
 	}
 	for (i=60; i<80; i+=5) {
-		OP(ii, EXPANSION1(i  ), a, b, c, d, e);
-		OP(ii, EXPANSION1(i+1), e, a, b, c, d);
-		OP(ii, EXPANSION1(i+2), d, e, a, b, c);
-		OP(ii, EXPANSION1(i+3), c, d, e, a, b);
-		OP(ii, EXPANSION1(i+4), b, c, d, e, a);
+		OP(ii, EXPANSION(i  ), a, b, c, d, e);
+		OP(ii, EXPANSION(i+1), e, a, b, c, d);
+		OP(ii, EXPANSION(i+2), d, e, a, b, c);
+		OP(ii, EXPANSION(i+3), c, d, e, a, b);
+		OP(ii, EXPANSION(i+4), b, c, d, e, a);
 	}
 
 	state[0] += a;
