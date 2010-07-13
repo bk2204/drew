@@ -1,7 +1,9 @@
+#include <fcntl.h>
 #include <pthread.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <hash.h>
 #include <plugin.h>
@@ -29,6 +31,7 @@ static pthread_mutex_t drew_impl_libmd__mutex = PTHREAD_MUTEX_INITIALIZER;
 static drew_loader_t *ldr = NULL;
 
 #define DIM(x) (sizeof(x)/sizeof(x[0]))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 /* This function takes care of loading the plugins and other data necessary for
  * runtime.  It is protected by a mutex.  When the mutex is unlocked, the data
@@ -129,6 +132,49 @@ char *prefix ## Data(const uint8_t *data, size_t len, char *buf) \
 	prefix ## Init(&ctx); \
 	prefix ## Update(&ctx, data, len); \
 	return prefix ## End(&ctx, buf); \
+} \
+char *prefix ## FileChunk(const char *filename, char *buf, off_t offset, \
+		off_t length) \
+{ \
+	int fd = -1; \
+	struct context ctx; \
+ \
+	if (offset < 0) \
+		offset = 0; \
+	if (length <= 0) \
+		length = -1; \
+ \
+	if ((fd = open(filename, O_RDONLY)) < 0) \
+		return NULL; \
+	if (lseek(fd, SEEK_SET, offset) < 0) \
+		goto errout; \
+ \
+	prefix ## Init(&ctx); \
+ \
+	while (length) { \
+		uint8_t data[512]; \
+		ssize_t retval; \
+		size_t nbytes; \
+ \
+		nbytes = (length < 0) ? sizeof(data) : MIN(length, sizeof(data)); \
+ \
+		if ((retval = read(fd, data, nbytes)) < 0) \
+			goto errout; \
+		if (retval == 0) \
+			break; \
+		length -= retval; \
+		prefix ## Update(&ctx, data, retval); \
+ \
+	} \
+	close(fd); \
+	return prefix ## End(&ctx, buf); \
+errout: \
+	close(fd); \
+	return NULL; \
+} \
+char *prefix ## File(const char *filename, char *buf) \
+{ \
+	return prefix ## FileChunk(filename, buf, 0, 0); \
 }
 
 INTERFACE(MD4, MD4)
