@@ -21,4 +21,14 @@
  */
 #define DREW_HASH_ENDIAN 5 /* Not implemented. */
 
+typedef struct {
+	int (*info)(int op, void *p);
+	void (*init)(void **);
+	void (*update)(void *, const uint8_t *, size_t);
+	void (*pad)(void *);
+	void (*final)(void *, uint8_t *);
+	void (*transform)(void *, void *, const uint8_t *);
+	int (*test)(void *);
+} drew_hash_functbl_t;
+
 #endif

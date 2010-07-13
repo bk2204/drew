@@ -6,18 +6,9 @@
 #include <hash.h>
 #include <plugin.h>
 
-struct plugin_functbl {
-	int (*info)(int, void *);
-	void (*init)(void **);
-	void (*update)(void *, const uint8_t *, size_t);
-	void (*pad)(void *);
-	void (*final)(void *, uint8_t *);
-	void (*transform)(void *, void *, const uint8_t *);
-};
-
 struct plugin_info {
 	const char *name;
-	struct plugin_functbl *tbl;
+	drew_hash_functbl_t *tbl;
 };
 
 #define PLUGIN_MD4 0
@@ -60,7 +51,7 @@ static void drew_impl_libmd_init(void)
 
 			id = drew_loader_load_plugin(ldr, plugins[i].name, "./plugins");
 			drew_loader_get_functbl(ldr, id, &functbl);
-			plugins[i].tbl = (struct plugin_functbl *)functbl;
+			plugins[i].tbl = (drew_hash_functbl_t *)functbl;
 		}
 	}
 	

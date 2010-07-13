@@ -17,20 +17,11 @@
 #include <time.h>
 
 #include <plugin.h>
-
-struct plugin_functbl {
-	int (*info)(int, void *);
-	void (*init)(void **);
-	void (*update)(void *, const uint8_t *, size_t);
-	void (*pad)(void *);
-	void (*final)(void *, uint8_t *);
-	void (*transform)(void *, void *, const uint8_t *);
-	int (*test)(void *);
-};
+#include <hash.h>
 
 struct plugin_info {
 	const char *name;
-	struct plugin_functbl *tbl;
+	drew_hash_functbl_t *tbl;
 };
 
 #define DIM(x) (sizeof(x)/sizeof(x[0]))
@@ -51,7 +42,7 @@ double sec_from_timespec(const struct timespec *ts)
 	return ts->tv_sec + (ts->tv_nsec / 1000000000.0);
 }
 
-int internal_test(const char *name, const struct plugin_functbl *functbl)
+int internal_test(const char *name, const drew_hash_functbl_t *functbl)
 {
 	int result;
 	
@@ -60,7 +51,7 @@ int internal_test(const char *name, const struct plugin_functbl *functbl)
 	return 0;
 }
 
-int speed_test(const char *name, const struct plugin_functbl *functbl)
+int speed_test(const char *name, const drew_hash_functbl_t *functbl)
 {
 	int i;
 	void *ctx;
@@ -130,7 +121,7 @@ int main(int argc, char **argv)
 
 	for (i = 0; i < nplugins; i++) {
 		const void *functbl;
-		struct plugin_functbl *tbl;
+		drew_hash_functbl_t *tbl;
 		const char *name;
 
 		if (drew_loader_get_type(ldr, i) != DREW_TYPE_HASH)
@@ -139,7 +130,7 @@ int main(int argc, char **argv)
 		drew_loader_get_functbl(ldr, i, &functbl);
 		drew_loader_get_algo_name(ldr, i, &name);
 		printf("%-11s: ", name);
-		tbl = (struct plugin_functbl *)functbl;
+		tbl = (drew_hash_functbl_t *)functbl;
 
 		switch (mode) {
 			case MODE_SPEED:
