@@ -67,7 +67,7 @@ class Hash
 			T len[2];
 			E e;
 			/* Convert bytes to bits. */
-			len[1] = (m_len[1]<<3)|(m_len[0]>>29);
+			len[1] = (m_len[1]<<3)|(m_len[0]>>((sizeof(m_len[0])*8)-3));
 			len[0] = m_len[0]<<3;
 			e(inplen, len, sizeof(len), sizeof(len));
 		
