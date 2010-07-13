@@ -50,20 +50,20 @@ static int sha224test(void *)
 
 	using namespace drew;
 	
-	//res |= !HashTestCase<SHA224>("", 0).Test("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
-	//res <<= 1;
-	//res |= !HashTestCase<SHA224>("a", 1).Test("ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb");
-	//res <<= 1;
+	res |= !HashTestCase<SHA224>("", 0).Test("d14a028c2a3a2bc9476102bb288234c415a2b01f828ea62ac5b3e42f");
+	res <<= 1;
+	res |= !HashTestCase<SHA224>("a", 1).Test("abd37534c7d9a2efb9465de931cd7055ffdb8879563ae98078d6d6d5");
+	res <<= 1;
 	res |= !HashTestCase<SHA224>("abc", 1).Test("23097d223405d8228642a477bda255b32aadbce4bda0b3f7e36c9da7");
 	res <<= 1;
-	//res |= !HashTestCase<SHA224>("message digest", 1).Test("f7846f55cf23e14eebeab5b4e1550cad5b509e3348fbc4efa3a1413d393cb650");
-	//res <<= 1;
-	//res |= !HashTestCase<SHA224>("abcdefghijklmnopqrstuvwxyz", 1).Test("71c480df93d6ae2f1efad1447c66c9525e316218cf51fc8d9ed832f2daf18b73");
-	//res <<= 1;
-	//res |= !HashTestCase<SHA224>("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", 1).Test("db4bfcbd4da0cd85a60c3c37d3fbd8805c77f15fc6b1fdfe614ee0a7c8fdb4c0");
-	//res <<= 1;
-	//res |= !HashTestCase<SHA224>("12345678901234567890123456789012345678901234567890123456789012345678901234567890", 1).Test("f371bc4a311f2b009eef952dd83ca80e2b60026c8e935592d0f9c308453c813e");
-	//res <<= 1;
+	res |= !HashTestCase<SHA224>("message digest", 1).Test("2cb21c83ae2f004de7e81c3c7019cbcb65b71ab656b22d6d0c39b8eb");
+	res <<= 1;
+	res |= !HashTestCase<SHA224>("abcdefghijklmnopqrstuvwxyz", 1).Test("45a5f72c39c5cff2522eb3429799e49e5f44b356ef926bcf390dccc2");
+	res <<= 1;
+	res |= !HashTestCase<SHA224>("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", 1).Test("bff72b4fcb7d75e5632900ac5f90d219e05e97a7bde72e740db393d9");
+	res <<= 1;
+	res |= !HashTestCase<SHA224>("12345678901234567890123456789012345678901234567890123456789012345678901234567890", 1).Test("b50aecbe4e9bb0b57bc5f3ae760a8e01db24f203fb3cdcd13148046e");
+	res <<= 1;
 	res |= !HashTestCase<SHA224>("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 1).Test("75388b16512776cc5dba5da1fd890150b0c6455cb4f58b1952522525");
 	res <<= 1;
 	res |= !HashTestCase<SHA224>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 15625).Test("20794655980c91d8bbb4c1ea97618a4bf03f42581948b2ee4ee7ad67");
