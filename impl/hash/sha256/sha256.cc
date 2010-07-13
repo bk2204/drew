@@ -127,6 +127,10 @@ static const uint32_t k[]={
 	d+=h; \
 	h+=S0(a)+Maj(a, b, c)
 
+#define ROUND2(a, b, c, d, e, f, g, h, k, i) \
+	blk[i] = s1(blk[i-2]) + blk[i-7] + s0(blk[i-15]) + blk[i-16]; \
+	ROUND(a, b, c, d, e, f, g, h, k, blk[i]); 
+
 drew::SHA256::SHA256()
 {
 	m_hash[0] = 0x6a09e667;
@@ -174,10 +178,7 @@ void drew::SHA256Transform::Transform(uint32_t *state, const uint8_t *block)
 	endian end;
 	end(blk, block, block_size);
 
-	for (i = words; i < 64; i++)
-		blk[i] = s1(blk[i-2]) + blk[i-7] + s0(blk[i-15]) + blk[i-16];
-
-	for (i = 0; i < 64; i += 8) {
+	for (i = 0; i < words; i += 8) {
 		ROUND(a, b, c, d, e, f, g, h, k[i  ], blk[i  ]);
 		ROUND(h, a, b, c, d, e, f, g, k[i+1], blk[i+1]);
 		ROUND(g, h, a, b, c, d, e, f, k[i+2], blk[i+2]);
@@ -186,6 +187,16 @@ void drew::SHA256Transform::Transform(uint32_t *state, const uint8_t *block)
 		ROUND(d, e, f, g, h, a, b, c, k[i+5], blk[i+5]);
 		ROUND(c, d, e, f, g, h, a, b, k[i+6], blk[i+6]);
 		ROUND(b, c, d, e, f, g, h, a, k[i+7], blk[i+7]);
+	}
+	for (i = words; i < 64; i += 8) {
+		ROUND2(a, b, c, d, e, f, g, h, k[i  ], i  );
+		ROUND2(h, a, b, c, d, e, f, g, k[i+1], i+1);
+		ROUND2(g, h, a, b, c, d, e, f, k[i+2], i+2);
+		ROUND2(f, g, h, a, b, c, d, e, k[i+3], i+3);
+		ROUND2(e, f, g, h, a, b, c, d, k[i+4], i+4);
+		ROUND2(d, e, f, g, h, a, b, c, k[i+5], i+5);
+		ROUND2(c, d, e, f, g, h, a, b, k[i+6], i+6);
+		ROUND2(b, c, d, e, f, g, h, a, k[i+7], i+7);
 	}
 
 	state[0] += a;
