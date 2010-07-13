@@ -138,7 +138,7 @@ int main(int argc, char **argv)
 
 		drew_loader_get_functbl(ldr, i, &functbl);
 		drew_loader_get_algo_name(ldr, i, &name);
-		printf("%s: ", name);
+		printf("%-11s: ", name);
 		tbl = (struct plugin_functbl *)functbl;
 
 		switch (mode) {
