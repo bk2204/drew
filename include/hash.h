@@ -3,6 +3,9 @@
 
 #include <errno.h>
 
+#include "param.h"
+#include "plugin.h"
+
 /* The ABI version of the hash interface. */
 #define DREW_HASH_VERSION 0 /* Not implemented. */
 /* The number of bytes per quantum. */
@@ -23,12 +26,13 @@
 
 typedef struct {
 	int (*info)(int op, void *p);
-	void (*init)(void **);
+	void (*init)(void **, drew_loader_t *, const drew_param_t *);
 	void (*update)(void *, const uint8_t *, size_t);
 	void (*pad)(void *);
 	void (*final)(void *, uint8_t *);
 	void (*transform)(void *, void *, const uint8_t *);
 	int (*test)(void *);
+	void (*fini)(void **);
 } drew_hash_functbl_t;
 
 #endif

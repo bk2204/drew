@@ -28,7 +28,7 @@ static int prefix ## info(int op, void *) \
 	} \
 } \
  \
-static void prefix ## init(void **ctx) \
+static void prefix ## init(void **ctx, drew_loader_t *, const drew_param_t *) \
 { \
 	hname *p = new hname; \
 	*ctx = p; \
@@ -58,8 +58,15 @@ static void prefix ## transform(void *, void *state, const uint8_t *data) \
 	hname::Transform(st, data); \
 } \
  \
+static void prefix ## fini(void **ctx) \
+{ \
+	hname *p = reinterpret_cast<hname *>(*ctx); \
+	delete p; \
+	*ctx = NULL; \
+} \
+ \
 static int prefix ## test(void *); \
  \
-PLUGIN_FUNCTBL(prefix, prefix ## info, prefix ## init, prefix ## update, prefix ## pad, prefix ## final, prefix ## transform, prefix ## test);
+PLUGIN_FUNCTBL(prefix, prefix ## info, prefix ## init, prefix ## update, prefix ## pad, prefix ## final, prefix ## transform, prefix ## test, prefix ## fini);
 
 #endif

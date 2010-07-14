@@ -15,26 +15,17 @@ extern "C" {
 #endif
 
 #include <plugin.h>
+#include <hash.h>
 
-struct plugin_functbl {
-	int (*info)(int, void *);
-	void (*init)(void **);
-	void (*update)(void *, const uint8_t *, size_t);
-	void (*pad)(void *);
-	void (*final)(void *, uint8_t *);
-	void (*transform)(void *, void *, const uint8_t *);
-	int (*test)(void *);
-};
-
-#define PLUGIN_FUNCTBL(prefix, info, init, update, pad, final, transform, test) \
+#define PLUGIN_FUNCTBL(prefix, info, init, update, pad, final, transform, test, fini) \
 \
-static struct plugin_functbl prefix ## functbl = { \
-	info, init, update, pad, final, transform, test \
+static drew_hash_functbl_t prefix ## functbl = { \
+	info, init, update, pad, final, transform, test, fini \
 };
 
 struct plugin {
 	const char *name;
-	struct plugin_functbl *functbl;
+	drew_hash_functbl_t *functbl;
 };
 
 #define PLUGIN_DATA_START() static struct plugin plugin_data[] = {
@@ -58,9 +49,9 @@ int drew_plugin_info(void *ldr, int op, int id, void *p) \
 		case DREW_LOADER_GET_TYPE: \
 			return 1; \
 		case DREW_LOADER_GET_FUNCTBL_SIZE: \
-			return sizeof(struct plugin_functbl); \
+			return sizeof(drew_hash_functbl_t); \
 		case DREW_LOADER_GET_FUNCTBL: \
-			memcpy(p, plugin_data[id].functbl, sizeof(struct plugin_functbl)); \
+			memcpy(p, plugin_data[id].functbl, sizeof(drew_hash_functbl_t)); \
 			return 0; \
 		case DREW_LOADER_GET_NAME_SIZE: \
 			return strlen(plugin_data[id].name) + 1; \

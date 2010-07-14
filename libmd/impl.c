@@ -75,7 +75,7 @@ struct context {
 void prefix ## Init(struct context *ctx) \
 { \
 	drew_impl_libmd_init(); \
-	(plugins[CONCAT(PLUGIN_, name)].tbl->init)(&ctx->ctx); \
+	(plugins[CONCAT(PLUGIN_, name)].tbl->init)(&ctx->ctx, NULL, NULL); \
 } \
  \
 void prefix ## Update(struct context *ctx, const uint8_t *data, size_t len) \
