@@ -2,3 +2,28 @@ TODO
 ----
 
 * PRNG state must be thread-local.
+* Add clone interface for hashes.
+* Add fini interface for hashes.
+* Call fini interface for hashes.
+* Add MACs.
+* Add Public Key algorithms.
+* Add MD2.
+* Add TIGER.
+* Add HAVAL.
+* Add modifier for number of hash rounds, where applicable.
+* Add block ciphers.
+* Add stream ciphers.
+* Add block cipher modes.
+* Add compression functionality.
+* Add PRNGs.
+* Add arc4random.
+* Add Java Cryptography Interface.
+* Add SSL 3.0.
+* Add TLS 1.0.
+* Add TLS 1.1.
+* Add TLS 1.2.
+* Add EVP_DigestInit.
+* Split libmd implementation out for libcrypto.
+* Consider Qt Cryptography Interface.
+* Consider PKCS implementation.
+* Consider Windows crypto interface.
