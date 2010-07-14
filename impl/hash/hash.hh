@@ -24,12 +24,16 @@ class Hash
 		static const size_t block_size = BlkSize;
 		static const size_t buffer_size = BufSize;
 
-		virtual ~Hash() {}
+		virtual ~Hash()
+		{
+			memset(m_len, 0, sizeof(m_len));
+			memset(m_buf, 0, sizeof(m_buf));
+			memset(m_hash, 0, sizeof(m_hash));
+		}
 		virtual void Initialize()
 		{
 			memset(m_len, 0, sizeof(m_len));
 			memset(m_buf, 0, sizeof(m_buf));
-			memset(&m_off, 0, sizeof(m_off));
 		}
 		virtual void Update(const uint8_t *data, size_t len)
 		{
@@ -96,7 +100,6 @@ class Hash
 		T m_len[2];
 		T m_hash[BufSize/sizeof(T)];
 		uint8_t m_buf[BlkSize];
-		size_t m_off;
 	private:
 };
 
