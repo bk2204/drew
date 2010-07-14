@@ -18,13 +18,17 @@ struct plugin_info {
 #define PLUGIN_RMD160 2
 #define PLUGIN_SHA1 3
 #define PLUGIN_SHA256 4
+#define PLUGIN_SHA384 5
+#define PLUGIN_SHA512 6
 
 static struct plugin_info plugins[] = {
 	{"md4"},
 	{"md5"},
 	{"ripe160"},
 	{"sha1"},
-	{"sha256"}
+	{"sha256"},
+	{"sha384"},
+	{"sha512"}
 };
 
 static pthread_mutex_t drew_impl_libmd__mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -182,3 +186,5 @@ INTERFACE(MD5, MD5)
 INTERFACE(RMD160, RMD160)
 INTERFACE(SHA1, SHA1)
 INTERFACE(SHA256, SHA256)
+INTERFACE(SHA384, SHA384)
+INTERFACE(SHA512, SHA512)
