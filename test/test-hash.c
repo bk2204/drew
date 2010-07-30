@@ -8,142 +8,53 @@
  * algorithms.  This implementation requires ANSI C and POSIX 1003.1-2001.
  */
 
-#include <errno.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "framework.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <time.h>
 
 #include <plugin.h>
 #include <hash.h>
 
-struct plugin_info {
-	const char *name;
-	drew_hash_functbl_t *tbl;
-};
-
-#define DIM(x) (sizeof(x)/sizeof(x[0]))
-
-struct context {
-	void *ctx;
-};
-
-#define MODE_SPEED			1
-#define MODE_TEST			2
-#define MODE_TEST_INTERNAL	3
-
-#define CHUNK 8192
-#define NCHUNKS 40960
-
-double sec_from_timespec(const struct timespec *ts)
+int test_get_type(void)
 {
-	return ts->tv_sec + (ts->tv_nsec / 1000000000.0);
+	return DREW_TYPE_HASH;
 }
 
-int internal_test(const char *name, const drew_hash_functbl_t *functbl)
+int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 {
 	int result;
+	const drew_hash_functbl_t *functbl = tbl;
 	
 	result = functbl->test(NULL);
 	printf("self-test %s (result code %d)\n", result ? "failed" : "ok", result);
 	return 0;
 }
 
-int speed_test(const char *name, const drew_hash_functbl_t *functbl)
+int test_speed(drew_loader_t *ldr, const char *name, const void *tbl, int chunk,
+		int nchunks)
 {
 	int i;
 	void *ctx;
 	uint8_t *buf;
 	struct timespec cstart, cend;
-	double start, end, diff, rate;
+	const drew_hash_functbl_t *functbl = tbl;
 
-	buf = calloc(CHUNK, 1);
+	buf = calloc(chunk, 1);
 	if (!buf)
 		return ENOMEM;
 
 	clock_gettime(CLOCK_REALTIME, &cstart);
-	functbl->init(&ctx);
-	for (i = 0; i < NCHUNKS; i++)
-		functbl->update(ctx, buf, CHUNK);
+	functbl->init(&ctx, NULL, NULL);
+	for (i = 0; i < nchunks; i++)
+		functbl->update(ctx, buf, chunk);
 	functbl->final(ctx, buf);
 	clock_gettime(CLOCK_REALTIME, &cend);
 
 	free(buf);
 
-	start = sec_from_timespec(&cstart);
-	end = sec_from_timespec(&cend);
-	diff = end - start;
-	rate = CHUNK * ((double)NCHUNKS) / diff;
-	rate /= 1048576;
-
-	printf("%d bytes in %0.3fs (%0.3f MiB/s)\n", (NCHUNKS*CHUNK), diff, rate);
+	print_speed_info(chunk, nchunks, &cstart, &cend);
 	
 	return 0;
-}
-
-int main(int argc, char **argv)
-{
-	int error = 0;
-	int i;
-	int mode = 0;
-	int nplugins = 0;
-	drew_loader_t *ldr = NULL;
-
-	drew_loader_new(&ldr);
-
-	for (i = 1; i < argc; i++) {
-		int id;
-
-		if (!mode) {
-			if (!strcmp(argv[i], "-s"))
-				mode = MODE_SPEED;
-			else if (!strcmp(argv[i], "-t"))
-				mode = MODE_TEST;
-			else if (!strcmp(argv[i], "-i"))
-				mode = MODE_TEST_INTERNAL;
-			else
-				mode = MODE_SPEED;
-			continue;
-		}
-
-		id = drew_loader_load_plugin(ldr, argv[i], "./plugins");
-		if (id < 0) {
-			printf("%s: failed to load (error %d (%s))\n", argv[i], -id,
-					strerror(-id));
-			error++;
-			continue;
-		}
-	}
-
-	nplugins = drew_loader_get_nplugins(ldr, -1);
-
-	for (i = 0; i < nplugins; i++) {
-		const void *functbl;
-		drew_hash_functbl_t *tbl;
-		const char *name;
-
-		if (drew_loader_get_type(ldr, i) != DREW_TYPE_HASH)
-			continue;
-
-		drew_loader_get_functbl(ldr, i, &functbl);
-		drew_loader_get_algo_name(ldr, i, &name);
-		printf("%-11s: ", name);
-		tbl = (drew_hash_functbl_t *)functbl;
-
-		switch (mode) {
-			case MODE_SPEED:
-				speed_test(name, tbl);
-				break;
-			case MODE_TEST:
-			case MODE_TEST_INTERNAL:
-				internal_test(name, tbl);
-			default:
-				break;
-		}
-	}
-	drew_loader_free(&ldr);
-
-	return error;
 }
