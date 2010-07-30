@@ -2,6 +2,7 @@
 #define DREW_HASH_INTERFACE_H
 
 #include <errno.h>
+#include <stdint.h>
 
 #include "param.h"
 #include "plugin.h"
