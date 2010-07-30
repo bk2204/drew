@@ -5,20 +5,21 @@
  * appreciated.
  */
 /* This code implements a test driver for several different message digest
- * algorithms.  This implementation requires ANSI C.
+ * algorithms.  This implementation requires ANSI C and POSIX timers.
  */
+
+#define _POSIX_C_SOURCE 200112L
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-//#include "md2.h"
-#include "md4.h"
-#include "md5.h"
-#include "ripe160.h"
-#include "sha1.h"
-#include "sha256.h"
+#include <md4.h>
+#include <md5.h>
+#include <ripe160.h>
+#include <sha1.h>
+#include <sha256.h>
 
 static const char *strings[]={
 	"",
@@ -82,7 +83,6 @@ void TimeMD(const char *name, size_t ctxsz, void (*init)(hash_ctx_t *),
 int main(int argc, char **argv)
 {
 	if (argc<2 || !strcmp(argv[1], "-x")) {
-		//TESTSUITE(MD2);
 		TESTSUITE(MD4);
 		TESTSUITE(MD5);
 		TESTSUITE(RMD160);
@@ -90,8 +90,6 @@ int main(int argc, char **argv)
 		TESTSUITE(SHA256);
 	}
 	else {
-		//if (strcmp(argv[1], "-s"))
-		//	TIMETEST(MD2);
 		TIMETEST(MD4);
 		TIMETEST(MD5);
 		TIMETEST(RMD160);
