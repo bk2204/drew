@@ -14,15 +14,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define HASH_MAX_DIGEST_LENGTH 32
-#define HASH_MAX_BLOCK_LENGTH 64
-
-typedef struct
-{
-	uint32_t hash[HASH_MAX_DIGEST_LENGTH/sizeof(uint32_t)];
-	uint32_t len[2]; /* length in bytes */
-	uint8_t buf[HASH_MAX_BLOCK_LENGTH];
-	size_t off;
-} hash_ctx_t;
+/* This structure is only here for size purposes.  Do not access its members. */
+#define DREW_LIBMD_HASH_STRUCT(name, quant, dlen, blen) \
+typedef struct name { \
+	quant hash[dlen/sizeof(quant)]; \
+	quant len[2]; \
+	uint8_t buf[blen]; \
+} name;
 
 #endif

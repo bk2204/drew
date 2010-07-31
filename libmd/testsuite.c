@@ -35,6 +35,19 @@ static const char *strings[]={
 #define CHUNK 8192
 #define NCHUNKS 40960
 
+/* The largest context we'll use. */
+typedef SHA2_CTX hash_ctx_t;
+
+/* OpenBSD used to use individual contexts for the SHA-2 algorithms, but they
+ * now use only one.
+ */
+typedef SHA2_CTX SHA256_CTX;
+
+/* Some convenience functions. */
+typedef void (*initfunc)(hash_ctx_t *);
+typedef void (*updatefunc)(hash_ctx_t *, const uint8_t *, size_t);
+typedef void (*finalfunc)(uint8_t *, hash_ctx_t *);
+
 #define TESTSUITE(x) TestMD(#x, x##Data)
 void TestMD(const char *name, char *(*data)(const uint8_t *, size_t, char *))
 {
@@ -46,7 +59,7 @@ void TestMD(const char *name, char *(*data)(const uint8_t *, size_t, char *))
 					strlen(strings[i]), buf));
 	}
 }
-#define TIMETEST(x) TimeMD(#x, sizeof(x##_CTX), x##Init, x##Update, x##Final)
+#define TIMETEST(x) TimeMD(#x, sizeof(x##_CTX), (initfunc)x##Init, (updatefunc)x##Update, (finalfunc)x##Final)
 void TimeMD(const char *name, size_t ctxsz, void (*init)(hash_ctx_t *),
 	void (*update)(hash_ctx_t *, const uint8_t *, size_t),
 	void (*final)(uint8_t *, hash_ctx_t *))

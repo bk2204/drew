@@ -23,7 +23,7 @@
 #define MD5_DIGEST_STRING_LENGTH (MD5_DIGEST_LENGTH*2+1)
 #define MD5_BLOCK_LENGTH 64
 
-typedef hash_ctx_t MD5_CTX;
+DREW_LIBMD_HASH_STRUCT(MD5_CTX, uint32_t, MD5_DIGEST_LENGTH, MD5_BLOCK_LENGTH);
 
 void MD5Init(MD5_CTX *ctx);
 void MD5Update(MD5_CTX *ctx, const uint8_t *data, size_t len);

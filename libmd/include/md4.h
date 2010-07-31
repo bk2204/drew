@@ -22,7 +22,7 @@
 #define MD4_DIGEST_STRING_LENGTH (MD4_DIGEST_LENGTH*2+1)
 #define MD4_BLOCK_LENGTH 64
 
-typedef hash_ctx_t MD4_CTX;
+DREW_LIBMD_HASH_STRUCT(MD4_CTX, uint32_t, MD4_DIGEST_LENGTH, MD4_BLOCK_LENGTH);
 
 void MD4Init(MD4_CTX *ctx);
 void MD4Update(MD4_CTX *ctx, const uint8_t *data, size_t len);

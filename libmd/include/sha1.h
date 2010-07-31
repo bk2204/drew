@@ -4,9 +4,9 @@
  * it.  However, a credit in the documentation, although not required, would be
  * appreciated.
  */
-/* This code implements the SHA1 and SHA0 message digest algorithms.  It is
- * compatible with OpenBSD's implementation.  The size of the SHA1_CTX struct is
- * not guaranteed compatible, however.  This implementation requires ANSI C.
+/* This code implements the SHA1 message digest algorithm.  It is compatible
+ * with OpenBSD's implementation.  The size of the SHA1_CTX struct is not
+ * guaranteed compatible, however.  This implementation requires ANSI C.
  */
 
 #ifndef BMC_SHA1_H
@@ -21,7 +21,7 @@
 #define SHA1_DIGEST_STRING_LENGTH (SHA1_DIGEST_LENGTH*2+1)
 #define SHA1_BLOCK_LENGTH 64
 
-typedef hash_ctx_t SHA1_CTX;
+DREW_LIBMD_HASH_STRUCT(SHA1_CTX, uint32_t, SHA1_DIGEST_LENGTH, SHA1_BLOCK_LENGTH);
 
 void SHA1Init(SHA1_CTX *ctx);
 void SHA1Update(SHA1_CTX *ctx, const uint8_t *data, size_t len);
