@@ -22,6 +22,8 @@ TODO
 * Add TLS 1.2.
 * Add EVP_DigestInit.
 * Split libmd implementation out for libcrypto.
+* Consider Yarrow PRNG.
+* Consider Linux-style PRNG.
 * Consider Qt Cryptography Interface.
 * Consider PKCS implementation.
 * Consider Windows crypto interface.
