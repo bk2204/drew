@@ -2,8 +2,6 @@ TODO
 ----
 
 * PRNG state must be thread-local.
-* Add clone interface for hashes.
-* Add fini interface for hashes.
 * Call fini interface for hashes.
 * Add MACs.
 * Add Public Key algorithms.

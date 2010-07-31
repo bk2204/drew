@@ -23,6 +23,8 @@ static int prefix ## info(int op, void *) \
 			return hname::block_size; \
 		case DREW_HASH_BUFSIZE: \
 			return hname::buffer_size; \
+		case DREW_HASH_INTSIZE: \
+			return sizeof(hname); \
 		default: \
 			return -EINVAL; \
 	} \
@@ -32,6 +34,18 @@ static void prefix ## init(void **ctx, drew_loader_t *, const drew_param_t *) \
 { \
 	hname *p = new hname; \
 	*ctx = p; \
+} \
+ \
+static int prefix ## clone(void **newctx, void *oldctx, int flags) \
+{ \
+	hname *p = new hname(*reinterpret_cast<hname *>(oldctx)); \
+	if (flags & DREW_HASH_CLONE_FIXED) { \
+		memcpy(*newctx, p, sizeof(*p)); \
+		delete p; \
+	} \
+	else \
+		*newctx = p; \
+	return 0; \
 } \
  \
 static void prefix ## update(void *ctx, const uint8_t *data, size_t len) \
@@ -67,6 +81,6 @@ static void prefix ## fini(void **ctx) \
  \
 static int prefix ## test(void *); \
  \
-PLUGIN_FUNCTBL(prefix, prefix ## info, prefix ## init, prefix ## update, prefix ## pad, prefix ## final, prefix ## transform, prefix ## test, prefix ## fini);
+PLUGIN_FUNCTBL(prefix, prefix ## info, prefix ## init, prefix ## update, prefix ## pad, prefix ## final, prefix ## transform, prefix ## test, prefix ## fini, prefix ## clone);
 
 #endif

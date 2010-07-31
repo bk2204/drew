@@ -24,6 +24,16 @@
  * little-endian.
  */
 #define DREW_HASH_ENDIAN 5 /* Not implemented. */
+/* The size of the underlying implementation's context.  This is useful for the
+ * clone function if there's a need to copy the actual context into a given
+ * block of memory, such as locked memory.
+ */
+#define DREW_HASH_INTSIZE 6
+
+/* This bit is a flag to the clone function indicating that the new context
+ * should be copied into already-existing memory at *newctx.
+ */
+#define DREW_HASH_CLONE_FIXED 1
 
 typedef struct {
 	int (*info)(int op, void *p);
@@ -34,6 +44,7 @@ typedef struct {
 	void (*transform)(void *, void *, const uint8_t *);
 	int (*test)(void *);
 	void (*fini)(void **);
+	int (*clone)(void **, void *, int);
 } drew_hash_functbl_t;
 
 #endif
