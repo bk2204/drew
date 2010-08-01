@@ -36,17 +36,19 @@ CXXFLAGS		:= ${CXXFLAGS} ${CFLAGS}
 CFLAGS			+= -std=c99
 
 LIBCFLAGS		+= -shared
-PLUGINCFLAGS	+= -Iimpl/prng -Iimpl/hash -I. ${LIBCFLAGS}
+PLUGINCFLAGS	+= -Iimpl/prng -Iimpl/hash -Iimpl/block -I. ${LIBCFLAGS}
 
 LIBS			+= -lrt -ldl
 
 all: ${PLUG_EXE} ${DREW_SONAME}
 
 .include "impl/hash/Makefile"
+.include "impl/block/Makefile"
 .include "impl/prng/Makefile"
 .include "libmd/Makefile"
 
 standard: ${DREW_SONAME} ${MD_SONAME} plugins libmd/testsuite test/test-hash
+standard: test/test-block
 
 ${DREW_SONAME}: plugin.c
 	${CC} ${CFLAGS} ${LIBCFLAGS} -shared -o ${.TARGET} ${.ALLSRC} ${LIBS}
@@ -72,6 +74,9 @@ $i: $i.cc
 .endfor
 
 test/test-hash: test/test-hash.o test/framework.o ${DREW_SONAME} 
+	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
+
+test/test-block: test/test-block.o test/framework.o ${DREW_SONAME} 
 	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
 plugins: ${PLUGINS}

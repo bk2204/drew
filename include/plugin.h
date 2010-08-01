@@ -39,6 +39,7 @@ typedef void drew_loader_t;
 #define DREW_LOADER_GET_NAME 8
 
 #define DREW_TYPE_HASH 1
+#define DREW_TYPE_BLOCK 2
 
 /* The system dynamic loader failed. */
 #define DREW_ERR_RESOLUTION		0x10001
