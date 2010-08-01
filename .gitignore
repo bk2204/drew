@@ -1,5 +1,6 @@
 testsuite
 test/test-hash
+test/test-block
 *.o
 *.so*
 plugins/*
