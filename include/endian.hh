@@ -2,6 +2,8 @@
 #define ENDIAN_HH
 
 #include <endian.h>
+#include <stddef.h>
+#include <stdint.h>
 
 class BigEndian
 {
