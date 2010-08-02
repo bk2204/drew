@@ -125,11 +125,9 @@ void drew::CAST5::SetKey(const uint8_t *key, size_t sz)
 void drew::CAST5::SetUpEndianness(void)
 {
 	uint32_t perm[] = {
-		0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c
-		//0x00010203, 0x04050607, 0x08090a0b, 0x0c0d0e0f
+		0x00010203, 0x04050607, 0x08090a0b, 0x0c0d0e0f
 	};
-	endian_t e;
-	e(m_perm, perm, sizeof(m_perm));
+	memcpy(m_perm, perm, sizeof(m_perm));
 }
 
 //#define sa(a, b) m_s[(a)-1][xb[b]]
