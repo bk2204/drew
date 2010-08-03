@@ -11,7 +11,7 @@ extern "C" {
 
 static const int cast5keysz[] =
 {
-	128
+	16
 };
 
 static int cast5_maintenance_test(void)
