@@ -44,11 +44,12 @@ all: ${PLUG_EXE} ${DREW_SONAME}
 
 .include "impl/hash/Makefile"
 .include "impl/block/Makefile"
+.include "impl/mode/Makefile"
 .include "impl/prng/Makefile"
 .include "libmd/Makefile"
 
 standard: ${DREW_SONAME} ${MD_SONAME} plugins libmd/testsuite test/test-hash
-standard: test/test-block
+standard: test/test-block test/test-mode
 
 ${DREW_SONAME}: plugin.c
 	${CC} ${CFLAGS} ${LIBCFLAGS} -shared -o ${.TARGET} ${.ALLSRC} ${LIBS}
@@ -63,13 +64,13 @@ ${PLUG_EXE}: ${PLUG_OBJ} ${DREW_SONAME}
 	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
 .c.o:
-	${CC} ${CFLAGS} -c -o ${.TARGET} ${.IMPSRC}
+	${CC} ${PLUGINCFLAGS} ${CFLAGS} -c -o ${.TARGET} ${.IMPSRC}
 
 .cc.o:
-	${CXX} ${CXXFLAGS} -c -o ${.TARGET} ${.IMPSRC}
+	${CXX} ${PLUGINCFLAGS} ${CXXFLAGS} -c -o ${.TARGET} ${.IMPSRC}
 
 .for i in ${PLUGINS}
-$i: $i.cc
+$i: $i.o
 	${CXX} ${PLUGINCFLAGS} ${CXXFLAGS} -o ${.TARGET} ${.ALLSRC}
 .endfor
 
@@ -77,6 +78,9 @@ test/test-hash: test/test-hash.o test/framework.o ${DREW_SONAME}
 	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
 test/test-block: test/test-block.o test/framework.o ${DREW_SONAME} 
+	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
+
+test/test-mode: test/test-mode.o test/framework.o ${DREW_SONAME} 
 	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
 plugins: ${PLUGINS}
