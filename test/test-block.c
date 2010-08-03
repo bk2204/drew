@@ -35,7 +35,7 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 int test_speed(drew_loader_t *ldr, const char *name, const void *tbl, int chunk,
 		int nchunks)
 {
-	int i, keysz;
+	int i, keysz = 0;
 	void *ctx;
 	uint8_t *buf, *buf2, *key;
 	struct timespec cstart, cend;
