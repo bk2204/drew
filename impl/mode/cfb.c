@@ -257,6 +257,29 @@ static int cfb_test_cast5(drew_loader_t *ldr, size_t *ntests)
 	return cfb_test_generic(ldr, "CAST-128", testdata, DIM(testdata));
 }
 
+static int cfb_test_blowfish(drew_loader_t *ldr, size_t *ntests)
+{
+	struct test testdata[] = {
+		{
+			(const uint8_t *)"\x01\x23\x45\x67\x89\xab\xcd\xef"
+				"\xf0\xe1\xd2\xc3\xb4\xa5\x96\x87",
+			16,
+			(const uint8_t *)"\xfe\xdc\xba\x98\x76\x54\x32\x10",
+			8,
+			(const uint8_t *)"7654321 Now is the time for ",
+			(const uint8_t *)"\xe7\x32\x14\xa2\x82\x21\x39\xca"
+				"\xf2\x6e\xcf\x6d\x2e\xb9\xe7\x6e"
+				"\x3d\xa3\xde\x04\xd1\x51\x72\x00"
+				"\x51\x9d\x57\xa6\xc3",
+			29
+		}
+	};
+
+	*ntests = DIM(testdata);
+
+	return cfb_test_generic(ldr, "Blowfish", testdata, DIM(testdata));
+}
+
 static int cfb_test(void *p)
 {
 	drew_loader_t *ldr = p;
@@ -266,6 +289,10 @@ static int cfb_test(void *p)
 		return -EINVAL;
 
 	if ((tres = cfb_test_cast5(ldr, &ntests)) >= 0) {
+		result <<= ntests;
+		result |= tres;
+	}
+	if ((tres = cfb_test_blowfish(ldr, &ntests)) >= 0) {
 		result <<= ntests;
 		result |= tres;
 	}
