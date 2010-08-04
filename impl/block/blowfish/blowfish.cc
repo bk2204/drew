@@ -152,26 +152,26 @@ uint32_t drew::Blowfish::f(uint32_t x)
 
 void drew::Blowfish::MainAlgorithm(const uint32_t *p, uint32_t &l, uint32_t &r)
 {
-	for (size_t i = 0; i < 16; i++) {
+	for (size_t i = 0; i < 16; i += 2) {
 		l ^= p[i];
 		r ^= f(l);
-		std::swap(l, r);
+		r ^= p[i+1];
+		l ^= f(r);
 	}
+	l ^= p[16];
+	r ^= p[17];
 	std::swap(l, r);
-	r ^= p[16];
-	l ^= p[17];
 }
 
 void drew::Blowfish::SetKey(const uint8_t *key, size_t sz)
 {
-	memcpy(m_p, m_parray, sizeof(m_parray));
 	memcpy(m_s, m_sbox, sizeof(m_sbox));
 
 	for (size_t i = 0; i < 18; i++) {
 		uint32_t k = 0;
 		for (size_t j = 0; j < sizeof(uint32_t); j++)
 			k = (k << 8) | key[((i*4)+j) % sz];
-		m_p[i] ^= k;
+		m_p[i] = m_parray[i] ^ k;
 	}
 
 	uint32_t l = 0, r = 0;
