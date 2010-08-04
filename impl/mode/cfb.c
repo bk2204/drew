@@ -254,7 +254,7 @@ static int cfb_test_cast5(drew_loader_t *ldr, size_t *ntests)
 	memset(buf, 0, sizeof(buf));
 	*ntests = DIM(testdata);
 
-	return cfb_test_generic(ldr, "CAST5", testdata, DIM(testdata));
+	return cfb_test_generic(ldr, "CAST-128", testdata, DIM(testdata));
 }
 
 static int cfb_test(void *p)

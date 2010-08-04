@@ -44,7 +44,7 @@ int test_speed(drew_loader_t *ldr, const char *name, const void *tbl, int chunk,
 	drew_block_functbl_t *ftbl;
 	int id;
 
-	id = drew_loader_lookup_by_name(ldr, "CAST5", 0, -1);
+	id = drew_loader_lookup_by_name(ldr, "CAST-128", 0, -1);
 	if (id < 0)
 		return ENOTSUP;
 
@@ -69,7 +69,7 @@ int test_speed(drew_loader_t *ldr, const char *name, const void *tbl, int chunk,
 	ftbl->setkey(bctx, key, keysz);
 	functbl->init(&mctx, ldr, NULL);
 	functbl->setiv(mctx, buf2, blksz);
-	functbl->setblock(mctx, "CAST5", bctx);
+	functbl->setblock(mctx, "CAST-128", bctx);
 	for (i = 0; i < nchunks; i++)
 		functbl->encrypt(mctx, buf, buf, chunk);
 	clock_gettime(CLOCK_REALTIME, &cend);

@@ -101,7 +101,7 @@ static int cast5test(void *)
 extern "C" {
 	PLUGIN_STRUCTURE(cast5, drew::CAST5)
 	PLUGIN_DATA_START()
-	PLUGIN_DATA(cast5, "CAST5")
+	PLUGIN_DATA(cast5, "CAST-128")
 	PLUGIN_DATA_END()
 	PLUGIN_INTERFACE()
 }
