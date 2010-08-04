@@ -130,47 +130,45 @@ void drew::CAST5::SetUpEndianness(void)
 	memcpy(m_perm, perm, sizeof(m_perm));
 }
 
-//#define sa(a, b) m_s[(a)-1][xb[b]]
-#define sa(a, b) sx(a, b)
-#define sx(a, b) m_s[(a)-1][xb[m_perm[b]]]
-#define sz(a, b) m_s[(a)-1][zb[m_perm[b]]]
+#define sx(a, b) m_s[a][xb[m_perm[b]]]
+#define sz(a, b) m_s[a][zb[m_perm[b]]]
 
 void drew::CAST5::ComputeZSet(uint32_t *z, const uint32_t *x, const uint8_t *xb)
 {
 	const uint8_t *zb = reinterpret_cast<uint8_t *>(z);
 
-	z[0] = x[0] ^ sx(5, 13) ^ sx(6, 15) ^ sx(7, 12) ^ sx(8, 14) ^ sx(7,  8);
-	z[1] = x[2] ^ sz(5,  0) ^ sz(6,  2) ^ sz(7,  1) ^ sz(8,  3) ^ sx(8, 10);
-	z[2] = x[3] ^ sz(5,  7) ^ sz(6,  6) ^ sz(7,  5) ^ sz(8,  4) ^ sx(5,  9);
-	z[3] = x[1] ^ sz(5, 10) ^ sz(6,  9) ^ sz(7, 11) ^ sz(8,  8) ^ sx(6, 11);
+	z[0] = x[0] ^ sx(4, 13) ^ sx(5, 15) ^ sx(6, 12) ^ sx(7, 14) ^ sx(6,  8);
+	z[1] = x[2] ^ sz(4,  0) ^ sz(5,  2) ^ sz(6,  1) ^ sz(7,  3) ^ sx(7, 10);
+	z[2] = x[3] ^ sz(4,  7) ^ sz(5,  6) ^ sz(6,  5) ^ sz(7,  4) ^ sx(4,  9);
+	z[3] = x[1] ^ sz(4, 10) ^ sz(5,  9) ^ sz(6, 11) ^ sz(7,  8) ^ sx(5, 11);
 }
 
 void drew::CAST5::ComputeXSet(uint32_t *x, const uint32_t *z, const uint8_t *zb)
 {
 	const uint8_t *xb = reinterpret_cast<uint8_t *>(x);
 
-	x[0] = z[2] ^ sz(5,  5) ^ sz(6,  7) ^ sz(7,  4) ^ sz(8,  6) ^ sz(7,  0);
-	x[1] = z[0] ^ sx(5,  0) ^ sx(6,  2) ^ sx(7,  1) ^ sx(8,  3) ^ sz(8,  2);
-	x[2] = z[1] ^ sx(5,  7) ^ sx(6,  6) ^ sx(7,  5) ^ sx(8,  4) ^ sz(5,  1);
-	x[3] = z[3] ^ sx(5, 10) ^ sx(6,  9) ^ sx(7, 11) ^ sx(8,  8) ^ sz(6,  3);
+	x[0] = z[2] ^ sz(4,  5) ^ sz(5,  7) ^ sz(6,  4) ^ sz(7,  6) ^ sz(6,  0);
+	x[1] = z[0] ^ sx(4,  0) ^ sx(5,  2) ^ sx(6,  1) ^ sx(7,  3) ^ sz(7,  2);
+	x[2] = z[1] ^ sx(4,  7) ^ sx(5,  6) ^ sx(6,  5) ^ sx(7,  4) ^ sz(4,  1);
+	x[3] = z[3] ^ sx(4, 10) ^ sx(5,  9) ^ sx(6, 11) ^ sx(7,  8) ^ sz(5,  3);
 }
 
 void drew::CAST5::ComputeSubkeySetA(uint32_t *sk, const uint8_t *zb, uint8_t a,
 		uint8_t b, uint8_t c, uint8_t d)
 {
-	sk[0] = sz(5,  8) ^ sz(6,  9) ^ sz(7,  7) ^ sz(8,  6) ^ sz(5, a);
-	sk[1] = sz(5, 10) ^ sz(6, 11) ^ sz(7,  5) ^ sz(8,  4) ^ sz(6, b);
-	sk[2] = sz(5, 12) ^ sz(6, 13) ^ sz(7,  3) ^ sz(8,  2) ^ sz(7, c);
-	sk[3] = sz(5, 14) ^ sz(6, 15) ^ sz(7,  1) ^ sz(8,  0) ^ sz(8, d);
+	sk[0] = sz(4,  8) ^ sz(5,  9) ^ sz(6,  7) ^ sz(7,  6) ^ sz(4, a);
+	sk[1] = sz(4, 10) ^ sz(5, 11) ^ sz(6,  5) ^ sz(7,  4) ^ sz(5, b);
+	sk[2] = sz(4, 12) ^ sz(5, 13) ^ sz(6,  3) ^ sz(7,  2) ^ sz(6, c);
+	sk[3] = sz(4, 14) ^ sz(5, 15) ^ sz(6,  1) ^ sz(7,  0) ^ sz(7, d);
 }
 
 void drew::CAST5::ComputeSubkeySetB(uint32_t *sk, const uint8_t *zb, uint8_t a,
 		uint8_t b, uint8_t c, uint8_t d)
 {
-	sk[0] = sz(5,  3) ^ sz(6,  2) ^ sz(7, 12) ^ sz(8, 13) ^ sz(5, a);
-	sk[1] = sz(5,  1) ^ sz(6,  0) ^ sz(7, 14) ^ sz(8, 15) ^ sz(6, b);
-	sk[2] = sz(5,  7) ^ sz(6,  6) ^ sz(7,  8) ^ sz(8,  9) ^ sz(7, c);
-	sk[3] = sz(5,  5) ^ sz(6,  4) ^ sz(7, 10) ^ sz(8, 11) ^ sz(8, d);
+	sk[0] = sz(4,  3) ^ sz(5,  2) ^ sz(6, 12) ^ sz(7, 13) ^ sz(4, a);
+	sk[1] = sz(4,  1) ^ sz(5,  0) ^ sz(6, 14) ^ sz(7, 15) ^ sz(5, b);
+	sk[2] = sz(4,  7) ^ sz(5,  6) ^ sz(6,  8) ^ sz(7,  9) ^ sz(6, c);
+	sk[3] = sz(4,  5) ^ sz(5,  4) ^ sz(6, 10) ^ sz(7, 11) ^ sz(7, d);
 }
 
 void drew::CAST5::ComputeSubkeys(const uint8_t *k)
