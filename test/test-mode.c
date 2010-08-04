@@ -33,8 +33,8 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 	return 0;
 }
 
-int test_speed(drew_loader_t *ldr, const char *name, const void *tbl, int chunk,
-		int nchunks)
+int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
+		const void *tbl, int chunk, int nchunks)
 {
 	int i, keysz = 0, blksz;
 	void *bctx, *mctx;
@@ -44,7 +44,10 @@ int test_speed(drew_loader_t *ldr, const char *name, const void *tbl, int chunk,
 	drew_block_functbl_t *ftbl;
 	int id;
 
-	id = drew_loader_lookup_by_name(ldr, "CAST-128", 0, -1);
+	if (!algo)
+		algo = "CAST-128";
+
+	id = drew_loader_lookup_by_name(ldr, algo, 0, -1);
 	if (id < 0)
 		return ENOTSUP;
 
@@ -69,7 +72,7 @@ int test_speed(drew_loader_t *ldr, const char *name, const void *tbl, int chunk,
 	ftbl->setkey(bctx, key, keysz);
 	functbl->init(&mctx, ldr, NULL);
 	functbl->setiv(mctx, buf2, blksz);
-	functbl->setblock(mctx, "CAST-128", bctx);
+	functbl->setblock(mctx, algo, bctx);
 	for (i = 0; i < nchunks; i++)
 		functbl->encrypt(mctx, buf, buf, chunk);
 	clock_gettime(CLOCK_REALTIME, &cend);

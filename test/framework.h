@@ -25,8 +25,8 @@
 #define NCHUNKS 40960
 
 int test_get_type(void);
-int test_speed(drew_loader_t *ldr, const char *name, const void *functbl,
-		int chunk, int nchunks);
+int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
+		const void *functbl, int chunk, int nchunks);
 int test_internal(drew_loader_t *ldr, const char *name, const void *functbl);
 void print_speed_info(int chunk, int nchunks, const struct timespec *cstart,
 		const struct timespec *cend);

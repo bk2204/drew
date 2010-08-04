@@ -50,11 +50,12 @@ int main(int argc, char **argv)
 	int type = 0;
 	int chunk = 0;
 	int nchunks = 0;
+	const char *algo = NULL;
 	drew_loader_t *ldr = NULL;
 
 	drew_loader_new(&ldr);
 
-	while ((opt = getopt(argc, argv, "stic:n:")) != -1) {
+	while ((opt = getopt(argc, argv, "stia:c:n:")) != -1) {
 		switch (opt) {
 			case 's':
 				mode = MODE_SPEED;
@@ -64,6 +65,9 @@ int main(int argc, char **argv)
 				break;
 			case 'i':
 				mode = MODE_TEST_INTERNAL;
+				break;
+			case 'a':
+				algo = optarg;
 				break;
 			case 'c':
 				chunk = atoi(optarg);
@@ -93,6 +97,9 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if (algo)
+		printf("# Using algorithm %s for tests.\n", algo);
+
 	nplugins = drew_loader_get_nplugins(ldr, -1);
 	type = test_get_type();
 
@@ -109,7 +116,7 @@ int main(int argc, char **argv)
 
 		switch (mode) {
 			case MODE_SPEED:
-				test_speed(ldr, name, functbl, chunk, nchunks);
+				test_speed(ldr, name, algo, functbl, chunk, nchunks);
 				break;
 			case MODE_TEST:
 			case MODE_TEST_INTERNAL:

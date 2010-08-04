@@ -32,8 +32,8 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 	return 0;
 }
 
-int test_speed(drew_loader_t *ldr, const char *name, const void *tbl, int chunk,
-		int nchunks)
+int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
+		const void *tbl, int chunk, int nchunks)
 {
 	int i, keysz = 0;
 	void *ctx;
