@@ -332,17 +332,16 @@ void drew::Rijndael::SetKey(const uint8_t *key, size_t len)
 
 void drew::Rijndael::SetKeyDecrypt(void)
 {
-	uint32_t temp;
 	uint32_t *rkd = m_rkd;
 
 	memcpy(m_rkd, m_rk, sizeof(m_rk));
 
 	/* invert the order of the round keys: */
 	for (int i = 0, j = 4*m_nr; i < j; i += 4, j -= 4) {
-		temp = rkd[i    ]; rkd[i    ] = rkd[j    ]; rkd[j    ] = temp;
-		temp = rkd[i + 1]; rkd[i + 1] = rkd[j + 1]; rkd[j + 1] = temp;
-		temp = rkd[i + 2]; rkd[i + 2] = rkd[j + 2]; rkd[j + 2] = temp;
-		temp = rkd[i + 3]; rkd[i + 3] = rkd[j + 3]; rkd[j + 3] = temp;
+		std::swap(rkd[i    ], rkd[j    ]);
+		std::swap(rkd[i + 1], rkd[j + 1]);
+		std::swap(rkd[i + 2], rkd[j + 2]);
+		std::swap(rkd[i + 3], rkd[j + 3]);
 	}
 	/* apply the inverse MixColumn transform to all round keys but the first and the last: */
 	for (size_t i = 1; i < m_nr; i++) {
