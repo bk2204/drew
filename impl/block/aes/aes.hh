@@ -8,12 +8,12 @@
 
 namespace drew {
 
-class Rijndael
+class AES
 {
 	public:
 		typedef BigEndian endian_t;
-		Rijndael(size_t blocksz);
-		~Rijndael() {};
+		AES(size_t blocksz);
+		~AES() {};
 		void SetKey(const uint8_t *key, size_t sz);
 		void Encrypt(uint8_t *out, const uint8_t *in);
 		void Decrypt(uint8_t *out, const uint8_t *in);
