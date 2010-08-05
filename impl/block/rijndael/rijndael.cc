@@ -169,12 +169,10 @@ static int rd_test(void *)
 
 	const char *key =
 		"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
-	res |= !test(key, "00112233445566778899aabbccddeeff",
-			"69c4e0d86a7b0430d8cdb78070b4c55a", 16);
-	res |= !test(key, "00112233445566778899aabbccddeeff",
-			"dda97ca4864cdfe06eaf70a0ec0d7191", 24);
-	res |= !test(key, "00112233445566778899aabbccddeeff",
-			"8ea2b7ca516745bfeafc49904b496089", 32);
+	const char *pt = "00112233445566778899aabbccddeeff";
+	res |= !test(key, pt, "69c4e0d86a7b0430d8cdb78070b4c55a", 16);
+	res |= !test(key, pt, "dda97ca4864cdfe06eaf70a0ec0d7191", 24);
+	res |= !test(key, pt, "8ea2b7ca516745bfeafc49904b496089", 32);
 	res <<= 1;
 	const char *key2 = "2b7e151628aed2a6abf7158809cf4f3c";
 	const char *pt1 = "6bc1bee22e409f96e93d7e117393172a";
