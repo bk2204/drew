@@ -226,7 +226,7 @@ static int rd_test(void *)
 	PLUGIN_FUNCTBL(aes192, rd_aes192_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
 	PLUGIN_FUNCTBL(aes256, rd_aes256_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
 	PLUGIN_DATA_START()
-	PLUGIN_DATA(rijndael, "AES")
+	PLUGIN_DATA(rijndael, "Rijndael")
 	PLUGIN_DATA(aes128, "AES128")
 	PLUGIN_DATA(aes192, "AES192")
 	PLUGIN_DATA(aes256, "AES256")
