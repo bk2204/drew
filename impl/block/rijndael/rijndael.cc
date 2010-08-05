@@ -47,6 +47,10 @@ static const int rd_keysz[] =
 	16, 24, 32
 };
 
+static const int rd_aes128_keysz[] = {16};
+static const int rd_aes192_keysz[] = {24};
+static const int rd_aes256_keysz[] = {32};
+
 #define DIM(x) (sizeof(x)/sizeof(x[0]))
 
 static int rd_main_info(int op, void *p, size_t blksz, const int *keysz,
@@ -74,6 +78,21 @@ static int rd_main_info(int op, void *p, size_t blksz, const int *keysz,
 static int rd_aes_info(int op, void *p)
 {
 	return rd_main_info(op, p, 16, rd_keysz, DIM(rd_keysz));
+}
+
+static int rd_aes128_info(int op, void *p)
+{
+	return rd_main_info(op, p, 16, rd_aes128_keysz, DIM(rd_aes128_keysz));
+}
+
+static int rd_aes192_info(int op, void *p)
+{
+	return rd_main_info(op, p, 16, rd_aes192_keysz, DIM(rd_aes192_keysz));
+}
+
+static int rd_aes256_info(int op, void *p)
+{
+	return rd_main_info(op, p, 16, rd_aes256_keysz, DIM(rd_aes256_keysz));
 }
 
 static void rd_main_init(void **ctx, size_t blksz)
@@ -203,8 +222,14 @@ static int rd_test(void *)
 }
 
 	PLUGIN_FUNCTBL(rijndael, rd_aes_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
+	PLUGIN_FUNCTBL(aes128, rd_aes128_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
+	PLUGIN_FUNCTBL(aes192, rd_aes192_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
+	PLUGIN_FUNCTBL(aes256, rd_aes256_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(rijndael, "Rijndael")
+	PLUGIN_DATA(aes128, "AES128")
+	PLUGIN_DATA(aes192, "AES192")
+	PLUGIN_DATA(aes256, "AES256")
 	PLUGIN_DATA_END()
 	PLUGIN_INTERFACE()
 }
