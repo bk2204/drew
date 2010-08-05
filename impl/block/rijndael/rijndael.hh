@@ -21,7 +21,8 @@ class Rijndael
 	private:
 		void SetKeyDecrypt(void);
 		size_t m_nr, m_nk, m_nb;
-		uint32_t m_rk[16], m_rkd[16];	
+		// maxnb*(maxnr+1) = 8 * 9 = 72
+		uint32_t m_rk[72], m_rkd[72];	
 		uint32_t m_km[16];
 		uint8_t m_kr[16];
 		static const uint32_t Te0[256];
