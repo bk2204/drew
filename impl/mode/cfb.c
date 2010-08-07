@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +17,7 @@ struct cfb {
 	void *algo;
 	const drew_block_functbl_t *functbl;
 	uint8_t *buf;
+	uint8_t *prev;
 	size_t blksize;
 	size_t boff;
 };
@@ -76,6 +78,8 @@ static int cfb_setblock(void *ctx, const char *algoname, void *algoctx)
 		c->feedback = c->blksize;
 	if (!(c->buf = malloc(c->blksize)))
 		return -ENOMEM;
+	if (!(c->prev = malloc(c->blksize)))
+		return -ENOMEM;
 
 	return 0;
 }
@@ -87,6 +91,7 @@ static int cfb_setiv(void *ctx, const uint8_t *iv, size_t len)
 	if (c->blksize != len)
 		return -EINVAL;
 
+	memcpy(c->prev, iv, len);
 	memcpy(c->buf, iv, len);
 	return 0;
 }
@@ -96,11 +101,13 @@ static int cfb_setiv(void *ctx, const uint8_t *iv, size_t len)
 static void cfb_encrypt(void *ctx, uint8_t *out, const uint8_t *in, size_t len)
 {
 	struct cfb *c = ctx;
+	const size_t leftover = c->blksize - c->feedback;
 
 	if (c->boff) {
 		const size_t b = MIN(c->feedback - c->boff, len);
 		for (size_t i = 0; i < b; i++)
-			out[i] = c->buf[c->boff + i] ^= in[i];
+			c->prev[leftover + c->boff + i] = out[i] =
+				c->buf[c->boff + i] ^= in[i];
 		if ((c->boff += b) == c->feedback)
 			c->boff = 0;
 		len -= b;
@@ -109,18 +116,20 @@ static void cfb_encrypt(void *ctx, uint8_t *out, const uint8_t *in, size_t len)
 	}
 
 	while (len >= c->feedback) {
-		c->functbl->encrypt(c->algo, c->buf, c->buf);
+		c->functbl->encrypt(c->algo, c->buf, c->prev);
+		memmove(c->prev, c->prev + c->feedback, leftover);
 		for (size_t i = 0; i < c->feedback; i++)
-			out[i] = c->buf[i] ^= in[i];
+			c->prev[i + leftover] = out[i] = c->buf[i] ^= in[i];
 		len -= c->feedback;
 		out += c->feedback;
 		in += c->feedback;
 	}
 
 	if (len) {
-		c->functbl->encrypt(c->algo, c->buf, c->buf);
+		c->functbl->encrypt(c->algo, c->buf, c->prev);
+		memmove(c->prev, c->prev + c->feedback, leftover);
 		for (size_t i = 0; i < len; i++)
-			out[i] = c->buf[i] ^= in[i];
+			c->prev[i + leftover] = out[i] = c->buf[i] ^= in[i];
 		c->boff = len;
 	}
 }
@@ -128,12 +137,13 @@ static void cfb_encrypt(void *ctx, uint8_t *out, const uint8_t *in, size_t len)
 static void cfb_decrypt(void *ctx, uint8_t *out, const uint8_t *in, size_t len)
 {
 	struct cfb *c = ctx;
+	const size_t leftover = c->blksize - c->feedback;
 
 	if (c->boff) {
 		const size_t b = MIN(c->feedback - c->boff, len);
 		for (size_t i = 0; i < b; i++)
-			out[i] = c->buf[c->boff + i] ^ in[i];
-		memcpy(c->buf + c->boff, in, b);
+			out[i] = c->buf[c->boff + i] ^
+				(c->prev[leftover + c->boff + i] = in[i]);
 		c->boff -= b;
 		len -= b;
 		out += b;
@@ -141,20 +151,20 @@ static void cfb_decrypt(void *ctx, uint8_t *out, const uint8_t *in, size_t len)
 	}
 
 	while (len >= c->feedback) {
-		c->functbl->encrypt(c->algo, c->buf, c->buf);
+		c->functbl->encrypt(c->algo, c->buf, c->prev);
+		memmove(c->prev, c->prev + c->feedback, leftover);
 		for (size_t i = 0; i < c->feedback; i++)
-			out[i] = c->buf[i] ^ in[i];
-		memcpy(c->buf, in, c->feedback);
+			out[i] = c->buf[i] ^ (c->prev[i + leftover] = in[i]);
 		len -= c->feedback;
 		out += c->feedback;
 		in += c->feedback;
 	}
 
 	if (len) {
-		c->functbl->encrypt(c->algo, c->buf, c->buf);
+		c->functbl->encrypt(c->algo, c->buf, c->prev);
+		memmove(c->prev, c->prev + c->feedback, leftover);
 		for (size_t i = 0; i < len; i++)
-			out[i] = c->buf[i] ^ in[i];
-		memcpy(c->buf, in, len);
+			out[i] = c->buf[i] ^ (c->prev[i + leftover] = in[i]);
 		c->boff = len;
 	}
 }
@@ -167,6 +177,7 @@ struct test {
 	const uint8_t *input;
 	const uint8_t *output;
 	size_t datasz;
+	size_t feedback;
 };
 
 static void cfb_fini(void **ctx);
@@ -188,10 +199,15 @@ static int cfb_test_generic(drew_loader_t *ldr, const char *name,
 	functbl = tmp;
 
 	for (size_t i = 0; i < ntests; i++) {
+		drew_param_t param;
+
 		memset(buf, 0, sizeof(buf));
 		result <<= 1;
 
-		cfb_init(&c, ldr, NULL);
+		param.name = "feedbackBits";
+		param.next = NULL;
+		param.param.number = testdata[i].feedback * 8;
+		cfb_init(&c, ldr, &param);
 		functbl->init(&algo, ldr, NULL);
 		functbl->setkey(algo, testdata[i].key, testdata[i].keysz);
 		cfb_setblock(c, name, algo);
@@ -207,7 +223,7 @@ static int cfb_test_generic(drew_loader_t *ldr, const char *name,
 		cfb_fini(&c);
 		functbl->fini(&algo);
 
-		cfb_init(&c, ldr, NULL);
+		cfb_init(&c, ldr, &param);
 		functbl->init(&algo, ldr, NULL);
 		functbl->setkey(algo, testdata[i].key, testdata[i].keysz);
 		cfb_setblock(c, name, algo);
@@ -236,6 +252,7 @@ static int cfb_test_cast5(drew_loader_t *ldr, size_t *ntests)
 			8,
 			(const uint8_t *)"\x01\x23\x45\x67\x89\xab\xcd\xef",
 			(const uint8_t *)"\x34\xf2\x64\x83\x3a\x2e\x07\x5d",
+			8,
 			8
 		},
 		{
@@ -247,7 +264,8 @@ static int cfb_test_cast5(drew_loader_t *ldr, size_t *ntests)
 			(const uint8_t *)"This is CAST5/CFB.",
 			(const uint8_t *)"\x2c\xfc\xe2\xf4\x55\xe3\x8d\x7f"
 				"\x24\xbd\x0d\x94\x2f\x3c\xe8\x19\x06\x1d",
-			18
+			18,
+			8
 		},
 	};
 
@@ -271,13 +289,42 @@ static int cfb_test_blowfish(drew_loader_t *ldr, size_t *ntests)
 				"\xf2\x6e\xcf\x6d\x2e\xb9\xe7\x6e"
 				"\x3d\xa3\xde\x04\xd1\x51\x72\x00"
 				"\x51\x9d\x57\xa6\xc3",
-			29
+			29,
+			8
 		}
 	};
 
 	*ntests = DIM(testdata);
 
 	return cfb_test_generic(ldr, "Blowfish", testdata, DIM(testdata));
+}
+
+static int cfb_test_aes128(drew_loader_t *ldr, size_t *ntests)
+{
+	const uint8_t *key = (const uint8_t *)"\x2b\x7e\x15\x16\x28\xae\xd2\xa6"
+				"\xab\xf7\x15\x88\x09\xcf\x4f\x3c";
+	const uint8_t *iv = (const uint8_t *)"\x00\x01\x02\x03\x04\x05\x06\x07"
+				"\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f";
+	struct test testdata[] = {
+		{
+			key,
+			16,
+			iv,
+			16,
+			(const uint8_t *)
+				"\x6b\xc1\xbe\xe2\x2e\x40\x9f\x96"
+				"\xe9\x3d\x7e\x11\x73\x93\x17\x2a\xae\x2d",
+			(const uint8_t *)
+				"\x3b\x79\x42\x4c\x9c\x0d\xd4\x36"
+				"\xba\xce\x9e\x0e\xd4\x58\x6a\x4f\x32\xb9",
+			18,
+			1
+		}
+	};
+
+	*ntests = DIM(testdata);
+
+	return cfb_test_generic(ldr, "AES128", testdata, DIM(testdata));
 }
 
 static int cfb_test(void *p)
@@ -296,6 +343,10 @@ static int cfb_test(void *p)
 		result <<= ntests;
 		result |= tres;
 	}
+	if ((tres = cfb_test_aes128(ldr, &ntests)) >= 0) {
+		result <<= ntests;
+		result |= tres;
+	}
 
 	return result;
 }
@@ -304,6 +355,10 @@ static void cfb_fini(void **ctx)
 {
 	struct cfb *c = *ctx;
 
+	memset(c->buf, 0, c->blksize);
+	free(c->buf);
+	memset(c->prev, 0, c->blksize);
+	free(c->prev);
 	memset(c, 0, sizeof(*c));
 	free(c);
 
