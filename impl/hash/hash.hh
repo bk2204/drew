@@ -71,11 +71,10 @@ class Hash
 			uint16_t x = 0x0001;
 			const uint8_t *perm = reinterpret_cast<uint8_t *>(&x);
 			T len[2];
-			E e;
 			/* Convert bytes to bits. */
 			len[perm[0]] = (m_len[1]<<3)|(m_len[0]>>((sizeof(m_len[0])*8)-3));
 			len[perm[1]] = m_len[0]<<3;
-			e(inplen, len, sizeof(len), sizeof(len));
+			E::Copy(inplen, len, sizeof(len), sizeof(len));
 		
 			/* There is always at least one byte free. */
 			buf[off] = 0x80;
@@ -93,8 +92,7 @@ class Hash
 		{
 			Pad();
 
-			E e;
-			e(digest, m_hash, Size);
+			E::Copy(digest, m_hash, Size);
 		}
 		static void Transform(T *, const uint8_t *data);
 	protected:

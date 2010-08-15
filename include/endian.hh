@@ -9,7 +9,7 @@ class BigEndian
 {
 	public:
 		template<class T>
-		void operator()(uint8_t *dest, const T *src, size_t len,
+		static void Copy(uint8_t *dest, const T *src, size_t len,
 				const size_t sz = sizeof(T))
 		{
 			memcpy(dest, src, len);
@@ -22,7 +22,7 @@ class BigEndian
 #endif
 		}
 		template<class T>
-		void operator()(T *dest, const uint8_t *src, size_t len,
+		static void Copy(T *dest, const uint8_t *src, size_t len,
 				const size_t sz = sizeof(T))
 		{
 			memcpy(dest, src, len);
@@ -42,7 +42,7 @@ class LittleEndian
 {
 	public:
 		template<class T>
-		void operator()(uint8_t *dest, const T *src, size_t len,
+		static void Copy(uint8_t *dest, const T *src, size_t len,
 				const size_t sz = sizeof(T))
 		{
 			memcpy(dest, src, len);
@@ -55,7 +55,7 @@ class LittleEndian
 #endif
 		}
 		template<class T>
-		void operator()(T *dest, const uint8_t *src, size_t len,
+		static void Copy(T *dest, const uint8_t *src, size_t len,
 				const size_t sz = sizeof(T))
 		{
 			memcpy(dest, src, len);

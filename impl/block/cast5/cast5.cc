@@ -177,8 +177,7 @@ void drew::CAST5::ComputeSubkeys(const uint8_t *k)
 	uint32_t x[4];
 	uint32_t sk[32];
 
-	endian_t e;
-	e(x, k, sizeof(x));
+	endian_t::Copy(x, k, sizeof(x));
 
 	for (size_t i = 0; i < 32; i += 16) {
 		// Endianness issues are taken care of by m_perm.
@@ -201,10 +200,9 @@ void drew::CAST5::ComputeSubkeys(const uint8_t *k)
 void drew::CAST5::Encrypt(uint8_t *out, const uint8_t *in)
 {
 	uint32_t l, r;
-	endian_t e;
 
-	e(&l, in+0, sizeof(l));
-	e(&r, in+4, sizeof(r));
+	endian_t::Copy(&l, in+0, sizeof(l));
+	endian_t::Copy(&r, in+4, sizeof(r));
 
 	for (size_t i = 0; i < 15; i += 3) {
 		l ^= f1(r, m_km[i+0], m_kr[i+0]);
@@ -216,17 +214,16 @@ void drew::CAST5::Encrypt(uint8_t *out, const uint8_t *in)
 	}
 	l ^= f1(r, m_km[15], m_kr[15]);
 
-	e(out+0, &l, sizeof(l));
-	e(out+4, &r, sizeof(r));
+	endian_t::Copy(out+0, &l, sizeof(l));
+	endian_t::Copy(out+4, &r, sizeof(r));
 }
 
 void drew::CAST5::Decrypt(uint8_t *out, const uint8_t *in)
 {
 	uint32_t l, r;
-	endian_t e;
 
-	e(&l, in+0, sizeof(l));
-	e(&r, in+4, sizeof(r));
+	endian_t::Copy(&l, in+0, sizeof(l));
+	endian_t::Copy(&r, in+4, sizeof(r));
 
 	l ^= f1(r, m_km[15], m_kr[15]);
 	std::swap(l, r);
@@ -239,8 +236,8 @@ void drew::CAST5::Decrypt(uint8_t *out, const uint8_t *in)
 		std::swap(l, r);
 	}
 
-	e(out+0, &r, sizeof(l));
-	e(out+4, &l, sizeof(r));
+	endian_t::Copy(out+0, &r, sizeof(l));
+	endian_t::Copy(out+4, &l, sizeof(r));
 }
 
 const uint32_t drew::CAST5::m_s[8][256] = {

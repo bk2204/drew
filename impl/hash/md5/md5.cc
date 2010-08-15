@@ -75,8 +75,7 @@ void drew::MD5::Transform(quantum_t *state, const uint8_t *block)
 	c = state[2];
 	d = state[3];
 
-	endian_t e;
-	e(blk, block, block_size);
+	endian_t::Copy(blk, block, block_size);
 	FF(a,b,c,d, 0, 7, 0xd76aa478);
 	FF(d,a,b,c, 1,12, 0xe8c7b756);
 	FF(c,d,a,b, 2,17, 0x242070db);

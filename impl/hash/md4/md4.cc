@@ -82,8 +82,7 @@ void drew::MD4::Transform(quantum_t *state, const uint8_t *block)
 	c = state[2];
 	d = state[3];
 
-	endian_t e;
-	e(blk, block, block_size);
+	endian_t::Copy(blk, block, block_size);
 
 	FF(a,b,c,d, 0, 3); FF(d,a,b,c, 1, 7);
 	FF(c,d,a,b, 2,11); FF(b,c,d,a, 3,19);

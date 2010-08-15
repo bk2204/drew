@@ -134,8 +134,7 @@ void drew::SHA<Rotate>::Transform(quantum_t *state, const uint8_t *block)
 	d = state[3];
 	e = state[4];
 
-	endian_t end;
-	end(blk, block, block_size);
+	endian_t::Copy(blk, block, block_size);
 
 	OP(ff, blk[ 0], a, b, c, d, e);
 	OP(ff, blk[ 1], e, a, b, c, d);

@@ -191,15 +191,14 @@ void drew::Blowfish::SetKey(const uint8_t *key, size_t sz)
 void drew::Blowfish::Encrypt(uint8_t *out, const uint8_t *in)
 {
 	uint32_t l, r;
-	endian_t e;
 
-	e(&l, in+0, sizeof(l));
-	e(&r, in+4, sizeof(r));
+	endian_t::Copy(&l, in+0, sizeof(l));
+	endian_t::Copy(&r, in+4, sizeof(r));
 
 	MainAlgorithm(m_p, l, r);
 
-	e(out+0, &l, sizeof(l));
-	e(out+4, &r, sizeof(r));
+	endian_t::Copy(out+0, &l, sizeof(l));
+	endian_t::Copy(out+4, &r, sizeof(r));
 }
 
 void drew::Blowfish::Decrypt(uint8_t *out, const uint8_t *in)
@@ -207,13 +206,13 @@ void drew::Blowfish::Decrypt(uint8_t *out, const uint8_t *in)
 	uint32_t l, r;
 	endian_t e;
 
-	e(&l, in+0, sizeof(l));
-	e(&r, in+4, sizeof(r));
+	endian_t::Copy(&l, in+0, sizeof(l));
+	endian_t::Copy(&r, in+4, sizeof(r));
 
 	MainAlgorithm(m_pd, l, r);
 
-	e(out+0, &l, sizeof(l));
-	e(out+4, &r, sizeof(r));
+	endian_t::Copy(out+0, &l, sizeof(l));
+	endian_t::Copy(out+4, &r, sizeof(r));
 }
 
 const uint32_t drew::Blowfish::m_sbox[4 * 256] = {

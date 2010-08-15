@@ -131,8 +131,7 @@ void drew::RIPEMD160::Transform(quantum_t *state, const uint8_t *block)
 	d = dd = state[3];
 	e = ee = state[4];
 
-	endian_t end;
-	end(blk, block, block_size);
+	endian_t::Copy(blk, block, block_size);
 
 	for (i=0; i<16; i++) {
 		OP(ff,  r,  s, 0x00000000,  a,  b,  c,  d,  e);

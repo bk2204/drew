@@ -175,8 +175,7 @@ void drew::SHA256Transform::Transform(uint32_t *state, const uint8_t *block)
 	g = state[6];
 	h = state[7];
 
-	endian end;
-	end(blk, block, block_size);
+	endian::Copy(blk, block, block_size);
 
 	for (i = 0; i < words; i += 8) {
 		ROUND(a, b, c, d, e, f, g, h, k[i  ], blk[i  ]);
