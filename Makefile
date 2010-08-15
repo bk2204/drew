@@ -94,6 +94,7 @@ clean:
 	${RM} -f ${MD_SONAME} ${MD_OBJS}
 	${RM} -f ${DREW_SONAME} ${DREW_SYMLINK}
 	${RM} -fr ${PLUGINS} plugins/
+	find -name '*.o' | xargs -r rm
 
 test: ${TEST_EXE}
 	env LD_LIBRARY_PATH=. ./${TEST_EXE} -x | \
