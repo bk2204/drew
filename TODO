@@ -3,15 +3,27 @@ TODO
 
 * PRNG state must be thread-local.
 * Call fini interface for hashes.
+* Add SHA384 and SHA512 to libmd.
+* Allow CAST5 key sizes < 128 bits.
+* Add Rijndael.
+* Add DES/3DES.
+* Add Twofish.
+* Add SAFER-SK.
+* Add Serpent.
+* Add RC2.
+* Add CAST6.
+* Add SKIPJACK.
+* Add CTR mode.
+* Add CBC mode.
+* Allow modes to expand text (final function).
+* Update license and description statements.
 * Add MACs.
 * Add Public Key algorithms.
 * Add MD2.
 * Add TIGER.
 * Add HAVAL.
 * Add modifier for number of hash rounds, where applicable.
-* Add block ciphers.
 * Add stream ciphers.
-* Add block cipher modes.
 * Add compression functionality.
 * Add PRNGs.
 * Add arc4random.
