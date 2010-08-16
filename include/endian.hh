@@ -5,7 +5,20 @@
 #include <stddef.h>
 #include <stdint.h>
 
-class BigEndian
+class Endian
+{
+	public:
+		inline static void InplaceSwap(uint8_t *dest, size_t len, size_t sz)
+		{
+			uint8_t *p = dest;
+			size_t i, j;
+			for (i = 0; i < len; i += sz)
+				for (j = 0; j < sz/2; j++)
+					std::swap(p[i+j], p[i+(sz-j-1)]);
+		}
+};
+
+class BigEndian : public Endian
 {
 	public:
 		template<class T>
@@ -24,11 +37,7 @@ class BigEndian
 		{
 			memcpy(dest, src, len);
 #if BYTE_ORDER == LITTLE_ENDIAN
-			uint8_t *p = dest;
-			size_t i, j;
-			for (i = 0; i < len; i += sz)
-				for (j = 0; j < sz/2; j++)
-					std::swap(p[i+j], p[i+(sz-j-1)]);
+			InplaceSwap(dest, len, sz);
 #endif
 		}
 		template<class T>
@@ -37,18 +46,14 @@ class BigEndian
 		{
 			memcpy(dest, src, len);
 #if BYTE_ORDER == LITTLE_ENDIAN
-			uint8_t *p = reinterpret_cast<uint8_t *>(dest);
-			size_t i, j;
-			for (i = 0; i < len; i += sz)
-				for (j = 0; j < sz/2; j++)
-					std::swap(p[i+j], p[i+(sz-j-1)]);
+			InplaceSwap(reinterpret_cast<uint8_t *>(dest), len, sz);
 #endif
 		}
 	protected:
 	private:
 };
 
-class LittleEndian
+class LittleEndian : public Endian
 {
 	public:
 		template<class T>
@@ -67,11 +72,7 @@ class LittleEndian
 		{
 			memcpy(dest, src, len);
 #if BYTE_ORDER == BIG_ENDIAN
-			uint8_t *p = dest;
-			size_t i, j;
-			for (i = 0; i < len; i += sz)
-				for (j = 0; j < sz/2; j++)
-					std::swap(p[i+j], p[i+(sz-j-1)]);
+			InplaceSwap(dest, len, sz);
 #endif
 		}
 		template<class T>
@@ -80,11 +81,7 @@ class LittleEndian
 		{
 			memcpy(dest, src, len);
 #if BYTE_ORDER == BIG_ENDIAN
-			uint8_t *p = reinterpret_cast<uint8_t *>(dest);
-			size_t i, j;
-			for (i = 0; i < len; i += sz) 
-				for (j = 0; j < sz/2; j++)
-					std::swap(p[i+j], p[i+(sz-j-1)]);
+			InplaceSwap(reinterpret_cast<uint8_t *>(dest), len, sz);
 #endif
 		}
 	protected:
