@@ -1,9 +1,11 @@
 testsuite
 test/test-hash
 test/test-block
+test/test-mode
 *.o
 *.so*
 plugins/*
+impl/hash/md2/md2
 impl/hash/md4/md4
 impl/hash/md5/md5
 impl/hash/ripe160/ripe160
@@ -11,3 +13,8 @@ impl/hash/sha1/sha1
 impl/hash/sha256/sha256
 impl/hash/sha512/sha512
 impl/block/cast5/cast5
+impl/block/blowfish/blowfish
+impl/block/rijndael/rijndael
+impl/block/aes/aes
+impl/mode/cfb
+impl/mode/ofb
