@@ -49,6 +49,15 @@ class BigEndian : public Endian
 			InplaceSwap(reinterpret_cast<uint8_t *>(dest), len, sz);
 #endif
 		}
+		inline static void Copy(uint8_t *dest, const uint8_t *src, size_t len,
+				const size_t sz)
+		{
+			memcpy(dest, src, len);
+		}
+		inline static void Copy(uint8_t *dest, const uint8_t *src, size_t len)
+		{
+			memcpy(dest, src, len);
+		}
 	protected:
 	private:
 };
@@ -83,6 +92,15 @@ class LittleEndian : public Endian
 #if BYTE_ORDER == BIG_ENDIAN
 			InplaceSwap(reinterpret_cast<uint8_t *>(dest), len, sz);
 #endif
+		}
+		inline static void Copy(uint8_t *dest, const uint8_t *src, size_t len,
+				const size_t sz)
+		{
+			memcpy(dest, src, len);
+		}
+		inline static void Copy(uint8_t *dest, const uint8_t *src, size_t len)
+		{
+			memcpy(dest, src, len);
 		}
 	protected:
 	private:
