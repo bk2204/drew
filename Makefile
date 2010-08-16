@@ -102,7 +102,7 @@ test check: test-scripts test-libmd
 
 test-libmd: ${TEST_EXE}
 	env LD_LIBRARY_PATH=. ./${TEST_EXE} -x | \
-		grep -v 'bytes in' | diff -u test-results -
+		grep -v 'bytes in' | diff -u libmd/test-results -
 
 test-scripts:
 	for i in hash block mode; do \
