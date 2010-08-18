@@ -5,9 +5,9 @@ TODO
 * Call fini interface for hashes.
 * Add SHA384 and SHA512 to libmd.
 * Allow CAST5 key sizes < 128 bits.
-* Add Rijndael.
+* Wipe data in destructors.
+* Provide efficient sub-word access.
 * Add DES/3DES.
-* Add Twofish.
 * Add SAFER-SK.
 * Add Serpent.
 * Add RC2.
