@@ -23,11 +23,10 @@ class CAST5
 		{
 			return (x << n) | (x >> (32-n));
 		}
-#define item(x) (m_s[x][b[m_perm[x]]])
+#define item(x) (m_s[x][endian_t::GetByte(val, 3-x)])
 		inline uint32_t f1(uint32_t x, uint32_t km, uint8_t kr)
 		{
 			const uint32_t val = rol(km + x, kr);
-			const uint8_t *b = reinterpret_cast<const uint8_t *>(&val);
 		
 			return ((item(0) ^ item(1)) - item(2)) + item(3);
 		}
@@ -35,7 +34,6 @@ class CAST5
 		inline uint32_t f2(uint32_t x, uint32_t km, uint8_t kr)
 		{
 			const uint32_t val = rol(km ^ x, kr);
-			const uint8_t *b = reinterpret_cast<const uint8_t *>(&val);
 		
 			return ((item(0) - item(1)) + item(2)) ^ item(3);
 		}
@@ -43,7 +41,6 @@ class CAST5
 		inline uint32_t f3(uint32_t x, uint32_t km, uint8_t kr)
 		{
 			const uint32_t val = rol(km - x, kr);
-			const uint8_t *b = reinterpret_cast<const uint8_t *>(&val);
 		
 			return ((item(0) + item(1)) ^ item(2)) - item(3);
 		}
