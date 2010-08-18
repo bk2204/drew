@@ -226,10 +226,10 @@ void drew::Twofish::Decrypt(uint8_t *out, const uint8_t *in)
 	std::swap(data[0], data[2]);
 	std::swap(data[1], data[3]);
 
-	for (int i = 15; i >= 0; i--) {
-		std::swap(data[0], data[2]);
-		std::swap(data[1], data[3]);
-		finv(i, data[0], data[1], data[2], data[3]);
+	const uint32_t *k = m_k + 38;
+	for (int i = 15; i >= 0; i-=2, k-=2) {
+		finv(i, data[2], data[3], data[0], data[1]);
+		finv(i-1, data[0], data[1], data[2], data[3]);
 	}
 
 	for (size_t i = 0; i < 4; i++)
