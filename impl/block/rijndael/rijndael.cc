@@ -339,6 +339,8 @@ static int rd_test(void *)
 	PLUGIN_INTERFACE()
 }
 
+typedef drew::Rijndael::endian_t E;
+
 drew::Rijndael::Rijndael(size_t blocksz)
 {
 	m_nb = (blocksz / 4);
@@ -484,9 +486,11 @@ void drew::Rijndael::Substitution(uint64_t *state, const uint8_t *box)
 uint64_t drew::Rijndael::ApplyS(uint64_t r, const uint8_t *box)
 {
 	uint64_t res = 0;
+	const size_t sz = m_bc / 8;
 
-	for (size_t i = 0; i < m_bc; i += 8) {
-		res |= uint64_t(box[(r >> i) & 0xff] & 0xff) << i;
+	for (int i = (sz-1); i >= 0; i--) {
+		res |= box[E::GetByte(r, i)];
+		res <<= 8;
 	}
 
 	return res;
@@ -495,18 +499,23 @@ uint64_t drew::Rijndael::ApplyS(uint64_t r, const uint8_t *box)
 void drew::Rijndael::MixColumn(uint64_t *state)
 {
 	uint64_t r0 = 0, r1 = 0, r2 = 0, r3 = 0;
+	const size_t sz = m_bc / 8;
 
-	for (size_t i = 0; i < m_bc; i += 8)
-	{
-		uint8_t a0 = ((state[0] >> i) & 0xff);
-		uint8_t a1 = ((state[1] >> i) & 0xff);
-		uint8_t a2 = ((state[2] >> i) & 0xff);
-		uint8_t a3 = ((state[3] >> i) & 0xff);
+	for (int i = (sz-1); i >= 0; i--) {
+		uint8_t a0 = E::GetByte(state[0], i);
+		uint8_t a1 = E::GetByte(state[1], i);
+		uint8_t a2 = E::GetByte(state[2], i);
+		uint8_t a3 = E::GetByte(state[3], i);
 
-		r0 |= uint64_t((mul0x2(a0) ^ mul0x3(a1) ^ a2 ^ a3) & 0xff) << i;
-		r1 |= uint64_t((mul0x2(a1) ^ mul0x3(a2) ^ a3 ^ a0) & 0xff) << i;
-		r2 |= uint64_t((mul0x2(a2) ^ mul0x3(a3) ^ a0 ^ a1) & 0xff) << i;
-		r3 |= uint64_t((mul0x2(a3) ^ mul0x3(a0) ^ a1 ^ a2) & 0xff) << i;
+		r0 |= uint64_t(uint8_t(mul0x2(a0) ^ mul0x3(a1) ^ a2 ^ a3));
+		r1 |= uint64_t(uint8_t(mul0x2(a1) ^ mul0x3(a2) ^ a3 ^ a0));
+		r2 |= uint64_t(uint8_t(mul0x2(a2) ^ mul0x3(a3) ^ a0 ^ a1));
+		r3 |= uint64_t(uint8_t(mul0x2(a3) ^ mul0x3(a0) ^ a1 ^ a2));
+
+		r0 <<= 8;
+		r1 <<= 8;
+		r2 <<= 8;
+		r3 <<= 8;
 	}
 
 	state[0] = r0;
@@ -521,20 +530,20 @@ void drew::Rijndael::InvMixColumn(uint64_t *state)
 
 	for (size_t i = 0; i < m_bc; i += 8)
 	{
-		uint8_t a0 = ((state[0] >> i) & 0xff);
-		uint8_t a1 = ((state[1] >> i) & 0xff);
-		uint8_t a2 = ((state[2] >> i) & 0xff);
-		uint8_t a3 = ((state[3] >> i) & 0xff);
+		uint8_t a0 = state[0] >> i;
+		uint8_t a1 = state[1] >> i;
+		uint8_t a2 = state[2] >> i;
+		uint8_t a3 = state[3] >> i;
 
-		a0 = (a0 != 0) ? (logtable[a0 & 0xff] & 0xff) : -1;
-		a1 = (a1 != 0) ? (logtable[a1 & 0xff] & 0xff) : -1;
-		a2 = (a2 != 0) ? (logtable[a2 & 0xff] & 0xff) : -1;
-		a3 = (a3 != 0) ? (logtable[a3 & 0xff] & 0xff) : -1;
+		a0 = (a0 != 0) ? logtable[a0] : -1;
+		a1 = (a1 != 0) ? logtable[a1] : -1;
+		a2 = (a2 != 0) ? logtable[a2] : -1;
+		a3 = (a3 != 0) ? logtable[a3] : -1;
 
-		r0 |= uint64_t((mul0xe(a0) ^ mul0xb(a1) ^ mul0xd(a2) ^ mul0x9(a3)) & 0xff) << i;
-		r1 |= uint64_t((mul0xe(a1) ^ mul0xb(a2) ^ mul0xd(a3) ^ mul0x9(a0)) & 0xff) << i;
-		r2 |= uint64_t((mul0xe(a2) ^ mul0xb(a3) ^ mul0xd(a0) ^ mul0x9(a1)) & 0xff) << i;
-		r3 |= uint64_t((mul0xe(a3) ^ mul0xb(a0) ^ mul0xd(a1) ^ mul0x9(a2)) & 0xff) << i;
+		r0 |= uint64_t((mul0xe(a0) ^ mul0xb(a1) ^ mul0xd(a2) ^ mul0x9(a3))) << i;
+		r1 |= uint64_t((mul0xe(a1) ^ mul0xb(a2) ^ mul0xd(a3) ^ mul0x9(a0))) << i;
+		r2 |= uint64_t((mul0xe(a2) ^ mul0xb(a3) ^ mul0xd(a0) ^ mul0x9(a1))) << i;
+		r3 |= uint64_t((mul0xe(a3) ^ mul0xb(a0) ^ mul0xd(a1) ^ mul0x9(a2))) << i;
 	}
 
 	state[0] = r0;
