@@ -27,7 +27,8 @@ class Twofish
 				uint32_t &);
 		inline void finv(const uint32_t *, uint32_t, uint32_t, uint32_t &,
 				uint32_t &);
-		inline uint32_t g(uint32_t);
+		inline uint32_t g0(uint32_t);
+		inline uint32_t g1(uint32_t);
 	private:
 		static const uint8_t q0[256], q1[256];
 		static const uint32_t mds[4][256];

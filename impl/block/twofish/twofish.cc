@@ -157,18 +157,26 @@ void drew::Twofish::SetKey(const uint8_t *key, size_t sz)
 	}
 }
 
-uint32_t drew::Twofish::g(uint32_t x)
+uint32_t drew::Twofish::g0(uint32_t x)
 {
-	return m_s[0][x & 0xff] ^ m_s[1][(x >> 8) & 0xff] ^
-		m_s[2][(x >> 16) & 0xff] ^ m_s[3][(x >> 24)];
+	typedef endian_t E;
+	return m_s[0][E::GetByte(x, 0)] ^ m_s[1][E::GetByte(x, 1)] ^
+		m_s[2][E::GetByte(x, 2)] ^ m_s[3][E::GetByte(x, 3)];
+}
+
+uint32_t drew::Twofish::g1(uint32_t x)
+{
+	typedef endian_t E;
+	return m_s[0][E::GetByte(x, 3)] ^ m_s[1][E::GetByte(x, 0)] ^
+		m_s[2][E::GetByte(x, 1)] ^ m_s[3][E::GetByte(x, 2)];
 }
 
 void drew::Twofish::f(const uint32_t *k, uint32_t a, uint32_t b, uint32_t &c,
 		uint32_t &d)
 {
 	uint32_t x, y;
-	x = g(a);
-	y = g(rol(b, 8));
+	x = g0(a);
+	y = g1(b);
 	x += y;
 	y += x;
 	d = rol(d, 1);
@@ -181,8 +189,8 @@ void drew::Twofish::finv(const uint32_t *k, uint32_t a, uint32_t b, uint32_t &c,
 		uint32_t &d)
 {
 	uint32_t x, y;
-	x = g(a);
-	y = g(rol(b, 8));
+	x = g0(a);
+	y = g1(b);
 	x += y;
 	y += x;
 	d ^= y + k[1];
