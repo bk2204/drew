@@ -101,11 +101,12 @@ uint32_t drew::Twofish::ReedSolomon(uint32_t hi, uint32_t lo)
 	return hi;
 }
 
-// FIXME: use endian_t.
-#define Q(a, b, c, d, t) (a[t & 0xff] ^ (b[(t >> 8)&0xff] << 8) ^ \
-	(c[(t >> 16) & 0xff] << 16) ^ (d[t >> 24] << 24))
+#define Q(a, b, c, d, t) (a[E::GetByte(t, 0)] ^ (b[E::GetByte(t, 1)] << 8) ^ \
+	(c[E::GetByte(t, 2)] << 16) ^ (d[E::GetByte(t, 3)] << 24))
 uint32_t drew::Twofish::h0(uint32_t x, const uint32_t *k, size_t len)
 {
+	typedef endian_t E;
+
 	x = x | (x << 8) | (x << 16) | (x << 24);
 
 	// Fall-through is intentional.
@@ -123,10 +124,11 @@ uint32_t drew::Twofish::h0(uint32_t x, const uint32_t *k, size_t len)
 
 uint32_t drew::Twofish::h(uint32_t x, const uint32_t *k, size_t len)
 {
+	typedef endian_t E;
+
 	x = h0(x, k, len);
-	// FIXME: use endian_t.
-	return mds[0][x & 0xff] ^ mds[1][(x >> 8) & 0xff] ^
-		mds[2][(x >> 16) & 0xff] ^ mds[3][(x >> 24)];
+	return mds[0][E::GetByte(x, 0)] ^ mds[1][E::GetByte(x, 1)] ^
+		mds[2][E::GetByte(x, 2)] ^ mds[3][E::GetByte(x, 3)];
 }
 
 void drew::Twofish::SetKey(const uint8_t *key, size_t sz)
@@ -134,7 +136,9 @@ void drew::Twofish::SetKey(const uint8_t *key, size_t sz)
 	uint32_t m[32];
 	size_t len = sz / 8;
 
-	endian_t::Copy(m, key, sz);
+	typedef endian_t E;
+
+	E::Copy(m, key, sz);
 
 	for (size_t i = 0; i < 40; i += 2) {
 		uint32_t a = h(i, m, len);
@@ -149,11 +153,10 @@ void drew::Twofish::SetKey(const uint8_t *key, size_t sz)
 		svec[2*(len-i-1)] = ReedSolomon(m[(2*i)+1], m[2*i]);
 	for (size_t i = 0; i < 256; i++) {
 		uint32_t t = h0(i, svec, len);
-		// FIXME: use endian_t.
-		m_s[0][i] = mds[0][t & 0xff];
-		m_s[1][i] = mds[1][(t >> 8) & 0xff];
-		m_s[2][i] = mds[2][(t >> 16) & 0xff];
-		m_s[3][i] = mds[3][(t >> 24)];
+		m_s[0][i] = mds[0][E::GetByte(t, 0)];
+		m_s[1][i] = mds[1][E::GetByte(t, 1)];
+		m_s[2][i] = mds[2][E::GetByte(t, 2)];
+		m_s[3][i] = mds[3][E::GetByte(t, 3)];
 	}
 }
 
