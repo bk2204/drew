@@ -177,7 +177,7 @@ void drew::Twofish::f(const uint32_t *k, uint32_t a, uint32_t b, uint32_t &c,
 	c = ror(c, 1);
 }
 
-void drew::Twofish::finv(size_t i, uint32_t a, uint32_t b, uint32_t &c,
+void drew::Twofish::finv(const uint32_t *k, uint32_t a, uint32_t b, uint32_t &c,
 		uint32_t &d)
 {
 	uint32_t x, y;
@@ -185,10 +185,10 @@ void drew::Twofish::finv(size_t i, uint32_t a, uint32_t b, uint32_t &c,
 	y = g(rol(b, 8));
 	x += y;
 	y += x;
-	d ^= y + m_k[i*2+9];
+	d ^= y + k[1];
 	d = ror(d, 1); 
 	c = rol(c, 1);
-	c ^= x + m_k[2*i+8];
+	c ^= x + k[0];
 }
 
 void drew::Twofish::Encrypt(uint8_t *out, const uint8_t *in)
@@ -227,9 +227,9 @@ void drew::Twofish::Decrypt(uint8_t *out, const uint8_t *in)
 	std::swap(data[1], data[3]);
 
 	const uint32_t *k = m_k + 38;
-	for (int i = 15; i >= 0; i-=2, k-=2) {
-		finv(i, data[2], data[3], data[0], data[1]);
-		finv(i-1, data[0], data[1], data[2], data[3]);
+	for (int i = 15; i >= 0; i-=2, k-=4) {
+		finv(k, data[2], data[3], data[0], data[1]);
+		finv(k-2, data[0], data[1], data[2], data[3]);
 	}
 
 	for (size_t i = 0; i < 4; i++)
