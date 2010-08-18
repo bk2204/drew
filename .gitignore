@@ -15,6 +15,7 @@ impl/hash/sha512/sha512
 impl/block/cast5/cast5
 impl/block/blowfish/blowfish
 impl/block/rijndael/rijndael
+impl/block/twofish/twofish
 impl/block/aes/aes
 impl/mode/cfb
 impl/mode/ofb
