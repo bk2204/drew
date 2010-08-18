@@ -108,7 +108,6 @@ extern "C" {
 
 drew::CAST5::CAST5()
 {
-	SetUpEndianness();
 }
 
 void drew::CAST5::SetKey(const uint8_t *key, size_t sz)
@@ -116,44 +115,26 @@ void drew::CAST5::SetKey(const uint8_t *key, size_t sz)
 	ComputeSubkeys(key);
 }
 
-/* This function is needed because CAST5 repeatedly switches back and forth
- * between 32-bit and 8-bit representations of the same number.  Using an
- * endian_t to transfer this back and forth will involve lots of copying, which
- * is very bad for performance.  Therefore, we instead set up a table which
- * converts the indices for 8-bit operations into the proper ones.
- */
-void drew::CAST5::SetUpEndianness(void)
+#define sx(a, b) m_s[a][endian_t::GetArrayByte(x, (b ^ 3))]
+#define sz(a, b) m_s[a][endian_t::GetArrayByte(z, (b ^ 3))]
+
+void drew::CAST5::ComputeZSet(uint32_t *z, const uint32_t *x)
 {
-	uint32_t perm[] = {
-		0x00010203, 0x04050607, 0x08090a0b, 0x0c0d0e0f
-	};
-	memcpy(m_perm, perm, sizeof(m_perm));
-}
-
-#define sx(a, b) m_s[a][xb[m_perm[b]]]
-#define sz(a, b) m_s[a][zb[m_perm[b]]]
-
-void drew::CAST5::ComputeZSet(uint32_t *z, const uint32_t *x, const uint8_t *xb)
-{
-	const uint8_t *zb = reinterpret_cast<uint8_t *>(z);
-
 	z[0] = x[0] ^ sx(4, 13) ^ sx(5, 15) ^ sx(6, 12) ^ sx(7, 14) ^ sx(6,  8);
 	z[1] = x[2] ^ sz(4,  0) ^ sz(5,  2) ^ sz(6,  1) ^ sz(7,  3) ^ sx(7, 10);
 	z[2] = x[3] ^ sz(4,  7) ^ sz(5,  6) ^ sz(6,  5) ^ sz(7,  4) ^ sx(4,  9);
 	z[3] = x[1] ^ sz(4, 10) ^ sz(5,  9) ^ sz(6, 11) ^ sz(7,  8) ^ sx(5, 11);
 }
 
-void drew::CAST5::ComputeXSet(uint32_t *x, const uint32_t *z, const uint8_t *zb)
+void drew::CAST5::ComputeXSet(uint32_t *x, const uint32_t *z)
 {
-	const uint8_t *xb = reinterpret_cast<uint8_t *>(x);
-
 	x[0] = z[2] ^ sz(4,  5) ^ sz(5,  7) ^ sz(6,  4) ^ sz(7,  6) ^ sz(6,  0);
 	x[1] = z[0] ^ sx(4,  0) ^ sx(5,  2) ^ sx(6,  1) ^ sx(7,  3) ^ sz(7,  2);
 	x[2] = z[1] ^ sx(4,  7) ^ sx(5,  6) ^ sx(6,  5) ^ sx(7,  4) ^ sz(4,  1);
 	x[3] = z[3] ^ sx(4, 10) ^ sx(5,  9) ^ sx(6, 11) ^ sx(7,  8) ^ sz(5,  3);
 }
 
-void drew::CAST5::ComputeSubkeySetA(uint32_t *sk, const uint8_t *zb, uint8_t a,
+void drew::CAST5::ComputeSubkeySetA(uint32_t *sk, const uint32_t *z, uint8_t a,
 		uint8_t b, uint8_t c, uint8_t d)
 {
 	sk[0] = sz(4,  8) ^ sz(5,  9) ^ sz(6,  7) ^ sz(7,  6) ^ sz(4, a);
@@ -162,7 +143,7 @@ void drew::CAST5::ComputeSubkeySetA(uint32_t *sk, const uint8_t *zb, uint8_t a,
 	sk[3] = sz(4, 14) ^ sz(5, 15) ^ sz(6,  1) ^ sz(7,  0) ^ sz(7, d);
 }
 
-void drew::CAST5::ComputeSubkeySetB(uint32_t *sk, const uint8_t *zb, uint8_t a,
+void drew::CAST5::ComputeSubkeySetB(uint32_t *sk, const uint32_t *z, uint8_t a,
 		uint8_t b, uint8_t c, uint8_t d)
 {
 	sk[0] = sz(4,  3) ^ sz(5,  2) ^ sz(6, 12) ^ sz(7, 13) ^ sz(4, a);
@@ -181,14 +162,14 @@ void drew::CAST5::ComputeSubkeys(const uint8_t *k)
 
 	for (size_t i = 0; i < 32; i += 16) {
 		// Endianness issues are taken care of by m_perm.
-		ComputeZSet(z, x, reinterpret_cast<uint8_t *>(x));
-		ComputeSubkeySetA(sk+i   , reinterpret_cast<uint8_t *>(z), 2, 6, 9, 12);
-		ComputeXSet(x, z, reinterpret_cast<uint8_t *>(z));
-		ComputeSubkeySetB(sk+i+ 4, reinterpret_cast<uint8_t *>(x), 8, 13, 3, 7);
-		ComputeZSet(z, x, reinterpret_cast<uint8_t *>(x));
-		ComputeSubkeySetB(sk+i+ 8, reinterpret_cast<uint8_t *>(z), 9, 12, 2, 6);
-		ComputeXSet(x, z, reinterpret_cast<uint8_t *>(z));
-		ComputeSubkeySetA(sk+i+12, reinterpret_cast<uint8_t *>(x), 3, 7, 8, 13);
+		ComputeZSet(z, x);
+		ComputeSubkeySetA(sk+i   , z, 2, 6, 9, 12);
+		ComputeXSet(x, z);
+		ComputeSubkeySetB(sk+i+ 4, x, 8, 13, 3, 7);
+		ComputeZSet(z, x);
+		ComputeSubkeySetB(sk+i+ 8, z, 9, 12, 2, 6);
+		ComputeXSet(x, z);
+		ComputeSubkeySetA(sk+i+12, x, 3, 7, 8, 13);
 	}
 
 	for (size_t i = 0; i < 16; i++) {

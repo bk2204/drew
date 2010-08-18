@@ -46,14 +46,13 @@ class CAST5
 		}
 	private:
 		void SetUpEndianness();
-		void ComputeZSet(uint32_t *z, const uint32_t *x, const uint8_t *xb);
-		void ComputeXSet(uint32_t *x, const uint32_t *z, const uint8_t *zb);
-		void ComputeSubkeySetA(uint32_t *sk, const uint8_t *zb, uint8_t a,
+		void ComputeZSet(uint32_t *z, const uint32_t *x);
+		void ComputeXSet(uint32_t *x, const uint32_t *z);
+		void ComputeSubkeySetA(uint32_t *sk, const uint32_t *z, uint8_t a,
 				uint8_t b, uint8_t c, uint8_t d);
-		void ComputeSubkeySetB(uint32_t *sk, const uint8_t *zb, uint8_t a,
+		void ComputeSubkeySetB(uint32_t *sk, const uint32_t *z, uint8_t a,
 				uint8_t b, uint8_t c, uint8_t d);
 		void ComputeSubkeys(const uint8_t *k);
-		uint8_t m_perm[16];
 		static const uint32_t m_s[8][256];
 		uint32_t m_km[16];
 		uint8_t m_kr[16];
