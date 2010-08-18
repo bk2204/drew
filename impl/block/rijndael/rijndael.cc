@@ -43,8 +43,9 @@ extern "C" {
 
 static const int rd_keysz[] =
 {
-	16, 24, 32
+	16, 20, 24, 28, 32
 };
+
 
 static const int rd_aes128_keysz[] = {16};
 static const int rd_aes192_keysz[] = {24};
@@ -74,9 +75,29 @@ static int rd_main_info(int op, void *p, size_t blksz, const int *keysz,
 	}
 }
 
-static int rd_aes_info(int op, void *p)
+static int rd_info(int op, void *p)
 {
 	return rd_main_info(op, p, 16, rd_keysz, DIM(rd_keysz));
+}
+
+static int rd160_info(int op, void *p)
+{
+	return rd_main_info(op, p, 20, rd_keysz, DIM(rd_keysz));
+}
+
+static int rd192_info(int op, void *p)
+{
+	return rd_main_info(op, p, 24, rd_keysz, DIM(rd_keysz));
+}
+
+static int rd224_info(int op, void *p)
+{
+	return rd_main_info(op, p, 28, rd_keysz, DIM(rd_keysz));
+}
+
+static int rd256_info(int op, void *p)
+{
+	return rd_main_info(op, p, 32, rd_keysz, DIM(rd_keysz));
 }
 
 static int rd_aes128_info(int op, void *p)
@@ -103,6 +124,26 @@ static void rd_main_init(void **ctx, size_t blksz)
 static void rd_aes_init(void **ctx, drew_loader_t *, const drew_param_t *)
 {
 	return rd_main_init(ctx, 16);
+}
+
+static void rd160_init(void **ctx, drew_loader_t *, const drew_param_t *)
+{
+	return rd_main_init(ctx, 20);
+}
+
+static void rd192_init(void **ctx, drew_loader_t *, const drew_param_t *)
+{
+	return rd_main_init(ctx, 24);
+}
+
+static void rd224_init(void **ctx, drew_loader_t *, const drew_param_t *)
+{
+	return rd_main_init(ctx, 28);
+}
+
+static void rd256_init(void **ctx, drew_loader_t *, const drew_param_t *)
+{
+	return rd_main_init(ctx, 32);
 }
 
 static int rd_clone(void **newctx, void *oldctx, int flags)
@@ -220,12 +261,20 @@ static int rd_test(void *)
 	return 0;
 }
 
-	PLUGIN_FUNCTBL(rijndael, rd_aes_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
+	PLUGIN_FUNCTBL(rijndael, rd_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
+	PLUGIN_FUNCTBL(rijndael160, rd160_info, rd160_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
+	PLUGIN_FUNCTBL(rijndael192, rd192_info, rd192_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
+	PLUGIN_FUNCTBL(rijndael224, rd224_info, rd224_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
+	PLUGIN_FUNCTBL(rijndael256, rd256_info, rd256_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
 	PLUGIN_FUNCTBL(aes128, rd_aes128_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
 	PLUGIN_FUNCTBL(aes192, rd_aes192_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
 	PLUGIN_FUNCTBL(aes256, rd_aes256_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(rijndael, "Rijndael")
+	PLUGIN_DATA(rijndael160, "Rijndael-160")
+	PLUGIN_DATA(rijndael192, "Rijndael-192")
+	PLUGIN_DATA(rijndael224, "Rijndael-224")
+	PLUGIN_DATA(rijndael256, "Rijndael-256")
 	PLUGIN_DATA(aes128, "AES128")
 	PLUGIN_DATA(aes192, "AES192")
 	PLUGIN_DATA(aes256, "AES256")
