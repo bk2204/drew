@@ -45,7 +45,6 @@ all: ${PLUG_EXE} ${DREW_SONAME}
 .include "impl/hash/Makefile"
 .include "impl/block/Makefile"
 .include "impl/mode/Makefile"
-.include "impl/prng/Makefile"
 .include "libmd/Makefile"
 
 standard: ${DREW_SONAME} ${MD_SONAME} plugins libmd/testsuite test/test-hash
