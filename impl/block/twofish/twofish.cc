@@ -166,16 +166,14 @@ uint32_t drew::Twofish::g(uint32_t x)
 void drew::Twofish::f(size_t i, uint32_t a, uint32_t b, uint32_t &c,
 		uint32_t &d)
 {
+	uint32_t x, y;
+	x = g(a);
+	y = g(rol(b, 8));
+	x += y;
+	y += x;
 	d = rol(d, 1);
-	b = rol(b, 8);
-	a = g(a);
-	b = g(b);
-	a += b;
-	b += a;
-	a += m_k[i*2+8];
-	b += m_k[i*2+9];
-	c ^= a;
-	d ^= b;
+	c ^= x + m_k[i*2+8];
+	d ^= y + m_k[i*2+9];
 	c = ror(c, 1);
 }
 
@@ -183,9 +181,8 @@ void drew::Twofish::finv(size_t i, uint32_t a, uint32_t b, uint32_t &c,
 		uint32_t &d)
 {
 	uint32_t x, y;
-	b = rol(b, 8);
 	x = g(a);
-	y = g(b);
+	y = g(rol(b, 8));
 	x += y;
 	y += x;
 	d ^= y + m_k[i*2+9];
