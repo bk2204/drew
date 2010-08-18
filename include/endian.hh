@@ -26,6 +26,11 @@ class Endian
 		{
 			return GetByte(*p, n);
 		}
+		template<class T>
+		inline static uint8_t GetArrayByte(const T *p, size_t n)
+		{
+			return GetByte(p[n/sizeof(T)], (n & (sizeof(T)-1)));
+		}
 };
 
 class BigEndian : public Endian
