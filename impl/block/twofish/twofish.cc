@@ -166,6 +166,7 @@ uint32_t drew::Twofish::g(uint32_t x)
 void drew::Twofish::f(size_t i, uint32_t a, uint32_t b, uint32_t &c,
 		uint32_t &d)
 {
+	d = rol(d, 1);
 	b = rol(b, 8);
 	a = g(a);
 	b = g(b);
@@ -175,6 +176,7 @@ void drew::Twofish::f(size_t i, uint32_t a, uint32_t b, uint32_t &c,
 	b += m_k[i*2+9];
 	c ^= a;
 	d ^= b;
+	c = ror(c, 1);
 }
 
 void drew::Twofish::finv(size_t i, uint32_t a, uint32_t b, uint32_t &c,
@@ -202,9 +204,7 @@ void drew::Twofish::Encrypt(uint8_t *out, const uint8_t *in)
 		data[i] ^= m_k[i];
 
 	for (size_t i = 0; i < 16; i++) {
-		data[3] = rol(data[3], 1);
 		f(i, data[0], data[1], data[2], data[3]);
-		data[2] = ror(data[2], 1);
 		std::swap(data[0], data[2]);
 		std::swap(data[1], data[3]);
 	}
