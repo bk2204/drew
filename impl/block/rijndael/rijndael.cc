@@ -257,6 +257,63 @@ static int rd_test(void *)
 	res |= !test(key4, pt4, "23304b7a39f9f3ff067d8d8f9e24ecc7");
 	res <<= 1;
 
+	const char *key5 =
+		"2b7e151628aed2a6abf7158809cf4f3c762e7160f38b4da56a784d9045190cfe";
+	const char *blk = 
+		"3243f6a8885a308d313198a2e03707344a4093822299f31d0082efa98ec4e6c8";
+	res |= !test(key5, blk, "3925841d02dc09fbdc118597196a0b32", 16, 16);
+	res |= !test(key5, blk, "231d844639b31b412211cfe93712b880", 20, 16);
+	res |= !test(key5, blk, "f9fb29aefc384a250340d833b87ebc00", 24, 16);
+	res |= !test(key5, blk, "8faa8fe4dee9eb17caa4797502fc9d3f", 28, 16);
+	res |= !test(key5, blk, "1a6e6c2c662e7da6501ffb62bc9e93f3", 32, 16);
+	res <<= 1;
+
+	res |= !test(key5, blk, "16e73aec921314c29df905432bc8968ab64b1f51", 16, 20);
+	res |= !test(key5, blk, "0553eb691670dd8a5a5b5addf1aa7450f7a0e587", 20, 20);
+	res |= !test(key5, blk, "73cd6f3423036790463aa9e19cfcde894ea16623", 24, 20);
+	res |= !test(key5, blk, "601b5dcd1cf4ece954c740445340bf0afdc048df", 28, 20);
+	res |= !test(key5, blk, "579e930b36c1529aa3e86628bacfe146942882cf", 32, 20);
+	res <<= 1;
+
+	res |= !test(key5, blk, "b24d275489e82bb8f7375e0d5fcdb1f481757c538b65148a",
+			16, 24);
+	res |= !test(key5, blk, "738dae25620d3d3beff4a037a04290d73eb33521a63ea568",
+			20, 24);
+	res |= !test(key5, blk, "725ae43b5f3161de806a7c93e0bca93c967ec1ae1b71e1cf",
+			24, 24);
+	res |= !test(key5, blk, "bbfc14180afbf6a36382a061843f0b63e769acdc98769130",
+			28, 24);
+	res |= !test(key5, blk, "0ebacf199e3315c2e34b24fcc7c46ef4388aa475d66c194c",
+			32, 24);
+	res <<= 1;
+
+	res |= !test(key5, blk,
+			"b0a8f78f6b3c66213f792ffd2a61631f79331407a5e5c8d3793aceb1", 16, 28);
+	res |= !test(key5, blk,
+			"08b99944edfce33a2acb131183ab0168446b2d15e958480010f545e3", 20, 28);
+	res |= !test(key5, blk,
+			"be4c597d8f7efe22a2f7e5b1938e2564d452a5bfe72399c7af1101e2", 24, 28);
+	res |= !test(key5, blk,
+			"ef529598ecbce297811b49bbed2c33bbe1241d6e1a833dbe119569e8", 28, 28);
+	res |= !test(key5, blk,
+			"02fafc200176ed05deb8edb82a3555b0b10d47a388dfd59cab2f6c11", 32, 28);
+	res <<= 1;
+
+	res |= !test(key5, blk,
+			"7d15479076b69a46ffb3b3beae97ad8313f622f67fedb487de9f06b9ed9c8f19",
+			16, 32);
+	res |= !test(key5, blk,
+			"514f93fb296b5ad16aa7df8b577abcbd484decacccc7fb1f18dc567309ceeffd",
+			20, 32);
+	res |= !test(key5, blk,
+			"5d7101727bb25781bf6715b0e6955282b9610e23a43c2eb062699f0ebf5887b2",
+			24, 32);
+	res |= !test(key5, blk,
+			"d56c5a63627432579e1dd308b2c8f157b40a4bfb56fea1377b25d3ed3d6dbf80",
+			28, 32);
+	res |= !test(key5, blk,
+			"a49406115dfb30a40418aafa4869b7c6a886ff31602a7dd19c889dc64f7e4e7a",
+			32, 32);
 
 	return 0;
 }
