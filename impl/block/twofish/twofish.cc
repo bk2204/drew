@@ -208,8 +208,9 @@ void drew::Twofish::Encrypt(uint8_t *out, const uint8_t *in)
 	std::swap(data[0], data[2]);
 	std::swap(data[1], data[3]);
 
+	k = m_k + 4;
 	for (size_t i = 0; i < 4; i++)
-		data[i] ^= m_k[i + 4];
+		data[i] ^= k[i];
 
 	endian_t::Copy(out, data, sizeof(data));
 }
@@ -220,13 +221,14 @@ void drew::Twofish::Decrypt(uint8_t *out, const uint8_t *in)
 
 	endian_t::Copy(data, in, sizeof(data));
 
+	const uint32_t *k = m_k + 4;
 	for (size_t i = 0; i < 4; i++)
 		data[i] ^= m_k[i + 4];
 
 	std::swap(data[0], data[2]);
 	std::swap(data[1], data[3]);
 
-	const uint32_t *k = m_k + 38;
+	k = m_k + 38;
 	for (int i = 15; i >= 0; i-=2, k-=4) {
 		finv(k, data[2], data[3], data[0], data[1]);
 		finv(k-2, data[0], data[1], data[2], data[3]);
