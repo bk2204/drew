@@ -218,7 +218,7 @@ static int rd_test(void *)
 	res <<= 1;
 
 
-	return 0;
+	return res;
 }
 
 	PLUGIN_FUNCTBL(rijndael, rd_aes_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);

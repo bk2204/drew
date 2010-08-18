@@ -257,63 +257,6 @@ static int rd_test(void *)
 	res |= !test(key4, pt4, "23304b7a39f9f3ff067d8d8f9e24ecc7");
 	res <<= 1;
 
-	const char *key5 =
-		"2b7e151628aed2a6abf7158809cf4f3c762e7160f38b4da56a784d9045190cfe";
-	const char *blk = 
-		"3243f6a8885a308d313198a2e03707344a4093822299f31d0082efa98ec4e6c8";
-	res |= !test(key5, blk, "3925841d02dc09fbdc118597196a0b32", 16, 16);
-	res |= !test(key5, blk, "231d844639b31b412211cfe93712b880", 20, 16);
-	res |= !test(key5, blk, "f9fb29aefc384a250340d833b87ebc00", 24, 16);
-	res |= !test(key5, blk, "8faa8fe4dee9eb17caa4797502fc9d3f", 28, 16);
-	res |= !test(key5, blk, "1a6e6c2c662e7da6501ffb62bc9e93f3", 32, 16);
-	res <<= 1;
-
-	res |= !test(key5, blk, "16e73aec921314c29df905432bc8968ab64b1f51", 16, 20);
-	res |= !test(key5, blk, "0553eb691670dd8a5a5b5addf1aa7450f7a0e587", 20, 20);
-	res |= !test(key5, blk, "73cd6f3423036790463aa9e19cfcde894ea16623", 24, 20);
-	res |= !test(key5, blk, "601b5dcd1cf4ece954c740445340bf0afdc048df", 28, 20);
-	res |= !test(key5, blk, "579e930b36c1529aa3e86628bacfe146942882cf", 32, 20);
-	res <<= 1;
-
-	res |= !test(key5, blk, "b24d275489e82bb8f7375e0d5fcdb1f481757c538b65148a",
-			16, 24);
-	res |= !test(key5, blk, "738dae25620d3d3beff4a037a04290d73eb33521a63ea568",
-			20, 24);
-	res |= !test(key5, blk, "725ae43b5f3161de806a7c93e0bca93c967ec1ae1b71e1cf",
-			24, 24);
-	res |= !test(key5, blk, "bbfc14180afbf6a36382a061843f0b63e769acdc98769130",
-			28, 24);
-	res |= !test(key5, blk, "0ebacf199e3315c2e34b24fcc7c46ef4388aa475d66c194c",
-			32, 24);
-	res <<= 1;
-
-	res |= !test(key5, blk,
-			"b0a8f78f6b3c66213f792ffd2a61631f79331407a5e5c8d3793aceb1", 16, 28);
-	res |= !test(key5, blk,
-			"08b99944edfce33a2acb131183ab0168446b2d15e958480010f545e3", 20, 28);
-	res |= !test(key5, blk,
-			"be4c597d8f7efe22a2f7e5b1938e2564d452a5bfe72399c7af1101e2", 24, 28);
-	res |= !test(key5, blk,
-			"ef529598ecbce297811b49bbed2c33bbe1241d6e1a833dbe119569e8", 28, 28);
-	res |= !test(key5, blk,
-			"02fafc200176ed05deb8edb82a3555b0b10d47a388dfd59cab2f6c11", 32, 28);
-	res <<= 1;
-
-	res |= !test(key5, blk,
-			"7d15479076b69a46ffb3b3beae97ad8313f622f67fedb487de9f06b9ed9c8f19",
-			16, 32);
-	res |= !test(key5, blk,
-			"514f93fb296b5ad16aa7df8b577abcbd484decacccc7fb1f18dc567309ceeffd",
-			20, 32);
-	res |= !test(key5, blk,
-			"5d7101727bb25781bf6715b0e6955282b9610e23a43c2eb062699f0ebf5887b2",
-			24, 32);
-	res |= !test(key5, blk,
-			"d56c5a63627432579e1dd308b2c8f157b40a4bfb56fea1377b25d3ed3d6dbf80",
-			28, 32);
-	res |= !test(key5, blk,
-			"a49406115dfb30a40418aafa4869b7c6a886ff31602a7dd19c889dc64f7e4e7a",
-			32, 32);
 
 	return 0;
 }
@@ -338,8 +281,6 @@ static int rd_test(void *)
 	PLUGIN_DATA_END()
 	PLUGIN_INTERFACE()
 }
-
-typedef drew::Rijndael::endian_t E;
 
 drew::Rijndael::Rijndael(size_t blocksz)
 {
@@ -429,18 +370,16 @@ void drew::Rijndael::SetKey(const uint8_t *key, size_t len)
 
 void drew::Rijndael::Encrypt(uint8_t *out, const uint8_t *in)
 {
-	uint64_t state[4];
-	UnpackBlock(state, in);
-	EncryptBlock(state);
-	PackBlock(out, state);
+	UnpackBlock(in);
+	EncryptBlock();
+	PackBlock(out);
 }
 
 void drew::Rijndael::Decrypt(uint8_t *out, const uint8_t *in)
 {
-	uint64_t state[4];
-	UnpackBlock(state, in);
-	DecryptBlock(state);
-	PackBlock(out, state);
+	UnpackBlock(in);
+	DecryptBlock();
+	PackBlock(out);
 }
 
 const uint8_t drew::Rijndael::shifts0[5][4] = {
@@ -460,152 +399,145 @@ const uint8_t drew::Rijndael::shifts1[5][4] = {
 };
 
 
-void drew::Rijndael::KeyAddition(uint64_t *state, const uint64_t *rk)
+void drew::Rijndael::KeyAddition(uint64_t *rk)
 {
-	state[0] ^= rk[0];
-	state[1] ^= rk[1];
-	state[2] ^= rk[2];
-	state[3] ^= rk[3];
+	m_a0 ^= rk[0];
+	m_a1 ^= rk[1];
+	m_a2 ^= rk[2];
+	m_a3 ^= rk[3];
 }
 
-void drew::Rijndael::ShiftRow(uint64_t *state, const uint8_t *shifts)
+void drew::Rijndael::ShiftRow(const uint8_t *shifts)
 {
-	state[1] = shift(state[1], shifts[1]);
-	state[2] = shift(state[2], shifts[2]);
-	state[3] = shift(state[3], shifts[3]);
+	m_a1 = shift(m_a1, shifts[1]);
+	m_a2 = shift(m_a2, shifts[2]);
+	m_a3 = shift(m_a3, shifts[3]);
 }
 
-void drew::Rijndael::Substitution(uint64_t *state, const uint8_t *box)
+void drew::Rijndael::Substitution(const uint8_t *box)
 {
-	state[0] = ApplyS(state[0], box);
-	state[1] = ApplyS(state[1], box);
-	state[2] = ApplyS(state[2], box);
-	state[3] = ApplyS(state[3], box);
+	m_a0 = ApplyS(m_a0, box);
+	m_a1 = ApplyS(m_a1, box);
+	m_a2 = ApplyS(m_a2, box);
+	m_a3 = ApplyS(m_a3, box);
 }
 
 uint64_t drew::Rijndael::ApplyS(uint64_t r, const uint8_t *box)
 {
 	uint64_t res = 0;
-	const size_t sz = m_bc / 8;
 
-	for (int i = (sz-1); i >= 0; i--) {
-		res |= box[E::GetByte(r, i)];
-		res <<= 8;
+	for (size_t i = 0; i < m_bc; i += 8) {
+		res |= uint64_t(box[(r >> i) & 0xff] & 0xff) << i;
 	}
 
 	return res;
 }
 
-void drew::Rijndael::MixColumn(uint64_t *state)
-{
-	uint64_t r0 = 0, r1 = 0, r2 = 0, r3 = 0;
-	const size_t sz = m_bc / 8;
-
-	for (int i = (sz-1); i >= 0; i--) {
-		uint8_t a0 = E::GetByte(state[0], i);
-		uint8_t a1 = E::GetByte(state[1], i);
-		uint8_t a2 = E::GetByte(state[2], i);
-		uint8_t a3 = E::GetByte(state[3], i);
-
-		r0 |= uint64_t(uint8_t(mul0x2(a0) ^ mul0x3(a1) ^ a2 ^ a3));
-		r1 |= uint64_t(uint8_t(mul0x2(a1) ^ mul0x3(a2) ^ a3 ^ a0));
-		r2 |= uint64_t(uint8_t(mul0x2(a2) ^ mul0x3(a3) ^ a0 ^ a1));
-		r3 |= uint64_t(uint8_t(mul0x2(a3) ^ mul0x3(a0) ^ a1 ^ a2));
-
-		r0 <<= 8;
-		r1 <<= 8;
-		r2 <<= 8;
-		r3 <<= 8;
-	}
-
-	state[0] = r0;
-	state[1] = r1;
-	state[2] = r2;
-	state[3] = r3;
-}
-
-void drew::Rijndael::InvMixColumn(uint64_t *state)
+void drew::Rijndael::MixColumn(void)
 {
 	uint64_t r0 = 0, r1 = 0, r2 = 0, r3 = 0;
 
 	for (size_t i = 0; i < m_bc; i += 8)
 	{
-		uint8_t a0 = state[0] >> i;
-		uint8_t a1 = state[1] >> i;
-		uint8_t a2 = state[2] >> i;
-		uint8_t a3 = state[3] >> i;
+		uint8_t a0 = ((m_a0 >> i) & 0xff);
+		uint8_t a1 = ((m_a1 >> i) & 0xff);
+		uint8_t a2 = ((m_a2 >> i) & 0xff);
+		uint8_t a3 = ((m_a3 >> i) & 0xff);
 
-		a0 = (a0 != 0) ? logtable[a0] : -1;
-		a1 = (a1 != 0) ? logtable[a1] : -1;
-		a2 = (a2 != 0) ? logtable[a2] : -1;
-		a3 = (a3 != 0) ? logtable[a3] : -1;
-
-		r0 |= uint64_t((mul0xe(a0) ^ mul0xb(a1) ^ mul0xd(a2) ^ mul0x9(a3))) << i;
-		r1 |= uint64_t((mul0xe(a1) ^ mul0xb(a2) ^ mul0xd(a3) ^ mul0x9(a0))) << i;
-		r2 |= uint64_t((mul0xe(a2) ^ mul0xb(a3) ^ mul0xd(a0) ^ mul0x9(a1))) << i;
-		r3 |= uint64_t((mul0xe(a3) ^ mul0xb(a0) ^ mul0xd(a1) ^ mul0x9(a2))) << i;
+		r0 |= uint64_t((mul0x2(a0) ^ mul0x3(a1) ^ a2 ^ a3) & 0xff) << i;
+		r1 |= uint64_t((mul0x2(a1) ^ mul0x3(a2) ^ a3 ^ a0) & 0xff) << i;
+		r2 |= uint64_t((mul0x2(a2) ^ mul0x3(a3) ^ a0 ^ a1) & 0xff) << i;
+		r3 |= uint64_t((mul0x2(a3) ^ mul0x3(a0) ^ a1 ^ a2) & 0xff) << i;
 	}
 
-	state[0] = r0;
-	state[1] = r1;
-	state[2] = r2;
-	state[3] = r3;
+	m_a0 = r0;
+	m_a1 = r1;
+	m_a2 = r2;
+	m_a3 = r3;
 }
 
-void drew::Rijndael::EncryptBlock(uint64_t *state)
+void drew::Rijndael::InvMixColumn()
 {
-	KeyAddition(state, m_rk[0]);
+	uint64_t r0 = 0, r1 = 0, r2 = 0, r3 = 0;
+
+	for (size_t i = 0; i < m_bc; i += 8)
+	{
+		uint8_t a0 = ((m_a0 >> i) & 0xff);
+		uint8_t a1 = ((m_a1 >> i) & 0xff);
+		uint8_t a2 = ((m_a2 >> i) & 0xff);
+		uint8_t a3 = ((m_a3 >> i) & 0xff);
+
+		a0 = (a0 != 0) ? (logtable[a0 & 0xff] & 0xff) : -1;
+		a1 = (a1 != 0) ? (logtable[a1 & 0xff] & 0xff) : -1;
+		a2 = (a2 != 0) ? (logtable[a2 & 0xff] & 0xff) : -1;
+		a3 = (a3 != 0) ? (logtable[a3 & 0xff] & 0xff) : -1;
+
+		r0 |= uint64_t((mul0xe(a0) ^ mul0xb(a1) ^ mul0xd(a2) ^ mul0x9(a3)) & 0xff) << i;
+		r1 |= uint64_t((mul0xe(a1) ^ mul0xb(a2) ^ mul0xd(a3) ^ mul0x9(a0)) & 0xff) << i;
+		r2 |= uint64_t((mul0xe(a2) ^ mul0xb(a3) ^ mul0xd(a0) ^ mul0x9(a1)) & 0xff) << i;
+		r3 |= uint64_t((mul0xe(a3) ^ mul0xb(a0) ^ mul0xd(a1) ^ mul0x9(a2)) & 0xff) << i;
+	}
+
+	m_a0 = r0;
+	m_a1 = r1;
+	m_a2 = r2;
+	m_a3 = r3;
+}
+
+void drew::Rijndael::EncryptBlock()
+{
+	KeyAddition(m_rk[0]);
 
 	for (size_t i = 1; i < m_nr; i++) {
-		Substitution(state, S);
-		ShiftRow(state, m_sh0);
-		MixColumn(state);
-		KeyAddition(state, m_rk[i]);
+		Substitution(S);
+		ShiftRow(m_sh0);
+		MixColumn();
+		KeyAddition(m_rk[i]);
 	}
 
-	Substitution(state, S);
-	ShiftRow(state, m_sh0);
-	KeyAddition(state, m_rk[m_nr]);
+	Substitution(S);
+	ShiftRow(m_sh0);
+	KeyAddition(m_rk[m_nr]);
 }
 
-void drew::Rijndael::DecryptBlock(uint64_t *state)
+void drew::Rijndael::DecryptBlock()
 {
-	KeyAddition(state, m_rk[m_nr]);
-	Substitution(state, Si);
-	ShiftRow(state, m_sh1);
+	KeyAddition(m_rk[m_nr]);
+	Substitution(Si);
+	ShiftRow(m_sh1);
 
 	for (size_t i = m_nr-1; i > 0; i--) {
-		KeyAddition(state, m_rk[i]);
-		InvMixColumn(state);
-		Substitution(state, Si);
-		ShiftRow(state, m_sh1);
+		KeyAddition(m_rk[i]);
+		InvMixColumn();
+		Substitution(Si);
+		ShiftRow(m_sh1);
 	}
 
-	KeyAddition(state, m_rk[0]);
+	KeyAddition(m_rk[0]);
 }
 
-void drew::Rijndael::PackBlock(uint8_t *blk, const uint64_t *state)
+void drew::Rijndael::PackBlock(uint8_t *blk)
 {
 	for (int j = 0; j != m_bc; j += 8) {
-		*blk++ = state[0] >> j;
-		*blk++ = state[1] >> j;
-		*blk++ = state[2] >> j;
-		*blk++ = state[3] >> j;
+		*blk++ = m_a0 >> j;
+		*blk++ = m_a1 >> j;
+		*blk++ = m_a2 >> j;
+		*blk++ = m_a3 >> j;
 	}
 }
 
-void drew::Rijndael::UnpackBlock(uint64_t *state, const uint8_t *blk)
+void drew::Rijndael::UnpackBlock(const uint8_t *blk)
 {
-	state[0] = *blk++;
-	state[1] = *blk++;
-	state[2] = *blk++;
-	state[3] = *blk++;
+	m_a0 = *blk++;
+	m_a1 = *blk++;
+	m_a2 = *blk++;
+	m_a3 = *blk++;
 
 	for (int j = 8; j != m_bc; j += 8) {
-		state[0] = *blk++ << j;
-		state[1] = *blk++ << j;
-		state[2] = *blk++ << j;
-		state[3] = *blk++ << j;
+		m_a0 = *blk++ << j;
+		m_a1 = *blk++ << j;
+		m_a2 = *blk++ << j;
+		m_a3 = *blk++ << j;
 	}
 }
 

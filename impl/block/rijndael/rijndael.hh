@@ -21,16 +21,16 @@ class Rijndael
 		void Decrypt(uint8_t *out, const uint8_t *in);
 	protected:
 	private:
-		void KeyAddition(uint64_t *, const uint64_t *);
-		void ShiftRow(uint64_t *, const uint8_t *);
-		void Substitution(uint64_t *, const uint8_t *);
+		void KeyAddition(uint64_t *);
+		void ShiftRow(const uint8_t *);
+		void Substitution(const uint8_t *);
 		uint64_t ApplyS(uint64_t, const uint8_t *);
-		void MixColumn(uint64_t *);
-		void InvMixColumn(uint64_t *);
-		void EncryptBlock(uint64_t *);
-		void DecryptBlock(uint64_t *);
-		void PackBlock(uint8_t *, const uint64_t *);
-		void UnpackBlock(uint64_t *, const uint8_t *);
+		void MixColumn();
+		void InvMixColumn();
+		void EncryptBlock();
+		void DecryptBlock();
+		void PackBlock(uint8_t *);
+		void UnpackBlock(const uint8_t *);
 		inline uint8_t mul0x2(int b)
 		{
 			return b ? aLogtable[25 + (logtable[b] & 0xff)]: 0;
@@ -63,6 +63,7 @@ class Rijndael
 		size_t m_nr, m_nk, m_nb, m_bc;
 		uint64_t m_bcmask;
 		const uint8_t *m_sh0, *m_sh1;
+		uint64_t m_a0, m_a1, m_a2, m_a3;
 		uint64_t m_rk[MAXROUNDS+1][4];
 		static const uint8_t aLogtable[];
 		static const uint8_t logtable[];
