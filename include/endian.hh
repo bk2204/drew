@@ -16,6 +16,16 @@ class Endian
 				for (j = 0; j < sz/2; j++)
 					std::swap(p[i+j], p[i+(sz-j-1)]);
 		}
+		template<class T>
+		inline static uint8_t GetByte(T x, size_t n)
+		{
+			return x >> (n * 8);
+		}
+		template<class T>
+		inline static uint8_t GetByte(const T *p, size_t n)
+		{
+			return GetByte(*p, n);
+		}
 };
 
 class BigEndian : public Endian
