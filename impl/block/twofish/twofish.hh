@@ -23,7 +23,8 @@ class Twofish
 		inline uint32_t ReedSolomon(uint32_t, uint32_t);
 		inline uint32_t h0(uint32_t, const uint32_t *, size_t);
 		inline uint32_t h(uint32_t, const uint32_t *, size_t);
-		inline void f(size_t, uint32_t, uint32_t, uint32_t &, uint32_t &);
+		inline void f(const uint32_t *, uint32_t, uint32_t, uint32_t &,
+				uint32_t &);
 		inline void finv(size_t, uint32_t, uint32_t, uint32_t &, uint32_t &);
 		inline uint32_t g(uint32_t);
 	private:
