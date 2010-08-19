@@ -389,16 +389,16 @@ void drew::Rijndael::SetKey(const uint8_t *key, size_t len)
 
 	memset(m_rk, 0, sizeof(m_rk));
 
-	for (int j = 0; (j < m_nk) && (t < (m_nr+1)*(m_bc / 8)); j++, t++) {
+	for (int j = 0; (j < m_nk) && (t < (m_nr+1)*m_nb); j++, t++) {
 		for (size_t i = 0; i < 4; i++) {
-			m_rk[t / (m_bc / 8)][i] |=
+			m_rk[t / m_nb][i] |=
 				uint64_t(tk[i][j] & 0xff) << ((t * 8) % m_bc); 
 		}
 	}
 
 	int ri = 0;
 
-	while (t < (m_nr+1)*(m_bc/8)) {
+	while (t < (m_nr+1)*m_nb) {
 		for (size_t i = 0; i < 4; i++)
 			tk[i][0] ^= S[tk[(i+1)%4][m_nk-1] & 0xff];
 		tk[0][0] ^= rcon[ri++];
@@ -417,9 +417,9 @@ void drew::Rijndael::SetKey(const uint8_t *key, size_t len)
 				for (int i = 0; i < 4; i++)
 					tk[i][j] ^= tk[i][j-1];
 		}
-		for (int j = 0; (j < m_nk) && (t < (m_nr+1)*(m_bc/8)); j++, t++) {
+		for (int j = 0; (j < m_nk) && (t < (m_nr+1)*m_nb); j++, t++) {
 			for (int i = 0; i < 4; i++) {
-				m_rk[t / (m_bc/8)][i] |= 
+				m_rk[t / m_nb][i] |= 
 					uint64_t(tk[i][j] & 0xff) << ((t * 8) % (m_bc));
 			}
 		}
@@ -491,7 +491,7 @@ uint64_t drew::Rijndael::ApplyS(uint64_t r, const uint8_t *box)
 	uint64_t res = 0;
 
 	for (size_t i = 0; i < m_bc; i += 8) {
-		res |= uint64_t(box[(r >> i) & 0xff] & 0xff) << i;
+		res |= uint64_t(box[uint8_t(r >> i)]) << i;
 	}
 
 	return res;
@@ -503,15 +503,15 @@ void drew::Rijndael::MixColumn(uint64_t *state)
 
 	for (size_t i = 0; i < m_bc; i += 8)
 	{
-		uint8_t a0 = ((state[0] >> i) & 0xff);
-		uint8_t a1 = ((state[1] >> i) & 0xff);
-		uint8_t a2 = ((state[2] >> i) & 0xff);
-		uint8_t a3 = ((state[3] >> i) & 0xff);
+		uint8_t a0 = state[0] >> i;
+		uint8_t a1 = state[1] >> i;
+		uint8_t a2 = state[2] >> i;
+		uint8_t a3 = state[3] >> i;
 
-		r0 |= uint64_t((mul0x2(a0) ^ mul0x3(a1) ^ a2 ^ a3) & 0xff) << i;
-		r1 |= uint64_t((mul0x2(a1) ^ mul0x3(a2) ^ a3 ^ a0) & 0xff) << i;
-		r2 |= uint64_t((mul0x2(a2) ^ mul0x3(a3) ^ a0 ^ a1) & 0xff) << i;
-		r3 |= uint64_t((mul0x2(a3) ^ mul0x3(a0) ^ a1 ^ a2) & 0xff) << i;
+		r0 |= uint64_t(uint8_t(mul0x2(a0) ^ mul0x3(a1) ^ a2 ^ a3)) << i;
+		r1 |= uint64_t(uint8_t(mul0x2(a1) ^ mul0x3(a2) ^ a3 ^ a0)) << i;
+		r2 |= uint64_t(uint8_t(mul0x2(a2) ^ mul0x3(a3) ^ a0 ^ a1)) << i;
+		r3 |= uint64_t(uint8_t(mul0x2(a3) ^ mul0x3(a0) ^ a1 ^ a2)) << i;
 	}
 
 	state[0] = r0;
@@ -526,20 +526,20 @@ void drew::Rijndael::InvMixColumn(uint64_t *state)
 
 	for (size_t i = 0; i < m_bc; i += 8)
 	{
-		int a0 = ((state[0] >> i) & 0xff);
-		int a1 = ((state[1] >> i) & 0xff);
-		int a2 = ((state[2] >> i) & 0xff);
-		int a3 = ((state[3] >> i) & 0xff);
+		int a0 = uint8_t(state[0] >> i);
+		int a1 = uint8_t(state[1] >> i);
+		int a2 = uint8_t(state[2] >> i);
+		int a3 = uint8_t(state[3] >> i);
 
-		a0 = (a0 != 0) ? (logtable[a0 & 0xff] & 0xff) : -1;
-		a1 = (a1 != 0) ? (logtable[a1 & 0xff] & 0xff) : -1;
-		a2 = (a2 != 0) ? (logtable[a2 & 0xff] & 0xff) : -1;
-		a3 = (a3 != 0) ? (logtable[a3 & 0xff] & 0xff) : -1;
+		a0 = (a0 != 0) ? logtable[uint8_t(a0)] : -1;
+		a1 = (a1 != 0) ? logtable[uint8_t(a1)] : -1;
+		a2 = (a2 != 0) ? logtable[uint8_t(a2)] : -1;
+		a3 = (a3 != 0) ? logtable[uint8_t(a3)] : -1;
 
-		r0 |= uint64_t((mul0xe(a0) ^ mul0xb(a1) ^ mul0xd(a2) ^ mul0x9(a3)) & 0xff) << i;
-		r1 |= uint64_t((mul0xe(a1) ^ mul0xb(a2) ^ mul0xd(a3) ^ mul0x9(a0)) & 0xff) << i;
-		r2 |= uint64_t((mul0xe(a2) ^ mul0xb(a3) ^ mul0xd(a0) ^ mul0x9(a1)) & 0xff) << i;
-		r3 |= uint64_t((mul0xe(a3) ^ mul0xb(a0) ^ mul0xd(a1) ^ mul0x9(a2)) & 0xff) << i;
+		r0 |= uint64_t(uint8_t(mul0xe(a0) ^ mul0xb(a1) ^ mul0xd(a2) ^ mul0x9(a3))) << i;
+		r1 |= uint64_t(uint8_t(mul0xe(a1) ^ mul0xb(a2) ^ mul0xd(a3) ^ mul0x9(a0))) << i;
+		r2 |= uint64_t(uint8_t(mul0xe(a2) ^ mul0xb(a3) ^ mul0xd(a0) ^ mul0x9(a1))) << i;
+		r3 |= uint64_t(uint8_t(mul0xe(a3) ^ mul0xb(a0) ^ mul0xd(a1) ^ mul0x9(a2))) << i;
 	}
 
 	state[0] = r0;
