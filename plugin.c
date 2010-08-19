@@ -203,6 +203,9 @@ int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
 	if ((err = drew_loader__lookup_plugin(ldr, &handle, plugin, path)))
 		goto errout;
 
+	if (!plugin)
+		plugin = "<internal>";
+
 	err = -ENOENT;
 	if (!handle)
 		goto errout;
