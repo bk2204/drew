@@ -339,6 +339,8 @@ static int rd_test(void *)
 	PLUGIN_INTERFACE()
 }
 
+typedef drew::Rijndael::endian_t E;
+
 drew::Rijndael::Rijndael(size_t blocksz)
 {
 	m_nb = (blocksz / 4);
@@ -501,17 +503,21 @@ void drew::Rijndael::MixColumn(uint64_t *state)
 {
 	uint64_t r0 = 0, r1 = 0, r2 = 0, r3 = 0;
 
-	for (size_t i = 0; i < m_bc; i += 8)
-	{
-		uint8_t a0 = state[0] >> i;
-		uint8_t a1 = state[1] >> i;
-		uint8_t a2 = state[2] >> i;
-		uint8_t a3 = state[3] >> i;
+	for (int i = m_nb-1; i >= 0; i--) {
+		uint8_t a0 = E::GetByte(state[0], i);
+		uint8_t a1 = E::GetByte(state[1], i);
+		uint8_t a2 = E::GetByte(state[2], i);
+		uint8_t a3 = E::GetByte(state[3], i);
 
-		r0 |= uint64_t(uint8_t(mul0x2(a0) ^ mul0x3(a1) ^ a2 ^ a3)) << i;
-		r1 |= uint64_t(uint8_t(mul0x2(a1) ^ mul0x3(a2) ^ a3 ^ a0)) << i;
-		r2 |= uint64_t(uint8_t(mul0x2(a2) ^ mul0x3(a3) ^ a0 ^ a1)) << i;
-		r3 |= uint64_t(uint8_t(mul0x2(a3) ^ mul0x3(a0) ^ a1 ^ a2)) << i;
+		r0 <<= 8;
+		r1 <<= 8;
+		r2 <<= 8;
+		r3 <<= 8;
+
+		r0 |= mul0x2(a0) ^ mul0x3(a1) ^ a2 ^ a3;
+		r1 |= mul0x2(a1) ^ mul0x3(a2) ^ a3 ^ a0;
+		r2 |= mul0x2(a2) ^ mul0x3(a3) ^ a0 ^ a1;
+		r3 |= mul0x2(a3) ^ mul0x3(a0) ^ a1 ^ a2;
 	}
 
 	state[0] = r0;

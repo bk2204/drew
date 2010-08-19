@@ -31,13 +31,13 @@ class Rijndael
 		void DecryptBlock(uint64_t *);
 		void PackBlock(uint8_t *, const uint64_t *);
 		void UnpackBlock(uint64_t *, const uint8_t *);
-		inline uint8_t mul0x2(int b)
+		inline uint8_t mul0x2(uint8_t b)
 		{
-			return b ? aLogtable[25 + (logtable[b] & 0xff)]: 0;
+			return b ? aLogtable[25 + logtable[b]]: 0;
 		}
-		inline uint8_t mul0x3(int b)
+		inline uint8_t mul0x3(uint8_t b)
 		{
-			return b ? aLogtable[1 + (logtable[b] & 0xff)] : 0;
+			return b ? aLogtable[1 + logtable[b]] : 0;
 		}
 		inline uint8_t mul0x9(int b)
 		{
