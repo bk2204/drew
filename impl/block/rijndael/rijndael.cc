@@ -428,16 +428,22 @@ void drew::Rijndael::SetKey(const uint8_t *key, size_t len)
 
 void drew::Rijndael::Encrypt(uint8_t *out, const uint8_t *in)
 {
-	UnpackBlock(in);
-	EncryptBlock();
-	PackBlock(out);
+	uint64_t state[4];
+	memset(state, 0, sizeof(state));
+
+	UnpackBlock(state, in);
+	EncryptBlock(state);
+	PackBlock(out, state);
 }
 
 void drew::Rijndael::Decrypt(uint8_t *out, const uint8_t *in)
 {
-	UnpackBlock(in);
-	DecryptBlock();
-	PackBlock(out);
+	uint64_t state[4];
+	memset(state, 0, sizeof(state));
+
+	UnpackBlock(state, in);
+	DecryptBlock(state);
+	PackBlock(out, state);
 }
 
 const uint8_t drew::Rijndael::shifts0[5][4] = {
@@ -457,27 +463,27 @@ const uint8_t drew::Rijndael::shifts1[5][4] = {
 };
 
 
-void drew::Rijndael::KeyAddition(uint64_t *rk)
+void drew::Rijndael::KeyAddition(uint64_t *state, const uint64_t *rk)
 {
-	m_a0 ^= rk[0];
-	m_a1 ^= rk[1];
-	m_a2 ^= rk[2];
-	m_a3 ^= rk[3];
+	state[0] ^= rk[0];
+	state[1] ^= rk[1];
+	state[2] ^= rk[2];
+	state[3] ^= rk[3];
 }
 
-void drew::Rijndael::ShiftRow(const uint8_t *shifts)
+void drew::Rijndael::ShiftRow(uint64_t *state, const uint8_t *shifts)
 {
-	m_a1 = shift(m_a1, shifts[1]);
-	m_a2 = shift(m_a2, shifts[2]);
-	m_a3 = shift(m_a3, shifts[3]);
+	state[1] = shift(state[1], shifts[1]);
+	state[2] = shift(state[2], shifts[2]);
+	state[3] = shift(state[3], shifts[3]);
 }
 
-void drew::Rijndael::Substitution(const uint8_t *box)
+void drew::Rijndael::Substitution(uint64_t *state, const uint8_t *box)
 {
-	m_a0 = ApplyS(m_a0, box);
-	m_a1 = ApplyS(m_a1, box);
-	m_a2 = ApplyS(m_a2, box);
-	m_a3 = ApplyS(m_a3, box);
+	state[0] = ApplyS(state[0], box);
+	state[1] = ApplyS(state[1], box);
+	state[2] = ApplyS(state[2], box);
+	state[3] = ApplyS(state[3], box);
 }
 
 uint64_t drew::Rijndael::ApplyS(uint64_t r, const uint8_t *box)
@@ -491,16 +497,16 @@ uint64_t drew::Rijndael::ApplyS(uint64_t r, const uint8_t *box)
 	return res;
 }
 
-void drew::Rijndael::MixColumn(void)
+void drew::Rijndael::MixColumn(uint64_t *state)
 {
 	uint64_t r0 = 0, r1 = 0, r2 = 0, r3 = 0;
 
 	for (size_t i = 0; i < m_bc; i += 8)
 	{
-		uint8_t a0 = ((m_a0 >> i) & 0xff);
-		uint8_t a1 = ((m_a1 >> i) & 0xff);
-		uint8_t a2 = ((m_a2 >> i) & 0xff);
-		uint8_t a3 = ((m_a3 >> i) & 0xff);
+		uint8_t a0 = ((state[0] >> i) & 0xff);
+		uint8_t a1 = ((state[1] >> i) & 0xff);
+		uint8_t a2 = ((state[2] >> i) & 0xff);
+		uint8_t a3 = ((state[3] >> i) & 0xff);
 
 		r0 |= uint64_t((mul0x2(a0) ^ mul0x3(a1) ^ a2 ^ a3) & 0xff) << i;
 		r1 |= uint64_t((mul0x2(a1) ^ mul0x3(a2) ^ a3 ^ a0) & 0xff) << i;
@@ -508,22 +514,22 @@ void drew::Rijndael::MixColumn(void)
 		r3 |= uint64_t((mul0x2(a3) ^ mul0x3(a0) ^ a1 ^ a2) & 0xff) << i;
 	}
 
-	m_a0 = r0;
-	m_a1 = r1;
-	m_a2 = r2;
-	m_a3 = r3;
+	state[0] = r0;
+	state[1] = r1;
+	state[2] = r2;
+	state[3] = r3;
 }
 
-void drew::Rijndael::InvMixColumn()
+void drew::Rijndael::InvMixColumn(uint64_t *state)
 {
 	uint64_t r0 = 0, r1 = 0, r2 = 0, r3 = 0;
 
 	for (size_t i = 0; i < m_bc; i += 8)
 	{
-		int a0 = ((m_a0 >> i) & 0xff);
-		int a1 = ((m_a1 >> i) & 0xff);
-		int a2 = ((m_a2 >> i) & 0xff);
-		int a3 = ((m_a3 >> i) & 0xff);
+		int a0 = ((state[0] >> i) & 0xff);
+		int a1 = ((state[1] >> i) & 0xff);
+		int a2 = ((state[2] >> i) & 0xff);
+		int a3 = ((state[3] >> i) & 0xff);
 
 		a0 = (a0 != 0) ? (logtable[a0 & 0xff] & 0xff) : -1;
 		a1 = (a1 != 0) ? (logtable[a1 & 0xff] & 0xff) : -1;
@@ -536,67 +542,66 @@ void drew::Rijndael::InvMixColumn()
 		r3 |= uint64_t((mul0xe(a3) ^ mul0xb(a0) ^ mul0xd(a1) ^ mul0x9(a2)) & 0xff) << i;
 	}
 
-	m_a0 = r0;
-	m_a1 = r1;
-	m_a2 = r2;
-	m_a3 = r3;
+	state[0] = r0;
+	state[1] = r1;
+	state[2] = r2;
+	state[3] = r3;
 }
 
-void drew::Rijndael::EncryptBlock()
+void drew::Rijndael::EncryptBlock(uint64_t *state)
 {
-	KeyAddition(m_rk[0]);
+	KeyAddition(state, m_rk[0]);
 
 	for (size_t i = 1; i < m_nr; i++) {
-		Substitution(S);
-		ShiftRow(m_sh0);
-		MixColumn();
-		KeyAddition(m_rk[i]);
+		Substitution(state, S);
+		ShiftRow(state, m_sh0);
+		MixColumn(state);
+		KeyAddition(state, m_rk[i]);
 	}
 
-	Substitution(S);
-	ShiftRow(m_sh0);
-	KeyAddition(m_rk[m_nr]);
+	Substitution(state, S);
+	ShiftRow(state, m_sh0);
+	KeyAddition(state, m_rk[m_nr]);
 }
 
-void drew::Rijndael::DecryptBlock()
+void drew::Rijndael::DecryptBlock(uint64_t *state)
 {
-	KeyAddition(m_rk[m_nr]);
-	Substitution(Si);
-	ShiftRow(m_sh1);
+	KeyAddition(state, m_rk[m_nr]);
+	Substitution(state, Si);
+	ShiftRow(state, m_sh1);
 
 	for (size_t i = m_nr-1; i > 0; i--) {
-		KeyAddition(m_rk[i]);
-		InvMixColumn();
-		Substitution(Si);
-		ShiftRow(m_sh1);
+		KeyAddition(state, m_rk[i]);
+		InvMixColumn(state);
+		Substitution(state, Si);
+		ShiftRow(state, m_sh1);
 	}
 
-	KeyAddition(m_rk[0]);
+	KeyAddition(state, m_rk[0]);
 }
 
-void drew::Rijndael::PackBlock(uint8_t *blk)
+void drew::Rijndael::PackBlock(uint8_t *blk, const uint64_t *state)
 {
 	for (int j = 0; j != m_bc; j += 8) {
-		*blk++ = m_a0 >> j;
-		*blk++ = m_a1 >> j;
-		*blk++ = m_a2 >> j;
-		*blk++ = m_a3 >> j;
+		*blk++ = state[0] >> j;
+		*blk++ = state[1] >> j;
+		*blk++ = state[2] >> j;
+		*blk++ = state[3] >> j;
 	}
 }
 
-void drew::Rijndael::UnpackBlock(const uint8_t *blk)
+void drew::Rijndael::UnpackBlock(uint64_t *state, const uint8_t *blk)
 {
-	m_a0 = m_a1 = m_a2 = m_a3 = 0;
-	m_a0 = *blk++;
-	m_a1 = *blk++;
-	m_a2 = *blk++;
-	m_a3 = *blk++;
+	state[0] = *blk++;
+	state[1] = *blk++;
+	state[2] = *blk++;
+	state[3] = *blk++;
 
 	for (int j = 8; j != m_bc; j += 8) {
-		m_a0 |= uint64_t(*blk++) << j;
-		m_a1 |= uint64_t(*blk++) << j;
-		m_a2 |= uint64_t(*blk++) << j;
-		m_a3 |= uint64_t(*blk++) << j;
+		state[0] |= uint64_t(*blk++) << j;
+		state[1] |= uint64_t(*blk++) << j;
+		state[2] |= uint64_t(*blk++) << j;
+		state[3] |= uint64_t(*blk++) << j;
 	}
 }
 
