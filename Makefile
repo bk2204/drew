@@ -29,6 +29,9 @@ DREW_SYMLINK	:= ${DREW_SONAME:C/.so.*$/.so/}
 
 RM				?= rm
 
+.if defined(PROF)
+CFLAGS			+= -pg
+.endif
 CPPFLAGS		+= -Iinclude
 CFLAGS			+= -Wall -fPIC -O6 -march=native -mtune=native -g
 CFLAGS			+= ${CFLAGS-y} ${CPPFLAGS}
