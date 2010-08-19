@@ -203,23 +203,23 @@ static bool test(const char *key, const char *plain, const char *cipher,
 
 	uint8_t kb[32], pb[32], cb[32], buf[32];
 	str2bytes(kb, key, keybytes * 2);
-	str2bytes(pb, plain, blocksz);
-	str2bytes(cb, cipher, blocksz);
+	str2bytes(pb, plain, blocksz * 2);
+	str2bytes(cb, cipher, blocksz * 2);
 
 	if (!keybytes)
-		keybytes = 8;
+		keybytes = 16;
 
 	Rijndael ctx(blocksz);
 	ctx.SetKey(kb, keybytes);
 	ctx.Encrypt(buf, pb);
-	
-	if (memcmp(buf, cb, sizeof(buf)))
+
+	if (memcmp(buf, cb, blocksz))
 		return false;
 
 	ctx.SetKey(kb, keybytes);
 	ctx.Decrypt(buf, cb);
 
-	return !memcmp(buf, pb, sizeof(buf));
+	return !memcmp(buf, pb, blocksz);
 }
 
 static int rd_test(void *)
@@ -244,21 +244,78 @@ static int rd_test(void *)
 	res |= !test(key2, pt4, "7b0c785e27e8ad3f8223207104725dd4");
 	res <<= 1;
 	const char *key3 = "8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b";
-	res |= !test(key3, pt1, "bd334f1d6e45f25ff712a214571fa5cc");
-	res |= !test(key3, pt2, "974104846d0ad3ad7734ecb3ecee4eef");
-	res |= !test(key3, pt3, "ef7afd2270e2e60adce0ba2face6444e");
-	res |= !test(key3, pt4, "9a4b41ba738d6c72fb16691603c18e0e");
+	res |= !test(key3, pt1, "bd334f1d6e45f25ff712a214571fa5cc", 24);
+	res |= !test(key3, pt2, "974104846d0ad3ad7734ecb3ecee4eef", 24);
+	res |= !test(key3, pt3, "ef7afd2270e2e60adce0ba2face6444e", 24);
+	res |= !test(key3, pt4, "9a4b41ba738d6c72fb16691603c18e0e", 24);
 	res <<= 1;
 	const char *key4 =
 		"603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4";
-	res |= !test(key4, pt1, "f3eed1bdb5d2a03c064b5a7e3db181f8");
-	res |= !test(key4, pt2, "591ccb10d410ed26dc5ba74a31362870");
-	res |= !test(key4, pt3, "b6ed21b99ca6f4f9f153e7b1beafed1d");
-	res |= !test(key4, pt4, "23304b7a39f9f3ff067d8d8f9e24ecc7");
+	res |= !test(key4, pt1, "f3eed1bdb5d2a03c064b5a7e3db181f8", 32);
+	res |= !test(key4, pt2, "591ccb10d410ed26dc5ba74a31362870", 32);
+	res |= !test(key4, pt3, "b6ed21b99ca6f4f9f153e7b1beafed1d", 32);
+	res |= !test(key4, pt4, "23304b7a39f9f3ff067d8d8f9e24ecc7", 32);
 	res <<= 1;
 
+	const char *key5 =
+		"2b7e151628aed2a6abf7158809cf4f3c762e7160f38b4da56a784d9045190cfe";
+	const char *blk = 
+		"3243f6a8885a308d313198a2e03707344a4093822299f31d0082efa98ec4e6c8";
+	res |= !test(key5, blk, "3925841d02dc09fbdc118597196a0b32", 16, 16);
+	res |= !test(key5, blk, "231d844639b31b412211cfe93712b880", 20, 16);
+	res |= !test(key5, blk, "f9fb29aefc384a250340d833b87ebc00", 24, 16);
+	res |= !test(key5, blk, "8faa8fe4dee9eb17caa4797502fc9d3f", 28, 16);
+	res |= !test(key5, blk, "1a6e6c2c662e7da6501ffb62bc9e93f3", 32, 16);
+	res <<= 1;
 
-	return 0;
+	res |= !test(key5, blk, "16e73aec921314c29df905432bc8968ab64b1f51", 16, 20);
+	res |= !test(key5, blk, "0553eb691670dd8a5a5b5addf1aa7450f7a0e587", 20, 20);
+	res |= !test(key5, blk, "73cd6f3423036790463aa9e19cfcde894ea16623", 24, 20);
+	res |= !test(key5, blk, "601b5dcd1cf4ece954c740445340bf0afdc048df", 28, 20);
+	res |= !test(key5, blk, "579e930b36c1529aa3e86628bacfe146942882cf", 32, 20);
+	res <<= 1;
+
+	res |= !test(key5, blk, "b24d275489e82bb8f7375e0d5fcdb1f481757c538b65148a",
+			16, 24);
+	res |= !test(key5, blk, "738dae25620d3d3beff4a037a04290d73eb33521a63ea568",
+			20, 24);
+	res |= !test(key5, blk, "725ae43b5f3161de806a7c93e0bca93c967ec1ae1b71e1cf",
+			24, 24);
+	res |= !test(key5, blk, "bbfc14180afbf6a36382a061843f0b63e769acdc98769130",
+			28, 24);
+	res |= !test(key5, blk, "0ebacf199e3315c2e34b24fcc7c46ef4388aa475d66c194c",
+			32, 24);
+	res <<= 1;
+
+	res |= !test(key5, blk,
+			"b0a8f78f6b3c66213f792ffd2a61631f79331407a5e5c8d3793aceb1", 16, 28);
+	res |= !test(key5, blk,
+			"08b99944edfce33a2acb131183ab0168446b2d15e958480010f545e3", 20, 28);
+	res |= !test(key5, blk,
+			"be4c597d8f7efe22a2f7e5b1938e2564d452a5bfe72399c7af1101e2", 24, 28);
+	res |= !test(key5, blk,
+			"ef529598ecbce297811b49bbed2c33bbe1241d6e1a833dbe119569e8", 28, 28);
+	res |= !test(key5, blk,
+			"02fafc200176ed05deb8edb82a3555b0b10d47a388dfd59cab2f6c11", 32, 28);
+	res <<= 1;
+
+	res |= !test(key5, blk,
+			"7d15479076b69a46ffb3b3beae97ad8313f622f67fedb487de9f06b9ed9c8f19",
+			16, 32);
+	res |= !test(key5, blk,
+			"514f93fb296b5ad16aa7df8b577abcbd484decacccc7fb1f18dc567309ceeffd",
+			20, 32);
+	res |= !test(key5, blk,
+			"5d7101727bb25781bf6715b0e6955282b9610e23a43c2eb062699f0ebf5887b2",
+			24, 32);
+	res |= !test(key5, blk,
+			"d56c5a63627432579e1dd308b2c8f157b40a4bfb56fea1377b25d3ed3d6dbf80",
+			28, 32);
+	res |= !test(key5, blk,
+			"a49406115dfb30a40418aafa4869b7c6a886ff31602a7dd19c889dc64f7e4e7a",
+			32, 32);
+
+	return res;
 }
 
 	PLUGIN_FUNCTBL(rijndael, rd_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
