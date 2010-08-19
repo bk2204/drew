@@ -51,11 +51,12 @@ int main(int argc, char **argv)
 	int chunk = 0;
 	int nchunks = 0;
 	const char *algo = NULL;
+	const char *only = NULL;
 	drew_loader_t *ldr = NULL;
 
 	drew_loader_new(&ldr);
 
-	while ((opt = getopt(argc, argv, "stia:c:n:")) != -1) {
+	while ((opt = getopt(argc, argv, "stia:c:n:o:")) != -1) {
 		switch (opt) {
 			case 's':
 				mode = MODE_SPEED;
@@ -74,6 +75,9 @@ int main(int argc, char **argv)
 				break;
 			case 'n':
 				nchunks = atoi(optarg);
+				break;
+			case 'o':
+				only = optarg;
 				break;
 		}
 	}
@@ -114,6 +118,10 @@ int main(int argc, char **argv)
 
 		drew_loader_get_functbl(ldr, i, &functbl);
 		drew_loader_get_algo_name(ldr, i, &name);
+
+		if (only && strcmp(only, name))
+			continue;
+
 		printf("%-11s: ", name);
 
 		switch (mode) {
