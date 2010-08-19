@@ -45,12 +45,12 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	if (!buf)
 		return ENOMEM;
 
-	clock_gettime(CLOCK_REALTIME, &cstart);
+	clock_gettime(USED_CLOCK, &cstart);
 	functbl->init(&ctx, NULL, NULL);
 	for (i = 0; i < nchunks; i++)
 		functbl->update(ctx, buf, chunk);
 	functbl->final(ctx, buf);
-	clock_gettime(CLOCK_REALTIME, &cend);
+	clock_gettime(USED_CLOCK, &cend);
 
 	free(buf);
 

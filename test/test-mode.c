@@ -67,7 +67,7 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	if (!keysz)
 		return ENOMEM;
 
-	clock_gettime(CLOCK_REALTIME, &cstart);
+	clock_gettime(USED_CLOCK, &cstart);
 	ftbl->init(&bctx, NULL, NULL);
 	ftbl->setkey(bctx, key, keysz);
 	functbl->init(&mctx, ldr, NULL);
@@ -75,7 +75,7 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	functbl->setblock(mctx, algo, bctx);
 	for (i = 0; i < nchunks; i++)
 		functbl->encrypt(mctx, buf, buf, chunk);
-	clock_gettime(CLOCK_REALTIME, &cend);
+	clock_gettime(USED_CLOCK, &cend);
 
 	free(buf);
 	free(buf2);

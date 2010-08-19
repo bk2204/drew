@@ -56,12 +56,12 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	if (!keysz)
 		return ENOMEM;
 
-	clock_gettime(CLOCK_REALTIME, &cstart);
+	clock_gettime(USED_CLOCK, &cstart);
 	functbl->init(&ctx, NULL, NULL);
 	functbl->setkey(ctx, key, keysz);
 	for (i = 0; i < nbytes; i += chunk)
 		functbl->encrypt(ctx, buf2, buf);
-	clock_gettime(CLOCK_REALTIME, &cend);
+	clock_gettime(USED_CLOCK, &cend);
 
 	free(buf);
 
