@@ -387,6 +387,8 @@ void drew::Rijndael::SetKey(const uint8_t *key, size_t len)
 
 	int t = 0;
 
+	memset(m_rk, 0, sizeof(m_rk));
+
 	for (int j = 0; (j < m_nk) && (t < (m_nr+1)*(m_bc / 8)); j++, t++) {
 		for (size_t i = 0; i < 4; i++) {
 			m_rk[t / (m_bc / 8)][i] |=
@@ -422,7 +424,6 @@ void drew::Rijndael::SetKey(const uint8_t *key, size_t len)
 			}
 		}
 	}
-
 }
 
 void drew::Rijndael::Encrypt(uint8_t *out, const uint8_t *in)
@@ -519,10 +520,10 @@ void drew::Rijndael::InvMixColumn()
 
 	for (size_t i = 0; i < m_bc; i += 8)
 	{
-		uint8_t a0 = ((m_a0 >> i) & 0xff);
-		uint8_t a1 = ((m_a1 >> i) & 0xff);
-		uint8_t a2 = ((m_a2 >> i) & 0xff);
-		uint8_t a3 = ((m_a3 >> i) & 0xff);
+		int a0 = ((m_a0 >> i) & 0xff);
+		int a1 = ((m_a1 >> i) & 0xff);
+		int a2 = ((m_a2 >> i) & 0xff);
+		int a3 = ((m_a3 >> i) & 0xff);
 
 		a0 = (a0 != 0) ? (logtable[a0 & 0xff] & 0xff) : -1;
 		a1 = (a1 != 0) ? (logtable[a1 & 0xff] & 0xff) : -1;
@@ -585,16 +586,17 @@ void drew::Rijndael::PackBlock(uint8_t *blk)
 
 void drew::Rijndael::UnpackBlock(const uint8_t *blk)
 {
+	m_a0 = m_a1 = m_a2 = m_a3 = 0;
 	m_a0 = *blk++;
 	m_a1 = *blk++;
 	m_a2 = *blk++;
 	m_a3 = *blk++;
 
 	for (int j = 8; j != m_bc; j += 8) {
-		m_a0 = *blk++ << j;
-		m_a1 = *blk++ << j;
-		m_a2 = *blk++ << j;
-		m_a3 = *blk++ << j;
+		m_a0 |= uint64_t(*blk++) << j;
+		m_a1 |= uint64_t(*blk++) << j;
+		m_a2 |= uint64_t(*blk++) << j;
+		m_a3 |= uint64_t(*blk++) << j;
 	}
 }
 
