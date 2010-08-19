@@ -85,6 +85,8 @@ int main(int argc, char **argv)
 	if (nchunks <= 0)
 		nchunks = NCHUNKS;
 
+	drew_loader_load_plugin(ldr, NULL, NULL);
+
 	for (; optind < argc; optind++) {
 		int id;
 
