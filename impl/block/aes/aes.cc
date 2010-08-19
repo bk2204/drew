@@ -163,23 +163,23 @@ static bool test(const char *key, const char *plain, const char *cipher,
 
 	uint8_t kb[32], pb[32], cb[32], buf[32];
 	str2bytes(kb, key, keybytes * 2);
-	str2bytes(pb, plain, blocksz);
-	str2bytes(cb, cipher, blocksz);
+	str2bytes(pb, plain, blocksz * 2);
+	str2bytes(cb, cipher, blocksz * 2);
 
 	if (!keybytes)
-		keybytes = 8;
+		keybytes = 16;
 
 	AES ctx(blocksz);
 	ctx.SetKey(kb, keybytes);
 	ctx.Encrypt(buf, pb);
-	
-	if (memcmp(buf, cb, sizeof(buf)))
+
+	if (memcmp(buf, cb, blocksz))
 		return false;
 
 	ctx.SetKey(kb, keybytes);
 	ctx.Decrypt(buf, cb);
 
-	return !memcmp(buf, pb, sizeof(buf));
+	return !memcmp(buf, pb, blocksz);
 }
 
 static int rd_test(void *)
@@ -204,17 +204,17 @@ static int rd_test(void *)
 	res |= !test(key2, pt4, "7b0c785e27e8ad3f8223207104725dd4");
 	res <<= 1;
 	const char *key3 = "8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b";
-	res |= !test(key3, pt1, "bd334f1d6e45f25ff712a214571fa5cc");
-	res |= !test(key3, pt2, "974104846d0ad3ad7734ecb3ecee4eef");
-	res |= !test(key3, pt3, "ef7afd2270e2e60adce0ba2face6444e");
-	res |= !test(key3, pt4, "9a4b41ba738d6c72fb16691603c18e0e");
+	res |= !test(key3, pt1, "bd334f1d6e45f25ff712a214571fa5cc", 24);
+	res |= !test(key3, pt2, "974104846d0ad3ad7734ecb3ecee4eef", 24);
+	res |= !test(key3, pt3, "ef7afd2270e2e60adce0ba2face6444e", 24);
+	res |= !test(key3, pt4, "9a4b41ba738d6c72fb16691603c18e0e", 24);
 	res <<= 1;
 	const char *key4 =
 		"603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4";
-	res |= !test(key4, pt1, "f3eed1bdb5d2a03c064b5a7e3db181f8");
-	res |= !test(key4, pt2, "591ccb10d410ed26dc5ba74a31362870");
-	res |= !test(key4, pt3, "b6ed21b99ca6f4f9f153e7b1beafed1d");
-	res |= !test(key4, pt4, "23304b7a39f9f3ff067d8d8f9e24ecc7");
+	res |= !test(key4, pt1, "f3eed1bdb5d2a03c064b5a7e3db181f8", 32);
+	res |= !test(key4, pt2, "591ccb10d410ed26dc5ba74a31362870", 32);
+	res |= !test(key4, pt3, "b6ed21b99ca6f4f9f153e7b1beafed1d", 32);
+	res |= !test(key4, pt4, "23304b7a39f9f3ff067d8d8f9e24ecc7", 32);
 	res <<= 1;
 
 
