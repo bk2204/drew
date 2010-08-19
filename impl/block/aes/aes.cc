@@ -244,6 +244,12 @@ drew::AES::AES(size_t blocksz)
 
 void drew::AES::SetKey(const uint8_t *key, size_t len)
 {
+	SetKeyEncrypt(key, len);
+	SetKeyDecrypt();
+}
+
+void drew::AES::SetKeyEncrypt(const uint8_t *key, size_t len)
+{
    	int i = 0;
 	uint32_t temp;
 
@@ -326,15 +332,13 @@ void drew::AES::SetKey(const uint8_t *key, size_t len)
 			rk += 8;
         }
 	}
-
-	SetKeyDecrypt();
 }
 
 void drew::AES::SetKeyDecrypt(void)
 {
 	uint32_t *rkd = m_rkd;
 
-	memcpy(m_rkd, m_rk, sizeof(m_rk));
+	memcpy(m_rkd, m_rk, sizeof(m_rkd));
 
 	/* invert the order of the round keys: */
 	for (int i = 0, j = 4*m_nr; i < j; i += 4, j -= 4) {

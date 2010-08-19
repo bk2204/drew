@@ -19,6 +19,7 @@ class AES
 		void Decrypt(uint8_t *out, const uint8_t *in);
 	protected:
 	private:
+		void SetKeyEncrypt(const uint8_t *key, size_t sz);
 		void SetKeyDecrypt(void);
 		size_t m_nr, m_nk, m_nb;
 		// maxnb*(maxnr+1) = 8 * 9 = 72
