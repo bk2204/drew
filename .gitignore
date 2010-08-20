@@ -12,6 +12,7 @@ impl/hash/ripe160/ripe160
 impl/hash/sha1/sha1
 impl/hash/sha256/sha256
 impl/hash/sha512/sha512
+impl/hash/tiger/tiger
 impl/block/cast5/cast5
 impl/block/blowfish/blowfish
 impl/block/rijndael/rijndael
