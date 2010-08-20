@@ -492,9 +492,10 @@ uint64_t drew::Rijndael::ApplyS(uint64_t r, const uint8_t *box)
 {
 	uint64_t res = 0;
 
-	for (size_t i = 0; i < m_bc; i += 8) {
+	for (size_t i = 0; i < 64; i += 8) {
 		res |= uint64_t(box[uint8_t(r >> i)]) << i;
 	}
+	res &= m_bcmask;
 
 	return res;
 }
