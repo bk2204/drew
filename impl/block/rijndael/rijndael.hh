@@ -21,40 +21,22 @@ class Rijndael
 		void Decrypt(uint8_t *out, const uint8_t *in);
 	protected:
 	private:
-		void KeyAddition(uint64_t *, const uint64_t *);
-		void ShiftRow(uint64_t *, const uint8_t *);
-		void Substitution(uint64_t *, const uint8_t *);
-		uint64_t ApplyS(uint64_t, const uint8_t *);
-		void MixColumn(uint64_t *);
-		void InvMixColumn(uint64_t *);
-		void EncryptBlock(uint64_t *);
-		void DecryptBlock(uint64_t *);
-		void PackBlock(uint8_t *, const uint64_t *);
-		void UnpackBlock(uint64_t *, const uint8_t *);
-		inline uint8_t mul0x2(uint8_t b)
-		{
-			return b ? aLogtable[25 + logtable[b]]: 0;
-		}
-		inline uint8_t mul0x3(uint8_t b)
-		{
-			return b ? aLogtable[1 + logtable[b]] : 0;
-		}
-		inline uint8_t mul0x9(int b)
-		{
-			return b >= 0 ? aLogtable[199 + b] : 0;
-		}
-		inline uint8_t mul0xb(int b)
-		{
-			return b >= 0 ? aLogtable[104 + b] : 0;
-		}
-		inline uint8_t mul0xd(int b)
-		{
-			return b >= 0 ? aLogtable[238 + b] : 0;
-		}
-		inline uint8_t mul0xe(int b)
-		{
-			return b >= 0 ? aLogtable[223 + b] : 0;
-		}
+		inline void KeyAddition(uint64_t *, const uint64_t *);
+		inline void ShiftRow(uint64_t *, const uint8_t *);
+		inline void Substitution(uint64_t *, const uint8_t *);
+		inline uint64_t ApplyS(uint64_t, const uint8_t *);
+		inline void MixColumn(uint64_t *);
+		inline void InvMixColumn(uint64_t *);
+		inline void EncryptBlock(uint64_t *);
+		inline void DecryptBlock(uint64_t *);
+		inline void PackBlock(uint8_t *, const uint64_t *);
+		inline void UnpackBlock(uint64_t *, const uint8_t *);
+		static const uint8_t mult2[];
+		static const uint8_t mult3[];
+		static const uint8_t mult9[];
+		static const uint8_t multb[];
+		static const uint8_t multd[];
+		static const uint8_t multe[];
 		inline uint64_t shift(uint64_t x, unsigned n)
 		{
 			return ((x >> n) | (x << (m_bc - n))) & m_bcmask;
