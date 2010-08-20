@@ -73,6 +73,10 @@ class BigEndian : public Endian
 		{
 			memcpy(dest, src, len);
 		}
+		inline static int GetEndianness()
+		{
+			return 4321;
+		}
 	protected:
 	private:
 };
@@ -117,8 +121,18 @@ class LittleEndian : public Endian
 		{
 			memcpy(dest, src, len);
 		}
+		inline static int GetEndianness()
+		{
+			return 1234;
+		}
 	protected:
 	private:
 };
+
+#if BYTE_ORDER == BIG_ENDIAN
+typedef BigEndian NativeEndian;
+#else
+typedef LittleEndian NativeEndian;
+#endif
 
 #endif
