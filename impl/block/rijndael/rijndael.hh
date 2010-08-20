@@ -46,8 +46,6 @@ class Rijndael
 		uint64_t m_bcmask;
 		const uint8_t *m_sh0, *m_sh1;
 		uint64_t m_rk[MAXROUNDS+1][4];
-		static const uint8_t aLogtable[];
-		static const uint8_t logtable[];
 		static const uint8_t S[];
 		static const uint8_t Si[];
 		static const uint8_t shifts0[5][4];
