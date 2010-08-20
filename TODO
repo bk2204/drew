@@ -19,7 +19,6 @@ TODO
 * Update license and description statements.
 * Add MACs.
 * Add Public Key algorithms.
-* Add MD2.
 * Add TIGER.
 * Add HAVAL.
 * Add modifier for number of hash rounds, where applicable.
