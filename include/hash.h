@@ -20,7 +20,7 @@
  * not include other data stored in the context.
  */
 #define DREW_HASH_BUFSIZE 4 /* Not implemented. */
-/* The endianness of this hash algorithm.  0x1234 is big-endian and 0x4321 is
+/* The endianness of this hash algorithm.  4321 is big-endian and 1234 is
  * little-endian.
  */
 #define DREW_HASH_ENDIAN 5 /* Not implemented. */
