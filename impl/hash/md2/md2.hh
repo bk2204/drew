@@ -12,7 +12,7 @@ class MD2 : public Hash<uint8_t, 16, 64, 16, LittleEndian>
 	public:
 		MD2();
 		virtual ~MD2() {}
-		void Pad(uint8_t);
+		void Pad();
 		static void Transform(quantum_t *state, const uint8_t *data);
 	protected:
 		virtual void Transform(const uint8_t *data)
