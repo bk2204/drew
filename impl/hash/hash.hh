@@ -37,55 +37,52 @@ class Hash
 		}
 		virtual void Update(const uint8_t *data, size_t len)
 		{
-			const T blklen = BlkSize;
-			const T blkmask = (blklen-1);
 			const T t = m_len[0];
-			const T off = t & blkmask;
-			const size_t i = std::min<size_t>(blklen-off, len);
+			const T off = t % BlkSize;
 			uint8_t *buf = m_buf;
 		
 			if ((m_len[0] += len) < t)
 				m_len[1]++;
+
+			if (off) {
+				const size_t i = std::min<size_t>(BlkSize-off, len);
+				memcpy(buf+off, data, i);
 		
-			memcpy(buf+off, data, i);
+				if ((i+off) == BlkSize)
+					Transform(buf);
 		
-			if ((i+off) == blklen)
-				Transform(buf);
+				len-=i;
+				data+=i;
+			}
 		
-			len-=i;
-			data+=i;
-		
-			for (; len >= blklen; len -= blklen, data += blklen)
+			for (; len >= BlkSize; len -= BlkSize, data += BlkSize)
 				Transform(data);
 			memcpy(buf, data, len);
 		}
 		virtual void Pad()
 		{
-			const size_t blklen = BlkSize;
-			const size_t lenoff = m_len[0];
-			uint8_t inplen[sizeof(T)*2];
-			const size_t lensz = sizeof(inplen);
-			const size_t trip = blklen-lensz;
-			size_t off = lenoff & (blklen-1);
-			uint8_t *buf = m_buf;
-			uint16_t x = 0x0001;
-			const uint8_t *perm = reinterpret_cast<uint8_t *>(&x);
 			T len[2];
+
+			const size_t lenoff = m_len[0];
+			const size_t trip = BlkSize - sizeof(len);
+			const bool is_big =
+				NativeEndian::GetEndianness() == BigEndian::GetEndianness();
+			const size_t noff = lenoff % BlkSize;
+			size_t off = noff + 1;
+			uint8_t *buf = m_buf;
 			/* Convert bytes to bits. */
-			len[perm[0]] = (m_len[1]<<3)|(m_len[0]>>((sizeof(m_len[0])*8)-3));
-			len[perm[1]] = m_len[0]<<3;
-			E::Copy(inplen, len, sizeof(len), sizeof(len));
+			len[!is_big] = (m_len[1]<<3)|(m_len[0]>>((sizeof(m_len[0])*8)-3));
+			len[is_big] = m_len[0]<<3;
 		
 			/* There is always at least one byte free. */
-			buf[off] = 0x80;
-			off++;
-			if ((off-1) >= trip) {
-				memset(buf+off, 0, blklen-off);
+			buf[noff] = 0x80;
+			if (noff >= trip) {
+				memset(buf+off, 0, BlkSize-off);
 				Transform(buf);
 				off = 0;
 			}
 			memset(buf+off, 0, trip-off);
-			memcpy(buf+trip, inplen, lensz);
+			E::Copy(buf+trip, len, sizeof(len), sizeof(len));
 			Transform(buf);
 		}
 		virtual void GetDigest(uint8_t *digest)
