@@ -59,7 +59,7 @@ class Hash
 				Transform(data);
 			memcpy(buf, data, len);
 		}
-		virtual void Pad()
+		virtual void Pad(uint8_t val)
 		{
 			T len[2];
 
@@ -75,7 +75,7 @@ class Hash
 			len[is_big] = m_len[0]<<3;
 		
 			/* There is always at least one byte free. */
-			buf[noff] = 0x80;
+			buf[noff] = val;
 			if (noff >= trip) {
 				memset(buf+off, 0, BlkSize-off);
 				Transform(buf);
@@ -87,7 +87,7 @@ class Hash
 		}
 		virtual void GetDigest(uint8_t *digest)
 		{
-			Pad();
+			Pad(0x80);
 
 			E::Copy(digest, m_hash, Size);
 		}

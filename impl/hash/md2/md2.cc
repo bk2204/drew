@@ -93,7 +93,7 @@ const uint8_t drew::MD2::sbox[] = {
   31, 26, 219, 153, 141, 51, 159, 17, 131, 20
 };
 
-void drew::MD2::Pad()
+void drew::MD2::Pad(uint8_t)
 {
 	size_t off = m_len[0] & 15;
 	uint8_t val = 16 - off;
