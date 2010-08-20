@@ -56,8 +56,7 @@ static void prefix ## update(void *ctx, const uint8_t *data, size_t len) \
  \
 static void prefix ## pad(void *ctx) \
 { \
-	hname *p = reinterpret_cast<hname *>(ctx); \
-	p->Pad(); \
+	/* Do nothing, because final will pad automatically. */ \
 } \
  \
 static void prefix ## final(void *ctx, uint8_t *digest) \
