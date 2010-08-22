@@ -9,7 +9,7 @@
 
 #include <internal.h>
 
-#include "endian.hh"
+#include "util.hh"
 
 namespace drew {
 

@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "endian.hh"
+#include "util.hh"
 
 #define MAXROUNDS 14
 

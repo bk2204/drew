@@ -2,7 +2,7 @@
 #define SHA256_HH
 
 #include "hash.hh"
-#include "endian.hh"
+#include "util.hh"
 #include <stdint.h>
 
 namespace drew {
