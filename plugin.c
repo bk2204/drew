@@ -22,7 +22,7 @@ static int drew_loader__load_info(drew_loader_t *ldr, int aid, int id)
 	void *functbl = 0;
 
 	dlerror();
-	*(void **)(&plugin_info) = dlsym(ldr->entry[aid].handle,
+	plugin_info = (plugin_api_t) dlsym(ldr->entry[aid].handle,
 			"drew_plugin_info");
 	if (dlerror() != NULL)
 		return -DREW_ERR_RESOLUTION;
