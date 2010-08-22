@@ -5,6 +5,57 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#if defined(__i386__) || defined(__amd64__)
+#define NEEDS_ALIGNMENT 0
+#elif defined(__sparc) || defined(sparc)
+#define NEEDS_ALIGNMENT 1
+#else
+#define NEEDS_ALIGNMENT 1
+#endif
+
+inline bool IsAligned(const void *p, size_t mul)
+{
+	uintptr_t q = reinterpret_cast<uintptr_t>(p);
+	return !(q & (mul - 1));
+}
+
+template<class T>
+inline bool IsAligned(const void *p)
+{
+#if defined(__GNUC__)
+	return IsAligned(p, __alignof__(T));
+#else
+	return IsAligned(p, sizeof(T));
+#endif
+}
+
+template<class T>
+inline size_t GetNeededAlignment()
+{
+#if defined(NEEDS_ALIGNMENT) && (NEEDS_ALIGNMENT-0 == 0)
+	return 1;
+#elif defined(__GNUC__)
+	return __alignof__(T);
+#else
+	return sizeof(T);
+#endif
+}
+
+template<class T>
+inline bool IsSufficientlyAligned(const void *p)
+{
+	return IsAligned(p, GetNeededAlignment<T>());
+}
+
+inline int GetSystemEndianness()
+{
+#if BYTE_ORDER == BIG_ENDIAN
+	return 4321;
+#else
+	return 1234;
+#endif
+}
+
 class Endian
 {
 	public:
@@ -73,6 +124,19 @@ class BigEndian : public Endian
 		{
 			memcpy(dest, src, len);
 		}
+		template<class T>
+		inline static const T *CopyIfNeeded(T *buf, const uint8_t *p,
+				size_t len)
+		{
+			if (GetEndianness() == GetSystemEndianness() && 
+					IsSufficientlyAligned<T>(p)) {
+				return reinterpret_cast<const T *>(p);
+			}
+			else {
+				Copy(buf, p, len);
+				return buf;
+			}
+		}
 		inline static int GetEndianness()
 		{
 			return 4321;
@@ -120,6 +184,19 @@ class LittleEndian : public Endian
 		inline static void Copy(uint8_t *dest, const uint8_t *src, size_t len)
 		{
 			memcpy(dest, src, len);
+		}
+		template<class T>
+		inline static const T *CopyIfNeeded(T *buf, const uint8_t *p,
+				size_t len)
+		{
+			if (GetEndianness() == GetSystemEndianness() && 
+					IsSufficientlyAligned<T>(p)) {
+				return reinterpret_cast<const T *>(p);
+			}
+			else {
+				Copy(buf, p, len);
+				return buf;
+			}
 		}
 		inline static int GetEndianness()
 		{
