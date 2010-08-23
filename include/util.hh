@@ -88,54 +88,56 @@ class BigEndian : public Endian
 {
 	public:
 		template<class T>
-		static void Copy(uint8_t *dest, const T *src, size_t len)
+		inline static uint8_t *Copy(uint8_t *dest, const T *src, size_t len)
 		{
-			Copy(dest, src, len, sizeof(T));
+			return Copy(dest, src, len, sizeof(T));
 		}
 		template<class T>
-		static void Copy(T *dest, const uint8_t *src, size_t len)
+		inline static T *Copy(T *dest, const uint8_t *src, size_t len)
 		{
-			Copy(dest, src, len, sizeof(T));
+			return Copy(dest, src, len, sizeof(T));
 		}
 		template<class T>
-		static void Copy(uint8_t *dest, const T *src, size_t len,
+		inline static uint8_t *Copy(uint8_t *dest, const T *src, size_t len,
 				const size_t sz)
 		{
 			memcpy(dest, src, len);
 #if BYTE_ORDER == LITTLE_ENDIAN
 			InplaceSwap(dest, len, sz);
 #endif
+			return dest;
 		}
 		template<class T>
-		static void Copy(T *dest, const uint8_t *src, size_t len,
+		inline static T *Copy(T *dest, const uint8_t *src, size_t len,
 				const size_t sz)
 		{
 			memcpy(dest, src, len);
 #if BYTE_ORDER == LITTLE_ENDIAN
 			InplaceSwap(reinterpret_cast<uint8_t *>(dest), len, sz);
 #endif
+			return dest;
 		}
-		inline static void Copy(uint8_t *dest, const uint8_t *src, size_t len,
-				const size_t sz)
+		inline static uint8_t *Copy(uint8_t *dest, const uint8_t *src,
+				size_t len, const size_t sz)
 		{
 			memcpy(dest, src, len);
+			return dest;
 		}
-		inline static void Copy(uint8_t *dest, const uint8_t *src, size_t len)
+		inline static uint8_t *Copy(uint8_t *dest, const uint8_t *src,
+				size_t len)
 		{
 			memcpy(dest, src, len);
+			return dest;
 		}
 		template<class T>
 		inline static const T *CopyIfNeeded(T *buf, const uint8_t *p,
 				size_t len)
 		{
 			if (GetEndianness() == GetSystemEndianness() && 
-					IsSufficientlyAligned<T>(p)) {
+					IsSufficientlyAligned<T>(p))
 				return reinterpret_cast<const T *>(p);
-			}
-			else {
-				Copy(buf, p, len);
-				return buf;
-			}
+			else
+				return Copy(buf, p, len);
 		}
 		inline static int GetEndianness()
 		{
@@ -149,54 +151,56 @@ class LittleEndian : public Endian
 {
 	public:
 		template<class T>
-		static void Copy(uint8_t *dest, const T *src, size_t len)
+		inline static uint8_t *Copy(uint8_t *dest, const T *src, size_t len)
 		{
-			Copy(dest, src, len, sizeof(T));
+			return Copy(dest, src, len, sizeof(T));
 		}
 		template<class T>
-		static void Copy(T *dest, const uint8_t *src, size_t len)
+		inline static T *Copy(T *dest, const uint8_t *src, size_t len)
 		{
-			Copy(dest, src, len, sizeof(T));
+			return Copy(dest, src, len, sizeof(T));
 		}
 		template<class T>
-		static void Copy(uint8_t *dest, const T *src, size_t len,
+		inline static uint8_t *Copy(uint8_t *dest, const T *src, size_t len,
 				const size_t sz)
 		{
 			memcpy(dest, src, len);
 #if BYTE_ORDER == BIG_ENDIAN
 			InplaceSwap(dest, len, sz);
 #endif
+			return dest;
 		}
 		template<class T>
-		static void Copy(T *dest, const uint8_t *src, size_t len,
+		inline static T *Copy(T *dest, const uint8_t *src, size_t len,
 				const size_t sz)
 		{
 			memcpy(dest, src, len);
 #if BYTE_ORDER == BIG_ENDIAN
 			InplaceSwap(reinterpret_cast<uint8_t *>(dest), len, sz);
 #endif
+			return dest;
 		}
-		inline static void Copy(uint8_t *dest, const uint8_t *src, size_t len,
-				const size_t sz)
+		inline static uint8_t *Copy(uint8_t *dest, const uint8_t *src,
+				size_t len, const size_t sz)
 		{
 			memcpy(dest, src, len);
+			return dest;
 		}
-		inline static void Copy(uint8_t *dest, const uint8_t *src, size_t len)
+		inline static uint8_t *Copy(uint8_t *dest, const uint8_t *src,
+				size_t len)
 		{
 			memcpy(dest, src, len);
+			return dest;
 		}
 		template<class T>
 		inline static const T *CopyIfNeeded(T *buf, const uint8_t *p,
 				size_t len)
 		{
 			if (GetEndianness() == GetSystemEndianness() && 
-					IsSufficientlyAligned<T>(p)) {
+					IsSufficientlyAligned<T>(p))
 				return reinterpret_cast<const T *>(p);
-			}
-			else {
-				Copy(buf, p, len);
-				return buf;
-			}
+			else
+				return Copy(buf, p, len);
 		}
 		inline static int GetEndianness()
 		{
