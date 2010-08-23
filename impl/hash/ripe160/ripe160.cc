@@ -121,7 +121,8 @@ drew::RIPEMD160::RIPEMD160()
 
 void drew::RIPEMD160::Transform(quantum_t *state, const uint8_t *block)
 {
-	uint32_t blk[block_size/sizeof(uint32_t)];
+	uint32_t buf[block_size/sizeof(uint32_t)];
+	const uint32_t *blk;
 	size_t i;
 	uint32_t a, b, c, d, e, aa, bb, cc, dd, ee, t;
 
@@ -131,7 +132,7 @@ void drew::RIPEMD160::Transform(quantum_t *state, const uint8_t *block)
 	d = dd = state[3];
 	e = ee = state[4];
 
-	endian_t::Copy(blk, block, block_size);
+	blk = endian_t::CopyIfNeeded(buf, block, block_size);
 
 	for (i=0; i<16; i++) {
 		OP(ff,  r,  s, 0x00000000,  a,  b,  c,  d,  e);

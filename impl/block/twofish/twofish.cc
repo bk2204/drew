@@ -133,12 +133,12 @@ uint32_t drew::Twofish::h(uint32_t x, const uint32_t *k, size_t len)
 
 void drew::Twofish::SetKey(const uint8_t *key, size_t sz)
 {
-	uint32_t m[32];
+	uint32_t buf[32];
 	size_t len = sz / 8;
 
 	typedef endian_t E;
 
-	E::Copy(m, key, sz);
+	const uint32_t *m = E::CopyIfNeeded(buf, key, sz);
 
 	for (size_t i = 0; i < 40; i += 2) {
 		uint32_t a = h(i, m, len);
