@@ -117,7 +117,25 @@ static int rd_aes256_info(int op, void *p)
 
 static void rd_main_init(void **ctx, size_t blksz)
 {
-	drew::Rijndael *p = new drew::Rijndael(blksz);
+	drew::Rijndael *p = 0;
+	switch (blksz)
+	{
+		case 16:
+			p = new drew::Rijndael128;
+			break;
+		case 20:
+			p = new drew::Rijndael160;
+			break;
+		case 24:
+			p = new drew::Rijndael192;
+			break;
+		case 28:
+			p = new drew::Rijndael224;
+			break;
+		case 32:
+			p = new drew::Rijndael256;
+			break;
+	}
 	*ctx = p;
 }
 
@@ -148,7 +166,26 @@ static void rd256_init(void **ctx, drew_loader_t *, const drew_param_t *)
 
 static int rd_clone(void **newctx, void *oldctx, int flags)
 {
-	drew::Rijndael *p = new drew::Rijndael(*reinterpret_cast<drew::Rijndael *>(oldctx));
+	using namespace drew;
+	Rijndael *p = 0, *x = reinterpret_cast<Rijndael *>(oldctx);
+	switch (x->GetBlockSize())
+	{
+		case 16:
+			p = new Rijndael128(*reinterpret_cast<Rijndael128 *>(x));
+			break;
+		case 20:
+			p = new Rijndael160(*reinterpret_cast<Rijndael160 *>(x));
+			break;
+		case 24:
+			p = new Rijndael192(*reinterpret_cast<Rijndael192 *>(x));
+			break;
+		case 28:
+			p = new Rijndael224(*reinterpret_cast<Rijndael224 *>(x));
+			break;
+		case 32:
+			p = new Rijndael256(*reinterpret_cast<Rijndael256 *>(x));
+			break;
+	}
 	if (flags & DREW_BLOCK_CLONE_FIXED) {
 		memcpy(*newctx, p, sizeof(*p));
 		delete p;
@@ -209,15 +246,18 @@ static bool test(const char *key, const char *plain, const char *cipher,
 	if (!keybytes)
 		keybytes = 16;
 
-	Rijndael ctx(blocksz);
-	ctx.SetKey(kb, keybytes);
-	ctx.Encrypt(buf, pb);
+	void *p;
+	rd_main_init(&p, blocksz);
+	Rijndael *ctx = reinterpret_cast<Rijndael *>(p);
+	ctx->SetKey(kb, keybytes);
+	ctx->Encrypt(buf, pb);
 
 	if (memcmp(buf, cb, blocksz))
 		return false;
 
-	ctx.SetKey(kb, keybytes);
-	ctx.Decrypt(buf, cb);
+	ctx->SetKey(kb, keybytes);
+	ctx->Decrypt(buf, cb);
+	rd_fini(&p);
 
 	return !memcmp(buf, pb, blocksz);
 }
@@ -341,42 +381,14 @@ static int rd_test(void *)
 
 typedef drew::Rijndael::endian_t E;
 
-drew::Rijndael::Rijndael(size_t blocksz)
+drew::Rijndael::Rijndael()
 {
-	m_nb = (blocksz / 4);
-	m_bc = (blocksz * 2);
-	switch (blocksz) {
-		case 16: // 128 bits
-			m_bcmask = 0xffffffff;
-			m_sh0 = shifts0[0];
-			m_sh1 = shifts1[0];
-			break;
-		case 20: // 160 bits
-			m_bcmask = 0xffffffffff;
-			m_sh0 = shifts0[1];
-			m_sh1 = shifts1[1];
-			break;
-		case 24: // 192 bits
-			m_bcmask = 0xffffffffffff;
-			m_sh0 = shifts0[2];
-			m_sh1 = shifts1[2];
-			break;
-		case 28: // 224 bits
-			m_bcmask = 0xffffffffffffff;
-			m_sh0 = shifts0[3];
-			m_sh1 = shifts1[3];
-			break;
-		case 32: // 256 bits
-			m_bcmask = 0xffffffffffffffff;
-			m_sh0 = shifts0[4];
-			m_sh1 = shifts1[4];
-			break;
-	}
 }
 
 #define MAXNK 8
 
-void drew::Rijndael::SetKey(const uint8_t *key, size_t len)
+template<unsigned N>
+void drew::GenericRijndael<N>::SetKey(const uint8_t *key, size_t len)
 {
 	m_nk = (len / 4);
 	m_nr = 6 + std::max(m_nb, m_nk);
@@ -473,7 +485,8 @@ void drew::Rijndael::KeyAddition(uint64_t *state, const uint64_t *rk)
 	state[3] ^= rk[3];
 }
 
-void drew::Rijndael::ShiftRow(uint64_t *state, const uint8_t *shifts)
+template<unsigned N>
+void drew::GenericRijndael<N>::ShiftRow(uint64_t *state, const uint8_t *shifts)
 {
 	state[1] = shift(state[1], shifts[1]);
 	state[2] = shift(state[2], shifts[2]);
@@ -488,19 +501,197 @@ void drew::Rijndael::Substitution(uint64_t *state, const uint8_t *box)
 	state[3] = ApplyS(state[3], box);
 }
 
-uint64_t drew::Rijndael::ApplyS(uint64_t r, const uint8_t *box)
+template<unsigned N>
+uint64_t drew::GenericRijndael<N>::ApplyS(uint64_t r, const uint8_t *box)
 {
 	uint64_t res = 0;
 
-	for (size_t i = 0; i < 64; i += 8) {
-		res |= uint64_t(box[uint8_t(r >> i)]) << i;
+	for (int i = 7; i >= 0; i--) {
+		res <<= 8;
+		res |= uint64_t(box[E::GetByte(r, i)]);
 	}
 	res &= m_bcmask;
 
 	return res;
 }
 
-void drew::Rijndael::MixColumn(uint64_t *state)
+void drew::Rijndael128::Modify(uint64_t *state, const uint8_t *box)
+{
+	uint64_t a = state[0], b = state[1], c = state[2], d = state[3];
+
+	a = (box[E::GetByte(a, 3)] << 24) |
+		(box[E::GetByte(a, 2)] << 16) |
+		(box[E::GetByte(a, 1)] <<  8) |
+		(box[E::GetByte(a, 0)]);
+	b = (box[E::GetByte(b, 0)] << 24) |
+		(box[E::GetByte(b, 3)] << 16) |
+		(box[E::GetByte(b, 2)] <<  8) |
+		(box[E::GetByte(b, 1)]);
+	c = (box[E::GetByte(c, 1)] << 24) |
+		(box[E::GetByte(c, 0)] << 16) |
+		(box[E::GetByte(c, 3)] <<  8) |
+		(box[E::GetByte(c, 2)]);
+	d = (box[E::GetByte(d, 2)] << 24) |
+		(box[E::GetByte(d, 1)] << 16) |
+		(box[E::GetByte(d, 0)] <<  8) |
+		(box[E::GetByte(d, 3)]);
+
+	state[0] = a;
+	state[1] = b;
+	state[2] = c;
+	state[3] = d;
+}
+
+void drew::Rijndael160::Modify(uint64_t *state, const uint8_t *box)
+{
+	uint64_t a = state[0], b = state[1], c = state[2], d = state[3];
+
+	a = uint64_t(box[E::GetByte(a, 4)]) << 32 |
+		uint64_t(box[E::GetByte(a, 3)]) << 24 |
+		uint64_t(box[E::GetByte(a, 2)]) << 16 |
+		uint64_t(box[E::GetByte(a, 1)]) <<  8 |
+		uint64_t(box[E::GetByte(a, 0)]);
+	b = uint64_t(box[E::GetByte(b, 0)]) << 32 |
+		uint64_t(box[E::GetByte(b, 4)]) << 24 |
+		uint64_t(box[E::GetByte(b, 3)]) << 16 |
+		uint64_t(box[E::GetByte(b, 2)]) <<  8 |
+		uint64_t(box[E::GetByte(b, 1)]);
+	c = uint64_t(box[E::GetByte(c, 1)]) << 32 |
+		uint64_t(box[E::GetByte(c, 0)]) << 24 |
+		uint64_t(box[E::GetByte(c, 4)]) << 16 |
+		uint64_t(box[E::GetByte(c, 3)]) <<  8 |
+		uint64_t(box[E::GetByte(c, 2)]);
+	d = uint64_t(box[E::GetByte(d, 2)]) << 32 |
+		uint64_t(box[E::GetByte(d, 1)]) << 24 |
+		uint64_t(box[E::GetByte(d, 0)]) << 16 |
+		uint64_t(box[E::GetByte(d, 4)]) <<  8 |
+		uint64_t(box[E::GetByte(d, 3)]);
+
+	state[0] = a;
+	state[1] = b;
+	state[2] = c;
+	state[3] = d;
+}
+
+void drew::Rijndael192::Modify(uint64_t *state, const uint8_t *box)
+{
+	uint64_t a = state[0], b = state[1], c = state[2], d = state[3];
+
+	a = uint64_t(box[E::GetByte(a, 5)]) << 40 |
+		uint64_t(box[E::GetByte(a, 4)]) << 32 |
+		uint64_t(box[E::GetByte(a, 3)]) << 24 |
+		uint64_t(box[E::GetByte(a, 2)]) << 16 |
+		uint64_t(box[E::GetByte(a, 1)]) <<  8 |
+		uint64_t(box[E::GetByte(a, 0)]);
+	b = uint64_t(box[E::GetByte(b, 0)]) << 40 |
+		uint64_t(box[E::GetByte(b, 5)]) << 32 |
+		uint64_t(box[E::GetByte(b, 4)]) << 24 |
+		uint64_t(box[E::GetByte(b, 3)]) << 16 |
+		uint64_t(box[E::GetByte(b, 2)]) <<  8 |
+		uint64_t(box[E::GetByte(b, 1)]);
+	c = uint64_t(box[E::GetByte(c, 1)]) << 40 |
+		uint64_t(box[E::GetByte(c, 0)]) << 32 |
+		uint64_t(box[E::GetByte(c, 5)]) << 24 |
+		uint64_t(box[E::GetByte(c, 4)]) << 16 |
+		uint64_t(box[E::GetByte(c, 3)]) <<  8 |
+		uint64_t(box[E::GetByte(c, 2)]);
+	d = uint64_t(box[E::GetByte(d, 2)]) << 40 |
+		uint64_t(box[E::GetByte(d, 1)]) << 32 |
+		uint64_t(box[E::GetByte(d, 0)]) << 24 |
+		uint64_t(box[E::GetByte(d, 5)]) << 16 |
+		uint64_t(box[E::GetByte(d, 4)]) <<  8 |
+		uint64_t(box[E::GetByte(d, 3)]);
+
+	state[0] = a;
+	state[1] = b;
+	state[2] = c;
+	state[3] = d;
+}
+
+void drew::Rijndael224::Modify(uint64_t *state, const uint8_t *box)
+{
+	uint64_t a = state[0], b = state[1], c = state[2], d = state[3];
+
+	a = uint64_t(box[E::GetByte(a, 6)]) << 48 |
+		uint64_t(box[E::GetByte(a, 5)]) << 40 |
+		uint64_t(box[E::GetByte(a, 4)]) << 32 |
+		uint64_t(box[E::GetByte(a, 3)]) << 24 |
+		uint64_t(box[E::GetByte(a, 2)]) << 16 |
+		uint64_t(box[E::GetByte(a, 1)]) <<  8 |
+		uint64_t(box[E::GetByte(a, 0)]);
+	b = uint64_t(box[E::GetByte(b, 0)]) << 48 |
+		uint64_t(box[E::GetByte(b, 6)]) << 40 |
+		uint64_t(box[E::GetByte(b, 5)]) << 32 |
+		uint64_t(box[E::GetByte(b, 4)]) << 24 |
+		uint64_t(box[E::GetByte(b, 3)]) << 16 |
+		uint64_t(box[E::GetByte(b, 2)]) <<  8 |
+		uint64_t(box[E::GetByte(b, 1)]);
+	c = uint64_t(box[E::GetByte(c, 1)]) << 48 |
+		uint64_t(box[E::GetByte(c, 0)]) << 40 |
+		uint64_t(box[E::GetByte(c, 6)]) << 32 |
+		uint64_t(box[E::GetByte(c, 5)]) << 24 |
+		uint64_t(box[E::GetByte(c, 4)]) << 16 |
+		uint64_t(box[E::GetByte(c, 3)]) <<  8 |
+		uint64_t(box[E::GetByte(c, 2)]);
+	d = uint64_t(box[E::GetByte(d, 3)]) << 48 |
+		uint64_t(box[E::GetByte(d, 2)]) << 40 |
+		uint64_t(box[E::GetByte(d, 1)]) << 32 |
+		uint64_t(box[E::GetByte(d, 0)]) << 24 |
+		uint64_t(box[E::GetByte(d, 6)]) << 16 |
+		uint64_t(box[E::GetByte(d, 5)]) <<  8 |
+		uint64_t(box[E::GetByte(d, 4)]);
+
+	state[0] = a;
+	state[1] = b;
+	state[2] = c;
+	state[3] = d;
+}
+
+void drew::Rijndael256::Modify(uint64_t *state, const uint8_t *box)
+{
+	uint64_t a = state[0], b = state[1], c = state[2], d = state[3];
+
+	a = uint64_t(box[E::GetByte(a, 7)]) << 56 |
+		uint64_t(box[E::GetByte(a, 6)]) << 48 |
+		uint64_t(box[E::GetByte(a, 5)]) << 40 |
+		uint64_t(box[E::GetByte(a, 4)]) << 32 |
+		uint64_t(box[E::GetByte(a, 3)]) << 24 |
+		uint64_t(box[E::GetByte(a, 2)]) << 16 |
+		uint64_t(box[E::GetByte(a, 1)]) <<  8 |
+		uint64_t(box[E::GetByte(a, 0)]);
+	b = uint64_t(box[E::GetByte(b, 0)]) << 56 |
+		uint64_t(box[E::GetByte(b, 7)]) << 48 |
+		uint64_t(box[E::GetByte(b, 6)]) << 40 |
+		uint64_t(box[E::GetByte(b, 5)]) << 32 |
+		uint64_t(box[E::GetByte(b, 4)]) << 24 |
+		uint64_t(box[E::GetByte(b, 3)]) << 16 |
+		uint64_t(box[E::GetByte(b, 2)]) <<  8 |
+		uint64_t(box[E::GetByte(b, 1)]);
+	c = uint64_t(box[E::GetByte(c, 2)]) << 56 |
+		uint64_t(box[E::GetByte(c, 1)]) << 48 |
+		uint64_t(box[E::GetByte(c, 0)]) << 40 |
+		uint64_t(box[E::GetByte(c, 7)]) << 32 |
+		uint64_t(box[E::GetByte(c, 6)]) << 24 |
+		uint64_t(box[E::GetByte(c, 5)]) << 16 |
+		uint64_t(box[E::GetByte(c, 4)]) <<  8 |
+		uint64_t(box[E::GetByte(c, 3)]);
+	d = uint64_t(box[E::GetByte(d, 3)]) << 56 |
+		uint64_t(box[E::GetByte(d, 2)]) << 48 |
+		uint64_t(box[E::GetByte(d, 1)]) << 40 |
+		uint64_t(box[E::GetByte(d, 0)]) << 32 |
+		uint64_t(box[E::GetByte(d, 7)]) << 24 |
+		uint64_t(box[E::GetByte(d, 6)]) << 16 |
+		uint64_t(box[E::GetByte(d, 5)]) <<  8 |
+		uint64_t(box[E::GetByte(d, 4)]);
+
+	state[0] = a;
+	state[1] = b;
+	state[2] = c;
+	state[3] = d;
+}
+
+template<unsigned N>
+void drew::GenericRijndael<N>::MixColumn(uint64_t *state)
 {
 	uint64_t r0 = 0, r1 = 0, r2 = 0, r3 = 0;
 
@@ -527,7 +718,8 @@ void drew::Rijndael::MixColumn(uint64_t *state)
 	state[3] = r3;
 }
 
-void drew::Rijndael::InvMixColumn(uint64_t *state)
+template<unsigned N>
+void drew::GenericRijndael<N>::InvMixColumn(uint64_t *state)
 {
 	uint64_t r0 = 0, r1 = 0, r2 = 0, r3 = 0;
 
@@ -552,17 +744,14 @@ void drew::Rijndael::InvMixColumn(uint64_t *state)
 
 void drew::Rijndael::EncryptBlock(uint64_t *state)
 {
-	KeyAddition(state, m_rk[0]);
-
-	for (size_t i = 1; i < m_nr; i++) {
-		Substitution(state, S);
-		ShiftRow(state, m_sh0);
-		MixColumn(state);
+	for (size_t i = 0; i < m_nr-1; i++) {
 		KeyAddition(state, m_rk[i]);
+		Modify(state, S);
+		MixColumn(state);
 	}
 
-	Substitution(state, S);
-	ShiftRow(state, m_sh0);
+	KeyAddition(state, m_rk[m_nr-1]);
+	Modify(state, S);
 	KeyAddition(state, m_rk[m_nr]);
 }
 
@@ -582,7 +771,8 @@ void drew::Rijndael::DecryptBlock(uint64_t *state)
 	KeyAddition(state, m_rk[0]);
 }
 
-void drew::Rijndael::PackBlock(uint8_t *blk, const uint64_t *state)
+template<unsigned N>
+void drew::GenericRijndael<N>::PackBlock(uint8_t *blk, const uint64_t *state)
 {
 	for (int j = 0; j != m_bc; j += 8) {
 		*blk++ = state[0] >> j;
@@ -592,7 +782,8 @@ void drew::Rijndael::PackBlock(uint8_t *blk, const uint64_t *state)
 	}
 }
 
-void drew::Rijndael::UnpackBlock(uint64_t *state, const uint8_t *blk)
+template<unsigned N>
+void drew::GenericRijndael<N>::UnpackBlock(uint64_t *state, const uint8_t *blk)
 {
 	state[0] = *blk++;
 	state[1] = *blk++;
