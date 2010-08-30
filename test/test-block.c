@@ -62,6 +62,7 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	for (i = 0; i < nbytes; i += chunk)
 		functbl->encrypt(ctx, buf2, buf);
 	clock_gettime(USED_CLOCK, &cend);
+	functbl->fini(&ctx);
 
 	free(buf);
 
