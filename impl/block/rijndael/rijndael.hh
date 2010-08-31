@@ -27,10 +27,19 @@ class Rijndael
 		const uint8_t *m_sh1;
 		static const uint8_t shifts1[5][4];
 		uint64_t m_rk[MAXROUNDS+1][4];
-	private:
 		inline void KeyAddition(uint64_t *, const uint64_t *);
-		inline void Substitution(uint64_t *, const uint8_t *);
+		inline virtual void Round(uint64_t *state, const uint64_t *rk,
+				const uint8_t *s) = 0;
+		static const uint8_t mult2[];
+		static const uint8_t mult3[];
+		static const uint8_t mult9[];
+		static const uint8_t multb[];
+		static const uint8_t multd[];
+		static const uint8_t multe[];
+		static const uint8_t S[];
 		inline void EncryptBlock(uint64_t *);
+	private:
+		inline void Substitution(uint64_t *, const uint8_t *);
 		inline void DecryptBlock(uint64_t *);
 		inline virtual void ShiftRow(uint64_t *, const uint8_t *) = 0;
 		inline virtual uint64_t ApplyS(uint64_t, const uint8_t *) = 0;
@@ -38,14 +47,7 @@ class Rijndael
 		inline virtual void InvMixColumn(uint64_t *) = 0;
 		inline virtual void PackBlock(uint8_t *, const uint64_t *) = 0;
 		inline virtual void UnpackBlock(uint64_t *, const uint8_t *) = 0;
-		static const uint8_t mult2[];
-		static const uint8_t mult3[];
-		static const uint8_t mult9[];
-		static const uint8_t multb[];
-		static const uint8_t multd[];
-		static const uint8_t multe[];
 		void SetKeyDecrypt(void);
-		static const uint8_t S[];
 		static const uint8_t Si[];
 		static const uint8_t shifts0[5][4];
 		static const uint8_t rcon[];
@@ -77,6 +79,13 @@ class GenericRijndael : public Rijndael
 		inline void InvMixColumn(uint64_t *);
 		inline void PackBlock(uint8_t *, const uint64_t *);
 		inline void UnpackBlock(uint64_t *, const uint8_t *);
+		inline virtual void Round(uint64_t *state, const uint64_t *rk,
+				const uint8_t *s)
+		{
+			KeyAddition(state, rk);
+			Modify(state, s);
+			MixColumn(state);
+		}
 };
 
 class Rijndael128 : public GenericRijndael<128>
@@ -85,6 +94,9 @@ class Rijndael128 : public GenericRijndael<128>
 		Rijndael128() { m_sh1 = shifts1[shiftoffset]; }
 	protected:
 		virtual void Modify(uint64_t *, const uint8_t *);
+		inline virtual void Round(uint8_t *state, const uint8_t *rk,
+				const uint8_t *s);
+		inline void EncryptBlock(uint64_t *);
 };
 
 class Rijndael160 : public GenericRijndael<160>

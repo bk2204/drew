@@ -742,12 +742,73 @@ void drew::GenericRijndael<N>::InvMixColumn(uint64_t *state)
 	state[3] = r3;
 }
 
+void drew::Rijndael128::Round(uint8_t *state, const uint8_t *rk,
+		const uint8_t *box)
+{
+	uint8_t *buf = state;
+	uint8_t a, b, c, d;
+
+	a = box[buf[ 4] ^ rk[ 4]];
+	b = box[buf[15] ^ rk[15]];
+	c = box[buf[22] ^ rk[22]];
+	d = box[buf[29] ^ rk[29]];
+	buf[ 4] = mult2[a] ^ mult3[b] ^ c ^ d;
+	buf[12] = mult2[b] ^ mult3[c] ^ d ^ a;
+	buf[20] = mult2[c] ^ mult3[d] ^ a ^ b;
+	buf[28] = mult2[d] ^ mult3[a] ^ b ^ c;
+
+	a = box[buf[ 5] ^ rk[ 5]];
+	b = box[buf[12] ^ rk[12]];
+	c = box[buf[23] ^ rk[23]];
+	d = box[buf[30] ^ rk[30]];
+	buf[ 5] = mult2[a] ^ mult3[b] ^ c ^ d;
+	buf[13] = mult2[b] ^ mult3[c] ^ d ^ a;
+	buf[21] = mult2[c] ^ mult3[d] ^ a ^ b;
+	buf[29] = mult2[d] ^ mult3[a] ^ b ^ c;
+
+	a = box[buf[ 6] ^ rk[ 6]];
+	b = box[buf[13] ^ rk[13]];
+	c = box[buf[20] ^ rk[20]];
+	d = box[buf[31] ^ rk[31]];
+	buf[ 6] = mult2[a] ^ mult3[b] ^ c ^ d;
+	buf[14] = mult2[b] ^ mult3[c] ^ d ^ a;
+	buf[22] = mult2[c] ^ mult3[d] ^ a ^ b;
+	buf[30] = mult2[d] ^ mult3[a] ^ b ^ c;
+
+	a = box[buf[ 7] ^ rk[ 7]];
+	b = box[buf[14] ^ rk[14]];
+	c = box[buf[21] ^ rk[21]];
+	d = box[buf[28] ^ rk[28]];
+	buf[ 7] = mult2[a] ^ mult3[b] ^ c ^ d;
+	buf[15] = mult2[b] ^ mult3[c] ^ d ^ a;
+	buf[23] = mult2[c] ^ mult3[d] ^ a ^ b;
+	buf[31] = mult2[d] ^ mult3[a] ^ b ^ c;
+}
+
+void drew::Rijndael128::EncryptBlock(uint64_t *state)
+{
+	const size_t rksz = sizeof(uint64_t) * 4;
+	uint8_t buf[sizeof(*state) * 4];
+	uint8_t rbuf[rksz * (m_nr + 1)];
+	const uint8_t *rk = rbuf;
+
+	E::Copy(buf, state, sizeof(buf));
+	E::Copy(rbuf, m_rk, sizeof(rbuf));
+
+	for (size_t i = 0; i < m_nr-1; i++, rk += 4)
+		Round(buf, rk, S);
+
+	E::Copy(state, buf, sizeof(buf));
+
+	KeyAddition(state, m_rk[m_nr-1]);
+	Modify(state, S);
+	KeyAddition(state, m_rk[m_nr]);
+}
+
 void drew::Rijndael::EncryptBlock(uint64_t *state)
 {
 	for (size_t i = 0; i < m_nr-1; i++) {
-		KeyAddition(state, m_rk[i]);
-		Modify(state, S);
-		MixColumn(state);
+		Round(state, m_rk[i], S);
 	}
 
 	KeyAddition(state, m_rk[m_nr-1]);
