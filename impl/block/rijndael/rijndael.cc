@@ -406,7 +406,7 @@ void drew::GenericRijndael<N>::SetKey(const uint8_t *key, size_t len)
 	for (size_t j = 0; (j < m_nk) && (t < (m_nr+1)*m_nb); j++, t++) {
 		for (size_t i = 0; i < 4; i++) {
 			m_rk[t / m_nb][i] |=
-				uint64_t(tk[i][j] & 0xff) << ((t * 8) % m_bc); 
+				uint64_t(tk[i][j]) << ((t * 8) % m_bc); 
 		}
 	}
 
@@ -414,7 +414,7 @@ void drew::GenericRijndael<N>::SetKey(const uint8_t *key, size_t len)
 
 	while (t < (m_nr+1)*m_nb) {
 		for (size_t i = 0; i < 4; i++)
-			tk[i][0] ^= S[tk[(i+1)%4][m_nk-1] & 0xff];
+			tk[i][0] ^= S[tk[(i+1)%4][m_nk-1]];
 		tk[0][0] ^= rcon[ri++];
 
 		if (m_nk <= 6)
@@ -426,7 +426,7 @@ void drew::GenericRijndael<N>::SetKey(const uint8_t *key, size_t len)
 				for (int i = 0; i < 4; i++)
 					tk[i][j] ^= tk[i][j-1];
 			for (size_t i = 0; i < 4; i++)
-				tk[i][4] ^= S[tk[i][3] & 0xff];
+				tk[i][4] ^= S[tk[i][3]];
 			for (size_t j = 5; j < m_nk; j++)
 				for (size_t i = 0; i < 4; i++)
 					tk[i][j] ^= tk[i][j-1];
@@ -434,7 +434,7 @@ void drew::GenericRijndael<N>::SetKey(const uint8_t *key, size_t len)
 		for (size_t j = 0; (j < m_nk) && (t < (m_nr+1)*m_nb); j++, t++) {
 			for (size_t i = 0; i < 4; i++) {
 				m_rk[t / m_nb][i] |= 
-					uint64_t(tk[i][j] & 0xff) << ((t * 8) % (m_bc));
+					uint64_t(tk[i][j]) << ((t * 8) % (m_bc));
 			}
 		}
 	}
