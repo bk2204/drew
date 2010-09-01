@@ -742,67 +742,98 @@ void drew::GenericRijndael<N>::InvMixColumn(uint64_t *state)
 	state[3] = r3;
 }
 
-void drew::Rijndael128::Round(uint8_t *state, const uint8_t *rk,
-		const uint8_t *box)
+void drew::Rijndael128::Round(uint8_t *obuf, const uint8_t *buf,
+		const uint8_t *rk, const uint8_t *box)
 {
-	uint8_t *buf = state;
 	uint8_t a, b, c, d;
-
 	a = box[buf[ 4] ^ rk[ 4]];
 	b = box[buf[15] ^ rk[15]];
 	c = box[buf[22] ^ rk[22]];
 	d = box[buf[29] ^ rk[29]];
-	buf[ 4] = mult2[a] ^ mult3[b] ^ c ^ d;
-	buf[12] = mult2[b] ^ mult3[c] ^ d ^ a;
-	buf[20] = mult2[c] ^ mult3[d] ^ a ^ b;
-	buf[28] = mult2[d] ^ mult3[a] ^ b ^ c;
+	obuf[ 4] = mult2[a] ^ mult3[b] ^ c ^ d;
+	obuf[12] = mult2[b] ^ mult3[c] ^ d ^ a;
+	obuf[20] = mult2[c] ^ mult3[d] ^ a ^ b;
+	obuf[28] = mult2[d] ^ mult3[a] ^ b ^ c;
 
 	a = box[buf[ 5] ^ rk[ 5]];
 	b = box[buf[12] ^ rk[12]];
 	c = box[buf[23] ^ rk[23]];
 	d = box[buf[30] ^ rk[30]];
-	buf[ 5] = mult2[a] ^ mult3[b] ^ c ^ d;
-	buf[13] = mult2[b] ^ mult3[c] ^ d ^ a;
-	buf[21] = mult2[c] ^ mult3[d] ^ a ^ b;
-	buf[29] = mult2[d] ^ mult3[a] ^ b ^ c;
+	obuf[ 5] = mult2[a] ^ mult3[b] ^ c ^ d;
+	obuf[13] = mult2[b] ^ mult3[c] ^ d ^ a;
+	obuf[21] = mult2[c] ^ mult3[d] ^ a ^ b;
+	obuf[29] = mult2[d] ^ mult3[a] ^ b ^ c;
 
 	a = box[buf[ 6] ^ rk[ 6]];
 	b = box[buf[13] ^ rk[13]];
 	c = box[buf[20] ^ rk[20]];
 	d = box[buf[31] ^ rk[31]];
-	buf[ 6] = mult2[a] ^ mult3[b] ^ c ^ d;
-	buf[14] = mult2[b] ^ mult3[c] ^ d ^ a;
-	buf[22] = mult2[c] ^ mult3[d] ^ a ^ b;
-	buf[30] = mult2[d] ^ mult3[a] ^ b ^ c;
+	obuf[ 6] = mult2[a] ^ mult3[b] ^ c ^ d;
+	obuf[14] = mult2[b] ^ mult3[c] ^ d ^ a;
+	obuf[22] = mult2[c] ^ mult3[d] ^ a ^ b;
+	obuf[30] = mult2[d] ^ mult3[a] ^ b ^ c;
 
 	a = box[buf[ 7] ^ rk[ 7]];
 	b = box[buf[14] ^ rk[14]];
 	c = box[buf[21] ^ rk[21]];
 	d = box[buf[28] ^ rk[28]];
-	buf[ 7] = mult2[a] ^ mult3[b] ^ c ^ d;
-	buf[15] = mult2[b] ^ mult3[c] ^ d ^ a;
-	buf[23] = mult2[c] ^ mult3[d] ^ a ^ b;
-	buf[31] = mult2[d] ^ mult3[a] ^ b ^ c;
+	obuf[ 7] = mult2[a] ^ mult3[b] ^ c ^ d;
+	obuf[15] = mult2[b] ^ mult3[c] ^ d ^ a;
+	obuf[23] = mult2[c] ^ mult3[d] ^ a ^ b;
+	obuf[31] = mult2[d] ^ mult3[a] ^ b ^ c;
+}
+
+#define R128F(x, y) obuf[x] = box[buf[y] ^ rk[y]] ^ rk[x+32]
+
+void drew::Rijndael128::Final(uint8_t *obuf, uint8_t *buf, const uint8_t *rk,
+		const uint8_t *box)
+{
+	uint8_t a, b, c, d;
+
+	R128F( 4,  4);
+	R128F(12, 15);
+	R128F(20, 22);
+	R128F(28, 29);
+
+	R128F( 5,  5);
+	R128F(13, 12);
+	R128F(21, 23);
+	R128F(29, 30);
+
+	R128F( 6,  6);
+	R128F(14, 13);
+	R128F(22, 20);
+	R128F(30, 31);
+
+	R128F( 7,  7);
+	R128F(15, 14);
+	R128F(23, 21);
+	R128F(31, 28);
 }
 
 void drew::Rijndael128::EncryptBlock(uint64_t *state)
 {
 	const size_t rksz = sizeof(uint64_t) * 4;
 	uint8_t buf[sizeof(*state) * 4];
+	uint8_t obuf[sizeof(buf)];
 	uint8_t rbuf[rksz * (m_nr + 1)];
-	const uint8_t *rk = rbuf;
+	uint8_t *rk = rbuf;
+	uint8_t *p = buf, *q = obuf;
 
 	E::Copy(buf, state, sizeof(buf));
 	E::Copy(rbuf, m_rk, sizeof(rbuf));
 
-	for (size_t i = 0; i < m_nr-1; i++, rk += 4)
-		Round(buf, rk, S);
+	for (size_t i = 0; i < m_nr-1; i++, rk += rksz) {
+		E::Copy(rk, m_rk[i], rksz);
+		Round(q, p, rk, S);
+		std::swap(p, q);
+	}
 
-	E::Copy(state, buf, sizeof(buf));
+	E::Copy(rk, m_rk[m_nr-1], rksz);
+	E::Copy(rk+rksz, m_rk[m_nr], rksz);
 
-	KeyAddition(state, m_rk[m_nr-1]);
-	Modify(state, S);
-	KeyAddition(state, m_rk[m_nr]);
+	Final(q, p, rk, S);
+	E::Copy(state, q, sizeof(buf));
 }
 
 void drew::Rijndael::EncryptBlock(uint64_t *state)

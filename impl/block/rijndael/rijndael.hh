@@ -37,7 +37,7 @@ class Rijndael
 		static const uint8_t multd[];
 		static const uint8_t multe[];
 		static const uint8_t S[];
-		inline void EncryptBlock(uint64_t *);
+		inline virtual void EncryptBlock(uint64_t *);
 	private:
 		inline void Substitution(uint64_t *, const uint8_t *);
 		inline void DecryptBlock(uint64_t *);
@@ -94,7 +94,9 @@ class Rijndael128 : public GenericRijndael<128>
 		Rijndael128() { m_sh1 = shifts1[shiftoffset]; }
 	protected:
 		virtual void Modify(uint64_t *, const uint8_t *);
-		inline virtual void Round(uint8_t *state, const uint8_t *rk,
+		inline virtual void Round(uint8_t *, const uint8_t *, const uint8_t *rk,
+				const uint8_t *s);
+		inline virtual void Final(uint8_t *, uint8_t *state, const uint8_t *rk,
 				const uint8_t *s);
 		inline void EncryptBlock(uint64_t *);
 };
