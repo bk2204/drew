@@ -469,6 +469,20 @@ void drew::Rijndael::Decrypt(uint8_t *out, const uint8_t *in)
 	PackBlock(out, state);
 }
 
+void drew::Rijndael128::Encrypt(uint8_t *out, const uint8_t *in)
+{
+	uint64_t state[4];
+	uint8_t buf[sizeof(state)];
+	memset(state, 0, sizeof(state));
+
+	UnpackBlock(state, in);
+	E::Copy(buf, state, sizeof(buf));
+	EncryptBlock(buf);
+	E::Copy(state, buf, sizeof(buf));
+	PackBlock(out, state);
+}
+
+
 const uint8_t drew::Rijndael::shifts0[5][4] = {
    { 0, 8, 16, 24 },
    { 0, 8, 16, 24 },
@@ -818,15 +832,12 @@ void drew::Rijndael128::Final(uint8_t *obuf, uint8_t *buf, const uint8_t *rk,
 	R128F(31, 28);
 }
 
-void drew::Rijndael128::EncryptBlock(uint64_t *state)
+void drew::Rijndael128::EncryptBlock(uint8_t *state)
 {
 	const size_t rksz = sizeof(uint64_t) * 4;
-	uint8_t buf[sizeof(*state) * 4];
-	uint8_t obuf[sizeof(buf)];
+	uint8_t buf[sizeof(uint64_t) * 4];
 	uint8_t *rk = m_rkb;
-	uint8_t *p = buf, *q = obuf;
-
-	E::Copy(buf, state, sizeof(buf));
+	uint8_t *p = state, *q = buf;
 
 	for (size_t i = 0; i < m_nr-1; i++, rk += rksz) {
 		Round(q, p, rk, S);
@@ -834,7 +845,8 @@ void drew::Rijndael128::EncryptBlock(uint64_t *state)
 	}
 
 	Final(q, p, rk, S);
-	E::Copy(state, q, sizeof(buf));
+	if (q != state)
+		memcpy(state, q, sizeof(buf));
 }
 
 void drew::Rijndael::EncryptBlock(uint64_t *state)

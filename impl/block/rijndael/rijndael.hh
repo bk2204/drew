@@ -18,8 +18,8 @@ class Rijndael
 		Rijndael();
 		~Rijndael() {};
 		virtual void SetKey(const uint8_t *key, size_t sz) = 0;
-		void Encrypt(uint8_t *out, const uint8_t *in);
-		void Decrypt(uint8_t *out, const uint8_t *in);
+		virtual void Encrypt(uint8_t *out, const uint8_t *in);
+		virtual void Decrypt(uint8_t *out, const uint8_t *in);
 		virtual size_t GetBlockSize() const = 0;
 	protected:
 		virtual void Modify(uint64_t *, const uint8_t *) = 0;
@@ -38,9 +38,9 @@ class Rijndael
 		static const uint8_t multe[];
 		static const uint8_t S[];
 		inline virtual void EncryptBlock(uint64_t *);
+		inline virtual void DecryptBlock(uint64_t *);
 	private:
 		inline void Substitution(uint64_t *, const uint8_t *);
-		inline void DecryptBlock(uint64_t *);
 		inline virtual void ShiftRow(uint64_t *, const uint8_t *) = 0;
 		inline virtual uint64_t ApplyS(uint64_t, const uint8_t *) = 0;
 		inline virtual void MixColumn(uint64_t *) = 0;
@@ -100,7 +100,8 @@ class Rijndael128 : public GenericRijndael<128>
 				const uint8_t *s);
 		inline virtual void Final(uint8_t *, uint8_t *state, const uint8_t *rk,
 				const uint8_t *s);
-		inline void EncryptBlock(uint64_t *);
+		inline void EncryptBlock(uint8_t *);
+		void Encrypt(uint8_t *, const uint8_t *);
 };
 
 class Rijndael160 : public GenericRijndael<160>
