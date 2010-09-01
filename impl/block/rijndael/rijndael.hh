@@ -60,6 +60,7 @@ class GenericRijndael : public Rijndael
 	public:
 		static const size_t block_size = BlockSize / 8;
 	protected:
+		uint8_t m_rkb[sizeof(m_rk)];
 		static const size_t m_nb = BlockSize / 32;
 		static const size_t m_bc = BlockSize / 4;
 		static const uint64_t m_bcmask = (((uint64_t(1) << (m_bc-1))-1)<<1)|1;
@@ -72,7 +73,7 @@ class GenericRijndael : public Rijndael
 		{
 			return block_size;
 		}
-		void SetKey(const uint8_t *key, size_t sz);
+		virtual void SetKey(const uint8_t *key, size_t sz);
 		inline void ShiftRow(uint64_t *, const uint8_t *);
 		inline uint64_t ApplyS(uint64_t, const uint8_t *);
 		inline void MixColumn(uint64_t *);
@@ -93,6 +94,7 @@ class Rijndael128 : public GenericRijndael<128>
 	public:
 		Rijndael128() { m_sh1 = shifts1[shiftoffset]; }
 	protected:
+		virtual void SetKey(const uint8_t *key, size_t sz);
 		virtual void Modify(uint64_t *, const uint8_t *);
 		inline virtual void Round(uint8_t *, const uint8_t *, const uint8_t *rk,
 				const uint8_t *s);

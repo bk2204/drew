@@ -440,6 +440,15 @@ void drew::GenericRijndael<N>::SetKey(const uint8_t *key, size_t len)
 	}
 }
 
+void drew::Rijndael128::SetKey(const uint8_t *key, size_t len)
+{
+	drew::GenericRijndael<128>::SetKey(key, len);
+	const size_t rksz = sizeof(uint64_t) * 4;
+	uint8_t *rk = m_rkb;
+	for (size_t i = 0; i < m_nr+1; i++, rk += rksz)
+		E::Copy(rk, m_rk[i], rksz);
+}
+
 void drew::Rijndael::Encrypt(uint8_t *out, const uint8_t *in)
 {
 	uint64_t state[4];
@@ -817,20 +826,15 @@ void drew::Rijndael128::EncryptBlock(uint64_t *state)
 	uint8_t buf[sizeof(*state) * 4];
 	uint8_t obuf[sizeof(buf)];
 	uint8_t rbuf[rksz * (m_nr + 1)];
-	uint8_t *rk = rbuf;
+	uint8_t *rk = m_rkb;
 	uint8_t *p = buf, *q = obuf;
 
 	E::Copy(buf, state, sizeof(buf));
-	E::Copy(rbuf, m_rk, sizeof(rbuf));
 
 	for (size_t i = 0; i < m_nr-1; i++, rk += rksz) {
-		E::Copy(rk, m_rk[i], rksz);
 		Round(q, p, rk, S);
 		std::swap(p, q);
 	}
-
-	E::Copy(rk, m_rk[m_nr-1], rksz);
-	E::Copy(rk+rksz, m_rk[m_nr], rksz);
 
 	Final(q, p, rk, S);
 	E::Copy(state, q, sizeof(buf));
