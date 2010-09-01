@@ -399,11 +399,11 @@ void drew::GenericRijndael<N>::SetKey(const uint8_t *key, size_t len)
 	    tk[i % 4][i / 4] = key[i];
 	}
 
-	int t = 0;
+	size_t t = 0;
 
 	memset(m_rk, 0, sizeof(m_rk));
 
-	for (int j = 0; (j < m_nk) && (t < (m_nr+1)*m_nb); j++, t++) {
+	for (size_t j = 0; (j < m_nk) && (t < (m_nr+1)*m_nb); j++, t++) {
 		for (size_t i = 0; i < 4; i++) {
 			m_rk[t / m_nb][i] |=
 				uint64_t(tk[i][j] & 0xff) << ((t * 8) % m_bc); 
@@ -418,21 +418,21 @@ void drew::GenericRijndael<N>::SetKey(const uint8_t *key, size_t len)
 		tk[0][0] ^= rcon[ri++];
 
 		if (m_nk <= 6)
-			for (int j = 1; j < m_nk; j++)
-				for (int i = 0; i < 4; i++)
+			for (size_t j = 1; j < m_nk; j++)
+				for (size_t i = 0; i < 4; i++)
 					tk[i][j] ^= tk[i][j-1];
 		else {
-			for (int j = 1; j < 4; j++)
+			for (size_t j = 1; j < 4; j++)
 				for (int i = 0; i < 4; i++)
 					tk[i][j] ^= tk[i][j-1];
-			for (int i = 0; i < 4; i++)
+			for (size_t i = 0; i < 4; i++)
 				tk[i][4] ^= S[tk[i][3] & 0xff];
-			for (int j = 5; j < m_nk; j++)
-				for (int i = 0; i < 4; i++)
+			for (size_t j = 5; j < m_nk; j++)
+				for (size_t i = 0; i < 4; i++)
 					tk[i][j] ^= tk[i][j-1];
 		}
-		for (int j = 0; (j < m_nk) && (t < (m_nr+1)*m_nb); j++, t++) {
-			for (int i = 0; i < 4; i++) {
+		for (size_t j = 0; (j < m_nk) && (t < (m_nr+1)*m_nb); j++, t++) {
+			for (size_t i = 0; i < 4; i++) {
 				m_rk[t / m_nb][i] |= 
 					uint64_t(tk[i][j] & 0xff) << ((t * 8) % (m_bc));
 			}
@@ -797,8 +797,6 @@ void drew::Rijndael128::Round(uint8_t *obuf, const uint8_t *buf,
 void drew::Rijndael128::Final(uint8_t *obuf, uint8_t *buf, const uint8_t *rk,
 		const uint8_t *box)
 {
-	uint8_t a, b, c, d;
-
 	R128F( 4,  4);
 	R128F(12, 15);
 	R128F(20, 22);
@@ -825,7 +823,6 @@ void drew::Rijndael128::EncryptBlock(uint64_t *state)
 	const size_t rksz = sizeof(uint64_t) * 4;
 	uint8_t buf[sizeof(*state) * 4];
 	uint8_t obuf[sizeof(buf)];
-	uint8_t rbuf[rksz * (m_nr + 1)];
 	uint8_t *rk = m_rkb;
 	uint8_t *p = buf, *q = obuf;
 
@@ -870,7 +867,7 @@ void drew::Rijndael::DecryptBlock(uint64_t *state)
 template<unsigned N>
 void drew::GenericRijndael<N>::PackBlock(uint8_t *blk, const uint64_t *state)
 {
-	for (int j = 0; j != m_bc; j += 8) {
+	for (size_t j = 0; j != m_bc; j += 8) {
 		*blk++ = state[0] >> j;
 		*blk++ = state[1] >> j;
 		*blk++ = state[2] >> j;
@@ -886,7 +883,7 @@ void drew::GenericRijndael<N>::UnpackBlock(uint64_t *state, const uint8_t *blk)
 	state[2] = *blk++;
 	state[3] = *blk++;
 
-	for (int j = 8; j != m_bc; j += 8) {
+	for (size_t j = 8; j != m_bc; j += 8) {
 		state[0] |= uint64_t(*blk++) << j;
 		state[1] |= uint64_t(*blk++) << j;
 		state[2] |= uint64_t(*blk++) << j;
