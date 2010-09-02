@@ -9,15 +9,15 @@
 #include "hash-plugin.hh"
 
 extern "C" {
-PLUGIN_STRUCTURE(sha512, drew::SHA512)
-PLUGIN_STRUCTURE(sha384, drew::SHA384)
+PLUGIN_STRUCTURE(sha512, drew::SHA512, SHA512)
+PLUGIN_STRUCTURE(sha384, drew::SHA384, SHA384)
 PLUGIN_DATA_START()
 PLUGIN_DATA(sha512, "SHA-512")
 PLUGIN_DATA(sha384, "SHA-384")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE()
 
-static int sha512test(void *)
+static int sha512test(void *, drew_loader_t *)
 {
 	int res = 0;
 
@@ -46,7 +46,7 @@ static int sha512test(void *)
 	return res;
 }
 
-static int sha384test(void *)
+static int sha384test(void *, drew_loader_t *)
 {
 	int res = 0;
 

@@ -85,9 +85,10 @@ class Hash
 			E::Copy(buf+trip, len, sizeof(len), sizeof(len));
 			Transform(buf);
 		}
-		virtual void GetDigest(uint8_t *digest)
+		virtual void GetDigest(uint8_t *digest, bool nopad)
 		{
-			Pad();
+			if (!nopad)
+				Pad();
 
 			E::Copy(digest, m_hash, Size);
 		}

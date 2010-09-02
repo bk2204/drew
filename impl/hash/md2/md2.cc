@@ -11,13 +11,13 @@
 #define MD2_BLOCK_LENGTH 16
 
 extern "C" {
-PLUGIN_STRUCTURE(md2, drew::MD2)
+PLUGIN_STRUCTURE(md2, drew::MD2, MD2)
 PLUGIN_DATA_START()
 PLUGIN_DATA(md2, "MD2")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE()
 
-static int md2test(void *)
+static int md2test(void *, drew_loader_t *)
 {
 	int res = 0;
 

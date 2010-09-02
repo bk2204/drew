@@ -9,13 +9,13 @@
 #include "hash-plugin.hh"
 
 extern "C" {
-PLUGIN_STRUCTURE(md5, drew::MD5)
+PLUGIN_STRUCTURE(md5, drew::MD5, MD5)
 PLUGIN_DATA_START()
 PLUGIN_DATA(md5, "MD5")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE()
 
-static int md5test(void *)
+static int md5test(void *, drew_loader_t *)
 {
 	int res = 0;
 

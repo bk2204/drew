@@ -30,10 +30,19 @@
  */
 #define DREW_HASH_INTSIZE 6
 
-/* This bit is a flag to the clone function indicating that the new context
- * should be copied into already-existing memory at *newctx.
+/* This bit is a flag indicating that the new context should be copied into
+ * already-existing memory at *newctx.
  */
+#define DREW_HASH_INIT_FIXED  1
 #define DREW_HASH_CLONE_FIXED 1
+/* This bit is a flag indicating that the memory storing the context should not
+ * be freed because the context was created with INIT_FIXED or CLONE_FIXED.
+ */
+#define DREW_HASH_FINI_NO_DEALLOC 1
+/* This bit is a flag indicating that the context has already been padded and so
+ * pad should not be called again.
+ */
+#define DREW_HASH_FINAL_NO_PAD 1
 
 typedef struct {
 	int (*info)(int op, void *p);
@@ -45,6 +54,20 @@ typedef struct {
 	int (*test)(void *);
 	void (*fini)(void **);
 	int (*clone)(void **, void *, int);
-} drew_hash_functbl_t;
+} drew_hash_functbl0_t;
+
+typedef struct {
+	int (*info)(int op, void *p);
+	int (*init)(void **, void *, int, drew_loader_t *, const drew_param_t *);
+	int (*clone)(void **, void *, int);
+	int (*fini)(void **, int);
+	int (*update)(void *, const uint8_t *, size_t);
+	int (*pad)(void *);
+	int (*final)(void *, uint8_t *, int);
+	int (*transform)(void *, void *, const uint8_t *);
+	int (*test)(void *, drew_loader_t *);
+} drew_hash_functbl1_t;
+
+typedef drew_hash_functbl1_t drew_hash_functbl_t;
 
 #endif

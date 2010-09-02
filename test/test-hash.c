@@ -27,7 +27,7 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 	int result;
 	const drew_hash_functbl_t *functbl = tbl;
 	
-	result = functbl->test(NULL);
+	result = functbl->test(NULL, ldr);
 	printf("self-test %s (result code %d)\n", result ? "failed" : "ok", result);
 	return 0;
 }
@@ -46,11 +46,12 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		return ENOMEM;
 
 	clock_gettime(USED_CLOCK, &cstart);
-	functbl->init(&ctx, NULL, NULL);
+	functbl->init(&ctx, NULL, 0, NULL, NULL);
 	for (i = 0; i < nchunks; i++)
 		functbl->update(ctx, buf, chunk);
-	functbl->final(ctx, buf);
+	functbl->final(ctx, buf, 0);
 	clock_gettime(USED_CLOCK, &cend);
+	functbl->fini(&ctx, 0);
 
 	free(buf);
 
