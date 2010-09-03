@@ -208,8 +208,9 @@ static int cfb_test_generic(drew_loader_t *ldr, const char *name,
 		param.next = NULL;
 		param.param.number = testdata[i].feedback * 8;
 		cfb_init(&c, ldr, &param);
-		functbl->init(&algo, ldr, NULL);
-		functbl->setkey(algo, testdata[i].key, testdata[i].keysz);
+		functbl->init(&algo, NULL, 0, ldr, NULL);
+		functbl->setkey(algo, testdata[i].key, testdata[i].keysz,
+				DREW_BLOCK_MODE_ENCRYPT);
 		cfb_setblock(c, name, algo);
 		cfb_setiv(c, testdata[i].iv, testdata[i].ivsz);
 		/* We use 9 here because it tests all three code paths for 64-bit
@@ -221,11 +222,12 @@ static int cfb_test_generic(drew_loader_t *ldr, const char *name,
 
 		result |= !!memcmp(buf, testdata[i].output, testdata[i].datasz);
 		cfb_fini(&c);
-		functbl->fini(&algo);
+		functbl->fini(&algo, 0);
 
 		cfb_init(&c, ldr, &param);
-		functbl->init(&algo, ldr, NULL);
-		functbl->setkey(algo, testdata[i].key, testdata[i].keysz);
+		functbl->init(&algo, NULL, 0, ldr, NULL);
+		functbl->setkey(algo, testdata[i].key, testdata[i].keysz,
+				DREW_BLOCK_MODE_ENCRYPT);
 		cfb_setblock(c, name, algo);
 		cfb_setiv(c, testdata[i].iv, testdata[i].ivsz);
 		for (size_t j = 0; j < testdata[i].datasz; j += 9)
@@ -234,7 +236,7 @@ static int cfb_test_generic(drew_loader_t *ldr, const char *name,
 
 		result |= !!memcmp(buf, testdata[i].input, testdata[i].datasz);
 		cfb_fini(&c);
-		functbl->fini(&algo);
+		functbl->fini(&algo, 0);
 	}
 	
 	return result;

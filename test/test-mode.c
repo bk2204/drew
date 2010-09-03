@@ -68,8 +68,8 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		return ENOMEM;
 
 	clock_gettime(USED_CLOCK, &cstart);
-	ftbl->init(&bctx, NULL, NULL);
-	ftbl->setkey(bctx, key, keysz);
+	ftbl->init(&bctx, NULL, 0, NULL, NULL);
+	ftbl->setkey(bctx, key, keysz, 0);
 	functbl->init(&mctx, ldr, NULL);
 	functbl->setiv(mctx, buf2, blksz);
 	functbl->setblock(mctx, algo, bctx);

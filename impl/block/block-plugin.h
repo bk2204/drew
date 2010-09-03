@@ -20,7 +20,7 @@ extern "C" {
 #define PLUGIN_FUNCTBL(prefix, info, init, setkey, encrypt, decrypt, test, fini, clone) \
 \
 static drew_block_functbl_t prefix ## functbl = { \
-	info, init, setkey, encrypt, decrypt, test, fini, clone \
+	info, init, clone, fini, setkey, encrypt, decrypt, test \
 };
 
 struct plugin {
