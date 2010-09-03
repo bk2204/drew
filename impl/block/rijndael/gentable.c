@@ -128,6 +128,35 @@ void generate_table(uint8_t (*func)(uint8_t), const char *name)
 	printf("\n};\n\n");
 }
 
+void write_table_encrypt(uint32_t *tbl, const char *name)
+{
+	printf("const uint32_t drew::Rijndael::%s[] = {", name);
+	for (int i = 0, j = 0; i < 256; i++, j++) {
+		if (!(j & 3))
+			printf("\n\t");
+		printf("0x%08x, ", tbl[i]);
+	}
+	printf("\n};\n\n");
+}
+
+void generate_table_encrypt(void)
+{
+	uint32_t ta[256], tb[256], tc[256], td[256];
+
+	for (int i = 0; i < 256; i++) {
+		uint8_t v = i;
+		ta[v] = (mul0x3(v) << 24) | (v << 16) | (v << 8) | mul0x2(v);
+		tb[v] = (v << 24) | (v << 16) | (mul0x2(v) << 8) | mul0x3(v);
+		tc[v] = (v << 24) | (mul0x2(v) << 16) | (mul0x3(v) << 8) | v;
+		td[v] = (mul0x2(v) << 24) | (mul0x3(v) << 16) | (v << 8) | v;
+	}
+
+	write_table_encrypt(ta, "Et0");
+	write_table_encrypt(tb, "Et1");
+	write_table_encrypt(tc, "Et2");
+	write_table_encrypt(td, "Et3");
+}
+
 int main(void)
 {
 	generate_table(mul0x2, "mult2");
@@ -136,6 +165,8 @@ int main(void)
 	generate_table(mul0xb, "multb");
 	generate_table(mul0xd, "multd");
 	generate_table(mul0xe, "multe");
+
+	generate_table_encrypt();
 
 	return 0;
 }

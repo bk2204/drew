@@ -37,6 +37,7 @@ class Rijndael
 		static const uint8_t multd[];
 		static const uint8_t multe[];
 		static const uint8_t S[];
+		static const uint32_t Et0[], Et1[], Et2[], Et3[];
 		inline virtual void EncryptBlock(uint64_t *);
 		inline virtual void DecryptBlock(uint64_t *);
 	private:
