@@ -20,7 +20,7 @@ extern "C" {
 #define PLUGIN_FUNCTBL(prefix, info, init, update, pad, final, transform, test, fini, clone) \
 \
 static drew_hash_functbl_t prefix ## functbl = { \
-	info, init, update, pad, final, transform, test, fini, clone \
+	info, init, clone, fini, update, pad, final, transform, test \
 };
 
 struct plugin {

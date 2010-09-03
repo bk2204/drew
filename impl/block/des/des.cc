@@ -87,7 +87,7 @@ static bool test3(const char *key, const char *plain, const char *cipher,
 	return test<drew::TripleDES>(key, plain, cipher, keybytes);
 }
 
-static int desedetest(void *)
+static int desedetest(void *, drew_loader_t *)
 {
 	int res = 0;
 
@@ -102,7 +102,7 @@ static int desedetest(void *)
 	return res;
 }
 
-static int destest(void *)
+static int destest(void *, drew_loader_t *)
 {
 	int res = 0;
 
@@ -437,8 +437,8 @@ static int destest(void *)
 	return res;
 }
 
-	PLUGIN_STRUCTURE(des, drew::DES)
-	PLUGIN_STRUCTURE(desede, drew::TripleDES)
+	PLUGIN_STRUCTURE(des, drew::DES, DES)
+	PLUGIN_STRUCTURE(desede, drew::TripleDES, TripleDES)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(des, "DES")
 	PLUGIN_DATA(desede, "DESede")

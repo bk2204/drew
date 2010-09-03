@@ -31,7 +31,7 @@ class HashTestCase
 			T hash;
 			for (size_t i = 0; i < m_reps; i++)
 				hash.Update(m_buf, m_len);
-			hash.GetDigest(m_result);
+			hash.GetDigest(m_result, 0);
 
 			int result = !memcmp(buf, m_result, T::digest_size);
 			return result;

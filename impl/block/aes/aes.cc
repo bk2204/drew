@@ -58,7 +58,7 @@ static int rd_main_info(int op, void *p, size_t blksz, const int *keysz,
 {
 	switch (op) {
 		case DREW_BLOCK_VERSION:
-			return 0;
+			return 1;
 		case DREW_BLOCK_BLKSIZE:
 			return blksz;
 		case DREW_BLOCK_KEYSIZE:
@@ -95,15 +95,22 @@ static int rd_aes256_info(int op, void *p)
 	return rd_main_info(op, p, 16, rd_aes256_keysz, DIM(rd_aes256_keysz));
 }
 
-static void rd_main_init(void **ctx, size_t blksz)
+static int rd_main_init(void **ctx, int flags, size_t blksz)
 {
 	drew::AES *p = new drew::AES(blksz);
-	*ctx = p;
+	if (flags & DREW_BLOCK_INIT_FIXED) {
+		memcpy(*ctx, p, sizeof(*p));
+		delete p;
+	}
+	else
+		*ctx = p;
+	return 0;
 }
 
-static void rd_aes_init(void **ctx, drew_loader_t *, const drew_param_t *)
+static int rd_aes_init(void **ctx, void *, int flags, drew_loader_t *,
+		const drew_param_t *)
 {
-	return rd_main_init(ctx, 16);
+	return rd_main_init(ctx, flags, 16);
 }
 
 static int rd_clone(void **newctx, void *oldctx, int flags)
@@ -118,30 +125,38 @@ static int rd_clone(void **newctx, void *oldctx, int flags)
 	return 0;
 }
 
-static int rd_setkey(void *ctx, const uint8_t *key, size_t len)
+static int rd_setkey(void *ctx, const uint8_t *key, size_t len, int mode)
 {
 	drew::AES *p = reinterpret_cast<drew::AES *>(ctx);
 	p->SetKey(key, len);
 	return 0;
 }
 
-static void rd_encrypt(void *ctx, uint8_t *out, const uint8_t *in)
+static int rd_encrypt(void *ctx, uint8_t *out, const uint8_t *in)
 {
 	drew::AES *p = reinterpret_cast<drew::AES *>(ctx);
 	p->Encrypt(out, in);
+	return 0;
 }
 
-static void rd_decrypt(void *ctx, uint8_t *out, const uint8_t *in)
+static int rd_decrypt(void *ctx, uint8_t *out, const uint8_t *in)
 {
 	drew::AES *p = reinterpret_cast<drew::AES *>(ctx);
 	p->Decrypt(out, in);
+	return 0;
 }
 
-static void rd_fini(void **ctx)
+static int rd_fini(void **ctx, int flags)
 {
 	drew::AES *p = reinterpret_cast<drew::AES *>(*ctx);
-	delete p;
-	*ctx = NULL;
+	if (flags & DREW_BLOCK_FINI_NO_DEALLOC) {
+		p->~AES();
+	}
+	else {
+		delete p;
+		*ctx = NULL;
+	}
+	return 0;
 }
 
 static void str2bytes(uint8_t *bytes, const char *s, size_t len = 0)
@@ -182,7 +197,7 @@ static bool test(const char *key, const char *plain, const char *cipher,
 	return !memcmp(buf, pb, blocksz);
 }
 
-static int rd_test(void *)
+static int rd_test(void *, drew_loader_t *)
 {
 	int res = 0;
 

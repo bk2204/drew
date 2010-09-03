@@ -32,7 +32,16 @@
 /* This bit is a flag to the clone function indicating that the new context
  * should be copied into already-existing memory at *newctx.
  */
+#define DREW_BLOCK_INIT_FIXED 1
 #define DREW_BLOCK_CLONE_FIXED 1
+#define DREW_BLOCK_FINI_NO_DEALLOC 1
+/* These values are passed to setkey to determine the potential usage of the
+ * context.  Set bit 0 to disable decryption and set bit 1 to disable
+ * encryption.
+ */
+#define DREW_BLOCK_MODE_BOTH 0
+#define DREW_BLOCK_MODE_ENCRYPT 1
+#define DREW_BLOCK_MODE_DECRYPT 2
 
 typedef struct {
 	int (*info)(int op, void *p);
@@ -43,6 +52,19 @@ typedef struct {
 	int (*test)(void *);
 	void (*fini)(void **);
 	int (*clone)(void **, void *, int);
-} drew_block_functbl_t;
+} drew_block_functbl0_t;
+
+typedef struct {
+	int (*info)(int op, void *p);
+	int (*init)(void **, void *, int, drew_loader_t *, const drew_param_t *);
+	int (*clone)(void **, void *, int);
+	int (*fini)(void **, int);
+	int (*setkey)(void *, const uint8_t *, size_t, int);
+	int (*encrypt)(void *, uint8_t *, const uint8_t *);
+	int (*decrypt)(void *, uint8_t *, const uint8_t *);
+	int (*test)(void *, drew_loader_t *);
+} drew_block_functbl1_t;
+
+typedef drew_block_functbl1_t drew_block_functbl_t;
 
 #endif

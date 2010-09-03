@@ -58,7 +58,7 @@ static int rd_main_info(int op, void *p, size_t blksz, const int *keysz,
 {
 	switch (op) {
 		case DREW_BLOCK_VERSION:
-			return 0;
+			return 1;
 		case DREW_BLOCK_BLKSIZE:
 			return blksz;
 		case DREW_BLOCK_KEYSIZE:
@@ -69,6 +69,7 @@ static int rd_main_info(int op, void *p, size_t blksz, const int *keysz,
 			}
 			return 0;
 		case DREW_BLOCK_INTSIZE:
+			// FIXME: set up copies or template for each type.
 			return sizeof(drew::Rijndael);
 		default:
 			return -EINVAL;
@@ -115,7 +116,8 @@ static int rd_aes256_info(int op, void *p)
 	return rd_main_info(op, p, 16, rd_aes256_keysz, DIM(rd_aes256_keysz));
 }
 
-static void rd_main_init(void **ctx, size_t blksz)
+// FIXME: set up copies or template for each type.
+static int rd_main_init(void **ctx, int flags, size_t blksz)
 {
 	drew::Rijndael *p = 0;
 	switch (blksz)
@@ -136,36 +138,48 @@ static void rd_main_init(void **ctx, size_t blksz)
 			p = new drew::Rijndael256;
 			break;
 	}
-	*ctx = p;
+	if (flags & DREW_BLOCK_INIT_FIXED) {
+		memcpy(*ctx, p, sizeof(*p));
+		delete p;
+	}
+	else
+		*ctx = p;
+	return 0;
 }
 
-static void rd_aes_init(void **ctx, drew_loader_t *, const drew_param_t *)
+static int rd_aes_init(void **ctx, void *, int flags, drew_loader_t *,
+		const drew_param_t *)
 {
-	return rd_main_init(ctx, 16);
+	return rd_main_init(ctx, flags, 16);
 }
 
-static void rd160_init(void **ctx, drew_loader_t *, const drew_param_t *)
+static int rd160_init(void **ctx, void *, int flags, drew_loader_t *,
+		const drew_param_t *)
 {
-	return rd_main_init(ctx, 20);
+	return rd_main_init(ctx, flags, 20);
 }
 
-static void rd192_init(void **ctx, drew_loader_t *, const drew_param_t *)
+static int rd192_init(void **ctx, void *, int flags, drew_loader_t *,
+		const drew_param_t *)
 {
-	return rd_main_init(ctx, 24);
+	return rd_main_init(ctx, flags, 24);
 }
 
-static void rd224_init(void **ctx, drew_loader_t *, const drew_param_t *)
+static int rd224_init(void **ctx, void *, int flags, drew_loader_t *,
+		const drew_param_t *)
 {
-	return rd_main_init(ctx, 28);
+	return rd_main_init(ctx, flags, 28);
 }
 
-static void rd256_init(void **ctx, drew_loader_t *, const drew_param_t *)
+static int rd256_init(void **ctx, void *, int flags, drew_loader_t *,
+		const drew_param_t *)
 {
-	return rd_main_init(ctx, 32);
+	return rd_main_init(ctx, flags, 32);
 }
 
 static int rd_clone(void **newctx, void *oldctx, int flags)
 {
+	// FIXME: set up copies or template for each type.
 	using namespace drew;
 	Rijndael *p = 0, *x = reinterpret_cast<Rijndael *>(oldctx);
 	switch (x->GetBlockSize())
@@ -195,30 +209,36 @@ static int rd_clone(void **newctx, void *oldctx, int flags)
 	return 0;
 }
 
-static int rd_setkey(void *ctx, const uint8_t *key, size_t len)
+static int rd_setkey(void *ctx, const uint8_t *key, size_t len, int mode)
 {
 	drew::Rijndael *p = reinterpret_cast<drew::Rijndael *>(ctx);
 	p->SetKey(key, len);
 	return 0;
 }
 
-static void rd_encrypt(void *ctx, uint8_t *out, const uint8_t *in)
+static int rd_encrypt(void *ctx, uint8_t *out, const uint8_t *in)
 {
 	drew::Rijndael *p = reinterpret_cast<drew::Rijndael *>(ctx);
 	p->Encrypt(out, in);
+	return 0;
 }
 
-static void rd_decrypt(void *ctx, uint8_t *out, const uint8_t *in)
+static int rd_decrypt(void *ctx, uint8_t *out, const uint8_t *in)
 {
 	drew::Rijndael *p = reinterpret_cast<drew::Rijndael *>(ctx);
 	p->Decrypt(out, in);
+	return 0;
 }
 
-static void rd_fini(void **ctx)
+static int rd_fini(void **ctx, int flags)
 {
 	drew::Rijndael *p = reinterpret_cast<drew::Rijndael *>(*ctx);
-	delete p;
-	*ctx = NULL;
+	// FIXME: set up copies or template for each type.
+	if (!(flags & DREW_BLOCK_FINI_NO_DEALLOC)) {
+		delete p;
+		*ctx = NULL;
+	}
+	return 0;
 }
 
 static void str2bytes(uint8_t *bytes, const char *s, size_t len = 0)
@@ -247,7 +267,7 @@ static bool test(const char *key, const char *plain, const char *cipher,
 		keybytes = 16;
 
 	void *p;
-	rd_main_init(&p, blocksz);
+	rd_main_init(&p, 0, blocksz);
 	Rijndael *ctx = reinterpret_cast<Rijndael *>(p);
 	ctx->SetKey(kb, keybytes);
 	ctx->Encrypt(buf, pb);
@@ -257,12 +277,12 @@ static bool test(const char *key, const char *plain, const char *cipher,
 
 	ctx->SetKey(kb, keybytes);
 	ctx->Decrypt(buf, cb);
-	rd_fini(&p);
+	rd_fini(&p, 0);
 
 	return !memcmp(buf, pb, blocksz);
 }
 
-static int rd_test(void *)
+static int rd_test(void *, drew_loader_t *)
 {
 	int res = 0;
 

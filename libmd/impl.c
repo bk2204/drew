@@ -75,7 +75,7 @@ struct context {
 void prefix ## Init(struct context *ctx) \
 { \
 	drew_impl_libmd_init(); \
-	(plugins[CONCAT(PLUGIN_, name)].tbl->init)(&ctx->ctx, NULL, NULL); \
+	(plugins[CONCAT(PLUGIN_, name)].tbl->init)(&ctx->ctx, NULL, 0, NULL, NULL); \
 } \
  \
 void prefix ## Update(struct context *ctx, const uint8_t *data, size_t len) \
@@ -90,7 +90,7 @@ void prefix ## Pad(struct context *ctx) \
  \
 void prefix ## Final(uint8_t *digest, struct context *ctx) \
 { \
-	(plugins[CONCAT(PLUGIN_, name)].tbl->final)(ctx->ctx, digest); \
+	(plugins[CONCAT(PLUGIN_, name)].tbl->final)(ctx->ctx, digest, 0); \
 } \
  \
 void prefix ## Transform(void *state, const uint8_t *block) \

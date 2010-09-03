@@ -85,7 +85,7 @@ static int blowfish_samekey(void)
 	return res;
 }
 
-static int blowfishtest(void *)
+static int blowfishtest(void *, drew_loader_t *)
 {
 	int res = 0;
 
@@ -133,7 +133,7 @@ static int blowfishtest(void *)
 }
 
 extern "C" {
-	PLUGIN_STRUCTURE(blowfish, drew::Blowfish)
+	PLUGIN_STRUCTURE(blowfish, drew::Blowfish, Blowfish)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(blowfish, "Blowfish")
 	PLUGIN_DATA_END()

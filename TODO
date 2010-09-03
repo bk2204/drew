@@ -7,7 +7,9 @@ TODO
 * Allow CAST5 key sizes < 128 bits.
 * Wipe data in destructors.
 * Provide efficient sub-word access.
-* Add DES/3DES.
+* Add block cipher testing framework.
+* Consider visibility = hidden.
+* Consider adding maintenance tests for all block ciphers.
 * Add SAFER-SK.
 * Add Serpent.
 * Add RC2.
@@ -15,11 +17,11 @@ TODO
 * Add SKIPJACK.
 * Add CTR mode.
 * Add CBC mode.
+* Add OpenPGP CFB mode.
 * Allow modes to expand text (final function).
 * Update license and description statements.
 * Add MACs.
 * Add Public Key algorithms.
-* Add TIGER.
 * Add HAVAL.
 * Add modifier for number of hash rounds, where applicable.
 * Add stream ciphers.

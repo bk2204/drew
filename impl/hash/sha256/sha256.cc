@@ -9,15 +9,15 @@
 #include "hash-plugin.hh"
 
 extern "C" {
-PLUGIN_STRUCTURE(sha256, drew::SHA256)
-PLUGIN_STRUCTURE(sha224, drew::SHA224)
+PLUGIN_STRUCTURE(sha256, drew::SHA256, SHA256)
+PLUGIN_STRUCTURE(sha224, drew::SHA224, SHA224)
 PLUGIN_DATA_START()
 PLUGIN_DATA(sha256, "SHA-256")
 PLUGIN_DATA(sha224, "SHA-224")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE()
 
-static int sha256test(void *)
+static int sha256test(void *, drew_loader_t *)
 {
 	int res = 0;
 
@@ -44,7 +44,7 @@ static int sha256test(void *)
 	return res;
 }
 
-static int sha224test(void *)
+static int sha224test(void *, drew_loader_t *)
 {
 	int res = 0;
 

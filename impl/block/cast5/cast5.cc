@@ -65,7 +65,7 @@ static int cast5_maintenance_test(void)
 	return result;
 }
 
-static int cast5test(void *)
+static int cast5test(void *, drew_loader_t *)
 {
 	using namespace drew;
 
@@ -99,7 +99,7 @@ static int cast5test(void *)
 }
 
 extern "C" {
-	PLUGIN_STRUCTURE(cast5, drew::CAST5)
+	PLUGIN_STRUCTURE(cast5, drew::CAST5, CAST5)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(cast5, "CAST-128")
 	PLUGIN_DATA_END()

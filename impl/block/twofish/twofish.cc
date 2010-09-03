@@ -50,7 +50,7 @@ static int twofish128_test(void)
 	return !!memcmp(final, pt, sizeof(pt)) << 1;
 }
 
-static int twofishtest(void *)
+static int twofishtest(void *, drew_loader_t *)
 {
 	int res = 0;
 
@@ -62,7 +62,7 @@ static int twofishtest(void *)
 }
 
 extern "C" {
-	PLUGIN_STRUCTURE(twofish, drew::Twofish)
+	PLUGIN_STRUCTURE(twofish, drew::Twofish, Twofish)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(twofish, "Twofish")
 	PLUGIN_DATA_END()
