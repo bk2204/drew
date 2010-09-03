@@ -140,7 +140,14 @@ class Rijndael224 : public GenericRijndael<224>
 	public:
 		Rijndael224() { m_sh1 = shifts1[shiftoffset]; }
 	protected:
+		virtual void SetKey(const uint8_t *key, size_t sz);
 		virtual void Modify(uint64_t *, const uint8_t *);
+		inline virtual void Round(uint8_t *, const uint8_t *, const uint8_t *rk,
+				const uint8_t *s);
+		inline virtual void Final(uint8_t *, uint8_t *state, const uint8_t *rk,
+				const uint8_t *s);
+		inline void EncryptBlock(uint8_t *);
+		void Encrypt(uint8_t *, const uint8_t *);
 };
 
 class Rijndael256 : public GenericRijndael<256>
