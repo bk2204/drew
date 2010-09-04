@@ -130,7 +130,8 @@ int main(int argc, char **argv)
 				break;
 			case MODE_TEST:
 			case MODE_TEST_INTERNAL:
-				test_internal(ldr, name, functbl);
+				if (test_internal(ldr, name, functbl))
+					error++;
 			default:
 				break;
 		}

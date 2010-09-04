@@ -29,7 +29,7 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 	
 	result = functbl->test(NULL, ldr);
 	printf("self-test %s (result code %d)\n", result ? "failed" : "ok", result);
-	return 0;
+	return result;
 }
 
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
