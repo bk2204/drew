@@ -54,10 +54,8 @@ void drew::MD2::Transform(uint8_t *state, const uint8_t *block)
 	uint8_t t = 0, l = csum[15];
 	size_t i, j;
 
-	memcpy(state + 16, block, MD2_BLOCK_LENGTH);
-	memcpy(state + 32, block, MD2_BLOCK_LENGTH);
 	for (i = 0; i < MD2_BLOCK_LENGTH; i++) {
-		state[i + 32] ^= state[i];
+		state[i + 32] = (state[i + 16] = block[i]) ^ state[i];
 		l = (csum[i] ^= sbox[block[i] ^ l]);
 	}
 
