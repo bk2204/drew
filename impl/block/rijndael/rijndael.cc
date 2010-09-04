@@ -496,6 +496,15 @@ void drew::Rijndael224::SetKey(const uint8_t *key, size_t len)
 		E::Copy(rk, m_rk[i], rksz);
 }
 
+void drew::Rijndael256::SetKey(const uint8_t *key, size_t len)
+{
+	drew::GenericRijndael<256>::SetKey(key, len);
+	const size_t rksz = sizeof(uint64_t) * 4;
+	uint8_t *rk = m_rkb;
+	for (size_t i = 0; i < m_nr+1; i++, rk += rksz)
+		E::Copy(rk, m_rk[i], rksz);
+}
+
 void drew::Rijndael::Encrypt(uint8_t *out, const uint8_t *in)
 {
 	uint64_t state[4];
@@ -535,6 +544,12 @@ void drew::Rijndael192::Encrypt(uint8_t *out, const uint8_t *in)
 }
 
 void drew::Rijndael224::Encrypt(uint8_t *out, const uint8_t *in)
+{
+	memcpy(out, in, block_size);
+	EncryptBlock(out);
+}
+
+void drew::Rijndael256::Encrypt(uint8_t *out, const uint8_t *in)
 {
 	memcpy(out, in, block_size);
 	EncryptBlock(out);
@@ -880,6 +895,19 @@ void drew::Rijndael224::Round(uint8_t *obuf, const uint8_t *buf,
 	R128R(24, 24,  1,  6, 15,  1, 15, 22, 28);
 }
 
+void drew::Rijndael256::Round(uint8_t *obuf, const uint8_t *buf,
+		const uint8_t *rk, const uint8_t *box)
+{
+	R128R( 0,  0,  5, 14, 19,  7, 14, 20, 27);
+	R128R( 4,  4,  9, 18, 23,  6, 13, 19, 26);
+	R128R( 8,  8, 13, 22, 27,  5, 12, 18, 25);
+	R128R(12, 12, 17, 26, 31,  4, 11, 17, 24);
+	R128R(16, 16, 21, 30,  3,  3, 10, 16, 31);
+	R128R(20, 20, 25,  2,  7,  2,  9, 23, 30);
+	R128R(24, 24, 29,  6, 11,  1,  8, 22, 29);
+	R128R(28, 28,  1, 10, 15,  0, 15, 21, 28);
+}
+
 #define R128F(x, z, y, w) obuf[x] = box[buf[y] ^ rk[w]] ^ rk[z+32]
 
 void drew::Rijndael128::Final(uint8_t *obuf, uint8_t *buf, const uint8_t *rk,
@@ -1008,6 +1036,50 @@ void drew::Rijndael224::Final(uint8_t *obuf, uint8_t *buf, const uint8_t *rk,
 	R128F(27, 25, 15, 28);
 }
 
+void drew::Rijndael256::Final(uint8_t *obuf, uint8_t *buf, const uint8_t *rk,
+		const uint8_t *box)
+{
+	R128F( 0,  7,  0,  7);
+	R128F( 1, 15,  5, 14);
+	R128F( 2, 23, 14, 20);
+	R128F( 3, 31, 19, 27);
+
+	R128F( 4,  6,  4,  6);
+	R128F( 5, 14,  9, 13);
+	R128F( 6, 22, 18, 19);
+	R128F( 7, 30, 23, 26);
+
+	R128F( 8,  5,  8,  5);
+	R128F( 9, 13, 13, 12);
+	R128F(10, 21, 22, 18);
+	R128F(11, 29, 27, 25);
+
+	R128F(12,  4, 12,  4);
+	R128F(13, 12, 17, 11);
+	R128F(14, 20, 26, 17);
+	R128F(15, 28, 31, 24);
+
+	R128F(16,  3, 16,  3);
+	R128F(17, 11, 21, 10);
+	R128F(18, 19, 30, 16);
+	R128F(19, 27,  3, 31);
+
+	R128F(20,  2, 20,  2);
+	R128F(21, 10, 25,  9);
+	R128F(22, 18,  2, 23);
+	R128F(23, 26,  7, 30);
+
+	R128F(24,  1, 24,  1);
+	R128F(25,  9, 29,  8);
+	R128F(26, 17,  6, 22);
+	R128F(27, 25, 11, 29);
+
+	R128F(28,  0, 28,  0);
+	R128F(29,  8,  1, 15);
+	R128F(30, 16, 10, 21);
+	R128F(31, 24, 15, 28);
+}
+
 
 void drew::Rijndael128::EncryptBlock(uint8_t *state)
 {
@@ -1061,6 +1133,23 @@ void drew::Rijndael192::EncryptBlock(uint8_t *state)
 }
 
 void drew::Rijndael224::EncryptBlock(uint8_t *state)
+{
+	const size_t rksz = sizeof(uint64_t) * 4;
+	uint8_t buf[sizeof(uint64_t) * 4];
+	uint8_t *rk = m_rkb;
+	uint8_t *p = state, *q = buf;
+
+	for (size_t i = 0; i < m_nr-1; i++, rk += rksz) {
+		Round(q, p, rk, S);
+		std::swap(p, q);
+	}
+
+	Final(q, p, rk, S);
+	if (q != state)
+		memcpy(state, q, block_size);
+}
+
+void drew::Rijndael256::EncryptBlock(uint8_t *state)
 {
 	const size_t rksz = sizeof(uint64_t) * 4;
 	uint8_t buf[sizeof(uint64_t) * 4];
