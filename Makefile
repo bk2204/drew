@@ -43,7 +43,7 @@ PLUGINCFLAGS	+= -Iimpl/prng -Iimpl/hash -Iimpl/block -I. ${LIBCFLAGS}
 
 LIBS			+= -lrt -ldl
 
-all: ${PLUG_EXE} ${DREW_SONAME}
+all: ${PLUG_EXE} ${DREW_SONAME} standard
 
 .include "impl/hash/Makefile"
 .include "impl/block/Makefile"
