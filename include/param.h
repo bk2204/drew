@@ -1,6 +1,8 @@
 #ifndef DREW_PARAM_H
 #define DREW_PARAM_H
 
+#include <stddef.h>
+
 /* This structure is used for passing parameters to algorithms that need them.
  * The name of a parameter and its values are specified in SCAN.  Names are
  * case-sensitive.  Parameters specified as Integer or long in SCAN are stored

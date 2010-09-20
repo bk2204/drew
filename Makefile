@@ -33,7 +33,7 @@ RM				?= rm
 CFLAGS			+= -pg
 .endif
 CPPFLAGS		+= -Iinclude
-CFLAGS			+= -Wall -fPIC -O6 -g
+CFLAGS			+= -Wall -fPIC -O3 -g
 CFLAGS			+= ${CFLAGS-y} ${CPPFLAGS}
 CXXFLAGS		:= ${CXXFLAGS} ${CFLAGS} 
 CFLAGS			+= -std=c99

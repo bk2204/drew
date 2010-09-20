@@ -131,9 +131,10 @@ uint32_t drew::Twofish::h(uint32_t x, const uint32_t *k, size_t len)
 		mds[2][E::GetByte(x, 2)] ^ mds[3][E::GetByte(x, 3)];
 }
 
+#define MAXKEYSZ 32
 void drew::Twofish::SetKey(const uint8_t *key, size_t sz)
 {
-	uint32_t buf[32];
+	uint32_t buf[MAXKEYSZ];
 	size_t len = sz / 8;
 
 	typedef endian_t E;
@@ -147,7 +148,7 @@ void drew::Twofish::SetKey(const uint8_t *key, size_t sz)
 		m_k[i+1] = rol(a+(2*b), 9);
 	}
 
-	uint32_t svec[2*len];
+	uint32_t svec[2 * (MAXKEYSZ/8)];
 
 	for (size_t i = 0; i < len; i++)
 		svec[2*(len-i-1)] = ReedSolomon(m[(2*i)+1], m[2*i]);

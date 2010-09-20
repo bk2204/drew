@@ -25,7 +25,7 @@ class Rijndael
 		const uint8_t *m_sh1;
 		static const uint8_t shifts1[5][4];
 		uint64_t m_rk[MAXROUNDS+1][4];
-		uint8_t m_rkb[sizeof(m_rk)];
+		uint8_t m_rkb[sizeof(uint64_t) * (MAXROUNDS+1) * 4];
 		inline void KeyAddition(uint64_t *, const uint64_t *);
 		static const uint8_t mult2[];
 		static const uint8_t mult3[];
