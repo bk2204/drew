@@ -36,6 +36,16 @@ uint64_t repl(uint8_t x)
 	return r;
 }
 
+uint8_t rol(uint8_t x)
+{
+	return (x << 1) | (x >> 7);
+}
+
+uint8_t ror(uint8_t x)
+{
+	return (x >> 1) | (x << 7);
+}
+
 uint8_t s1(uint8_t x)
 {
 	return sbox[x];
@@ -43,17 +53,17 @@ uint8_t s1(uint8_t x)
 
 uint8_t s2(uint8_t x)
 {
-	return sbox[x];
+	return rol(sbox[x]);
 }
 
 uint8_t s3(uint8_t x)
 {
-	return sbox[x];
+	return ror(sbox[x]);
 }
 
 uint8_t s4(uint8_t x)
 {
-	return sbox[x];
+	return sbox[rol(x)];
 }
 
 uint64_t sp1(uint8_t x)
@@ -105,11 +115,13 @@ void print_table()
 	printf("const uint64_t drew::Camellia::s[8][256] = {");
 	for (int j = 0; j < 8; j++) {
 		uint64_t (*algo)(uint8_t) = ftbl[j];
+		printf("{\n");
 		for (int i = 0; i < 256; i++) {
 			if (!(i & 3))
 				printf("\n\t");
 			printf("0x%016llx, ", algo(i));
 		}
+		printf("},\n");
 	}
 	printf("\n};\n");
 }

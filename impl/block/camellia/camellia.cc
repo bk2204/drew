@@ -35,19 +35,17 @@ static int camellia128_test(void)
 	memset(key, 0, sizeof(key));
 	memset(pt, 0, sizeof(pt));
 
-	str2bytes(final, "5d9d4eeffa9151575524f115815a12e0");
-	for (size_t i = 0; i < 49; i++) {
-		drew::Camellia ctx;
-		ctx.SetKey(key, sizeof(key));
-		ctx.Encrypt(ct, pt);
-		ctx.Decrypt(buf, ct);
+	str2bytes(key, "0123456789abcdeffedcba9876543210");
+	memcpy(pt, key, sizeof(pt));
+	str2bytes(final, "67673138549669730857065648eabe43");
+	drew::Camellia ctx;
+	ctx.SetKey(key, sizeof(key));
+	ctx.Encrypt(ct, pt);
+	ctx.Decrypt(buf, ct);
 
-		if (memcmp(buf, pt, sizeof(pt)))
-			return 1;
-		memcpy(key, pt, sizeof(key));
-		memcpy(pt, ct, sizeof(pt));
-	}
-	return !!memcmp(final, pt, sizeof(pt)) << 1;
+	if (memcmp(buf, pt, sizeof(pt)))
+		return 1;
+	return !!memcmp(final, ct, sizeof(pt)) << 1;
 }
 
 static int camelliatest(void *, drew_loader_t *)
@@ -95,7 +93,7 @@ void drew::Camellia::SetKey(const uint8_t *key, size_t sz)
 {
 	uint64_t ko[4];
 	
-	E::Copy(ko, key, sizeof(sz));
+	E::Copy(ko, key, sz);
 	if (sz == 16)
 		ko[2] = ko[3] = 0;
 	else if (sz == 24)
@@ -165,7 +163,7 @@ inline uint64_t drew::Camellia::flinv(uint64_t y, uint64_t k)
 	return (((uint64_t)xl) << 32) | xr;
 }
 
-#define SP(n) sp[n][E::GetByte(x, (7 - (n)))]
+#define SP(n) s[n][E::GetByte(x, (7 - (n)))]
 
 inline uint64_t drew::Camellia::spfunc(uint64_t x)
 {
@@ -181,9 +179,9 @@ inline uint64_t drew::Camellia::spfunc(uint64_t x)
 void drew::Camellia::Encrypt(uint8_t *out, const uint8_t *in)
 {
 	uint64_t d[2];
-	uint64_t &y = d[0], &x = d[1];
+	uint64_t &x = d[0], &y = d[1];
 
-	endian_t::Copy(d, in, sizeof(data));
+	E::Copy(d, in, sizeof(d));
 
 	x ^= kw[0];
 	y ^= kw[1];
@@ -200,38 +198,39 @@ void drew::Camellia::Encrypt(uint8_t *out, const uint8_t *in)
 	E128_ROUND2(x, y, 12);
 	E128_ROUND2(x, y, 14);
 	E128_ROUND2(x, y, 16);
-	x ^= kw[2];
-	y ^= kw[3];
+	y ^= kw[2];
+	x ^= kw[3];
+	std::swap(x, y);
 
-	endian_t::Copy(out, d, sizeof(data));
+	E::Copy(out, d, sizeof(d));
 }
 
 void drew::Camellia::Decrypt(uint8_t *out, const uint8_t *in)
 {
 	uint64_t d[2];
-	uint64_t &y = d[0], &x = d[1];
+	uint64_t &x = d[0], &y = d[1];
 
-	endian_t::Copy(d, in, sizeof(data));
+	E::Copy(d, in, sizeof(d));
 
 	x ^= kw[2];
 	y ^= kw[3];
-	E128_ROUND2(x, y, 16);
-	E128_ROUND2(x, y, 14);
-	E128_ROUND2(x, y, 12);
+	D128_ROUND2(x, y, 16);
+	D128_ROUND2(x, y, 14);
+	D128_ROUND2(x, y, 12);
 	x = fl(x, kl[3]);
 	y = flinv(y, kl[2]);
-	E128_ROUND2(x, y, 10);
-	E128_ROUND2(x, y,  8);
-	E128_ROUND2(x, y,  6);
+	D128_ROUND2(x, y, 10);
+	D128_ROUND2(x, y,  8);
+	D128_ROUND2(x, y,  6);
 	x = fl(x, kl[1]);
 	y = flinv(y, kl[0]);
-	E128_ROUND2(x, y,  4);
-	E128_ROUND2(x, y,  2);
-	E128_ROUND2(x, y,  0);
+	D128_ROUND2(x, y,  4);
+	D128_ROUND2(x, y,  2);
+	D128_ROUND2(x, y,  0);
 	x ^= kw[0];
 	y ^= kw[1];
 
-	endian_t::Copy(out, d, sizeof(data));
+	E::Copy(out, d, sizeof(d));
 }
 
 #include "tables.cc"

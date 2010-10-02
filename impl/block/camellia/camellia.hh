@@ -25,7 +25,8 @@ class Camellia
 		uint64_t spfunc(uint64_t x);
 		uint64_t kw[4];
 		uint64_t ku[24];
-		uint64_t kv[6];
+		uint64_t kl[6];
+		static const uint64_t s[8][256];
 	private:
 };
 
