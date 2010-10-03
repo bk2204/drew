@@ -15,18 +15,6 @@ static const int camelliakeysz[] =
 	16, 24, 32
 };
 
-static void str2bytes(uint8_t *bytes, const char *s, size_t len = 0)
-{
-	if (!len)
-		len = strlen(s);
-
-	unsigned x;
-	for (size_t i = 0; i < (len / 2); i++) {
-		sscanf(s+(i*2), "%02x", &x);
-		bytes[i] = x;
-	}
-}
-
 static int camellia128_test(void)
 {
 	using namespace drew;
