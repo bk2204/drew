@@ -95,13 +95,30 @@ void drew::Camellia::SetKey(const uint8_t *key, size_t sz)
 	
 	E::Copy(ko, key, sz);
 	if (sz == 16)
-		ko[2] = ko[3] = 0;
+		SetKey128(ko);
 	else if (sz == 24)
-		ko[3] = ~ko[2];
+		SetKey192(ko);
+	else
+		SetKey256(ko);
+}
 
+void drew::Camellia::SetKey192(uint64_t ko[4])
+{
+	ko[3] = ~ko[2];
+	SetKey256(ko);
+}
+
+void drew::Camellia::SetKey256(uint64_t ko[4])
+{
+	fenc = &Camellia::Encrypt256;
+	fdec = &Camellia::Decrypt256;
+}
+
+void drew::Camellia::SetKey128(uint64_t ko[4])
+{
 	uint64_t d1, d2;
-	d1 = ko[0] ^ ko[2];
-	d2 = ko[1] ^ ko[3];
+	d1 = ko[0];
+	d2 = ko[1];
 	d2 ^= f(d1, 0xa09e667f3bcc908b);
 	d1 ^= f(d2, 0xb67ae8584caa73b2);
 	d1 ^= ko[0];
@@ -136,6 +153,9 @@ void drew::Camellia::SetKey(const uint8_t *key, size_t sz)
 	rolpair(ku[14], ku[15], ka[1], ka[0], 94-NBITS);
 	rolpair(ku[16], ku[17], ko[1], ko[0], 111-NBITS);
 	rolpair(kw[2], kw[3], ka[1], ka[0], 111-NBITS);
+
+	fenc = &Camellia::Encrypt128;
+	fdec = &Camellia::Decrypt128;
 }
 
 inline uint64_t drew::Camellia::f(uint64_t x, uint64_t k)
@@ -179,9 +199,14 @@ inline uint64_t drew::Camellia::spfunc(uint64_t x)
 void drew::Camellia::Encrypt(uint8_t *out, const uint8_t *in)
 {
 	uint64_t d[2];
-	uint64_t &x = d[0], &y = d[1];
-
 	E::Copy(d, in, sizeof(d));
+	(this->*fenc)(d);
+	E::Copy(out, d, sizeof(d));
+}
+
+void drew::Camellia::Encrypt128(uint64_t d[2])
+{
+	uint64_t &x = d[0], &y = d[1];
 
 	x ^= kw[0];
 	y ^= kw[1];
@@ -201,16 +226,23 @@ void drew::Camellia::Encrypt(uint8_t *out, const uint8_t *in)
 	y ^= kw[2];
 	x ^= kw[3];
 	std::swap(x, y);
+}
 
-	E::Copy(out, d, sizeof(d));
+void drew::Camellia::Encrypt256(uint64_t d[2])
+{
 }
 
 void drew::Camellia::Decrypt(uint8_t *out, const uint8_t *in)
 {
 	uint64_t d[2];
-	uint64_t &x = d[0], &y = d[1];
-
 	E::Copy(d, in, sizeof(d));
+	(this->*fdec)(d);
+	E::Copy(out, d, sizeof(d));
+}
+
+void drew::Camellia::Decrypt128(uint64_t d[2])
+{
+	uint64_t &x = d[0], &y = d[1];
 
 	x ^= kw[2];
 	y ^= kw[3];
@@ -229,8 +261,10 @@ void drew::Camellia::Decrypt(uint8_t *out, const uint8_t *in)
 	D128_ROUND2(x, y,  0);
 	x ^= kw[0];
 	y ^= kw[1];
+}
 
-	E::Copy(out, d, sizeof(d));
+void drew::Camellia::Decrypt256(uint64_t d[2])
+{
 }
 
 #include "tables.cc"
