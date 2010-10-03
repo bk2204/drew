@@ -18,5 +18,7 @@ impl/block/blowfish/blowfish
 impl/block/rijndael/rijndael
 impl/block/twofish/twofish
 impl/block/aes/aes
+impl/block/des/des
+impl/block/camellia/camellia
 impl/mode/cfb
 impl/mode/ofb
