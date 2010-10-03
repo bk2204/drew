@@ -6,6 +6,7 @@
 #include <internal.h>
 #include "camellia.hh"
 #include "block-plugin.hh"
+#include "btestcase.hh"
 
 extern "C" {
 
@@ -29,23 +30,9 @@ static void str2bytes(uint8_t *bytes, const char *s, size_t len = 0)
 
 static int camellia128_test(void)
 {
-	uint8_t key[16], pt[16], ct[16];
-	uint8_t final[16], buf[16];
-
-	memset(key, 0, sizeof(key));
-	memset(pt, 0, sizeof(pt));
-
-	str2bytes(key, "0123456789abcdeffedcba9876543210");
-	memcpy(pt, key, sizeof(pt));
-	str2bytes(final, "67673138549669730857065648eabe43");
-	drew::Camellia ctx;
-	ctx.SetKey(key, sizeof(key));
-	ctx.Encrypt(ct, pt);
-	ctx.Decrypt(buf, ct);
-
-	if (memcmp(buf, pt, sizeof(pt)))
-		return 1;
-	return !!memcmp(final, ct, sizeof(pt)) << 1;
+	using namespace drew;
+	const char *key = "0123456789abcdeffedcba9876543210";
+	return BlockTestCase<Camellia>(key).Test(key, "67673138549669730857065648eabe43");
 }
 
 static int camelliatest(void *, drew_loader_t *)
