@@ -27,7 +27,6 @@ static void str2bytes(uint8_t *bytes, const char *s, size_t len = 0)
 	}
 }
 
-
 static int camellia128_test(void)
 {
 	using namespace drew;
@@ -35,11 +34,30 @@ static int camellia128_test(void)
 	return BlockTestCase<Camellia>(key).Test(key, "67673138549669730857065648eabe43");
 }
 
+static int camellia_big_test(void)
+{
+	using namespace drew;
+
+	int res = 0;
+	const char *key = "0123456789abcdeffedcba9876543210"
+		"00112233445566778899aabbccddeeff";
+
+	res |= BlockTestCase<Camellia>(key, 24).Test(key,
+			"b4993401b3e996f84ee5cee7d79b09b9", 16);
+	res <<= 2;
+	res |= BlockTestCase<Camellia>(key, 32).Test(key,
+			"9acc237dff16d76c20ef7c919e3a7509", 16);
+
+	return res;
+}
+
 static int camelliatest(void *, drew_loader_t *)
 {
 	int res = 0;
 
 	res |= camellia128_test();
+	res <<= 4;
+	res |= camellia_big_test();
 
 	return res;
 }
@@ -97,6 +115,46 @@ void drew::Camellia::SetKey192(uint64_t ko[4])
 
 void drew::Camellia::SetKey256(uint64_t ko[4])
 {
+	uint64_t d1, d2;
+	d1 = ko[0] ^ ko[2];
+	d2 = ko[1] ^ ko[3];
+	d2 ^= f(d1, 0xa09e667f3bcc908b);
+	d1 ^= f(d2, 0xb67ae8584caa73b2);
+	d1 ^= ko[0];
+	d2 ^= ko[1];
+	d2 ^= f(d1, 0xc6ef372fe94f82be);
+	d1 ^= f(d2, 0x54ff53a5f1d36f1c);
+	uint64_t ka[2];
+	ka[0] = d1;
+	ka[1] = d2;
+	d1 ^= ko[2];
+	d2 ^= ko[3];
+	d2 ^= f(d1, 0x10e527fade682d1d);
+	d1 ^= f(d2, 0xb05688c2b3e6c1fd);
+	uint64_t kb[2];
+	kb[0] = d1;
+	kb[1] = d2;
+
+	kw[0] = ko[0];
+	kw[1] = ko[1];
+	ku[0] = kb[0];
+	ku[1] = kb[1];
+	rolpair(ku[2], ku[3], ko[2], ko[3], 15);
+	rolpair(ku[4], ku[5], ka[0], ka[1], 15);
+	rolpair(kl[0], kl[1], ko[2], ko[3], 30);
+	rolpair(ku[6], ku[7], kb[0], kb[1], 30);
+	rolpair(ku[8], ku[9], ko[0], ko[1], 45);
+	rolpair(ku[10], ku[11], ka[0], ka[1], 45);
+	rolpair(kl[2], kl[3], ko[0], ko[1], 60);
+	rolpair(ku[12], ku[13], ko[2], ko[3], 60);
+	rolpair(ku[14], ku[15], kb[0], kb[1], 60);
+	rolpair(ku[16], ku[17], ko[1], ko[0], 77-NBITS);
+	rolpair(kl[4], kl[5], ka[1], ka[0], 77-NBITS);
+	rolpair(ku[18], ku[19], ko[3], ko[2], 94-NBITS);
+	rolpair(ku[20], ku[21], ka[1], ka[0], 94-NBITS);
+	rolpair(ku[22], ku[23], ko[1], ko[0], 111-NBITS);
+	rolpair(kw[2], kw[3], kb[1], kb[0], 111-NBITS);
+
 	fenc = &Camellia::Encrypt256;
 	fdec = &Camellia::Decrypt256;
 }
@@ -115,13 +173,6 @@ void drew::Camellia::SetKey128(uint64_t ko[4])
 	uint64_t ka[2];
 	ka[0] = d1;
 	ka[1] = d2;
-	d1 ^= ko[2];
-	d2 ^= ko[3];
-	d2 ^= f(d1, 0x10e527fade682d1d);
-	d1 ^= f(d2, 0xb05688c2b3e6c1fd);
-	uint64_t kb[2];
-	kb[0] = d1;
-	kb[1] = d2;
 	uint64_t dummy;
 
 	kw[0] = ko[0];
@@ -217,6 +268,31 @@ void drew::Camellia::Encrypt128(uint64_t d[2])
 
 void drew::Camellia::Encrypt256(uint64_t d[2])
 {
+	uint64_t &x = d[0], &y = d[1];
+
+	x ^= kw[0];
+	y ^= kw[1];
+	E128_ROUND2(x, y,  0);
+	E128_ROUND2(x, y,  2);
+	E128_ROUND2(x, y,  4);
+	x = fl(x, kl[0]);
+	y = flinv(y, kl[1]);
+	E128_ROUND2(x, y,  6);
+	E128_ROUND2(x, y,  8);
+	E128_ROUND2(x, y, 10);
+	x = fl(x, kl[2]);
+	y = flinv(y, kl[3]);
+	E128_ROUND2(x, y, 12);
+	E128_ROUND2(x, y, 14);
+	E128_ROUND2(x, y, 16);
+	x = fl(x, kl[4]);
+	y = flinv(y, kl[5]);
+	E128_ROUND2(x, y, 18);
+	E128_ROUND2(x, y, 20);
+	E128_ROUND2(x, y, 22);
+	y ^= kw[2];
+	x ^= kw[3];
+	std::swap(x, y);
 }
 
 void drew::Camellia::Decrypt(uint8_t *out, const uint8_t *in)
@@ -252,6 +328,30 @@ void drew::Camellia::Decrypt128(uint64_t d[2])
 
 void drew::Camellia::Decrypt256(uint64_t d[2])
 {
+	uint64_t &x = d[0], &y = d[1];
+
+	x ^= kw[2];
+	y ^= kw[3];
+	D128_ROUND2(x, y, 22);
+	D128_ROUND2(x, y, 20);
+	D128_ROUND2(x, y, 18);
+	x = fl(x, kl[5]);
+	y = flinv(y, kl[4]);
+	D128_ROUND2(x, y, 16);
+	D128_ROUND2(x, y, 14);
+	D128_ROUND2(x, y, 12);
+	x = fl(x, kl[3]);
+	y = flinv(y, kl[2]);
+	D128_ROUND2(x, y, 10);
+	D128_ROUND2(x, y,  8);
+	D128_ROUND2(x, y,  6);
+	x = fl(x, kl[1]);
+	y = flinv(y, kl[0]);
+	D128_ROUND2(x, y,  4);
+	D128_ROUND2(x, y,  2);
+	D128_ROUND2(x, y,  0);
+	x ^= kw[0];
+	y ^= kw[1];
 }
 
 #include "tables.cc"
