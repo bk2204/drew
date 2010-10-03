@@ -36,6 +36,7 @@ CPPFLAGS		+= -Iinclude
 CFLAGS			+= -Wall -fPIC -O3 -g
 CFLAGS			+= ${CFLAGS-y} ${CPPFLAGS}
 CXXFLAGS		:= ${CXXFLAGS} ${CFLAGS} 
+CXXFLAGS		+= -fno-rtti -fno-exceptions
 CFLAGS			+= -std=c99
 
 LIBCFLAGS		+= -shared
