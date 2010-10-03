@@ -41,8 +41,8 @@ CFLAGS			+= -std=c99
 LIBCFLAGS		+= -shared
 PLUGINCFLAGS	+= -Iimpl/prng -Iimpl/hash -Iimpl/block -I. ${LIBCFLAGS}
 
-LIBS			+= -lrt -ldl
-LDFLAGS			+= -Wl,--as-needed
+LDFLAGS			+= -Wl,--version-script,misc/limited-symbols.ld -Wl,--as-needed
+LIBS			+= ${LDFLAGS} -lrt -ldl
 
 all: ${PLUG_EXE} ${DREW_SONAME} standard
 
