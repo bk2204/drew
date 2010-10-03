@@ -42,6 +42,7 @@ LIBCFLAGS		+= -shared
 PLUGINCFLAGS	+= -Iimpl/prng -Iimpl/hash -Iimpl/block -I. ${LIBCFLAGS}
 
 LIBS			+= -lrt -ldl
+LDFLAGS			+= -Wl,--as-needed
 
 all: ${PLUG_EXE} ${DREW_SONAME} standard
 
@@ -76,7 +77,11 @@ $i: $i.so
 	@:
 
 $i.so: $i.o
-	${CXX} ${PLUGINCFLAGS} ${CXXFLAGS} -o ${.TARGET} ${.ALLSRC}
+	if [ -e "$i.c" ] && [ ! -e "$i.cc" ]; then \
+		${CC} ${PLUGINCFLAGS} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LDFLAGS}; \
+		else \
+		${CXX} ${PLUGINCFLAGS} ${CXXFLAGS} -o ${.TARGET} ${.ALLSRC} ${LDFLAGS};\
+		fi
 .endfor
 
 test/test-hash: test/test-hash.o test/framework.o ${DREW_SONAME} 
