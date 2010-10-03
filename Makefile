@@ -72,7 +72,10 @@ ${PLUG_EXE}: ${PLUG_OBJ} ${DREW_SONAME}
 	${CXX} ${PLUGINCFLAGS} ${CXXFLAGS} -c -o ${.TARGET} ${.IMPSRC}
 
 .for i in ${PLUGINS}
-$i: $i.o
+$i: $i.so
+	@:
+
+$i.so: $i.o
 	${CXX} ${PLUGINCFLAGS} ${CXXFLAGS} -o ${.TARGET} ${.ALLSRC}
 .endfor
 
@@ -87,7 +90,7 @@ test/test-mode: test/test-mode.o test/framework.o ${DREW_SONAME}
 
 plugins: ${PLUGINS}
 	[ -d plugins ] || mkdir plugins
-	cp ${.ALLSRC} plugins
+	for i in ${.ALLSRC}; do cp $$i.so plugins/`basename $$i .so`; done
 
 clean:
 	${RM} -f *.o test/*.o
@@ -97,6 +100,7 @@ clean:
 	${RM} -f ${DREW_SONAME} ${DREW_SYMLINK}
 	${RM} -fr ${PLUGINS} plugins/
 	find -name '*.o' | xargs -r rm
+	find -name '*.so' | xargs -r rm
 
 test: .PHONY
 
