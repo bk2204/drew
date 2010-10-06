@@ -6,6 +6,7 @@
 #include <internal.h>
 #include "cast5.hh"
 #include "block-plugin.hh"
+#include "btestcase.hh"
 
 extern "C" {
 
@@ -19,49 +20,9 @@ static int cast5_maintenance_test(void)
 	using namespace drew;
 
 	int result = 0;
-	uint8_t a[16], b[16];
-	uint8_t begin[] = {
-		0x01, 0x23, 0x45, 0x67, 0x12, 0x34, 0x56, 0x78,
-		0x23, 0x45, 0x67, 0x89, 0x34, 0x56, 0x78, 0x9a
-	};
-	const uint8_t enda[] = {
-		0xee, 0xa9, 0xd0, 0xa2, 0x49, 0xfd, 0x3b, 0xa6,
-		0xb3, 0x43, 0x6f, 0xb8, 0x9d, 0x6d, 0xca, 0x92
-	};
-	const uint8_t endb[] = {
-		0xb2, 0xc9, 0x5e, 0xb0, 0x0c, 0x31, 0xad, 0x71,
-		0x80, 0xac, 0x05, 0xb8, 0xe8, 0x3d, 0x69, 0x6e
-	};
-
-	memcpy(a, begin, sizeof(a));
-	memcpy(b, begin, sizeof(b));
-
-	CAST5 ctx;
-	for (size_t i = 0; i < 1000000; i++) {
-		ctx.SetKey(b, 16);
-		ctx.Encrypt(a, a);
-		ctx.Encrypt(a+8, a+8);
-		ctx.SetKey(a, 16);
-		ctx.Encrypt(b, b);
-		ctx.Encrypt(b+8, b+8);
-	}
-
-	result |= !!memcmp(a, enda, sizeof(a));
-	result |= !!memcmp(b, endb, sizeof(b));
-	result <<= 1;
-
-	for (size_t i = 0; i < 1000000; i++) {
-		ctx.SetKey(a, 16);
-		ctx.Decrypt(b+8, b+8);
-		ctx.Decrypt(b, b);
-		ctx.SetKey(b, 16);
-		ctx.Decrypt(a+8, a+8);
-		ctx.Decrypt(a, a);
-	}
-
-	result |= !!memcmp(a, begin, sizeof(a));
-	result |= !!memcmp(b, begin, sizeof(b));
-
+	const char *output =
+		"eea9d0a249fd3ba6b3436fb89d6dca92b2c95eb00c31ad7180ac05b8e83d696e";
+	result |= BlockTestCase<CAST5>::MaintenanceTest(output, 16, 8);
 	return result;
 }
 
