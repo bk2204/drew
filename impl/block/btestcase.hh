@@ -67,8 +67,83 @@ class BlockTestCase
 
 			return res;
 		}
+		static int MaintenanceTest(const char *str, size_t keysz, size_t blksz)
+		{
+			uint8_t *output = StringToBytes(str, strlen(str)/2);
+			if (!output)
+				return 0xe;
+			int res = MaintenanceTest(output, keysz, blksz);
+			delete[] output;
+			return res;
+
+		}
+		static int MaintenanceTest(const uint8_t *buf, size_t keysz,
+				size_t blksz)
+		{
+			const char *str =
+				"0123456712345678234567893456789a"
+				"456789ab56789abc6789abcd789abcde"
+				"89abcdef9abcdef0abcdef01bcdef012"
+				"cdef0123def01234ef012345f0123456";
+			uint8_t *input = StringToBytes(str, strlen(str)/2);
+			if (!input)
+				return 0xe;
+			int res = MaintenanceTest(buf, input, keysz, blksz);
+			delete[] input;
+			return res;
+		}
 	protected:
-		bool StringToBytes(uint8_t *buf, const char *str, size_t len)
+		static int MaintenanceTest(const uint8_t *output, const uint8_t *input,
+				size_t keysz, size_t blksz)
+		{
+			int res = 0;
+			T algo;
+			uint8_t *a = new uint8_t[blksz * 2];
+			uint8_t *b = new uint8_t[blksz * 2];
+
+			memcpy(a, input, blksz * 2);
+			memcpy(b, input, blksz * 2);
+			for (size_t i = 0; i < 1000000; i++) {
+				algo.SetKey(b, keysz);
+				algo.Encrypt(a, a);
+				algo.Encrypt(a+blksz, a+blksz);
+				algo.SetKey(a, keysz);
+				algo.Encrypt(b, b);
+				algo.Encrypt(b+blksz, b+blksz);
+			}
+
+			res |= !!memcmp(output, a, blksz * 2);
+			res <<= 1;
+			res |= !!memcmp(output+(blksz*2), b, blksz * 2);
+			res <<= 1;
+
+			for (size_t i = 0; i < 1000000; i++) {
+				algo.SetKey(a, keysz);
+				algo.Decrypt(b+blksz, b+blksz);
+				algo.Decrypt(b, b);
+				algo.SetKey(b, keysz);
+				algo.Decrypt(a+blksz, a+blksz);
+				algo.Decrypt(a, a);
+			}
+			res |= !!memcmp(a, b, blksz * 2);
+			res <<= 1;
+			res |= !!memcmp(input, b, blksz * 2);
+
+			delete[] a;
+			delete[] b;
+
+			return res;
+		}
+		static uint8_t *StringToBytes(const char *str, size_t len)
+		{
+			uint8_t *buf = new uint8_t[len];
+			if (!StringToBytes(buf, str, len)) {
+				delete[] buf;
+				return NULL;
+			}
+			return buf;
+		}
+		static bool StringToBytes(uint8_t *buf, const char *str, size_t len)
 		{
 			for (size_t i = 0; i < len; i++) {
 				unsigned int x;
