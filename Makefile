@@ -40,7 +40,7 @@ CXXFLAGS		+= -fno-rtti -fno-exceptions
 CFLAGS			+= -std=c99
 
 LIBCFLAGS		+= -shared
-PLUGINCFLAGS	+= -Iimpl/prng -Iimpl/hash -Iimpl/block -I. ${LIBCFLAGS}
+PLUGINCFLAGS	+= -I. ${LIBCFLAGS}
 
 LDFLAGS			+= -Wl,--version-script,misc/limited-symbols.ld -Wl,--as-needed
 LIBS			+= ${LDFLAGS} -lrt -ldl

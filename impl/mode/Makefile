@@ -2,4 +2,8 @@
 MODE_DIR		:= impl/mode
 PLUGINS_MODE	:= cfb ofb
 
-PLUGINS			+= $(patsubst %,${MODE_DIR}/%,$(PLUGINS_MODE))
+MODE_PLUGINS	:= $(patsubst %,${MODE_DIR}/%,$(PLUGINS_MODE))
+PLUGINS			+= $(MODE_PLUGINS)
+
+$(MODE_PLUGINS): CFLAGS += -I$(MODE_DIR)
+$(MODE_PLUGINS): CXXFLAGS += -I$(MODE_DIR)
