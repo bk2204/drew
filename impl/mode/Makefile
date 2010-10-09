@@ -2,6 +2,4 @@
 MODE_DIR		:= impl/mode
 PLUGINS_MODE	:= cfb ofb
 
-.for i in ${PLUGINS_MODE}
-PLUGINS			+= ${MODE_DIR}/$i
-.endfor
+PLUGINS			+= $(patsubst %,${MODE_DIR}/%,$(PLUGINS_MODE))

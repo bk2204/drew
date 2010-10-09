@@ -1,4 +1,4 @@
-.include "config"
+include config
 
 #MD_SRC-${CFG_SHA1}		+= sha1.c md-pad.c
 #MD_SRC-${CFG_SHA256}	+= sha256.c md-pad.c
@@ -17,21 +17,21 @@
 
 TEST_SRC		+= libmd/testsuite.c
 
-TEST_OBJ		:= ${SRC:O:u:.c=.o} ${TEST_SRC:.c=.o}
+TEST_OBJ		:= ${SRC:.c=.o} ${TEST_SRC:.c=.o}
 TEST_EXE		:= libmd/testsuite
 
 PLUG_SRC		+= plugin-main.c
-PLUG_OBJ		:= ${SRC:O:u:.c=.p} ${PLUG_SRC:.c=.o}
+PLUG_OBJ		:= ${SRC:.c=.p} ${PLUG_SRC:.c=.o}
 PLUG_EXE		:= plugin-main
 
 DREW_SONAME		:= libdrew.so.0
-DREW_SYMLINK	:= ${DREW_SONAME:C/.so.*$/.so/}
+DREW_SYMLINK	:= $(basename $(DREW_SONAME))
 
 RM				?= rm
 
-.if defined(PROF)
+ifdef PROF
 CFLAGS			+= -pg
-.endif
+endif
 CPPFLAGS		+= -Iinclude
 CFLAGS			+= -Wall -fPIC -O3 -g
 CFLAGS			+= ${CFLAGS-y} ${CPPFLAGS}
@@ -45,12 +45,16 @@ PLUGINCFLAGS	+= -Iimpl/prng -Iimpl/hash -Iimpl/block -I. ${LIBCFLAGS}
 LDFLAGS			+= -Wl,--version-script,misc/limited-symbols.ld -Wl,--as-needed
 LIBS			+= ${LDFLAGS} -lrt -ldl
 
+.TARGET			= $@
+.ALLSRC			= $^
+.IMPSRC			= $<
+
 all: ${PLUG_EXE} ${DREW_SONAME} standard
 
-.include "impl/hash/Makefile"
-.include "impl/block/Makefile"
-.include "impl/mode/Makefile"
-.include "libmd/Makefile"
+include impl/hash/Makefile
+include impl/block/Makefile
+include impl/mode/Makefile
+include libmd/Makefile
 
 standard: ${DREW_SONAME} ${MD_SONAME} plugins libmd/testsuite test/test-hash
 standard: test/test-block test/test-mode
@@ -73,25 +77,13 @@ ${PLUG_EXE}: ${PLUG_OBJ} ${DREW_SONAME}
 .cc.o:
 	${CXX} ${PLUGINCFLAGS} ${CXXFLAGS} -c -o ${.TARGET} ${.IMPSRC}
 
-.for i in ${PLUGINS}
-$i: $i.so
+${PLUGINS}: %: %.so
 	@:
 
-$i.so: $i.o
-	if [ -e "$i.c" ] && [ ! -e "$i.cc" ]; then \
-		${CC} ${PLUGINCFLAGS} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LDFLAGS}; \
-		else \
-		${CXX} ${PLUGINCFLAGS} ${CXXFLAGS} -o ${.TARGET} ${.ALLSRC} ${LDFLAGS};\
-		fi
-.endfor
+$(patsubst %,%.so,$(PLUGINS)): %.so: %.o
+	${CXX} ${PLUGINCFLAGS} ${CXXFLAGS} -o ${.TARGET} ${.ALLSRC} ${LDFLAGS};
 
-test/test-hash: test/test-hash.o test/framework.o ${DREW_SONAME} 
-	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
-
-test/test-block: test/test-block.o test/framework.o ${DREW_SONAME} 
-	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
-
-test/test-mode: test/test-mode.o test/framework.o ${DREW_SONAME} 
+test/test-%: test/test-%.o test/framework.o ${DREW_SONAME} 
 	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
 plugins: ${PLUGINS}
