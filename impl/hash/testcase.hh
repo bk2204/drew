@@ -47,20 +47,19 @@ class HashTestCase
 			StringToBytes(buf, str, len/2);
 			return Test(buf, sizeof(buf));
 		}
-		static int MaintenanceTest(const char *str)
+		static bool MaintenanceTest(const char *str)
 		{
 			uint8_t *output = StringToBytes(str, strlen(str)/2);
 			if (!output)
-				return 0xe;
-			int res = MaintenanceTest(output);
+				return false;
+			bool res = MaintenanceTest(output);
 			delete[] output;
 			return res;
 
 		}
 #define NBYTEVALS 256
-		static int MaintenanceTest(const uint8_t *output)
+		static bool MaintenanceTest(const uint8_t *output)
 		{
-			int res = 0;
 			T context;
 			uint8_t buf[NBYTEVALS][256];
 			T *ctxt = new T[NBYTEVALS];
@@ -82,7 +81,7 @@ class HashTestCase
 			uint8_t md[T::digest_size];
 			context.GetDigest(md, false);
 
-			res = !!memcmp(md, output, T::digest_size);
+			bool res = !memcmp(md, output, T::digest_size);
 
 			delete[] ctxt;
 
