@@ -40,6 +40,8 @@ static int sha256test(void *, drew_loader_t *)
 	res |= !HashTestCase<SHA256>("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 1).Test("248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1");
 	res <<= 1;
 	res |= !HashTestCase<SHA256>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 15625).Test("cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0");
+	res <<= 1;
+	res |= !HashTestCase<SHA256>::MaintenanceTest("f73ee0ad5d970cdb5fd65d634779e19c7ddf323d50c666f12f18dbf51e15f2ad");
 
 	return res;
 }
@@ -67,6 +69,8 @@ static int sha224test(void *, drew_loader_t *)
 	res |= !HashTestCase<SHA224>("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 1).Test("75388b16512776cc5dba5da1fd890150b0c6455cb4f58b1952522525");
 	res <<= 1;
 	res |= !HashTestCase<SHA224>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 15625).Test("20794655980c91d8bbb4c1ea97618a4bf03f42581948b2ee4ee7ad67");
+	res <<= 1;
+	res |= !HashTestCase<SHA224>::MaintenanceTest("4018179cf5672f4d78b67b0a18b7ac2b8c21072ad0adcff18f7ad7a5");
 
 	return res;
 }

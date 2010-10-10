@@ -43,6 +43,8 @@ static int md4test(void *, drew_loader_t *)
 	res |= !HashTestCase<MD4>("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", 1).Test("043f8582f241db351ce627e153e7f0e4");
 	res <<= 1;
 	res |= !HashTestCase<MD4>("12345678901234567890123456789012345678901234567890123456789012345678901234567890", 1).Test("e33b4ddc9c38f2199c3e7b164fcc0536");
+	res <<= 1;
+	res |= !HashTestCase<MD4>::MaintenanceTest("73b3a00ad8f18917f5846daa73e53571");
 
 	return res;
 }

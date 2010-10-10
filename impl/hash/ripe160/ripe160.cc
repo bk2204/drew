@@ -44,6 +44,8 @@ static int rmd160test(void *, drew_loader_t *)
 	res |= !HashTestCase<RIPEMD160>("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", 1).Test("b0e20b6e3116640286ed3a87a5713079b21f5189");
 	res <<= 1;
 	res |= !HashTestCase<RIPEMD160>("12345678901234567890123456789012345678901234567890123456789012345678901234567890", 1).Test("9b752e45573d4b39f4dbd3323cab82bf63326bfb");
+	res <<= 1;
+	res |= !HashTestCase<RIPEMD160>::MaintenanceTest("73154a71f6286c75073dfba04128de5b074d8cdf");
 
 	return res;
 }

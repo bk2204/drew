@@ -36,6 +36,8 @@ static int md2test(void *, drew_loader_t *)
 	res |= !HashTestCase<MD2>("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", 1).Test("da33def2a42df13975352846c30338cd");
 	res <<= 1;
 	res |= !HashTestCase<MD2>("12345678901234567890123456789012345678901234567890123456789012345678901234567890", 1).Test("d5976f79d83d3a0dc9806c3c66f3efd8");
+	res <<= 1;
+	res |= !HashTestCase<MD2>::MaintenanceTest("312f262041f37e402a19b73c43f4a299");
 
 	return res;
 }

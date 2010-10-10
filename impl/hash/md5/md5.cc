@@ -34,6 +34,8 @@ static int md5test(void *, drew_loader_t *)
 	res |= !HashTestCase<MD5>("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", 1).Test("d174ab98d277d9f5a5611c2c9f419d9f");
 	res <<= 1;
 	res |= !HashTestCase<MD5>("12345678901234567890123456789012345678901234567890123456789012345678901234567890", 1).Test("57edf4a22be3c955ac49da2e2107b67a");
+	res <<= 1;
+	res |= !HashTestCase<MD5>::MaintenanceTest("d8f3487150fcb53cf90a4c331e8fe391");
 
 	return res;
 }

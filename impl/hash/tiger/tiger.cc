@@ -38,6 +38,8 @@ static int tigertest(void *, drew_loader_t *)
 	res |= !HashTestCase<Tiger>("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 1).Test("0f7bf9a19b9c58f2b7610df7e84f0ac3a71c631e7b53f78e");
 	res <<= 1;
 	res |= !HashTestCase<Tiger>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 15625).Test("6db0e2729cbead93d715c6a7d36302e9b3cee0d2bc314b41");
+	res <<= 1;
+	res |= !HashTestCase<Tiger>::MaintenanceTest("58802ec374ab6292b262916354020e67f8f10c0a50174d96");
 
 	return res;
 }

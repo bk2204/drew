@@ -50,6 +50,8 @@ static int sha1test(void *, drew_loader_t *)
 	res |= !HashTestCase<SHA1>("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 1).Test("84983e441c3bd26ebaae4aa1f95129e5e54670f1");
 	res <<= 1;
 	res |= !HashTestCase<SHA1>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 15625).Test("34aa973cd4c4daa4f61eeb2bdbad27316534016f");
+	res <<= 1;
+	res |= !HashTestCase<SHA1>::MaintenanceTest("d4a7d6bcb8c8fa681b3b8fc8d764eef427fbdea1");
 
 	return res;
 }

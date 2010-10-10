@@ -42,6 +42,8 @@ static int sha512test(void *, drew_loader_t *)
 	res |= !HashTestCase<SHA512>("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 1).Test("8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d289e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
 	res <<= 1;
 	res |= !HashTestCase<SHA512>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 15625).Test("e718483d0ce769644e2e42c7bc15b4638e1f98b13b2044285632a803afa973ebde0ff244877ea60a4cb0432ce577c31beb009c5c2c49aa2e4eadb217ad8cc09b");
+	res <<= 1;
+	res |= !HashTestCase<SHA512>::MaintenanceTest("2b237afa2664b8f340cdcd819861b477d55ca41b3538a12e961bb3eb5365f1078a88d993cf38ec080fcae5f43024660fb25264befbb79a2b1036e34908ba170c");
 
 	return res;
 }
@@ -71,6 +73,8 @@ static int sha384test(void *, drew_loader_t *)
 	res |= !HashTestCase<SHA384>("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 1).Test("09330c33f71147e83d192fc782cd1b4753111b173b3b05d22fa08086e3b0f712fcc7c71a557e2db966c3e9fa91746039");
 	res <<= 1;
 	res |= !HashTestCase<SHA384>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 15625).Test("9d0e1809716474cb086e834e310a4a1ced149e9c00f248527972cec5704c2a5b07b8b3dc38ecc4ebae97ddd87f3d8985");
+	res <<= 1;
+	res |= !HashTestCase<SHA384>::MaintenanceTest("03a953c09e78a5e0de89c9767037c56e86f2ba5575375355ac8607214452dadc710bacf3f50ec40a0de85cba01755b41");
 
 	return res;
 }
