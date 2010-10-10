@@ -44,15 +44,70 @@ class HashTestCase
 			if (len != (T::digest_size * 2))
 				return false;
 
-			for (size_t i = 0; i < len/2; i++) {
+			StringToBytes(buf, str, len/2);
+			return Test(buf, sizeof(buf));
+		}
+		static int MaintenanceTest(const char *str)
+		{
+			uint8_t *output = StringToBytes(str, strlen(str)/2);
+			if (!output)
+				return 0xe;
+			int res = MaintenanceTest(output);
+			delete[] output;
+			return res;
+
+		}
+#define NBYTEVALS 256
+		static int MaintenanceTest(const uint8_t *output)
+		{
+			int res = 0;
+			T context;
+			uint8_t buf[NBYTEVALS][256];
+			T *ctxt = new T[NBYTEVALS];
+
+			for (size_t i = 0; i < NBYTEVALS; i++) {
+				memset(buf[i], (uint8_t)i, 256);
+				ctxt[i].Update(buf[i], i);
+			}
+
+			for (size_t i = 0; i < 50000; i++) {
+				const uint8_t imod = i;
+				uint8_t md[T::digest_size];
+
+				T clone(*ctxt);
+				clone.GetDigest(md, false);
+				context.Update(md, T::digest_size);
+				ctxt[imod].Update(buf[imod], 256);
+			}
+			uint8_t md[T::digest_size];
+			context.GetDigest(md, false);
+
+			res = !!memcmp(md, output, T::digest_size);
+
+			delete[] ctxt;
+
+			return res;
+		}
+	protected:
+		static uint8_t *StringToBytes(const char *str, size_t len)
+		{
+			uint8_t *buf = new uint8_t[len];
+			if (!StringToBytes(buf, str, len)) {
+				delete[] buf;
+				return NULL;
+			}
+			return buf;
+		}
+		static bool StringToBytes(uint8_t *buf, const char *str, size_t len)
+		{
+			for (size_t i = 0; i < len; i++) {
 				unsigned int x;
 				if (sscanf(str + (i*2), "%02x", &x) != 1)
 					return false;
 				buf[i] = x;
 			}
-			return Test(buf, sizeof(buf));
+			return true;
 		}
-	protected:
 	private:
 		const uint8_t *m_buf;
 		size_t m_len, m_reps;
