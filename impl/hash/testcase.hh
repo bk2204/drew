@@ -74,7 +74,7 @@ class HashTestCase
 				const uint8_t imod = i;
 				uint8_t md[T::digest_size];
 
-				T clone(*ctxt);
+				T clone(ctxt[imod]);
 				clone.GetDigest(md, false);
 				context.Update(md, T::digest_size);
 				ctxt[imod].Update(buf[imod], 256);
