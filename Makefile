@@ -30,17 +30,18 @@ DREW_SYMLINK	:= $(basename $(DREW_SONAME))
 RM				?= rm
 
 ifdef PROF
-CFLAGS			+= -pg
+CLIKEFLAGS		+= -pg
 endif
 CPPFLAGS		+= -Iinclude
-CFLAGS			+= -Wall -fPIC -O3 -g
-CFLAGS			+= ${CFLAGS-y} ${CPPFLAGS}
-CXXFLAGS		:= ${CXXFLAGS} ${CFLAGS} 
+CLIKEFLAGS		+= -Wall -fPIC -O3 -g
+CLIKEFLAGS		+= ${CFLAGS-y}
+CXXFLAGS		:= ${CLIKEFLAGS}
+CFLAGS			:= ${CLIKEFLAGS}
 CXXFLAGS		+= -fno-rtti -fno-exceptions
 CFLAGS			+= -std=c99
 
 LIBCFLAGS		+= -shared
-PLUGINCFLAGS	+= -I. ${LIBCFLAGS}
+PLUGINCFLAGS	+= -I.
 
 LDFLAGS			+= -Wl,--version-script,misc/limited-symbols.ld -Wl,--as-needed
 LIBS			+= ${LDFLAGS} -lrt -ldl
@@ -59,8 +60,8 @@ include libmd/Makefile
 standard: ${DREW_SONAME} ${MD_SONAME} plugins libmd/testsuite test/test-hash
 standard: test/test-block test/test-mode
 
-${DREW_SONAME}: plugin.c
-	${CC} ${CFLAGS} ${LIBCFLAGS} -shared -o ${.TARGET} ${.ALLSRC} ${LIBS}
+${DREW_SONAME}: plugin.o
+	${CC} ${CFLAGS} ${LIBCFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
 ${DREW_SYMLINK}: ${DREW_SONAME}
 	ln -sf ${.ALLSRC} ${.TARGET}
@@ -72,16 +73,18 @@ ${PLUG_EXE}: ${PLUG_OBJ} ${DREW_SONAME}
 	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
 .c.o:
-	${CC} ${PLUGINCFLAGS} ${CFLAGS} -c -o ${.TARGET} ${.IMPSRC}
+	${CC} ${CPPFLAGS} ${CFLAGS} -c -o ${.TARGET} ${.IMPSRC}
 
 .cc.o:
-	${CXX} ${PLUGINCFLAGS} ${CXXFLAGS} -c -o ${.TARGET} ${.IMPSRC}
+	${CXX} ${CPPFLAGS} ${CXXFLAGS} -c -o ${.TARGET} ${.IMPSRC}
+
+${PLUGINS:=.o}: CPPFLAGS += ${PLUGINCFLAGS}
 
 ${PLUGINS}: %: %.so
 	@:
 
-$(patsubst %,%.so,$(PLUGINS)): %.so: %.o
-	${CXX} ${PLUGINCFLAGS} ${CXXFLAGS} -o ${.TARGET} ${.ALLSRC} ${LDFLAGS};
+$(PLUGINS:=.so): %.so: %.o
+	${CXX} ${LIBCFLAGS} ${CXXFLAGS} -o ${.TARGET} ${.ALLSRC} ${LDFLAGS}
 
 test/test-%: test/test-%.o test/framework.o ${DREW_SONAME} 
 	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
