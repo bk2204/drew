@@ -33,7 +33,7 @@ ifdef PROF
 CLIKEFLAGS		+= -pg
 endif
 CPPFLAGS		+= -Iinclude
-CLIKEFLAGS		+= -Wall -fPIC -O3 -g
+CLIKEFLAGS		+= -Wall -fPIC -O3 -g -pipe
 CLIKEFLAGS		+= ${CFLAGS-y}
 CXXFLAGS		:= ${CLIKEFLAGS}
 CFLAGS			:= ${CLIKEFLAGS}
