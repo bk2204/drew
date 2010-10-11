@@ -55,9 +55,7 @@ LIBS			+= ${LDFLAGS} -lrt -ldl
 
 all: ${PLUG_EXE} ${DREW_SONAME} standard
 
-include impl/hash/Makefile
-include impl/block/Makefile
-include impl/mode/Makefile
+include $(patsubst %,impl/%/Makefile,$(CATEGORIES))
 include libmd/Makefile
 
 standard: ${DREW_SONAME} ${MD_SONAME} plugins libmd/testsuite
