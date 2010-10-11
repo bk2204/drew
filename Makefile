@@ -15,14 +15,17 @@ include config
 #
 #MD_OBJS			:= ${MD_SRC-y:O:u:.c=.o}
 
-TEST_SRC		+= libmd/testsuite.c
+CATEGORIES		:= hash block mode
 
+TEST_SRC		+= libmd/testsuite.c
 TEST_OBJ		:= ${SRC:.c=.o} ${TEST_SRC:.c=.o}
 TEST_EXE		:= libmd/testsuite
 
 PLUG_SRC		+= plugin-main.c
 PLUG_OBJ		:= ${SRC:.c=.p} ${PLUG_SRC:.c=.o}
 PLUG_EXE		:= plugin-main
+
+TEST_BINARIES	:= $(patsubst %,test/test-%,$(CATEGORIES))
 
 DREW_SONAME		:= libdrew.so.0
 DREW_SYMLINK	:= $(basename $(DREW_SONAME))
@@ -57,8 +60,8 @@ include impl/block/Makefile
 include impl/mode/Makefile
 include libmd/Makefile
 
-standard: ${DREW_SONAME} ${MD_SONAME} plugins libmd/testsuite test/test-hash
-standard: test/test-block test/test-mode
+standard: ${DREW_SONAME} ${MD_SONAME} plugins libmd/testsuite
+standard: $(TEST_BINARIES)
 
 ${DREW_SONAME}: plugin.o
 	${CC} ${CFLAGS} ${LIBCFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
@@ -99,6 +102,7 @@ clean:
 	${RM} -f ${PLUG_EXE}
 	${RM} -f ${MD_SONAME} ${MD_OBJS}
 	${RM} -f ${DREW_SONAME} ${DREW_SYMLINK}
+	${RM} -f ${TEST_BINARIES}
 	${RM} -fr ${PLUGINS} plugins/
 	find -name '*.o' | xargs -r rm
 	find -name '*.so' | xargs -r rm
