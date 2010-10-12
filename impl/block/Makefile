@@ -1,9 +1,13 @@
+PLUGINS_BLOCK-${CFG_CAST5}		+= cast5/cast5
+PLUGINS_BLOCK-${CFG_BLOWFISH}	+= blowfish/blowfish
+PLUGINS_BLOCK-${CFG_AES}		+= aes/aes
+PLUGINS_BLOCK-${CFG_RIJNDAEL}	+= rijndael/rijndael
+PLUGINS_BLOCK-${CFG_TWOFISH}	+= twofish/twofish
+PLUGINS_BLOCK-${CFG_DES}		+= des/des
+PLUGINS_BLOCK-${CFG_CAMELLIA}	+= camellia/camellia
 
 BLOCK_DIR		:= impl/block
-PLUGINS_BLOCK	:= cast5/cast5 blowfish/blowfish aes/aes rijndael/rijndael
-PLUGINS_BLOCK	+= twofish/twofish des/des camellia/camellia
-
-BLOCK_PLUGINS	:= $(patsubst %,${BLOCK_DIR}/%,$(PLUGINS_BLOCK))
+BLOCK_PLUGINS	:= $(patsubst %,${BLOCK_DIR}/%,$(PLUGINS_BLOCK-m))
 PLUGINS			+= $(BLOCK_PLUGINS)
 
 $(BLOCK_PLUGINS): CPPFLAGS += -I$(BLOCK_DIR)

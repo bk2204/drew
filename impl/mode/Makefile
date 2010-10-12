@@ -1,8 +1,8 @@
+PLUGINS_MODE-${CFG_CFB}	+= cfb
+PLUGINS_MODE-${CFG_OFB}	+= ofb
 
 MODE_DIR		:= impl/mode
-PLUGINS_MODE	:= cfb ofb
-
-MODE_PLUGINS	:= $(patsubst %,${MODE_DIR}/%,$(PLUGINS_MODE))
+MODE_PLUGINS	:= $(patsubst %,${MODE_DIR}/%,$(PLUGINS_MODE-m))
 PLUGINS			+= $(MODE_PLUGINS)
 
 $(MODE_PLUGINS): CPPFLAGS += -I$(MODE_DIR)

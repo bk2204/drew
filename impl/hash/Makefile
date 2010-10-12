@@ -1,10 +1,14 @@
+PLUGINS_HASH-${CFG_MD2}		+= md2/md2
+PLUGINS_HASH-${CFG_MD4}		+= md4/md4
+PLUGINS_HASH-${CFG_MD5}		+= md5/md5
+PLUGINS_HASH-${CFG_RIPE160}	+= ripe160/ripe160
+PLUGINS_HASH-${CFG_SHA1}	+= sha1/sha1
+PLUGINS_HASH-${CFG_SHA256}	+= sha256/sha256
+PLUGINS_HASH-${CFG_SHA512}	+= sha512/sha512
+PLUGINS_HASH-${CFG_TIGER}	+= tiger/tiger
 
 HASH_DIR		:= impl/hash
-PLUGINS_HASH	:= md4/md4 md5/md5 ripe160/ripe160 sha1/sha1 sha256/sha256
-PLUGINS_HASH	+= sha512/sha512 tiger/tiger
-PLUGINS_HASH	+= md2/md2
-
-HASH_PLUGINS	:= $(patsubst %,${HASH_DIR}/%,$(PLUGINS_HASH))
+HASH_PLUGINS	:= $(patsubst %,${HASH_DIR}/%,$(PLUGINS_HASH-m))
 PLUGINS			+= $(HASH_PLUGINS)
 
 $(HASH_PLUGINS): CPPFLAGS += -I$(HASH_DIR)

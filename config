@@ -1,0 +1,33 @@
+# This is a configuration file to determine which plugins are built.  If you
+# want a plugin to be built, set the appropriate variable to "m".  Also, some
+# plugins offer multiple algorithms.  For example, the sha512 plugin offers both
+# SHA-384 and SHA-512.
+
+## Message digests.
+CFG_MD2			= m
+CFG_MD4			= m
+CFG_MD5			= m
+CFG_RMD160		= m
+CFG_SHA1		= m
+CFG_SHA256		= m
+CFG_SHA512		= m
+CFG_TIGER		= m
+
+## Block ciphers.
+# Note that the aes plugin implements Rijndael (the AES algorithm) with key
+# sizes of 128, 192, and 256 bits and a block size of 128 bits.  The rijndael
+# plugin offers all five block sizes and all five key sizes, but runs at about
+# one-third of the speed.  You do not need both.
+CFG_CAST5		= m
+CFG_BLOWFISH	= m
+CFG_AES			= m
+CFG_RIJNDAEL	= m
+CFG_TWOFISH		= m
+CFG_DES			= m
+CFG_CAMELLIA	= m
+
+# Modes.
+CFG_CFB			= m
+CFG_OFB			= m
+
+CFG_LIBMD		= y
