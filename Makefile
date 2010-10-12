@@ -21,9 +21,9 @@ TEST_SRC		+= libmd/testsuite.c
 TEST_OBJ		:= ${SRC:.c=.o} ${TEST_SRC:.c=.o}
 TEST_EXE		:= libmd/testsuite
 
-PLUG_SRC		+= plugin-main.c
+PLUG_SRC		+= test/plugin-main.c
 PLUG_OBJ		:= ${SRC:.c=.o} ${PLUG_SRC:.c=.o}
-PLUG_EXE		:= plugin-main
+PLUG_EXE		:= test/plugin-main
 
 TEST_BINARIES	:= $(patsubst %,test/test-%,$(CATEGORIES))
 
