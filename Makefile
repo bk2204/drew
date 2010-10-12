@@ -114,14 +114,14 @@ test-libmd: ${TEST_EXE}
 	env LD_LIBRARY_PATH=. ./${TEST_EXE} -x | \
 		grep -v 'bytes in' | diff -u libmd/test-results -
 
-test-scripts:
-	for i in hash block mode; do \
+test-scripts: $(TEST_BINARIES) plugins
+	for i in $(CATEGORIES); do \
 		ls -1 plugins/* | sed -e 's,.*/,,g' | \
 		xargs env LD_LIBRARY_PATH=. test/test-$$i -i; \
 		done
 
-speed-scripts:
-	for i in hash block mode; do \
+speed-scripts: $(TEST_BINARIES) plugins
+	for i in $(CATEGORIES); do \
 		ls -1 plugins/* | sed -e 's,.*/,,g' | \
 		xargs env LD_LIBRARY_PATH=. test/test-$$i -s; \
 		done
