@@ -22,13 +22,10 @@ TEST_OBJ		:= ${SRC:.c=.o} ${TEST_SRC:.c=.o}
 TEST_EXE		:= libmd/testsuite
 
 PLUG_SRC		+= plugin-main.c
-PLUG_OBJ		:= ${SRC:.c=.p} ${PLUG_SRC:.c=.o}
+PLUG_OBJ		:= ${SRC:.c=.o} ${PLUG_SRC:.c=.o}
 PLUG_EXE		:= plugin-main
 
 TEST_BINARIES	:= $(patsubst %,test/test-%,$(CATEGORIES))
-
-DREW_SONAME		:= libdrew.so.0
-DREW_SYMLINK	:= $(basename $(DREW_SONAME))
 
 RM				?= rm
 
@@ -53,19 +50,16 @@ LIBS			+= ${LDFLAGS} -lrt -ldl
 .ALLSRC			= $^
 .IMPSRC			= $<
 
-all: ${PLUG_EXE} ${DREW_SONAME} standard
+all:
 
+include lib/libdrew/Makefile
 include $(patsubst %,impl/%/Makefile,$(CATEGORIES))
 include libmd/Makefile
 
+all: ${PLUG_EXE} ${DREW_SONAME} standard
+
 standard: ${DREW_SONAME} ${MD_SONAME} plugins libmd/testsuite
 standard: $(TEST_BINARIES)
-
-${DREW_SONAME}: plugin.o
-	${CC} ${CFLAGS} ${LIBCFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
-
-${DREW_SYMLINK}: ${DREW_SONAME}
-	ln -sf ${.ALLSRC} ${.TARGET}
 
 ${TEST_EXE}: ${TEST_SRC} ${MD_SONAME} ${DREW_SONAME}
 	${CC} -Ilibmd/include ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
@@ -104,6 +98,7 @@ clean:
 	${RM} -fr ${PLUGINS} plugins/
 	find -name '*.o' | xargs -r rm
 	find -name '*.so' | xargs -r rm
+	find -name '*.so.*' | xargs -r rm
 
 test: .PHONY
 
