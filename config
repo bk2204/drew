@@ -7,7 +7,7 @@
 CFG_MD2			= m
 CFG_MD4			= m
 CFG_MD5			= m
-CFG_RMD160		= m
+CFG_RIPE160		= m
 CFG_SHA1		= m
 CFG_SHA256		= m
 CFG_SHA512		= m
