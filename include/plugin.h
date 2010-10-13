@@ -5,13 +5,27 @@
 extern "C" {
 #endif
 
+#define DREW_LOADER_MD_URI 0
+#define DREW_LOADER_MD_IRI DREW_LOADER_MD_URI
+#define DREW_LOADER_MD_LITERAL 1
+
+typedef struct {
+	int version;	/* Must be zero. */
+	char *predicate;
+	int type;
+	char *object;
+} drew_metadata_t;
+
 #if defined(DREW_IN_BUILD)
 typedef struct {
 	int version;
 	int flags;
 	char *name;		/* Name of the plugin. */
 	char *aname;	/* Algorithm name. */
+	char *path;
 	void *handle;
+	drew_metadata_t *metadata;
+	int nmeta;
 	int id;
 	int nplugins;
 	int type;
@@ -37,6 +51,8 @@ typedef void drew_loader_t;
 #define DREW_LOADER_GET_FUNCTBL 6
 #define DREW_LOADER_GET_NAME_SIZE 7
 #define DREW_LOADER_GET_NAME 8
+#define DREW_LOADER_GET_METADATA_SIZE 9
+#define DREW_LOADER_GET_METADATA 10
 
 #define DREW_TYPE_HASH 1
 #define DREW_TYPE_BLOCK 2
@@ -62,6 +78,8 @@ int drew_loader_lookup_by_name(const drew_loader_t *ldr, const char *name,
 		int start, int end);
 int drew_loader_lookup_by_type(const drew_loader_t *ldr, int type, int start,
 		int end);
+int drew_loader_get_metadata(const drew_loader_t *ldr, int id, int item,
+		drew_metadata_t *meta);
 
 #if defined(__cplusplus)
 }

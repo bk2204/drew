@@ -3,13 +3,26 @@
 
 #include <dlfcn.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 typedef int (*plugin_api_t)(void *, int, int, void *);
+
+static int drew_loader__get_api(drew_loader_t *ldr, int aid,
+		plugin_api_t *plugin_info)
+{
+	dlerror();
+	*plugin_info = (plugin_api_t) dlsym(ldr->entry[aid].handle,
+			"drew_plugin_info");
+	if (dlerror() != NULL)
+		return -DREW_ERR_RESOLUTION;
+	return 0;
+}
 
 static int drew_loader__load_info(drew_loader_t *ldr, int aid, int id)
 {
@@ -18,14 +31,14 @@ static int drew_loader__load_info(drew_loader_t *ldr, int aid, int id)
 	int nplugins = 0;
 	int size = 0;
 	int namesize = 0;
+	int retval = 0;
+	int metasize = 0;
 	char *aname;
+	drew_metadata_t *metadata = 0;
 	void *functbl = 0;
 
-	dlerror();
-	plugin_info = (plugin_api_t) dlsym(ldr->entry[aid].handle,
-			"drew_plugin_info");
-	if (dlerror() != NULL)
-		return -DREW_ERR_RESOLUTION;
+	if ((retval = drew_loader__get_api(ldr, aid, &plugin_info)))
+		return retval;
 
 	if (id == -1) {
 		id = plugin_info(ldr, DREW_LOADER_LOOKUP_NAME, 0, ldr->entry[aid].name);
@@ -68,12 +81,30 @@ static int drew_loader__load_info(drew_loader_t *ldr, int aid, int id)
 		return -DREW_ERR_ENUMERATION;
 	aname[namesize-1] = '\0'; /* Just in case. */
 
+	metasize = plugin_info(ldr, DREW_LOADER_GET_METADATA_SIZE, id, 0);
+	if ((metasize != -ENOENT) && (metasize != -EINVAL)) {
+		if (metasize < 0)
+			return -DREW_ERR_ENUMERATION;
+
+		metadata = malloc(metasize);
+		if (!metadata)
+			return -ENOMEM;
+
+		retval = plugin_info(ldr, DREW_LOADER_GET_METADATA, id, metadata);
+		if (retval < 0)
+			return -DREW_ERR_ENUMERATION;
+	}
+	else
+		metasize = 0;
+
 	ldr->entry[aid].id = id;
 	ldr->entry[aid].type = type;
 	ldr->entry[aid].nplugins = nplugins;
 	ldr->entry[aid].size = size;
 	ldr->entry[aid].aname = aname;
 	ldr->entry[aid].functbl = functbl;
+	ldr->entry[aid].nmeta = metasize / sizeof(*metadata);
+	ldr->entry[aid].metadata = metadata;
 
 	return 0;
 }
@@ -131,15 +162,18 @@ static void drew_loader__close_handle(drew_loader_t *ldr, void *handle)
 }
 
 static int drew_loader__lookup_plugin(drew_loader_t *ldr, void **obj,
-		const char *plugin, const char *path)
+		const char *plugin, const char *path, char **fullpath)
 {
 	void *handle = NULL;
 	int err = 0;
 	char *dpath = NULL, *orig_dpath = NULL;
 	const char *elem = NULL;
 
+	*fullpath = NULL;
+
 	if (!path) {
 		handle = drew_loader__open_plugin(ldr, plugin);
+		*fullpath = realpath(plugin, NULL);
 		err = handle ? 0 : -ENOENT;
 		goto out;
 	}
@@ -167,6 +201,7 @@ static int drew_loader__lookup_plugin(drew_loader_t *ldr, void **obj,
 
 		if ((handle = drew_loader__open_plugin(ldr, plugpath))) {
 			err = 0;
+			*fullpath = realpath(plugpath, NULL);
 			goto out;
 		}
 	}
@@ -196,15 +231,19 @@ int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
 		const char *path)
 {
 	void *handle = NULL;
+	char *fullpath = NULL;
 	int id = -1;
 	int err = 0;
 	int i;
 
-	if ((err = drew_loader__lookup_plugin(ldr, &handle, plugin, path)))
+	if ((err = drew_loader__lookup_plugin(ldr, &handle, plugin, path,
+					&fullpath)))
 		goto errout;
 
-	if (!plugin)
+	if (!plugin) {
 		plugin = "<internal>";
+		fullpath = NULL;
+	}
 
 	err = -ENOENT;
 	if (!handle)
@@ -217,6 +256,7 @@ int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
 
 	ldr->entry[id].handle = handle;
 	ldr->entry[id].name = strdup(plugin);
+	ldr->entry[id].path = fullpath;
 
 	if ((err = drew_loader__load_info(ldr, id, 0)))
 		goto errout;
@@ -231,6 +271,7 @@ int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
 
 		ldr->entry[nid].handle = handle;
 		ldr->entry[nid].name = strdup(plugin);
+		ldr->entry[nid].path = fullpath;
 		if ((err = drew_loader__load_info(ldr, nid, i)))
 			goto errout;
 	}
@@ -241,6 +282,7 @@ errout:
 		free(ldr->entry[id].name);
 		ldr->entry[id].name = NULL;
 	}
+	free(fullpath);
 	if (handle)
 		drew_loader__close_handle(ldr, handle);
 	return err;
@@ -334,3 +376,89 @@ int drew_loader_lookup_by_type(const drew_loader_t *ldr, int type, int start,
 	return -ENOENT;
 }
 
+/* This will eventually provide an rdf:seeAlso to an .rdf file with the same
+ * basename as the plugin, and potentially provide some metadata that may
+ * already be available, such as algorithm information and so forth.
+ */
+static int drew_loader__special_metadata(const drew_loader_t *ldr, int id,
+		int item, drew_metadata_t *meta)
+{
+	if (item > 0)
+		return -ENOENT;
+
+	const char *path = ldr->entry[id].path;
+	if (!path)
+		return -ENOENT;
+	const char *prefix = "file://";
+	const size_t prefixlen = strlen(prefix);
+	struct stat st;
+	const char *suffix = ".rdf";
+	const size_t suffixlen = strlen(suffix);
+	size_t pathlen = strlen(path);
+	char *rdfpath = malloc(pathlen + suffixlen + 1);
+
+	strncpy(rdfpath, ldr->entry[id].path, pathlen);
+	strncpy(rdfpath+pathlen, suffix, suffixlen + 1);
+
+	size_t sz = strlen(rdfpath);
+
+	if (!stat(rdfpath, &st)) {
+		if (meta) {
+			meta->version = 0;
+			meta->predicate =
+				strdup("http://www.w3.org/2000/01/rdf-schema#seeAlso");
+			meta->type = DREW_LOADER_MD_URI;
+			meta->object = malloc(strlen(prefix) + strlen(rdfpath) + 1);
+			strncpy(meta->object, prefix, prefixlen);
+			strncpy(meta->object+prefixlen, rdfpath, sz+1);
+		}
+		free(rdfpath);
+		return 0;
+	}
+	free(rdfpath);
+	return -ENOENT;
+}
+
+int drew_loader_get_metadata(const drew_loader_t *ldr, int id, int item,
+		drew_metadata_t *meta)
+{
+	drew_metadata_t md;
+	int retval = 0;
+
+	if (!ldr)
+		return -EINVAL;
+
+	if (!drew_loader__is_valid_id(ldr, id))
+		return -ENOENT;
+
+	if (item == -1) {
+		retval = drew_loader__special_metadata(ldr, id,
+				(item - ldr->entry[id].nmeta), NULL);
+		
+		return ldr->entry[id].nmeta + (retval == 0);
+	}
+
+	if (item < 0)
+		return -EINVAL;
+	
+	if (item < ldr->entry[id].nmeta) {
+		memcpy(meta, ldr->entry[id].metadata + item, sizeof(*meta));
+		meta->predicate = strdup(meta->predicate);
+		meta->object = strdup(meta->object);
+		return 0;
+	}
+	else {
+		memset(&md, 0, sizeof(md));
+		retval = drew_loader__special_metadata(ldr, id,
+				(item - ldr->entry[id].nmeta), &md);
+		if (retval < 0) {
+			free(md.predicate);
+			free(md.object);
+			return -ENOENT;
+		}
+		memcpy(meta, &md, sizeof(*meta));
+		return 0;
+	}
+
+	return -ENOENT;
+}
