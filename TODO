@@ -18,6 +18,7 @@ TODO
 * Add CTR mode.
 * Add CBC mode.
 * Add OpenPGP CFB mode.
+* Add CFB and OFB info functions.
 * Allow modes to expand text (final function).
 * Update license and description statements.
 * Add MACs.
