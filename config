@@ -30,4 +30,7 @@ CFG_CAMELLIA	= m
 CFG_CFB			= m
 CFG_OFB			= m
 
+# MACs.
+CFG_HMAC		= m
+
 CFG_LIBMD		= y

@@ -2,6 +2,7 @@ testsuite
 test/test-hash
 test/test-block
 test/test-mode
+test/test-mac
 *.o
 *.so*
 plugins/*
