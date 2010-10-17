@@ -5,10 +5,11 @@
 #include <stdint.h>
 
 #include "util.hh"
+#include "cast.hh"
 
 namespace drew {
 
-class CAST5
+class CAST5 : public CAST
 {
 	public:
 		typedef BigEndian endian_t;
@@ -19,31 +20,6 @@ class CAST5
 		void Encrypt(uint8_t *out, const uint8_t *in);
 		void Decrypt(uint8_t *out, const uint8_t *in);
 	protected:
-		static inline uint32_t rol(uint32_t x, uint32_t n)
-		{
-			return (x << n) | (x >> (32-n));
-		}
-#define item(x) (m_s[x][endian_t::GetByte(val, 3-x)])
-		inline uint32_t f1(uint32_t x, uint32_t km, uint8_t kr)
-		{
-			const uint32_t val = rol(km + x, kr);
-		
-			return ((item(0) ^ item(1)) - item(2)) + item(3);
-		}
-		
-		inline uint32_t f2(uint32_t x, uint32_t km, uint8_t kr)
-		{
-			const uint32_t val = rol(km ^ x, kr);
-		
-			return ((item(0) - item(1)) + item(2)) ^ item(3);
-		}
-		
-		inline uint32_t f3(uint32_t x, uint32_t km, uint8_t kr)
-		{
-			const uint32_t val = rol(km - x, kr);
-		
-			return ((item(0) + item(1)) ^ item(2)) - item(3);
-		}
 	private:
 		void SetUpEndianness();
 		void ComputeZSet(uint32_t *z, const uint32_t *x);
@@ -53,7 +29,6 @@ class CAST5
 		void ComputeSubkeySetB(uint32_t *sk, const uint32_t *z, uint8_t a,
 				uint8_t b, uint8_t c, uint8_t d);
 		void ComputeSubkeys(const uint8_t *k);
-		static const uint32_t m_s[8][256];
 		uint32_t m_km[16];
 		uint8_t m_kr[16];
 };
