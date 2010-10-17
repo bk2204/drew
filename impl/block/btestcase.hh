@@ -39,9 +39,17 @@ class BlockTestCase
 			algo.Encrypt(buf, pt);
 			if (memcmp(buf, ct, len))
 				res |= 1;
+#ifdef DREW_TESTCASE_DEBUG
+			for (size_t i = 0; i < len; i++)
+				printf("enc %02zu: %02x %02x %02x\n", i, pt[i], buf[i], ct[i]);
+#endif
 			algo.Decrypt(buf, ct);
 			if (memcmp(buf, pt, len))
 				res |= 2;
+#ifdef DREW_TESTCASE_DEBUG
+			for (size_t i = 0; i < len; i++)
+				printf("dec %02zu: %02x %02x %02x\n", i, pt[i], buf[i], ct[i]);
+#endif
 			delete[] buf;
 
 			return res;
