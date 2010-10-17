@@ -19,6 +19,7 @@ CFG_TIGER		= m
 # plugin offers all five block sizes and all five key sizes, but runs at about
 # one-third of the speed.  You do not need both.
 CFG_CAST5		= m
+CFG_CAST6		= m
 CFG_BLOWFISH	= m
 CFG_AES			= m
 CFG_RIJNDAEL	= m
