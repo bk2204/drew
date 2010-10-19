@@ -1,0 +1,33 @@
+#!/usr/bin/perl -w
+
+if (scalar @ARGV < 2) {
+	print STDERR
+		"usage: compare-speed old-make-speed-output new-make-speed-output\n";
+	exit 2;
+}
+
+open(OLD, "<$ARGV[0]") or die "cannot open file: $!";
+@oldbuf = <OLD>;
+close(OLD);
+open(NEW, "<$ARGV[1]") or die "cannot open file: $!";
+@newbuf = <NEW>;
+close(NEW);
+
+for ($i = 0; $i < scalar @oldbuf; $i++) {
+	$otag = $x = $oldbuf[$i];
+	$ntag = $y = $newbuf[$i];
+	#chomp $otag;
+	#chomp $ntag;
+	$otag =~ s/^([A-Za-z0-9-]+)\s*:.*$/$1/;
+	$ntag =~ s/^([A-Za-z0-9-]+)\s*:.*$/$1/;
+	# skip this line if there's no tag.
+	next if (($otag eq $x) && ($ntag eq $y));
+	die "tag mismatch: '$otag' != '$ntag'" if ($otag ne $ntag);
+	$x =~ s/^.*\((\d+\.\d+)\s+MiB\/s\).*$/$1/;
+	$y =~ s/^.*\((\d+\.\d+)\s+MiB\/s\).*$/$1/;
+	$x += 0.0;
+	$y += 0.0;
+	$v = (($y - $x) / $x) * 100.0;
+	chomp $otag;
+	printf "%-16s: change is %7.3f%%\n", $otag, $v;
+}
