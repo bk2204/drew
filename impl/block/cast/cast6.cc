@@ -22,9 +22,15 @@ static int cast6_maintenance_test(void)
 	using namespace drew;
 
 	int result = 0;
-	const char *output =
-		"eea9d0a249fd3ba6b3436fb89d6dca92b2c95eb00c31ad7180ac05b8e83d696e";
-	result |= BlockTestCase<CAST6>::MaintenanceTest(output, 16, 8);
+	result |= BlockTestCase<CAST6>::MaintenanceTest("d3f1ff988a4aa9c9c93df1382f86d"
+			"be9b1dccf2eaedc95bc58d0c05fd38ea6be913276c80d5ab000e866ad49fdb03b759d"
+			"c2811342fdeed899701fd5bca0ac4b", 16, 16);
+	result |= BlockTestCase<CAST6>::MaintenanceTest("f36f576b0e1820d4e10e99c2fd44b"
+			"1b29a264edd409f71344ba38d1295ce4229d97a89bedb4df121c2460cb704e3858ed5"
+			"b3b59764430d732b5a3aafca3dd944", 24, 16);
+	result |= BlockTestCase<CAST6>::MaintenanceTest("5139cab959e2e1fd019fd1a36a790"
+			"564fd4b61c6ce2592f19ac817d1fcf4274028bb277c44f8b392e096410bf27cf0e517"
+			"23c56ca6ffa48bf9ac2c248b4fa788", 32, 16);
 	return result;
 }
 
