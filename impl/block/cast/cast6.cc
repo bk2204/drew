@@ -39,22 +39,46 @@ static int cast6test(void *, drew_loader_t *)
 	using namespace drew;
 
 	int res = 0;
-	const char *key128 = "2342bb9efa38542c0af75647f29f615d";
-	const char *key192 = "2342bb9efa38542cbed0ac83940ac298bac77a7717942863";
+	const char *key128 = "2342bb9efa38542c0af75647f29f615d"
+		"00000000000000000000000000000000";
+	const char *key192 = "2342bb9efa38542cbed0ac83940ac298"
+		"bac77a77179428630000000000000000";
 	const char *key256 = "2342bb9efa38542cbed0ac83940ac298"
 		"8d7c47ce264908461cc1b5137ae6b604";
 	const char *pt = "00000000000000000000000000000000";
 
+	/* Since the specification for CAST6 states that keys shorter than 256 bits
+	 * are padded with zeros (assuming they are multiples of 32 bits), test that
+	 * to make sure it's the case.
+	 */
 	res |= BlockTestCase<CAST6>(key128, 16).Test(pt,
+			"c842a08972b43d20836c91d1b7530f6b", 16);
+	res <<= 2;
+	res |= BlockTestCase<CAST6>(key128, 20).Test(pt,
+			"c842a08972b43d20836c91d1b7530f6b", 16);
+	res <<= 2;
+	res |= BlockTestCase<CAST6>(key128, 24).Test(pt,
+			"c842a08972b43d20836c91d1b7530f6b", 16);
+	res <<= 2;
+	res |= BlockTestCase<CAST6>(key128, 28).Test(pt,
+			"c842a08972b43d20836c91d1b7530f6b", 16);
+	res <<= 2;
+	res |= BlockTestCase<CAST6>(key128, 32).Test(pt,
 			"c842a08972b43d20836c91d1b7530f6b", 16);
 	res <<= 2;
 	res |= BlockTestCase<CAST6>(key192, 24).Test(pt,
 			"1b386c0210dcadcbdd0e41aa08a7a7e8", 16);
 	res <<= 2;
+	res |= BlockTestCase<CAST6>(key192, 28).Test(pt,
+			"1b386c0210dcadcbdd0e41aa08a7a7e8", 16);
+	res <<= 2;
+	res |= BlockTestCase<CAST6>(key192, 32).Test(pt,
+			"1b386c0210dcadcbdd0e41aa08a7a7e8", 16);
+	res <<= 2;
 	res |= BlockTestCase<CAST6>(key256, 32).Test(pt,
 			"4f6a2038286897b9c9870136553317fa", 16);
-	//res <<= 2;
-	//res |= cast6_maintenance_test();
+	res <<= 2;
+	res |= cast6_maintenance_test();
 
 	return res;
 }
