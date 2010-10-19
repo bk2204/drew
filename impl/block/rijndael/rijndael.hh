@@ -38,11 +38,11 @@ class Rijndael
 		inline virtual void DecryptBlock(uint64_t *);
 	private:
 		inline void Substitution(uint64_t *, const uint8_t *);
-		inline virtual void ShiftRow(uint64_t *, const uint8_t *) = 0;
-		inline virtual uint64_t ApplyS(uint64_t, const uint8_t *) = 0;
-		inline virtual void InvMixColumn(uint64_t *) = 0;
-		inline virtual void PackBlock(uint8_t *, const uint64_t *) = 0;
-		inline virtual void UnpackBlock(uint64_t *, const uint8_t *) = 0;
+		virtual void ShiftRow(uint64_t *, const uint8_t *) = 0;
+		virtual uint64_t ApplyS(uint64_t, const uint8_t *) = 0;
+		virtual void InvMixColumn(uint64_t *) = 0;
+		virtual void PackBlock(uint8_t *, const uint64_t *) = 0;
+		virtual void UnpackBlock(uint64_t *, const uint8_t *) = 0;
 		void SetKeyDecrypt(void);
 		static const uint8_t Si[];
 		static const uint8_t shifts0[5][4];
