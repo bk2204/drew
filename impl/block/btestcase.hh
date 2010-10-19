@@ -61,7 +61,7 @@ class BlockTestCase
 
 			uint8_t *ptbuf = new uint8_t[len];
 			uint8_t *ctbuf = new uint8_t[len];
-			int res;
+			int res = 0;
 
 			if (!StringToBytes(ptbuf, pt, len))
 				res |= 4;
