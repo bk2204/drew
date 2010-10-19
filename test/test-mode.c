@@ -41,7 +41,7 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	uint8_t *buf, *buf2, *key;
 	struct timespec cstart, cend;
 	const drew_mode_functbl_t *functbl = tbl;
-	drew_block_functbl_t *ftbl;
+	const drew_block_functbl_t *ftbl;
 	int id;
 
 	if (!algo)
@@ -51,7 +51,9 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	if (id < 0)
 		return ENOTSUP;
 
-	drew_loader_get_functbl(ldr, id, &ftbl);
+	const void *p;
+	drew_loader_get_functbl(ldr, id, &p);
+	ftbl = p;
 
 	blksz = ftbl->info(DREW_BLOCK_BLKSIZE, NULL);
 	keysz = ftbl->info(DREW_BLOCK_KEYSIZE, &keysz);
