@@ -204,7 +204,6 @@ void drew::Blowfish::Encrypt(uint8_t *out, const uint8_t *in)
 void drew::Blowfish::Decrypt(uint8_t *out, const uint8_t *in)
 {
 	uint32_t l, r;
-	endian_t e;
 
 	endian_t::Copy(&l, in+0, sizeof(l));
 	endian_t::Copy(&r, in+4, sizeof(r));
