@@ -1,16 +1,23 @@
 #!/usr/bin/perl -w
 
 if (scalar @ARGV < 2) {
-	print STDERR
-		"usage: compare-speed old-make-speed-output new-make-speed-output\n";
+	print STDERR <<EOM;
+usage: compare-speed old new [factor]
+
+old and new are the output of 'make speed'
+factor (default 1.0) is an adjustment to new's speed
+\tthat is, old and (new/factor) are the values computed
+EOM
 	exit 2;
 }
 
+my $factor = 1.0;
 open(OLD, "<$ARGV[0]") or die "cannot open file: $!";
 @oldbuf = <OLD>;
 close(OLD);
 open(NEW, "<$ARGV[1]") or die "cannot open file: $!";
 @newbuf = <NEW>;
+$factor = $ARGV[2] + 0.0 if (scalar @ARGV >= 3);
 close(NEW);
 
 for ($i = 0; $i < scalar @oldbuf; $i++) {
@@ -27,6 +34,7 @@ for ($i = 0; $i < scalar @oldbuf; $i++) {
 	$y =~ s/^.*\((\d+\.\d+)\s+MiB\/s\).*$/$1/;
 	$x += 0.0;
 	$y += 0.0;
+	$y /= $factor;
 	$v = (($y - $x) / $x) * 100.0;
 	chomp $otag;
 	printf "%-16s: change is %7.3f%%\n", $otag, $v;
