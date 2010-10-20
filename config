@@ -34,4 +34,7 @@ CFG_OFB			= m
 # MACs.
 CFG_HMAC		= m
 
+## Stream ciphers.
+CFG_RC4			= m
+
 CFG_LIBMD		= y
