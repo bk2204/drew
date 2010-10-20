@@ -20,6 +20,11 @@
  * block of memory, such as locked memory.
  */
 #define DREW_STREAM_INTSIZE 2  /* Not implemented. */
+/* The size of the IV or nonce in bytes.  The values produced here are handled
+ * exactly the same way as for DREW_STREAM_KEYSIZE.  If the algorithm does not
+ * permit a nonce, an error will be returned.
+ */
+#define DREW_STREAM_IVSIZE 3
 
 /* This bit is a flag to the clone function indicating that the new context
  * should be copied into already-existing memory at *newctx.
@@ -40,6 +45,7 @@ typedef struct {
 	int (*init)(void **, void *, int, drew_loader_t *, const drew_param_t *);
 	int (*clone)(void **, void *, int);
 	int (*fini)(void **, int);
+	int (*setiv)(void *, const uint8_t *, size_t);
 	int (*setkey)(void *, const uint8_t *, size_t, int);
 	int (*encrypt)(void *, uint8_t *, const uint8_t *, size_t);
 	int (*decrypt)(void *, uint8_t *, const uint8_t *, size_t);

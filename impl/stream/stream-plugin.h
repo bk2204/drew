@@ -15,10 +15,10 @@ extern "C" {
 #include <plugin.h>
 #include <stream.h>
 
-#define PLUGIN_FUNCTBL(prefix, info, init, setkey, encrypt, decrypt, test, fini, clone) \
+#define PLUGIN_FUNCTBL(prefix, info, init, setiv, setkey, encrypt, decrypt, test, fini, clone) \
 \
 static drew_stream_functbl_t prefix ## functbl = { \
-	info, init, clone, fini, setkey, encrypt, decrypt, test \
+	info, init, clone, fini, setiv, setkey, encrypt, decrypt, test \
 };
 
 struct plugin {

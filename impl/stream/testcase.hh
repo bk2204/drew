@@ -29,7 +29,7 @@ class StreamTestCase
 			if (m_abuf)
 				delete[] m_abuf;
 		}
-		int Test(const uint8_t *pt, const uint8_t *ct, size_t len)
+		int Test(const uint8_t *pt, const uint8_t *ct, size_t len, const uint8_t *nonce = 0, size_t noncelen = 0)
 		{
 			uint8_t *buf = new uint8_t[len];
 			T algo;
@@ -55,39 +55,48 @@ class StreamTestCase
 
 			return res;
 		}
-		int Test(const char *pt, const char *ct, size_t len = 0)
+		int Test(const char *pt, const char *ct, size_t len = 0, const char *nonce = 0, size_t noncelen = 0)
 		{
 			if (!len)
 				len = strlen(pt) / 2;
+			if (nonce && !noncelen)
+				noncelen = strlen(nonce) / 2;
 
 			uint8_t *ptbuf = new uint8_t[len];
 			uint8_t *ctbuf = new uint8_t[len];
+			uint8_t *nobuf = NULL;
+			if (nonce)
+				nobuf = new uint8_t[noncelen];
 			int res = 0;
 
 			if (!StringToBytes(ptbuf, pt, len))
 				res |= 4;
 			if (!StringToBytes(ctbuf, ct, len))
 				res |= 8;
+			if (nonce && !StringToBytes(nobuf, nonce, noncelen))
+				res |= 12;
 
-			res |= Test(ptbuf, ctbuf, len);
+			res |= Test(ptbuf, ctbuf, len, nobuf, noncelen);
 
 			delete[] ptbuf;
 			delete[] ctbuf;
+			if (nonce)
+				delete[] nobuf;
 
 			return res;
 		}
-		static int MaintenanceTest(const char *str, size_t keysz, size_t blksz)
+		static int MaintenanceTest(const char *str, size_t keysz, size_t noncesz = 0)
 		{
 			uint8_t *output = StringToBytes(str, strlen(str)/2);
 			if (!output)
 				return 0xe;
-			int res = MaintenanceTest(output, keysz, blksz);
+			int res = MaintenanceTest(output, keysz, noncesz);
 			delete[] output;
 			return res;
 
 		}
 		static int MaintenanceTest(const uint8_t *buf, size_t keysz,
-				size_t blksz)
+				size_t noncesz = 0)
 		{
 			const char *str =
 				"0123456712345678234567893456789a"
@@ -97,28 +106,29 @@ class StreamTestCase
 			uint8_t *input = StringToBytes(str, strlen(str)/2);
 			if (!input)
 				return 0xe;
-			int res = MaintenanceTest(buf, input, strlen(str)/2, keysz, blksz);
+			int res = MaintenanceTest(buf, input, strlen(str)/2, keysz, noncesz);
 			delete[] input;
 			return res;
 		}
 	protected:
 		static int MaintenanceTest(const uint8_t *output, const uint8_t *input,
-				size_t inputsz, size_t keysz)
+				size_t inputsz, size_t keysz, size_t noncesz)
 		{
 			int res = 0;
 			T algo;
-			size_t blksz = 1024;
+			const size_t blksz = 1024;
 			uint8_t *a = new uint8_t[blksz];
 			uint8_t *b = new uint8_t[blksz];
+			uint8_t *n = new uint8_t[blksz];
 
 			for (size_t i = 0; i < inputsz; i++)
-				a[i] = b[i] = input[i % inputsz];
+				a[i] = b[i] = n[i] = input[i % inputsz];
 			for (size_t i = 0; i < 1000000; i++) {
 				algo.SetKey(b, keysz);
-				algo.Encrypt(a, a, blksz);
+				algo.SetNonce(n, noncesz);
 				algo.Encrypt(a, a, blksz);
 				algo.SetKey(a, keysz);
-				algo.Encrypt(b, b, blksz);
+				algo.SetNonce(n, noncesz);
 				algo.Encrypt(b, b, blksz);
 			}
 
@@ -129,10 +139,10 @@ class StreamTestCase
 
 			for (size_t i = 0; i < 1000000; i++) {
 				algo.SetKey(a, keysz);
-				algo.Decrypt(b, b, blksz);
+				algo.SetNonce(n, noncesz);
 				algo.Decrypt(b, b, blksz);
 				algo.SetKey(b, keysz);
-				algo.Decrypt(a, a, blksz);
+				algo.SetNonce(n, noncesz);
 				algo.Decrypt(a, a, blksz);
 			}
 			res |= !!memcmp(a, b, blksz);
@@ -141,6 +151,7 @@ class StreamTestCase
 
 			delete[] a;
 			delete[] b;
+			delete[] n;
 
 			return res;
 		}

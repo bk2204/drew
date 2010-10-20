@@ -72,6 +72,11 @@ static int rc4_clone(void **newctx, void *oldctx, int flags)
 	return 0;
 }
 
+static int rc4_setiv(void *ctx, const uint8_t *key, size_t len)
+{
+	return -EINVAL;
+}
+
 static int rc4_setkey(void *ctx, const uint8_t *key, size_t len, int mode)
 {
 	drew::RC4 *p = reinterpret_cast<drew::RC4 *>(ctx);
@@ -103,7 +108,7 @@ static int rc4_fini(void **ctx, int flags)
 	return 0;
 }
 
-PLUGIN_FUNCTBL(rc4, rc4_info, rc4_init, rc4_setkey, rc4_encrypt, rc4_decrypt, rc4_test, rc4_fini, rc4_clone);
+PLUGIN_FUNCTBL(rc4, rc4_info, rc4_init, rc4_setiv, rc4_setkey, rc4_encrypt, rc4_decrypt, rc4_test, rc4_fini, rc4_clone);
 PLUGIN_DATA_START()
 PLUGIN_DATA(rc4, "RC4")
 PLUGIN_DATA_END()
