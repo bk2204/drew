@@ -3,6 +3,7 @@ test/test-hash
 test/test-block
 test/test-mode
 test/test-mac
+test/test-stream
 test/plugin-main
 *.o
 *.so*
