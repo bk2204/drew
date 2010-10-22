@@ -12,6 +12,41 @@
 
 extern "C" {
 
+static int rc4_maintenance_test(void)
+{
+	using namespace drew;
+
+	int res = 0;
+
+	res |= StreamTestCase<RC4>::MaintenanceTest("2ac8ce81c12248c868ecddfb28b117eef"
+			"6f79d57a9fdc573183e9cd860df2ce40530135a6aa98a101140529b2092683e8e3fc2"
+			"ab16cf291443603aaf78ba8bf42f19630893cdc9358c85aafaef01fdd222e131fce20"
+			"7e76eecb5d555326fc01faa1fa56fa6d992278864dc84ac3807fa520ea1373f7b892e"
+			"aabe521e62e9d754", 16);
+	res |= StreamTestCase<RC4>::MaintenanceTest("50b145c20f5aceba1fa7ecb56e1a17f7c"
+			"38994258a6c06c11698c3f7122fc4576fb09125d066908c5e0066b0ef339427845ed4"
+			"ad485e10941fa983723abea6d6d1303174145393aaa6da902465c82c5957687a4362f"
+			"abbf70900314b437f4b2528916cb219531b11894086b1635173d6fa33dd19c3ae2a7f"
+			"1fa236ff5e2b9138", 20);
+	res |= StreamTestCase<RC4>::MaintenanceTest("6fb291ae1d92ae63d5c664a25899888d9"
+			"6b34112f97721478e895d10ccc75eaef3ce4697469be3c5f5e999b8f4efa0a6765d4a"
+			"c02e7eb220d7fb5f96879ec45337a39e794b15f24134fb963484c23fb9cea87a2c29f"
+			"952e7e7a6d33b4803f6d011e9a1e88a2aa2ba91e3c40139e533eb506e9ccf6747191e"
+			"04a44811f8d47bcd", 24);
+	res |= StreamTestCase<RC4>::MaintenanceTest("90d24e2d721b1c390e02e631553ceab99"
+			"b03b90b5c37247d0ad09f1f0621c40a6cd1d3847f82e48baa561bd331f25717b77da6"
+			"9f159d1e8586f4c218b349afc84f7ada14f2d7c179ea4e65f0547077cf46ec000a5b7"
+			"12907c07868048e404cbc8a3b46a37b02626a9cd523ad774339ba8c243009208003ac"
+			"ff1526835f59ff22", 28);
+	res |= StreamTestCase<RC4>::MaintenanceTest("ee549d7867217e4db9d85b1eddf18f7fc"
+			"a633868c1fc4227cb49472032f2c8f3545e273b502da032d240665cdc2b321fc5059f"
+			"263e672cd819c461fe009239554eff6d2397d3a976d452c1efab7c57745f98af6dcbc"
+			"bc35fa8bdd8b171e25a84441517d6ad98b4b88d5945ecb3878bcd9ca2a06895181f13"
+			"9b1d639b943fc8b6", 32);
+
+	return res;
+}
+
 static int rc4_test(void *, drew_loader_t *)
 {
 	using namespace drew;
@@ -25,6 +60,8 @@ static int rc4_test(void *, drew_loader_t *)
 	res <<= 2;
 	res |= StreamTestCase<RC4>("536563726574").Test("41747461636b206174206461776e",
 			"45a01f645fc35b383552544b9bf5");
+	res <<= 2;
+	res |= rc4_maintenance_test();
 
 	return res;
 }
