@@ -116,7 +116,7 @@ class StreamTestCase
 		{
 			int res = 0;
 			T algo;
-			const size_t blksz = 1024;
+			const size_t blksz = 64;
 			uint8_t *a = new uint8_t[blksz];
 			uint8_t *b = new uint8_t[blksz];
 			uint8_t *n = new uint8_t[blksz];
