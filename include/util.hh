@@ -56,6 +56,18 @@ inline int GetSystemEndianness()
 #endif
 }
 
+template<class T>
+inline T RotateLeft(T x, size_t n)
+{
+	return (x << n) | (x >> ((sizeof(T)*8) - n));
+}
+
+template<class T>
+inline T RotateRight(T x, size_t n)
+{
+	return (x >> n) | (x << ((sizeof(T)*8) - n));
+}
+
 class Endian
 {
 	public:
