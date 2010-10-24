@@ -59,6 +59,7 @@ typedef void drew_loader_t;
 #define DREW_TYPE_MODE 3
 #define DREW_TYPE_MAC 4
 #define DREW_TYPE_STREAM 5
+#define DREW_TYPE_PRNG 6
 
 /* The system dynamic loader failed. */
 #define DREW_ERR_RESOLUTION		0x10001

@@ -1,0 +1,7 @@
+PLUGINS_PRNG-${CFG_ARC4STIR}		+= arc4/arc4stir
+
+PRNG_DIR		:= impl/prng
+PRNG_PLUGINS	:= $(patsubst %,${PRNG_DIR}/%,$(PLUGINS_PRNG-m))
+PLUGINS			+= $(PRNG_PLUGINS)
+
+$(PRNG_PLUGINS): CPPFLAGS += -I$(PRNG_DIR)

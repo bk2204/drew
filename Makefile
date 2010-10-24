@@ -15,7 +15,7 @@ include config
 #
 #MD_OBJS			:= ${MD_SRC-y:O:u:.c=.o}
 
-CATEGORIES		:= hash block mode mac stream
+CATEGORIES		:= hash block mode mac stream prng
 
 TEST_SRC		+= libmd/testsuite.c
 TEST_OBJ		:= ${SRC:.c=.o} ${TEST_SRC:.c=.o}
