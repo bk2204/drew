@@ -66,6 +66,14 @@ typedef void drew_loader_t;
 #define DREW_ERR_ENUMERATION	0x10002
 /* There was an error getting function information from the plugin. */
 #define DREW_ERR_FUNCTION		0x10003
+/* The behavior requested is not allowed on this object. */
+#define DREW_ERR_NOT_ALLOWED	0x10004
+/* The behavior requested is not implemented. */
+#define DREW_ERR_NOT_IMPL		0x10005
+/* The value passed was not valid. */
+#define DREW_ERR_INVALID		0x10006
+/* More information is needed to complete the request. */
+#define DREW_ERR_MORE_INFO		0x10007
 
 int drew_loader_new(drew_loader_t **ldr);
 int drew_loader_free(drew_loader_t **ldr);
