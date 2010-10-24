@@ -6,6 +6,7 @@ PLUGINS_BLOCK-${CFG_RIJNDAEL}	+= rijndael/rijndael
 PLUGINS_BLOCK-${CFG_TWOFISH}	+= twofish/twofish
 PLUGINS_BLOCK-${CFG_DES}		+= des/des
 PLUGINS_BLOCK-${CFG_CAMELLIA}	+= camellia/camellia
+PLUGINS_BLOCK-${CFG_RC2}		+= rc2/rc2
 
 BLOCK_DIR		:= impl/block
 BLOCK_PLUGINS	:= $(patsubst %,${BLOCK_DIR}/%,$(PLUGINS_BLOCK-m))
