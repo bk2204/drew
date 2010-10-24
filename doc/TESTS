@@ -1,0 +1,64 @@
+This document describes the behavior of the maintenance tests that are built
+into many of the modules.  As long as these conventions are followed, a set of
+maintenance tests can be created for all block ciphers and hashes.
+
+Block Ciphers
+-------------
+
+Each maintenance test requires an array of bytes R.  This array must be of
+length sufficient to be used as a key and as a pair of blocks.  A maintenance
+test for a block cipher is defined by the triplet of R, key size K, and block
+size L.  Two arrays, A and B, are initialized with R.  The "left half" of one of
+these arrays consists of the leftmost L bytes.  The "right half" consists of the
+next L bytes.
+
+Key setup is performed with B as the key.  If B is longer than K bytes, the
+leftmost K bytes of B are used as the key.  The left half of A is encrypted
+in-place, and then the right half of A is encrypted in place.  Key setup is then
+performed with A as the key; again, if it is longer than K bytes, the leftmost K
+bytes of A are used.  The left half of B is encrypted in-place, and then the
+right half of B is encrypted in place.  This constitutes one iteration.  The
+maintenance test performs one million (1 000 000) iterations.
+
+A test is successful if the final values of A and B match published test
+vectors.   Because this process is invertible, it can also be used in reverse to
+test decryption capabilities.
+
+If no array R is specified, R is assumed to be (in big-endian hexadecimal
+notation) 0x0123456712345678234567893456789a456789ab....  That is, the first
+byte is 0x01, the next byte is 0x23, and so on.  The sequence wraps from 0xf to
+0; that is, assuming a zero-indexed R, byte 39 has value 0xf0 and bytes 43 and
+50 have the same value as byte 0.  This sequence was chosen for compatibility
+with CAST-128.
+
+Stream Ciphers
+--------------
+
+Each maintenance test requires an array of bytes R; this is the default array
+for block cipher maintenance tests (see above).  A maintenance test is specific
+to the key size K and (if a nonce is required) the nonce size N.  Two arrays of
+size 64 bytes, A and B, are initialized with R.  If the cipher requires a
+nonce, it, too, is initialized with R, and this same nonce value is used every
+time key setup is performed.
+
+Key setup is performed with B as the key.  If B is longer than K bytes, the
+leftmost K bytes of B are used as the key.  A is encrypted in place.  Key setup
+is then performed with A as the key; again, if it is longer than K bytes, the
+leftmost K bytes of A are used.  B is encrypted in place.  This constitutes one
+iteration.  The maintenance test performs one million (1 000 000) iterations.
+
+A test is successful if the final values of A and B match published test
+vectors.   Because this process is invertible, it can also be used in reverse to
+test decryption capabilities.
+
+Hash Algorithms
+---------------
+
+Create a hash context C for the algorithm in question.
+
+For each i in the interval [0, 50 000), create a hash context D.  With D,
+compute the hash value H of i bytes, each byte with the value i mod 256.  Append
+H (as a sequence of bytes) to C.  Destroy D.
+
+The test is successful if the hash computed with C matches published test
+vectors.  Note that this process can be easily parallelized for efficiency.
