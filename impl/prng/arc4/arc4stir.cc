@@ -176,10 +176,11 @@ void drew::ARC4Stir::Stir()
 // Note that this does not reset the S-box to the initial state.
 void drew::ARC4Stir::Stir(const uint8_t *k)
 {
+	const size_t shift = 16;
 	uint8_t j = InternalGetByte();
-	for (size_t i = 0; i < (1<<16); i++) {
+	for (size_t i = 0; i < (1<<shift); i++) {
 		const uint8_t t = i;
-		const uint8_t v = (~(i >> 8) ^ t);
+		const uint8_t v = (~(i >> (shift-8)) ^ t);
 		j += m_s[t] + k[t] + v;
 		std::swap(m_s[t], m_s[j]);
 	}
