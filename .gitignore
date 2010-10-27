@@ -9,3 +9,4 @@ test/plugin-main
 *.o
 *.so*
 plugins/*
+gmon.out
