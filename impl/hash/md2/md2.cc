@@ -15,7 +15,7 @@ PLUGIN_STRUCTURE(md2, drew::MD2, MD2)
 PLUGIN_DATA_START()
 PLUGIN_DATA(md2, "MD2")
 PLUGIN_DATA_END()
-PLUGIN_INTERFACE()
+PLUGIN_INTERFACE(md2)
 
 static int md2test(void *, drew_loader_t *)
 {

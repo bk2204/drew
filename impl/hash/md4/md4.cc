@@ -22,7 +22,7 @@ PLUGIN_STRUCTURE(md4, drew::MD4, MD4)
 PLUGIN_DATA_START()
 PLUGIN_DATA(md4, "MD4")
 PLUGIN_DATA_END()
-PLUGIN_INTERFACE()
+PLUGIN_INTERFACE(md4)
 
 static int md4test(void *, drew_loader_t *)
 {

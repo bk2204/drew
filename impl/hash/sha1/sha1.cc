@@ -25,7 +25,7 @@ PLUGIN_DATA_START()
 PLUGIN_DATA(sha1, "SHA-1")
 PLUGIN_DATA(sha0, "SHA-0")
 PLUGIN_DATA_END()
-PLUGIN_INTERFACE()
+PLUGIN_INTERFACE(sha1)
 
 static int sha1test(void *, drew_loader_t *)
 {

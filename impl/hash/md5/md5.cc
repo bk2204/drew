@@ -13,7 +13,7 @@ PLUGIN_STRUCTURE(md5, drew::MD5, MD5)
 PLUGIN_DATA_START()
 PLUGIN_DATA(md5, "MD5")
 PLUGIN_DATA_END()
-PLUGIN_INTERFACE()
+PLUGIN_INTERFACE(md5)
 
 static int md5test(void *, drew_loader_t *)
 {

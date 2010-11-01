@@ -15,7 +15,7 @@ PLUGIN_DATA_START()
 PLUGIN_DATA(sha256, "SHA-256")
 PLUGIN_DATA(sha224, "SHA-224")
 PLUGIN_DATA_END()
-PLUGIN_INTERFACE()
+PLUGIN_INTERFACE(sha256)
 
 static int sha256test(void *, drew_loader_t *)
 {
