@@ -1,0 +1,19 @@
+DREW_IMPL_DIR		:= lib/libdrew-impl
+DREW_IMPL_SONAME	:= libdrew-impl.so.0
+DREW_IMPL_SYMLINK	:= $(basename $(DREW_IMPL_SONAME))
+DREW_IMPL_GEN		:= $(DREW_IMPL_DIR)/modules.gen
+
+$(DREW_IMPL_DIR)/stub.o: $(DREW_IMPL_DIR)/stub.c
+$(DREW_IMPL_DIR)/stub.o: $(DREW_IMPL_GEN)
+
+$(DREW_IMPL_DIR)/$(DREW_IMPL_SONAME): $(DREW_IMPL_DIR)/stub.o $(MODULES)
+	$(CXX) $(CXXFLAGS) $(LIBCFLAGS) -o $(.TARGET) $(.ALLSRC) $(LIBS)
+
+$(DREW_IMPL_SONAME): $(DREW_IMPL_DIR)/$(DREW_IMPL_SONAME)
+	ln -sf $(.ALLSRC) $(.TARGET)
+
+$(DREW_IMPL_SYMLINK): $(DREW_IMPL_SONAME)
+	ln -sf $(.ALLSRC) $(.TARGET)
+
+$(DREW_IMPL_DIR)/modules.gen:
+	$(DREW_IMPL_DIR)/generate -m -o $(DREW_IMPL_GEN) $(patsubst %.o,%,$(MODULES))
