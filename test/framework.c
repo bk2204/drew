@@ -50,6 +50,7 @@ int main(int argc, char **argv)
 	int type = 0;
 	int chunk = 0;
 	int nchunks = 0;
+	int retval = 0;
 	const char *algo = NULL;
 	const char *only = NULL;
 	drew_loader_t *ldr = NULL;
@@ -89,7 +90,11 @@ int main(int argc, char **argv)
 	if (nchunks <= 0)
 		nchunks = NCHUNKS;
 
-	drew_loader_load_plugin(ldr, NULL, NULL);
+	if ((retval = drew_loader_load_plugin(ldr, NULL, NULL))) {
+		printf("<internal>: failed to load (error %d (%s))\n", -retval,
+				strerror(-retval));
+		error++;
+	}
 
 	for (; optind < argc; optind++) {
 		int id;
