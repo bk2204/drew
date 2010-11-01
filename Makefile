@@ -54,6 +54,7 @@ all:
 
 include lib/libdrew/Makefile
 include $(patsubst %,impl/%/Makefile,$(CATEGORIES))
+include lib/libdrew-impl/Makefile
 include libmd/Makefile
 
 all: ${PLUG_EXE} ${DREW_SONAME} standard
@@ -81,7 +82,7 @@ ${PLUGINS}: %: %.so
 $(PLUGINS:=.so): %.so: %.o
 	${CXX} ${LIBCFLAGS} ${CXXFLAGS} -o ${.TARGET} ${.ALLSRC} ${LDFLAGS}
 
-test/test-%: test/test-%.o test/framework.o ${DREW_SONAME} 
+test/test-%: test/test-%.o test/framework.o ${DREW_SONAME} ${DREW_IMPL_SONAME}
 	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
 plugins: ${PLUGINS}
