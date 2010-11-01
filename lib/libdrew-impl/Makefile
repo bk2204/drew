@@ -15,5 +15,7 @@ $(DREW_IMPL_SONAME): $(DREW_IMPL_DIR)/$(DREW_IMPL_SONAME)
 $(DREW_IMPL_SYMLINK): $(DREW_IMPL_SONAME)
 	ln -sf $(.ALLSRC) $(.TARGET)
 
-$(DREW_IMPL_DIR)/modules.gen:
+.PHONY: $(DREW_IMPL_GEN)
+
+$(DREW_IMPL_GEN):
 	$(DREW_IMPL_DIR)/generate -m -o $(DREW_IMPL_GEN) $(patsubst %.o,%,$(MODULES))
