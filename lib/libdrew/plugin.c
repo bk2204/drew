@@ -173,7 +173,7 @@ static int drew_loader__lookup_plugin(drew_loader_t *ldr, void **obj,
 
 	if (!path) {
 		handle = drew_loader__open_plugin(ldr, plugin);
-		*fullpath = realpath(plugin, NULL);
+		*fullpath = plugin ? realpath(plugin, NULL) : NULL;
 		err = handle ? 0 : -ENOENT;
 		goto out;
 	}
