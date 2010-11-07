@@ -47,6 +47,8 @@ static int drew_loader__load_info(drew_loader_t *ldr, int aid, int id)
 	}
 
 	nplugins = plugin_info(ldr, DREW_LOADER_GET_NPLUGINS, 0, NULL);
+	if (!nplugins)
+		goto done;
 	if (nplugins < 0)
 		return -DREW_ERR_ENUMERATION;
 
@@ -97,6 +99,7 @@ static int drew_loader__load_info(drew_loader_t *ldr, int aid, int id)
 	else
 		metasize = 0;
 
+done:
 	ldr->entry[aid].id = id;
 	ldr->entry[aid].type = type;
 	ldr->entry[aid].nplugins = nplugins;
