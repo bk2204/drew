@@ -51,13 +51,14 @@ int main(int argc, char **argv)
 	int chunk = 0;
 	int nchunks = 0;
 	int retval = 0;
+	int success_only = 0;
 	const char *algo = NULL;
 	const char *only = NULL;
 	drew_loader_t *ldr = NULL;
 
 	drew_loader_new(&ldr);
 
-	while ((opt = getopt(argc, argv, "stia:c:n:o:")) != -1) {
+	while ((opt = getopt(argc, argv, "stifa:c:n:o:")) != -1) {
 		switch (opt) {
 			case 's':
 				mode = MODE_SPEED;
@@ -67,6 +68,9 @@ int main(int argc, char **argv)
 				break;
 			case 'i':
 				mode = MODE_TEST_INTERNAL;
+				break;
+			case 'f':
+				success_only = 1;
 				break;
 			case 'a':
 				algo = optarg;
@@ -117,6 +121,7 @@ int main(int argc, char **argv)
 	for (i = 0; i < nplugins; i++) {
 		const void *functbl;
 		const char *name;
+		int result = 0;
 
 		if (drew_loader_get_type(ldr, i) != type)
 			continue;
@@ -135,7 +140,8 @@ int main(int argc, char **argv)
 				break;
 			case MODE_TEST:
 			case MODE_TEST_INTERNAL:
-				if (test_internal(ldr, name, functbl))
+				result = test_internal(ldr, name, functbl);
+				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
 					error++;
 			default:
 				break;
