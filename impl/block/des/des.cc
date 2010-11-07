@@ -443,7 +443,7 @@ static int destest(void *, drew_loader_t *)
 	PLUGIN_DATA(des, "DES")
 	PLUGIN_DATA(desede, "DESede")
 	PLUGIN_DATA_END()
-	PLUGIN_INTERFACE()
+	PLUGIN_INTERFACE(des)
 }
 
 

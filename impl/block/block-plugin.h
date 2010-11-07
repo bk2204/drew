@@ -33,9 +33,9 @@ struct plugin {
 #define PLUGIN_DATA(prefix, name) { name, & prefix ## functbl },
 
 #define PLUGIN_INFO(name) static const char *pname = name
-#define PLUGIN_INTERFACE() \
+#define PLUGIN_INTERFACE(x) \
 \
-int drew_plugin_info(void *ldr, int op, int id, void *p) \
+int DREW_PLUGIN_NAME(x)(void *ldr, int op, int id, void *p) \
 { \
 \
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]); \

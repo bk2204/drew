@@ -396,7 +396,7 @@ static int rd_test(void *, drew_loader_t *)
 	PLUGIN_DATA(aes192, "AES192")
 	PLUGIN_DATA(aes256, "AES256")
 	PLUGIN_DATA_END()
-	PLUGIN_INTERFACE()
+	PLUGIN_INTERFACE(rijndael)
 }
 
 typedef drew::Rijndael::endian_t E;

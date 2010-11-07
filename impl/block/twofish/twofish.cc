@@ -66,7 +66,7 @@ extern "C" {
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(twofish, "Twofish")
 	PLUGIN_DATA_END()
-	PLUGIN_INTERFACE()
+	PLUGIN_INTERFACE(twofish)
 }
 
 inline uint32_t rol(uint32_t x, unsigned n)

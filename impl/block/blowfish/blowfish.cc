@@ -137,7 +137,7 @@ extern "C" {
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(blowfish, "Blowfish")
 	PLUGIN_DATA_END()
-	PLUGIN_INTERFACE()
+	PLUGIN_INTERFACE(blowfish)
 }
 
 drew::Blowfish::Blowfish()

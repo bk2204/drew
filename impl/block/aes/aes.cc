@@ -246,7 +246,7 @@ static int rd_test(void *, drew_loader_t *)
 	PLUGIN_DATA(aes192, "AES192")
 	PLUGIN_DATA(aes256, "AES256")
 	PLUGIN_DATA_END()
-	PLUGIN_INTERFACE()
+	PLUGIN_INTERFACE(aes)
 }
 
 #define GETU32(pt) (((uint32_t)(pt)[0] << 24) ^ ((uint32_t)(pt)[1] << 16) ^ ((uint32_t)(pt)[2] <<  8) ^ ((uint32_t)(pt)[3]))

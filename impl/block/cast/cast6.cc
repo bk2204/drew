@@ -90,7 +90,7 @@ extern "C" {
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(cast6, "CAST-256")
 	PLUGIN_DATA_END()
-	PLUGIN_INTERFACE()
+	PLUGIN_INTERFACE(cast6)
 }
 
 typedef drew::CAST6::endian_t E;

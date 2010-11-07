@@ -117,7 +117,7 @@ static int rc2_test(void *, drew_loader_t *)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(rc2, "RC2")
 	PLUGIN_DATA_END()
-	PLUGIN_INTERFACE()
+	PLUGIN_INTERFACE(rc2)
 }
 
 typedef drew::RC2::endian_t E;

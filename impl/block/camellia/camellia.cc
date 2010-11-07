@@ -57,7 +57,7 @@ extern "C" {
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(camellia, "Camellia")
 	PLUGIN_DATA_END()
-	PLUGIN_INTERFACE()
+	PLUGIN_INTERFACE(camellia)
 }
 
 typedef drew::Camellia::endian_t E;
