@@ -143,5 +143,7 @@ int main(int argc, char **argv)
 	}
 	drew_loader_free(&ldr);
 
+	if (error && !(error & 0xff))
+		error++;
 	return error;
 }
