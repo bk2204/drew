@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -24,6 +25,33 @@
 double sec_from_timespec(const struct timespec *ts)
 {
 	return ts->tv_sec + (ts->tv_nsec / 1000000000.0);
+}
+
+int print_test_results(int result)
+{
+	printf("self-test ");
+	if (!result) {
+		printf("ok");
+	}
+	else if (result > 0) {
+		/* Tests are numbered starting with 0. */
+		int last = -1;
+		printf("failed (test%s: ", (result & (result-1)) ? "s" : "");
+		for (int x = result; x; x &= ~(1 << (last))) {
+			const char *s = (last >= 0) ? ", " : "";
+			last = ffs(x) - 1;
+			printf("%s%d", s, last);
+		}
+		printf(")");
+	}
+	else if (result == -DREW_ERR_NOT_IMPL) {
+		printf("not implemented");
+	}
+	else {
+		printf("exited with error");
+	}
+	printf(" (result code %d)\n", result);
+	return result;
 }
 
 void print_speed_info(int chunk, int nchunks, const struct timespec *cstart,

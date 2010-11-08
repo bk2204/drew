@@ -38,5 +38,6 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 int test_internal(drew_loader_t *ldr, const char *name, const void *functbl);
 void print_speed_info(int chunk, int nchunks, const struct timespec *cstart,
 		const struct timespec *cend);
+int print_test_results(int result);
 
 #endif

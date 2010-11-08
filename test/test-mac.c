@@ -24,12 +24,9 @@ int test_get_type(void)
 
 int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 {
-	int result;
 	const drew_mac_functbl_t *functbl = tbl;
 	
-	result = functbl->test(NULL, ldr);
-	printf("self-test %s (result code %d)\n", result ? "failed" : "ok", result);
-	return result;
+	return print_test_results(functbl->test(NULL, ldr));
 }
 
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
