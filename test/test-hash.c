@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #include <plugin.h>
@@ -29,30 +30,46 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 	return print_test_results(functbl->test(NULL, ldr));
 }
 
+inline int test_speed_loop(const drew_hash_functbl_t *functbl, uint8_t *buf,
+		int chunk, int nchunks)
+{
+	int i;
+	void *ctx;
+
+	functbl->init(&ctx, NULL, 0, NULL, NULL);
+	for (i = 0; !framework_sigflag && i < nchunks; i++)
+		functbl->update(ctx, buf, chunk);
+	if (!framework_sigflag)
+		functbl->final(ctx, buf, 0);
+	functbl->fini(&ctx, 0);
+
+	return i;
+}
+
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		const void *tbl, int chunk, int nchunks)
 {
 	int i;
-	void *ctx;
 	uint8_t *buf;
 	struct timespec cstart, cend;
 	const drew_hash_functbl_t *functbl = tbl;
+	void *fwdata;
 
 	buf = calloc(chunk, 1);
 	if (!buf)
 		return ENOMEM;
 
+	fwdata = framework_setup();
+
 	clock_gettime(USED_CLOCK, &cstart);
-	functbl->init(&ctx, NULL, 0, NULL, NULL);
-	for (i = 0; i < nchunks; i++)
-		functbl->update(ctx, buf, chunk);
-	functbl->final(ctx, buf, 0);
+	i = test_speed_loop(functbl, buf, chunk, nchunks);
 	clock_gettime(USED_CLOCK, &cend);
-	functbl->fini(&ctx, 0);
+
+	framework_teardown(fwdata);
 
 	free(buf);
 
-	print_speed_info(chunk, nchunks, &cstart, &cend);
+	print_speed_info(chunk, i, &cstart, &cend);
 	
 	return 0;
 }
