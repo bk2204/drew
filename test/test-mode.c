@@ -23,6 +23,11 @@ int test_get_type(void)
 	return DREW_TYPE_MODE;
 }
 
+const char *test_get_default_algo(drew_loader_t *ldr, const char *name)
+{
+	return "AES128";
+}
+
 int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 {
 	const drew_mode_functbl_t *functbl = tbl;
@@ -42,7 +47,7 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	int id;
 
 	if (!algo)
-		algo = "CAST-128";
+		algo = test_get_default_algo(ldr, name);
 
 	id = drew_loader_lookup_by_name(ldr, algo, 0, -1);
 	if (id < 0)

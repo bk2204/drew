@@ -125,7 +125,7 @@ int main(int argc, char **argv)
 	int nchunks = 0;
 	int retval = 0;
 	int success_only = 0;
-	const char *algo = NULL;
+	const char *optalgo = NULL;
 	const char *only = NULL;
 	drew_loader_t *ldr = NULL;
 
@@ -146,7 +146,7 @@ int main(int argc, char **argv)
 				success_only = 1;
 				break;
 			case 'a':
-				algo = optarg;
+				optalgo = optarg;
 				break;
 			case 'c':
 				chunk = atoi(optarg);
@@ -185,8 +185,8 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (algo)
-		printf("# Using algorithm %s for tests.\n", algo);
+	if (optalgo)
+		printf("# Using algorithm %s for tests.\n", optalgo);
 
 	nplugins = drew_loader_get_nplugins(ldr, -1);
 	type = test_get_type();
@@ -194,6 +194,7 @@ int main(int argc, char **argv)
 	for (i = 0; i < nplugins; i++) {
 		const void *functbl;
 		const char *name;
+		const char *algo;
 		int result = 0;
 
 		if (drew_loader_get_type(ldr, i) != type)
@@ -205,7 +206,16 @@ int main(int argc, char **argv)
 		if (only && strcmp(only, name))
 			continue;
 
-		printf("%-11s: ", name);
+		algo = optalgo;
+		if (!algo)
+			algo = test_get_default_algo(ldr, name);
+		if (algo) {
+			char buf[16];
+			snprintf(buf, sizeof(buf), "%s(%s)", name, algo);
+			printf("%-15s: ", buf);
+		}
+		else
+			printf("%-15s: ", name);
 
 		switch (mode) {
 			case MODE_SPEED:

@@ -22,6 +22,11 @@ int test_get_type(void)
 	return DREW_TYPE_STREAM;
 }
 
+const char *test_get_default_algo(drew_loader_t *ldr, const char *name)
+{
+	return NULL;
+}
+
 int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 {
 	const drew_stream_functbl_t *functbl = tbl;

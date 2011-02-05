@@ -22,6 +22,11 @@ int test_get_type(void)
 	return DREW_TYPE_MAC;
 }
 
+const char *test_get_default_algo(drew_loader_t *ldr, const char *name)
+{
+	return "MD5";
+}
+
 int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 {
 	const drew_mac_functbl_t *functbl = tbl;
@@ -40,7 +45,7 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	drew_param_t param;
 
 	if (!algo)
-		algo = "MD5";
+		algo = test_get_default_algo(ldr, name);
 
 	param.name = "digest";
 	param.next = NULL;

@@ -23,6 +23,11 @@ int test_get_type(void)
 	return DREW_TYPE_HASH;
 }
 
+const char *test_get_default_algo(drew_loader_t *ldr, const char *name)
+{
+	return NULL;
+}
+
 int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 {
 	const drew_hash_functbl_t *functbl = tbl;
