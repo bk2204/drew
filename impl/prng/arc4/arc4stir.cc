@@ -19,7 +19,7 @@
  * Also, when data is stirred into the generator, bytes from the generator are
  * xored into the data that is used as the seed.  While this does not increase
  * entropy, it ensures that the state of the generator progresses rapidly.  The
- * generator is stirred approximately every 2**10 bytes, which is slightly more
+ * generator is stirred approximately every 2**20 bytes, which is slightly more
  * conservative than the OpenBSD arc4random mechanism.
  *
  * The stirring method (key schedule in RC4) is more thorough than in standard
@@ -39,7 +39,7 @@
  * are already far from their original values.
  */
 
-// This is the largest prime less than 2**10.
+// This is the largest prime less than 2**20.
 #define NBYTES 1048573
 // This is the smallest prime greater than 3072.
 #define NDROP 3079
