@@ -1,6 +1,11 @@
 #include "arc4stir.hh"
 
+#include <fcntl.h>
+#include <stdio.h>
 #include <string.h>
+#include <sys/time.h>
+#include <sys/times.h>
+#include <unistd.h>
 #include "prng-plugin.h"
 
 #include <algorithm>
@@ -13,17 +18,19 @@
  *
  * Also, when data is stirred into the generator, bytes from the generator are
  * xored into the data that is used as the seed.  While this does not increase
- * entropy, it ensures that the state of the generator progresses rapidly.
- * This, combined with the stirring mechanism every 256 bytes, means that an
- * attacker has less information with which to predict the keystream, since many
- * of the would-be output bytes are never disclosed.
+ * entropy, it ensures that the state of the generator progresses rapidly.  The
+ * generator is stirred approximately every 2**10 bytes, which is slightly more
+ * conservative than the OpenBSD arc4random mechanism.
  *
  * The stirring method (key schedule in RC4) is more thorough than in standard
  * RC4.  The bytes of the seed are mixed in 256 times each and the total number
  * of iterations is 65536, which is significantly larger than the standard 256.
  * The high byte of the iteration count is also mixed in.  Whether this is
  * helpful is unknown.  The starting value of j during the mixing process is
- * again output from the generator, to avoid bias attacks.
+ * again output from the generator, to avoid bias attacks.  After stirring,
+ * approximately 3072 bytes (the maximum recommended by the Mironov paper) are
+ * dropped, even though this should not be necessary due to the more thorough
+ * mixing and more conservative design.
  *
  * A final countermeasure to bias attacks is not resetting i and j whenever the
  * algorithm is stirred.  Because the Mantin-Shamir attack relies on the
@@ -31,6 +38,13 @@
  * that i and j are used to generate any user-visible keystream material, they
  * are already far from their original values.
  */
+
+// This is the largest prime less than 2**10.
+#define NBYTES 1048573
+// This is the smallest prime greater than 3072.
+#define NDROP 3079
+// This is a non-blocking random device.  If you don't have one, use /dev/null.
+#define DEVICE "/dev/urandom"
 
 extern "C" {
 
@@ -126,13 +140,14 @@ drew::ARC4Stir::ARC4Stir()
 {
 	memcpy(m_s, pitable, 256);
 	m_i = m_j = 0;
+	m_cnt = 0;
 }
 
 uint8_t drew::ARC4Stir::GetByte()
 {
 	uint8_t t = InternalGetByte();
 
-	if (!m_i)
+	if (!--m_cnt)
 		Stir();
 
 	m_entropy -= 8;
@@ -163,14 +178,34 @@ int drew::ARC4Stir::AddRandomData(const uint8_t *buf, size_t len, size_t entropy
 		len -= nbytes;
 	}
 
+	for (size_t i = 0; i < NDROP; i++)
+		InternalGetByte();
+
+	m_cnt = NBYTES;
 	m_entropy += entropy;
 	return 0;
 }
 
 void drew::ARC4Stir::Stir()
 {
-	uint8_t buf[256];
-	AddRandomData(buf, sizeof(buf), 0);
+	// Part of this is based on the OpenBSD arc4random PRNG.
+	struct randdata {
+		struct timeval tv;
+		struct tms tms;
+		clock_t ct;
+		pid_t pid;
+		int fd;
+		uint8_t buf[256];
+	} rnd;
+
+	gettimeofday(&rnd.tv, NULL);
+	rnd.ct = times(&rnd.tms);
+	rnd.pid = getpid();
+	if ((rnd.fd = open(DEVICE, O_RDONLY)) >= 0) {
+		read(rnd.fd, rnd.buf, sizeof(rnd.buf));
+		close(rnd.fd);
+	}
+	AddRandomData((const uint8_t *)&rnd, sizeof(rnd), 0);
 }
 
 // Note that this does not reset the S-box to the initial state.
