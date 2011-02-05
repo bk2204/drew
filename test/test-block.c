@@ -29,12 +29,27 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 	return print_test_results(functbl->test(NULL, ldr));
 }
 
+inline int test_speed_loop(const drew_block_functbl_t *functbl, uint8_t *buf,
+		uint8_t *buf2, uint8_t *key, int keysz, int chunk, size_t nbytes)
+{
+	int i;
+	void *ctx;
+
+	functbl->init(&ctx, NULL, 0, NULL, NULL);
+	functbl->setkey(ctx, key, keysz, DREW_BLOCK_MODE_ENCRYPT);
+	for (i = 0; !framework_sigflag && i < nbytes; i += chunk)
+		functbl->encrypt(ctx, buf2, buf);
+	functbl->fini(&ctx, 0);
+
+	return i;
+}
+
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		const void *tbl, int chunk, int nchunks)
 {
 	int i, keysz = 0;
-	void *ctx;
 	uint8_t *buf, *buf2, *key;
+	void *fwdata;
 	struct timespec cstart, cend;
 	const drew_block_functbl_t *functbl = tbl;
 	const size_t nbytes = chunk * nchunks;
@@ -53,17 +68,17 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	if (!keysz)
 		return ENOMEM;
 
+	fwdata = framework_setup();
+
 	clock_gettime(USED_CLOCK, &cstart);
-	functbl->init(&ctx, NULL, 0, NULL, NULL);
-	functbl->setkey(ctx, key, keysz, DREW_BLOCK_MODE_ENCRYPT);
-	for (i = 0; i < nbytes; i += chunk)
-		functbl->encrypt(ctx, buf2, buf);
+	i = test_speed_loop(functbl, buf, buf2, key, keysz, chunk, nbytes);
 	clock_gettime(USED_CLOCK, &cend);
-	functbl->fini(&ctx, 0);
+
+	framework_teardown(fwdata);
 
 	free(buf);
 
-	print_speed_info(nbytes, 1, &cstart, &cend);
+	print_speed_info(i, 1, &cstart, &cend);
 	
 	return 0;
 }
