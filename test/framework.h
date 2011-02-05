@@ -14,6 +14,7 @@
 #define _POSIX_C_SOURCE 200112L
 
 #include <time.h>
+#include <signal.h>
 
 #include <plugin.h>
 
@@ -29,8 +30,14 @@
 #define USED_CLOCK CLOCK_REALTIME
 #endif
 
+/* When performing speed tests, try to operate on NCHUNKS chunks of size CHUNK
+ * each, but not for longer than NSECONDS.
+ */
 #define CHUNK 8192
 #define NCHUNKS 40960
+#define NSECONDS 5
+
+extern volatile sig_atomic_t framework_sigflag;
 
 int test_get_type(void);
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
@@ -39,5 +46,7 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *functbl);
 void print_speed_info(int chunk, int nchunks, const struct timespec *cstart,
 		const struct timespec *cend);
 int print_test_results(int result);
+void *framework_setup(void);
+void framework_teardown(void *data);
 
 #endif

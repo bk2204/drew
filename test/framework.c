@@ -11,6 +11,7 @@
 #include "framework.h"
 
 #include <errno.h>
+#include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -25,6 +26,50 @@
 double sec_from_timespec(const struct timespec *ts)
 {
 	return ts->tv_sec + (ts->tv_nsec / 1000000000.0);
+}
+
+volatile sig_atomic_t framework_sigflag = 0;
+
+void framework_sighandler(int signum)
+{
+	if (signum == SIGALRM)
+		framework_sigflag = 1;
+}
+
+struct framework_data {
+	timer_t timer;
+};
+
+void *framework_setup(void)
+{
+	struct itimerspec timerspec;
+	struct framework_data *fwdata;
+	struct sigaction act;
+
+	fwdata = malloc(sizeof(*fwdata));
+	if (!fwdata)
+		return NULL;
+
+	memset(&timerspec, 0, sizeof(timerspec));
+	timerspec.it_value.tv_sec = NSECONDS;
+	act.sa_flags = SA_RESETHAND;
+	act.sa_handler = framework_sighandler;
+	framework_sigflag = 0;
+
+	sigaction(SIGALRM, &act, NULL);
+	timer_create(USED_CLOCK, NULL, &fwdata->timer);
+	timer_settime(fwdata->timer, 0, &timerspec, NULL);
+
+	return fwdata;
+}
+
+void framework_teardown(void *data)
+{
+	struct framework_data *fwdata = data;
+	struct itimerspec timerspec;
+
+	memset(&timerspec, 0, sizeof(timerspec));
+	timer_settime(fwdata->timer, 0, &timerspec, NULL);
 }
 
 int print_test_results(int result)
