@@ -56,42 +56,49 @@ drew::Tiger::Tiger()
 	Initialize();
 }
 
-#define ROUND(a, b, c, x, k) do { c ^= x;\
-	a -= t1[E::GetByte(c, 0)] ^ t2[E::GetByte(c, 2)] ^ t3[E::GetByte(c, 4)] ^ \
-		t4[E::GetByte(c, 6)]; \
-	b += t4[E::GetByte(c, 1)] ^ t3[E::GetByte(c, 3)] ^ t2[E::GetByte(c, 5)] ^ \
-		t1[E::GetByte(c, 7)]; \
-	b *= k; } while (0)
-	
+inline void drew::Tiger::Round(uint64_t &a, uint64_t &b, uint64_t &c, const
+		uint64_t x, const uint64_t k)
+{
+	c ^= x;
+	a -= t1[E::GetByte(c, 0)] ^ t2[E::GetByte(c, 2)] ^ t3[E::GetByte(c, 4)] ^
+		t4[E::GetByte(c, 6)];
+	b += t4[E::GetByte(c, 1)] ^ t3[E::GetByte(c, 3)] ^ t2[E::GetByte(c, 5)] ^
+		t1[E::GetByte(c, 7)];
+	b *= k;
+}
 
-#define PASS(a, b, c, x, k) do { \
-	ROUND(a, b, c, x[0], k); \
-	ROUND(b, c, a, x[1], k); \
-	ROUND(c, a, b, x[2], k); \
-	ROUND(a, b, c, x[3], k); \
-	ROUND(b, c, a, x[4], k); \
-	ROUND(c, a, b, x[5], k); \
-	ROUND(a, b, c, x[6], k); \
-	ROUND(b, c, a, x[7], k); } while (0)
+inline void drew::Tiger::Pass(const uint64_t *x, uint64_t &a, uint64_t &b,
+		uint64_t &c, const unsigned k)
+{
+	Round(a, b, c, x[0], k);
+	Round(b, c, a, x[1], k);
+	Round(c, a, b, x[2], k);
+	Round(a, b, c, x[3], k);
+	Round(b, c, a, x[4], k);
+	Round(c, a, b, x[5], k);
+	Round(a, b, c, x[6], k);
+	Round(b, c, a, x[7], k);
+}
 
-#define SCHEDULE(x) do { \
-	x[0] -= x[7] ^ 0xa5a5a5a5a5a5a5a5; \
-	x[1] ^= x[0]; \
-	x[2] += x[1]; \
-	x[3] -= x[2] ^ ((~x[1]) << 19); \
-	x[4] ^= x[3]; \
-	x[5] += x[4]; \
-	x[6] -= x[5] ^ ((~x[4]) >> 23); \
-	x[7] ^= x[6]; \
-	x[0] += x[7]; \
-	x[1] -= x[0] ^ ((~x[7]) << 19); \
-	x[2] ^= x[1]; \
-	x[3] += x[2]; \
-	x[4] -= x[3] ^ ((~x[2]) >> 23); \
-	x[5] ^= x[4]; \
-	x[6] += x[5]; \
-	x[7] -= x[6] ^ 0x0123456789abcdef; \
-	} while (0)
+inline void drew::Tiger::Schedule(uint64_t *x)
+{
+	x[0] -= x[7] ^ 0xa5a5a5a5a5a5a5a5;
+	x[1] ^= x[0];
+	x[2] += x[1];
+	x[3] -= x[2] ^ ((~x[1]) << 19);
+	x[4] ^= x[3];
+	x[5] += x[4];
+	x[6] -= x[5] ^ ((~x[4]) >> 23);
+	x[7] ^= x[6];
+	x[0] += x[7];
+	x[1] -= x[0] ^ ((~x[7]) << 19);
+	x[2] ^= x[1];
+	x[3] += x[2];
+	x[4] -= x[3] ^ ((~x[2]) >> 23);
+	x[5] ^= x[4];
+	x[6] += x[5];
+	x[7] -= x[6] ^ 0x0123456789abcdef;
+}
 
 void drew::Tiger::Transform(uint64_t *state, const uint8_t *block)
 {
@@ -104,11 +111,11 @@ void drew::Tiger::Transform(uint64_t *state, const uint8_t *block)
 	b = bb = state[1];
 	c = cc = state[2];
 
-	PASS(a, b, c, x, 5);
-	SCHEDULE(x);
-	PASS(c, a, b, x, 7);
-	SCHEDULE(x);
-	PASS(b, c, a, x, 9);
+	Pass(x, a, b, c, 5);
+	Schedule(x);
+	Pass(x, c, a, b, 7);
+	Schedule(x);
+	Pass(x, b, c, a, 9);
 
 	state[0] = a ^ aa;
 	state[1] = b - bb;

@@ -20,6 +20,11 @@ class Tiger : public Hash<uint64_t, 24, 24, 64, LittleEndian>
 			Transform(m_hash, data);
 		}
 	private:
+		static void Schedule(uint64_t *state);
+		static void Pass(const uint64_t *x, uint64_t &a, uint64_t &b,
+				uint64_t &c, const unsigned k);
+		static void Round(uint64_t &a, uint64_t &b, uint64_t &c,
+				const uint64_t x, const uint64_t k);
 		static const uint64_t t1[], t2[], t3[], t4[];
 };
 }
