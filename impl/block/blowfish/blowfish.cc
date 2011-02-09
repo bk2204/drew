@@ -144,13 +144,14 @@ drew::Blowfish::Blowfish()
 {
 }
 
-uint32_t drew::Blowfish::f(uint32_t x)
+inline uint32_t drew::Blowfish::f(uint32_t x)
 {
-	return ((m_s[x >> 24] + m_s[0x100 + ((x >> 16) & 0xff)]) ^
-			m_s[0x200 + ((x >> 8) & 0xff)]) + m_s[0x300 + (x & 0xff)];
+	typedef endian_t E;
+	return ((m_s[E::GetByte(x, 3)] + m_s[0x100 + E::GetByte(x, 2)]) ^
+			m_s[0x200 + E::GetByte(x, 1)]) + m_s[0x300 + E::GetByte(x, 0)];
 }
 
-void drew::Blowfish::MainAlgorithm(const uint32_t *p, uint32_t &l, uint32_t &r)
+inline void drew::Blowfish::MainAlgorithm(const uint32_t *p, uint32_t &l, uint32_t &r)
 {
 	for (size_t i = 0; i < 16; i += 2) {
 		l ^= p[i];
@@ -166,12 +167,13 @@ void drew::Blowfish::MainAlgorithm(const uint32_t *p, uint32_t &l, uint32_t &r)
 void drew::Blowfish::SetKey(const uint8_t *key, size_t sz)
 {
 	memcpy(m_s, m_sbox, sizeof(m_sbox));
+	memcpy(m_p, m_parray, sizeof(m_parray));
 
-	for (size_t i = 0; i < 18; i++) {
+	for (size_t i = 0, ival = 0; i < 18; i++, ival += 4) {
 		uint32_t k = 0;
 		for (size_t j = 0; j < sizeof(uint32_t); j++)
-			k = (k << 8) | key[((i*4)+j) % sz];
-		m_p[i] = m_parray[i] ^ k;
+			k = (k << 8) | key[(ival+j) % sz];
+		m_p[i] ^= k;
 	}
 
 	uint32_t l = 0, r = 0;
