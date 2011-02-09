@@ -21,7 +21,7 @@ class Blowfish
 	protected:
 	private:
 		inline uint32_t f(uint32_t x);
-		void MainAlgorithm(const uint32_t *p, uint32_t &l, uint32_t &r);
+		void MainAlgorithm(const uint32_t *p, uint32_t d[2]);
 		static const uint32_t m_sbox[4 * 256];
 		static const uint32_t m_parray[18];
 		uint32_t m_s[4 * 256];

@@ -151,17 +151,16 @@ inline uint32_t drew::Blowfish::f(uint32_t x)
 			m_s[0x200 + E::GetByte(x, 1)]) + m_s[0x300 + E::GetByte(x, 0)];
 }
 
-inline void drew::Blowfish::MainAlgorithm(const uint32_t *p, uint32_t &l, uint32_t &r)
+inline void drew::Blowfish::MainAlgorithm(const uint32_t *p, uint32_t d[2])
 {
 	for (size_t i = 0; i < 16; i += 2) {
-		l ^= p[i];
-		r ^= f(l);
-		r ^= p[i+1];
-		l ^= f(r);
+		d[0] ^= p[i];
+		d[1] ^= f(d[0]);
+		d[1] ^= p[i+1];
+		d[0] ^= f(d[1]);
 	}
-	l ^= p[16];
-	r ^= p[17];
-	std::swap(l, r);
+	d[0] ^= p[16];
+	d[1] ^= p[17];
 }
 
 void drew::Blowfish::SetKey(const uint8_t *key, size_t sz)
@@ -176,44 +175,44 @@ void drew::Blowfish::SetKey(const uint8_t *key, size_t sz)
 		m_p[i] ^= k;
 	}
 
-	uint32_t l = 0, r = 0;
+	uint32_t d[2] = {0, 0};
 	for (size_t i = 0; i < 18; i += 2) {
-		MainAlgorithm(m_p, l, r);
-		m_p[i+0] = m_pd[18-(i+0)-1] = l;
-		m_p[i+1] = m_pd[18-(i+1)-1] = r;
+		MainAlgorithm(m_p, d);
+		std::swap(d[0], d[1]);
+		// 18-(i+0)-1 == 17-i; 18-(i+1)-1 == 16-i
+		m_p[i+0] = m_pd[17-i] = d[0];
+		m_p[i+1] = m_pd[16-i] = d[1];
 	}
 
 	for (size_t i = 0; i < 4 * 256; i += 2) {
-		MainAlgorithm(m_p, l, r);
-		m_s[i+0] = l;
-		m_s[i+1] = r;
+		MainAlgorithm(m_p, d);
+		std::swap(d[0], d[1]);
+		memcpy(m_s+i, d, sizeof(d));
 	}
 }
 
 void drew::Blowfish::Encrypt(uint8_t *out, const uint8_t *in)
 {
-	uint32_t l, r;
+	uint32_t d[2];
 
-	endian_t::Copy(&l, in+0, sizeof(l));
-	endian_t::Copy(&r, in+4, sizeof(r));
+	endian_t::Copy(d, in, sizeof(d));
 
-	MainAlgorithm(m_p, l, r);
+	MainAlgorithm(m_p, d);
 
-	endian_t::Copy(out+0, &l, sizeof(l));
-	endian_t::Copy(out+4, &r, sizeof(r));
+	endian_t::Copy(out+0, &d[1], sizeof(d[1]));
+	endian_t::Copy(out+4, &d[0], sizeof(d[0]));
 }
 
 void drew::Blowfish::Decrypt(uint8_t *out, const uint8_t *in)
 {
-	uint32_t l, r;
+	uint32_t d[2];
 
-	endian_t::Copy(&l, in+0, sizeof(l));
-	endian_t::Copy(&r, in+4, sizeof(r));
+	endian_t::Copy(d, in, sizeof(d));
 
-	MainAlgorithm(m_pd, l, r);
+	MainAlgorithm(m_pd, d);
 
-	endian_t::Copy(out+0, &l, sizeof(l));
-	endian_t::Copy(out+4, &r, sizeof(r));
+	endian_t::Copy(out+0, &d[1], sizeof(d[1]));
+	endian_t::Copy(out+4, &d[0], sizeof(d[0]));
 }
 
 const uint32_t drew::Blowfish::m_sbox[4 * 256] = {
