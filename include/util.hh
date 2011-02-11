@@ -4,6 +4,9 @@
 #include <endian.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
+
+#include <utility>
 
 #if defined(__i386__) || defined(__amd64__)
 #define NEEDS_ALIGNMENT 0
