@@ -79,8 +79,11 @@ ${PLUGINS:=.o}: CPPFLAGS += ${PLUGINCFLAGS}
 ${PLUGINS}: %: %.so
 	@:
 
-$(PLUGINS:=.so): %.so: %.o
+$(PLUGINS:=.so): %.so: %-all.o
 	${CXX} ${LIBCFLAGS} ${CXXFLAGS} -o ${.TARGET} ${.ALLSRC} ${LDFLAGS}
+
+$(PLUGINS:=-all.o): %-all.o: %.o
+	${LD} -o ${.TARGET} -r ${.ALLSRC}
 
 test/test-%: test/test-%.o test/framework.o ${DREW_SONAME} ${DREW_IMPL_SONAME}
 	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}

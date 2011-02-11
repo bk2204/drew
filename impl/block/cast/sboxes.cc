@@ -1,3 +1,5 @@
+#include "cast.hh"
+
 const uint32_t drew::CAST::m_s[8][256] = {
 	{
 		0x30fb40d4, 0x9fa0ff0b, 0x6beccd2f, 0x3f258c7a,

@@ -202,5 +202,3 @@ void drew::CAST6::Decrypt(uint8_t *out, const uint8_t *in)
 
 	E::Copy(out, data, sizeof(data));
 }
-
-#include "sboxes.cc"

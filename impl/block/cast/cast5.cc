@@ -181,5 +181,3 @@ void drew::CAST5::Decrypt(uint8_t *out, const uint8_t *in)
 	endian_t::Copy(out+0, &r, sizeof(l));
 	endian_t::Copy(out+4, &l, sizeof(r));
 }
-
-#include "sboxes.cc"

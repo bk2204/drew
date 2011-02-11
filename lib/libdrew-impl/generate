@@ -21,7 +21,7 @@ $output->print(<<EOM);
 EOM
 
 if ($modules) {
-	my @args = map { s/^.*\///; $_ } @ARGV;
+	my @args = map { s/^.*\///; s/^([a-z0-9_]+).*$/$1/; $_ } @ARGV;
 	for my $i (@args) {
 		$output->print("extern int drew_plugin_info_$i(void *, int, int, void *);\n");
 	}

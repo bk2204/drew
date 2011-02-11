@@ -1,3 +1,5 @@
+BLOCK_DIR						:= impl/block
+
 PLUGINS_BLOCK-${CFG_CAST5}		+= cast/cast5
 PLUGINS_BLOCK-${CFG_CAST6}		+= cast/cast6
 PLUGINS_BLOCK-${CFG_BLOWFISH}	+= blowfish/blowfish
@@ -8,11 +10,17 @@ PLUGINS_BLOCK-${CFG_DES}		+= des/des
 PLUGINS_BLOCK-${CFG_CAMELLIA}	+= camellia/camellia
 PLUGINS_BLOCK-${CFG_RC2}		+= rc2/rc2
 
-BLOCK_DIR		:= impl/block
+${BLOCK_DIR}/cast/cast5-all.o: ${BLOCK_DIR}/cast/sboxes.o
+${BLOCK_DIR}/cast/cast6-all.o: ${BLOCK_DIR}/cast/sboxes.o
+
+EXTRA_OBJECTS-${CFG_CAST5}		+= ${BLOCK_DIR}/cast/sboxes.o
+EXTRA_OBJECTS-${CFG_CAST6}		+= ${BLOCK_DIR}/cast/sboxes.o
+
 BLOCK_PLUGINS	:= $(patsubst %,${BLOCK_DIR}/%,$(PLUGINS_BLOCK-m))
 BLOCK_MODULES	:= $(patsubst %,${BLOCK_DIR}/%.o,$(PLUGINS_BLOCK-y))
 PLUGINS			+= $(BLOCK_PLUGINS)
 MODULES			+= $(BLOCK_MODULES)
+
 
 $(BLOCK_PLUGINS): CPPFLAGS += -I$(BLOCK_DIR) -DDREW_AS_PLUGIN
 $(BLOCK_MODULES): CPPFLAGS += -I$(BLOCK_DIR) -DDREW_AS_MODULE
