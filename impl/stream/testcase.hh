@@ -36,6 +36,8 @@ class StreamTestCase
 			int res = 0;
 
 			algo.SetKey(m_key, m_keysz);
+			if (nonce)
+				algo.SetNonce(nonce, noncelen);
 			algo.Encrypt(buf, pt, len);
 			if (memcmp(buf, ct, len))
 				res |= 1;
@@ -44,6 +46,8 @@ class StreamTestCase
 				printf("enc %02zu: %02x %02x %02x\n", i, pt[i], buf[i], ct[i]);
 #endif
 			algo.SetKey(m_key, m_keysz);
+			if (nonce)
+				algo.SetNonce(nonce, noncelen);
 			algo.Decrypt(buf, ct, len);
 			if (memcmp(buf, pt, len))
 				res |= 2;
