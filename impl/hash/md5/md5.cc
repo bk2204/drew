@@ -7,6 +7,7 @@
 #include "md5.hh"
 #include "testcase.hh"
 #include "hash-plugin.hh"
+#include "util.hh"
 
 extern "C" {
 PLUGIN_STRUCTURE(md5, drew::MD5, MD5)
@@ -41,17 +42,6 @@ static int md5test(void *, drew_loader_t *)
 }
 }
 
-#define F(x, y, z) ((z)^((x)&((y)^(z)))) /*(((x)&(y))|((~(x))&(z)))*/
-#define G(x, y, z) F(z, x, y)
-#define H(x, y, z) ((x)^(y)^(z))
-#define I(x, y, z) ((y)^((x)|~(z)))
-
-/* 32-bit rotate-left. */
-static inline uint32_t ROL(uint32_t x, int n)
-{
-	return ((x<<n)|(x>>(32-n)));
-}
-
 drew::MD5::MD5()
 {
 	m_hash[0] = 0x67452301;
@@ -61,7 +51,34 @@ drew::MD5::MD5()
 	Initialize();
 }
 
-#define OP(a, b, c, d, f, k, s, i) a=b+(ROL((a+f(b,c,d)+blk[k]+i),s))
+static inline uint32_t F(uint32_t x, uint32_t y, uint32_t z)
+{
+	return z^(x&(y^z)); /*((x&y)|((~x)&z))*/
+}
+
+static inline uint32_t G(uint32_t x, uint32_t y, uint32_t z)
+{
+	return F(z, x, y);
+}
+
+static inline uint32_t H(uint32_t x, uint32_t y, uint32_t z)
+{
+	return x^y^z;
+}
+
+static inline uint32_t I(uint32_t x, uint32_t y, uint32_t z)
+{
+	return y^(x|~z);
+}
+
+static inline void op(uint32_t &a, uint32_t b, uint32_t c, uint32_t d,
+		uint32_t (*func)(uint32_t, uint32_t, uint32_t), uint32_t blk,
+		uint32_t i, uint32_t s)
+{
+	a = b + RotateLeft(a + func(b, c, d) + blk + i, s);
+}
+
+#define OP(a, b, c, d, f, k, s, i) op(a, b, c, d, f, blk[k], i, s)
 #define FF(a, b, c, d, k, s, i) OP(a, b, c, d, F, k, s, i)
 #define GG(a, b, c, d, k, s, i) OP(a, b, c, d, G, k, s, i)
 #define HH(a, b, c, d, k, s, i) OP(a, b, c, d, H, k, s, i)
