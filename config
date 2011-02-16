@@ -27,6 +27,7 @@ CFG_TWOFISH		= m
 CFG_DES			= m
 CFG_CAMELLIA	= m
 CFG_RC2			= m
+CFG_SERPENT		= m
 
 # Modes.
 CFG_CFB			= m
