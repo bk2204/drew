@@ -1,5 +1,5 @@
-#ifndef HASH_TESTCASE_HH
-#define HASH_TESTCASE_HH
+#ifndef BLOCK_TESTCASE_HH
+#define BLOCK_TESTCASE_HH
 
 #include <stdint.h>
 #include <string.h>
