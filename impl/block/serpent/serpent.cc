@@ -555,14 +555,10 @@ static inline void eround(uint32_t *b, const uint32_t *k,
 	s(b);
 	b[0] = RotateLeft(b[0], 13);
 	b[2] = RotateLeft(b[2], 3);
-	b[1] ^= b[0] ^ b[2];
-	b[3] ^= b[2] ^ (b[0] << 3);
-	b[1] = RotateLeft(b[1], 1);
-	b[3] = RotateLeft(b[3], 7);
-	b[0] ^= b[1] ^ b[3];
-	b[2] ^= b[3] ^ (b[1] << 7);
-	b[0] = RotateLeft(b[0], 5);
-	b[2] = RotateLeft(b[2], 22);
+	b[1] = RotateLeft(b[1] ^ b[2] ^ b[0], 1);
+	b[3] = RotateLeft(b[3] ^ b[2] ^ (b[0] << 3), 7);
+	b[0] = RotateLeft(b[0] ^ b[3] ^ b[1], 5);
+	b[2] = RotateLeft(b[2] ^ b[3] ^ (b[1] << 7), 22);
 }
 
 static inline void dround(uint32_t *b, const uint32_t *k,
