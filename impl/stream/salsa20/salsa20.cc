@@ -206,18 +206,10 @@ void drew::Salsa20Keystream::SetNonce(const uint8_t *iv, size_t sz)
 inline void drew::Salsa20Keystream::DoQuarterRound(uint32_t &a, uint32_t &b,
 		uint32_t &c, uint32_t &d)
 {
-	uint32_t z[4];
-
-	// Can be optimized probably.
-	z[1] = b ^ RotateLeft(   a +    d,  7);
-	z[2] = c ^ RotateLeft(z[1] +    a,  9);
-	z[3] = d ^ RotateLeft(z[2] + z[1], 13);
-	z[0] = a ^ RotateLeft(z[3] + z[2], 18);
-
-	a = z[0];
-	b = z[1];
-	c = z[2];
-	d = z[3];
+	b ^= RotateLeft(a + d,  7);
+	c ^= RotateLeft(b + a,  9);
+	d ^= RotateLeft(c + b, 13);
+	a ^= RotateLeft(d + c, 18);
 }
 
 #ifdef DREW_TEST
