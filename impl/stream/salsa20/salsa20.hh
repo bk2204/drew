@@ -23,7 +23,11 @@ class Salsa20Keystream
 #endif
 	protected:
 	private:
-		static void DoHash(uint32_t *cur, const uint32_t *st);
+		struct AlignedData
+		{
+			uint32_t buf[16] ALIGNED_T;
+		};
+		static void DoHash(AlignedData &cur, const AlignedData &st);
 		static void DoQuarterRound(uint32_t &, uint32_t &, uint32_t &,
 				uint32_t &);
 		static void DoRowRound(uint32_t *);
@@ -36,7 +40,7 @@ class Salsa20Keystream
 		static int TestDoubleRound();
 		static int TestHash();
 #endif
-		uint32_t state[16] ALIGNED_T;
+		AlignedData state;
 		size_t keysz;
 		uint64_t ctr;
 };

@@ -186,21 +186,21 @@ drew::Salsa20Keystream::Salsa20Keystream()
 void drew::Salsa20Keystream::SetKey(const uint8_t *key, size_t sz)
 {
 	keysz = sz;
-	E::Copy(state+1, key, 16);
+	E::Copy(state.buf+1, key, 16);
 	if (sz == 16)
-		E::Copy(state+11, key, 16);
+		E::Copy(state.buf+11, key, 16);
 	else // sz == 32
-		E::Copy(state+11, key+16, 16);
+		E::Copy(state.buf+11, key+16, 16);
 }
 
 void drew::Salsa20Keystream::SetNonce(const uint8_t *iv, size_t sz)
 {
-	E::Copy(state+6, iv, sz);
+	E::Copy(state.buf+6, iv, sz);
 
-	state[ 0] = 0x61707865;
-	state[ 5] = (keysz == 16) ? 0x3120646e : 0x3320646e;
-	state[10] = (keysz == 16) ? 0x79622d36 : 0x79622d32;
-	state[15] = 0x6b206574;
+	state.buf[ 0] = 0x61707865;
+	state.buf[ 5] = (keysz == 16) ? 0x3120646e : 0x3320646e;
+	state.buf[10] = (keysz == 16) ? 0x79622d36 : 0x79622d32;
+	state.buf[15] = 0x6b206574;
 }
 
 inline void drew::Salsa20Keystream::DoQuarterRound(uint32_t &a, uint32_t &b,
@@ -364,61 +364,58 @@ void drew::Salsa20Keystream::Reset()
 	ctr = 0;
 }
 
-inline void drew::Salsa20Keystream::DoHash(uint32_t *cur, const uint32_t *st)
+inline void drew::Salsa20Keystream::DoHash(AlignedData &cur,
+		const AlignedData &st)
 {
-	memcpy(cur, st, 16 * sizeof(uint32_t));
+	memcpy(cur.buf, st.buf, 16 * sizeof(uint32_t));
 
-	for (size_t i = 0; i < 10; i++)
-		DoDoubleRound(cur);
+	for (size_t i = 0; i < 10; i++) {
+		cur.buf[ 4] ^= RotateLeft(cur.buf[ 0] + cur.buf[12],  7);
+		cur.buf[ 8] ^= RotateLeft(cur.buf[ 4] + cur.buf[ 0],  9);
+		cur.buf[12] ^= RotateLeft(cur.buf[ 8] + cur.buf[ 4], 13);
+		cur.buf[ 0] ^= RotateLeft(cur.buf[12] + cur.buf[ 8], 18);
+		cur.buf[ 9] ^= RotateLeft(cur.buf[ 5] + cur.buf[ 1],  7);
+		cur.buf[13] ^= RotateLeft(cur.buf[ 9] + cur.buf[ 5],  9);
+		cur.buf[ 1] ^= RotateLeft(cur.buf[13] + cur.buf[ 9], 13);
+		cur.buf[ 5] ^= RotateLeft(cur.buf[ 1] + cur.buf[13], 18);
+		cur.buf[14] ^= RotateLeft(cur.buf[10] + cur.buf[ 6],  7);
+		cur.buf[ 2] ^= RotateLeft(cur.buf[14] + cur.buf[10],  9);
+		cur.buf[ 6] ^= RotateLeft(cur.buf[ 2] + cur.buf[14], 13);
+		cur.buf[10] ^= RotateLeft(cur.buf[ 6] + cur.buf[ 2], 18);
+		cur.buf[ 3] ^= RotateLeft(cur.buf[15] + cur.buf[11],  7);
+		cur.buf[ 7] ^= RotateLeft(cur.buf[ 3] + cur.buf[15],  9);
+		cur.buf[11] ^= RotateLeft(cur.buf[ 7] + cur.buf[ 3], 13);
+		cur.buf[15] ^= RotateLeft(cur.buf[11] + cur.buf[ 7], 18);
+
+		cur.buf[ 1] ^= RotateLeft(cur.buf[ 0] + cur.buf[ 3],  7);
+		cur.buf[ 2] ^= RotateLeft(cur.buf[ 1] + cur.buf[ 0],  9);
+		cur.buf[ 3] ^= RotateLeft(cur.buf[ 2] + cur.buf[ 1], 13);
+		cur.buf[ 0] ^= RotateLeft(cur.buf[ 3] + cur.buf[ 2], 18);
+		cur.buf[ 6] ^= RotateLeft(cur.buf[ 5] + cur.buf[ 4],  7);
+		cur.buf[ 7] ^= RotateLeft(cur.buf[ 6] + cur.buf[ 5],  9);
+		cur.buf[ 4] ^= RotateLeft(cur.buf[ 7] + cur.buf[ 6], 13);
+		cur.buf[ 5] ^= RotateLeft(cur.buf[ 4] + cur.buf[ 7], 18);
+		cur.buf[11] ^= RotateLeft(cur.buf[10] + cur.buf[ 9],  7);
+		cur.buf[ 8] ^= RotateLeft(cur.buf[11] + cur.buf[10],  9);
+		cur.buf[ 9] ^= RotateLeft(cur.buf[ 8] + cur.buf[11], 13);
+		cur.buf[10] ^= RotateLeft(cur.buf[ 9] + cur.buf[ 8], 18);
+		cur.buf[12] ^= RotateLeft(cur.buf[15] + cur.buf[14],  7);
+		cur.buf[13] ^= RotateLeft(cur.buf[12] + cur.buf[15],  9);
+		cur.buf[14] ^= RotateLeft(cur.buf[13] + cur.buf[12], 13);
+		cur.buf[15] ^= RotateLeft(cur.buf[14] + cur.buf[13], 18);
+	}
 	for (size_t i = 0; i < 16; i++)
-		cur[i] += st[i];
+		cur.buf[i] += st.buf[i];
 }
 
 void drew::Salsa20Keystream::GetValue(uint8_t buf[64])
 {
-	uint32_t cur[16] ALIGNED_T;
+	AlignedData cur;
 
-	state[8] = uint32_t(ctr);
-	state[9] = ctr >> 32;
-	memcpy(cur, state, 16 * sizeof(uint32_t));
+	state.buf[8] = uint32_t(ctr);
+	state.buf[9] = ctr >> 32;
 
-	for (size_t i = 0; i < 10; i++) {
-		cur[ 4] ^= RotateLeft(cur[ 0] + cur[12],  7);
-		cur[ 8] ^= RotateLeft(cur[ 4] + cur[ 0],  9);
-		cur[12] ^= RotateLeft(cur[ 8] + cur[ 4], 13);
-		cur[ 0] ^= RotateLeft(cur[12] + cur[ 8], 18);
-		cur[ 9] ^= RotateLeft(cur[ 5] + cur[ 1],  7);
-		cur[13] ^= RotateLeft(cur[ 9] + cur[ 5],  9);
-		cur[ 1] ^= RotateLeft(cur[13] + cur[ 9], 13);
-		cur[ 5] ^= RotateLeft(cur[ 1] + cur[13], 18);
-		cur[14] ^= RotateLeft(cur[10] + cur[ 6],  7);
-		cur[ 2] ^= RotateLeft(cur[14] + cur[10],  9);
-		cur[ 6] ^= RotateLeft(cur[ 2] + cur[14], 13);
-		cur[10] ^= RotateLeft(cur[ 6] + cur[ 2], 18);
-		cur[ 3] ^= RotateLeft(cur[15] + cur[11],  7);
-		cur[ 7] ^= RotateLeft(cur[ 3] + cur[15],  9);
-		cur[11] ^= RotateLeft(cur[ 7] + cur[ 3], 13);
-		cur[15] ^= RotateLeft(cur[11] + cur[ 7], 18);
-
-		cur[ 1] ^= RotateLeft(cur[ 0] + cur[ 3],  7);
-		cur[ 2] ^= RotateLeft(cur[ 1] + cur[ 0],  9);
-		cur[ 3] ^= RotateLeft(cur[ 2] + cur[ 1], 13);
-		cur[ 0] ^= RotateLeft(cur[ 3] + cur[ 2], 18);
-		cur[ 6] ^= RotateLeft(cur[ 5] + cur[ 4],  7);
-		cur[ 7] ^= RotateLeft(cur[ 6] + cur[ 5],  9);
-		cur[ 4] ^= RotateLeft(cur[ 7] + cur[ 6], 13);
-		cur[ 5] ^= RotateLeft(cur[ 4] + cur[ 7], 18);
-		cur[11] ^= RotateLeft(cur[10] + cur[ 9],  7);
-		cur[ 8] ^= RotateLeft(cur[11] + cur[10],  9);
-		cur[ 9] ^= RotateLeft(cur[ 8] + cur[11], 13);
-		cur[10] ^= RotateLeft(cur[ 9] + cur[ 8], 18);
-		cur[12] ^= RotateLeft(cur[15] + cur[14],  7);
-		cur[13] ^= RotateLeft(cur[12] + cur[15],  9);
-		cur[14] ^= RotateLeft(cur[13] + cur[12], 13);
-		cur[15] ^= RotateLeft(cur[14] + cur[13], 18);
-	}
-	for (size_t i = 0; i < 16; i++)
-		cur[i] += state[i];
+	DoHash(cur, state);
 	ctr++;
-	E::Copy(buf, cur, sizeof(cur));
+	E::Copy(buf, cur.buf, sizeof(cur.buf));
 }
