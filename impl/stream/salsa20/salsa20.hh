@@ -18,9 +18,6 @@ class Salsa20Keystream
 		void SetNonce(const uint8_t *key, size_t sz);
 		void Reset();
 		void GetValue(uint8_t *);
-#ifdef DREW_TEST
-		static int Test();
-#endif
 	protected:
 	private:
 		struct AlignedData
@@ -33,13 +30,6 @@ class Salsa20Keystream
 		static void DoRowRound(uint32_t *);
 		static void DoColumnRound(uint32_t *);
 		static void DoDoubleRound(uint32_t *);
-#ifdef DREW_TEST
-		static int TestQuarterRound();
-		static int TestRowRound();
-		static int TestColumnRound();
-		static int TestDoubleRound();
-		static int TestHash();
-#endif
 		AlignedData state;
 		size_t keysz;
 		uint64_t ctr;
