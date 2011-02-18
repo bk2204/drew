@@ -376,11 +376,49 @@ inline void drew::Salsa20Keystream::DoHash(uint32_t *cur, const uint32_t *st)
 
 void drew::Salsa20Keystream::GetValue(uint8_t buf[64])
 {
-	uint32_t cur[16];
+	uint32_t cur[16] ALIGNED_T;
 
 	state[8] = uint32_t(ctr);
 	state[9] = ctr >> 32;
-	DoHash(cur, state);
+	memcpy(cur, state, 16 * sizeof(uint32_t));
+
+	for (size_t i = 0; i < 10; i++) {
+		cur[ 4] ^= RotateLeft(cur[ 0] + cur[12],  7);
+		cur[ 8] ^= RotateLeft(cur[ 4] + cur[ 0],  9);
+		cur[12] ^= RotateLeft(cur[ 8] + cur[ 4], 13);
+		cur[ 0] ^= RotateLeft(cur[12] + cur[ 8], 18);
+		cur[ 9] ^= RotateLeft(cur[ 5] + cur[ 1],  7);
+		cur[13] ^= RotateLeft(cur[ 9] + cur[ 5],  9);
+		cur[ 1] ^= RotateLeft(cur[13] + cur[ 9], 13);
+		cur[ 5] ^= RotateLeft(cur[ 1] + cur[13], 18);
+		cur[14] ^= RotateLeft(cur[10] + cur[ 6],  7);
+		cur[ 2] ^= RotateLeft(cur[14] + cur[10],  9);
+		cur[ 6] ^= RotateLeft(cur[ 2] + cur[14], 13);
+		cur[10] ^= RotateLeft(cur[ 6] + cur[ 2], 18);
+		cur[ 3] ^= RotateLeft(cur[15] + cur[11],  7);
+		cur[ 7] ^= RotateLeft(cur[ 3] + cur[15],  9);
+		cur[11] ^= RotateLeft(cur[ 7] + cur[ 3], 13);
+		cur[15] ^= RotateLeft(cur[11] + cur[ 7], 18);
+
+		cur[ 1] ^= RotateLeft(cur[ 0] + cur[ 3],  7);
+		cur[ 2] ^= RotateLeft(cur[ 1] + cur[ 0],  9);
+		cur[ 3] ^= RotateLeft(cur[ 2] + cur[ 1], 13);
+		cur[ 0] ^= RotateLeft(cur[ 3] + cur[ 2], 18);
+		cur[ 6] ^= RotateLeft(cur[ 5] + cur[ 4],  7);
+		cur[ 7] ^= RotateLeft(cur[ 6] + cur[ 5],  9);
+		cur[ 4] ^= RotateLeft(cur[ 7] + cur[ 6], 13);
+		cur[ 5] ^= RotateLeft(cur[ 4] + cur[ 7], 18);
+		cur[11] ^= RotateLeft(cur[10] + cur[ 9],  7);
+		cur[ 8] ^= RotateLeft(cur[11] + cur[10],  9);
+		cur[ 9] ^= RotateLeft(cur[ 8] + cur[11], 13);
+		cur[10] ^= RotateLeft(cur[ 9] + cur[ 8], 18);
+		cur[12] ^= RotateLeft(cur[15] + cur[14],  7);
+		cur[13] ^= RotateLeft(cur[12] + cur[15],  9);
+		cur[14] ^= RotateLeft(cur[13] + cur[12], 13);
+		cur[15] ^= RotateLeft(cur[14] + cur[13], 18);
+	}
+	for (size_t i = 0; i < 16; i++)
+		cur[i] += state[i];
 	ctr++;
 	E::Copy(buf, cur, sizeof(cur));
 }

@@ -36,7 +36,7 @@ class Salsa20Keystream
 		static int TestDoubleRound();
 		static int TestHash();
 #endif
-		uint32_t state[16];
+		uint32_t state[16] ALIGNED_T;
 		size_t keysz;
 		uint64_t ctr;
 };
