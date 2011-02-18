@@ -38,6 +38,7 @@ CFG_HMAC		= m
 
 ## Stream ciphers.
 CFG_RC4			= m
+CFG_SALSA20		= m
 
 ## PRNGs.
 CFG_ARC4STIR	= m
