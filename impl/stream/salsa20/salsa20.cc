@@ -237,9 +237,9 @@ void drew::Salsa20Keystream::Reset()
 	ctr = 0;
 }
 
-inline void drew::Salsa20Keystream::DoHash(AlignedData &cur,
-		const AlignedData &st)
+inline void drew::Salsa20Keystream::DoHash(AlignedData &cur)
 {
+	const AlignedData &st = state;
 	memcpy(cur.buf, st.buf, 16 * sizeof(uint32_t));
 
 	for (size_t i = 0; i < 10; i++) {
@@ -288,7 +288,7 @@ void drew::Salsa20Keystream::GetValue(uint8_t buf[64])
 	state.buf[8] = uint32_t(ctr);
 	state.buf[9] = ctr >> 32;
 
-	DoHash(cur, state);
+	DoHash(cur);
 	ctr++;
 	E::Copy(buf, cur.buf, sizeof(cur.buf));
 }
