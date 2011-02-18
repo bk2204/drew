@@ -16,6 +16,12 @@
 #define NEEDS_ALIGNMENT 1
 #endif
 
+#if defined(__GNUC__)
+#define ALIGNED_T __attribute__((aligned(32)))
+#else
+#define ALIGNED_T
+#endif
+
 inline bool IsAligned(const void *p, size_t mul)
 {
 	uintptr_t q = reinterpret_cast<uintptr_t>(p);
