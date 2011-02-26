@@ -33,7 +33,7 @@ static int drew_loader__load_info(drew_loader_t *ldr, int aid, int id)
 	int namesize = 0;
 	int retval = 0;
 	int metasize = 0;
-	char *aname;
+	char *aname = 0;
 	drew_metadata_t *metadata = 0;
 	void *functbl = 0;
 
