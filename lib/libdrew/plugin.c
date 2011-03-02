@@ -123,7 +123,7 @@ static bool drew_loader__is_valid_id(const drew_loader_t *ldr, int id)
 	if (ldr->nentries <= id)
 		return false;
 
-	if (!ldr->entry[id].name)
+	if (!ldr->entry[id].aname)
 		return false;
 
 	return true;
