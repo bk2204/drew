@@ -38,12 +38,12 @@ inline int test_speed_loop(const drew_block_functbl_t *functbl, uint8_t *buf,
 		uint8_t *buf2, uint8_t *key, int keysz, int chunk, size_t nbytes)
 {
 	int i;
-	void *ctx;
+	drew_block_t ctx;
 
-	functbl->init(&ctx, NULL, 0, NULL, NULL);
-	functbl->setkey(ctx, key, keysz, DREW_BLOCK_MODE_ENCRYPT);
+	functbl->init(&ctx, 0, NULL, NULL);
+	functbl->setkey(&ctx, key, keysz, DREW_BLOCK_MODE_ENCRYPT);
 	for (i = 0; !framework_sigflag && i < nbytes; i += chunk)
-		functbl->encrypt(ctx, buf2, buf);
+		functbl->encrypt(&ctx, buf2, buf);
 	functbl->fini(&ctx, 0);
 
 	return i;

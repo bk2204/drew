@@ -32,14 +32,15 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 {
 	const drew_mode_functbl_t *functbl = tbl;
 	
-	return print_test_results(functbl->test(ldr));
+	return print_test_results(functbl->test(NULL, ldr));
 }
 
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		const void *tbl, int chunk, int nchunks)
 {
 	int i, keysz = 0, blksz;
-	void *bctx, *mctx;
+	drew_block_t bctx;
+	drew_mode_t mctx;
 	uint8_t *buf, *buf2, *key;
 	struct timespec cstart, cend;
 	const drew_mode_functbl_t *functbl = tbl;
@@ -72,13 +73,13 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		return ENOMEM;
 
 	clock_gettime(USED_CLOCK, &cstart);
-	ftbl->init(&bctx, NULL, 0, NULL, NULL);
-	ftbl->setkey(bctx, key, keysz, 0);
-	functbl->init(&mctx, ldr, NULL);
-	functbl->setiv(mctx, buf2, blksz);
-	functbl->setblock(mctx, algo, bctx);
+	ftbl->init(&bctx, 0, NULL, NULL);
+	ftbl->setkey(&bctx, key, keysz, 0);
+	functbl->init(&mctx, 0, ldr, NULL);
+	functbl->setiv(&mctx, buf2, blksz);
+	functbl->setblock(&mctx, &bctx);
 	for (i = 0; i < nchunks; i++)
-		functbl->encrypt(mctx, buf, buf, chunk);
+		functbl->encrypt(&mctx, buf, buf, chunk);
 	clock_gettime(USED_CLOCK, &cend);
 
 	free(buf);

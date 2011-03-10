@@ -39,7 +39,7 @@ static int camellia_big_test(void)
 	return res;
 }
 
-static int camelliatest(void *, drew_loader_t *)
+static int camelliatest(void *, const drew_loader_t *)
 {
 	int res = 0;
 
@@ -53,7 +53,7 @@ static int camelliatest(void *, drew_loader_t *)
 }
 
 extern "C" {
-	PLUGIN_STRUCTURE(camellia, drew::Camellia, Camellia)
+	PLUGIN_STRUCTURE(camellia, Camellia)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(camellia, "Camellia")
 	PLUGIN_DATA_END()
@@ -82,7 +82,7 @@ drew::Camellia::Camellia()
 
 // Number of bits in a uint64_t.
 #define NBITS (64)
-void drew::Camellia::SetKey(const uint8_t *key, size_t sz)
+int drew::Camellia::SetKey(const uint8_t *key, size_t sz)
 {
 	uint64_t ko[4];
 	
@@ -91,8 +91,11 @@ void drew::Camellia::SetKey(const uint8_t *key, size_t sz)
 		SetKey128(ko);
 	else if (sz == 24)
 		SetKey192(ko);
-	else
+	else if (sz == 32)
 		SetKey256(ko);
+	else
+		return DREW_ERR_INVALID;
+	return 0;
 }
 
 void drew::Camellia::SetKey192(uint64_t ko[4])
@@ -184,12 +187,12 @@ void drew::Camellia::SetKey128(uint64_t ko[4])
 	fdec = &Camellia::Decrypt128;
 }
 
-inline uint64_t drew::Camellia::f(uint64_t x, uint64_t k)
+inline uint64_t drew::Camellia::f(uint64_t x, uint64_t k) const
 {
 	return spfunc(x ^ k);
 }
 
-inline uint64_t drew::Camellia::fl(uint64_t x, uint64_t k)
+inline uint64_t drew::Camellia::fl(uint64_t x, uint64_t k) const
 {
 	uint32_t xl = (x >> 32), xr = x, kl = (k >> 32), kr = k;
 
@@ -199,7 +202,7 @@ inline uint64_t drew::Camellia::fl(uint64_t x, uint64_t k)
 	return (((uint64_t)yl) << 32) | yr;
 }
 
-inline uint64_t drew::Camellia::flinv(uint64_t y, uint64_t k)
+inline uint64_t drew::Camellia::flinv(uint64_t y, uint64_t k) const
 {
 	uint32_t yl = (y >> 32), yr = y, kl = (k >> 32), kr = k;
 
@@ -211,7 +214,7 @@ inline uint64_t drew::Camellia::flinv(uint64_t y, uint64_t k)
 
 #define SP(n) s[n][E::GetByte(x, (7 - (n)))]
 
-inline uint64_t drew::Camellia::spfunc(uint64_t x)
+inline uint64_t drew::Camellia::spfunc(uint64_t x) const
 {
 	return SP(0) ^ SP(1) ^ SP(2) ^ SP(3) ^ SP(4) ^ SP(5) ^ SP(6) ^ SP(7);
 }
@@ -222,15 +225,17 @@ inline uint64_t drew::Camellia::spfunc(uint64_t x)
 #define D128_ROUND2(x, y, n) do { \
 	y ^= f(x, ku[n+1]); x ^= f(y, ku[n]); \
 } while(0)
-void drew::Camellia::Encrypt(uint8_t *out, const uint8_t *in)
+int drew::Camellia::Encrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint64_t d[2];
 	E::Copy(d, in, sizeof(d));
 	(this->*fenc)(d);
 	E::Copy(out, d, sizeof(d));
+
+	return 0;
 }
 
-void drew::Camellia::Encrypt128(uint64_t d[2])
+void drew::Camellia::Encrypt128(uint64_t d[2]) const
 {
 	uint64_t &x = d[0], &y = d[1];
 
@@ -254,7 +259,7 @@ void drew::Camellia::Encrypt128(uint64_t d[2])
 	std::swap(x, y);
 }
 
-void drew::Camellia::Encrypt256(uint64_t d[2])
+void drew::Camellia::Encrypt256(uint64_t d[2]) const
 {
 	uint64_t &x = d[0], &y = d[1];
 
@@ -283,15 +288,17 @@ void drew::Camellia::Encrypt256(uint64_t d[2])
 	std::swap(x, y);
 }
 
-void drew::Camellia::Decrypt(uint8_t *out, const uint8_t *in)
+int drew::Camellia::Decrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint64_t d[2];
 	E::Copy(d, in, sizeof(d));
 	(this->*fdec)(d);
 	E::Copy(out, d, sizeof(d));
+
+	return 0;
 }
 
-void drew::Camellia::Decrypt128(uint64_t d[2])
+void drew::Camellia::Decrypt128(uint64_t d[2]) const
 {
 	uint64_t &x = d[0], &y = d[1];
 
@@ -314,7 +321,7 @@ void drew::Camellia::Decrypt128(uint64_t d[2])
 	y ^= kw[1];
 }
 
-void drew::Camellia::Decrypt256(uint64_t d[2])
+void drew::Camellia::Decrypt256(uint64_t d[2]) const
 {
 	uint64_t &x = d[0], &y = d[1];
 

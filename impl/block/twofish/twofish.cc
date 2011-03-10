@@ -50,7 +50,7 @@ static int twofish128_test(void)
 	return !!memcmp(final, pt, sizeof(pt)) << 1;
 }
 
-static int twofishtest(void *, drew_loader_t *)
+static int twofishtest(void *, const drew_loader_t *)
 {
 	int res = 0;
 
@@ -62,7 +62,7 @@ static int twofishtest(void *, drew_loader_t *)
 }
 
 extern "C" {
-	PLUGIN_STRUCTURE(twofish, drew::Twofish, Twofish)
+	PLUGIN_STRUCTURE(twofish, Twofish)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(twofish, "Twofish")
 	PLUGIN_DATA_END()
@@ -84,7 +84,7 @@ drew::Twofish::Twofish()
 }
 
 // Key scheduling implementation from Crypto++.
-uint32_t drew::Twofish::Mod(uint32_t c)
+uint32_t drew::Twofish::Mod(uint32_t c) const
 {
 	const uint32_t mod = 0x14d;
 	uint32_t c2 = (c << 1) ^ ((c & 0x80) ? mod : 0);
@@ -92,7 +92,7 @@ uint32_t drew::Twofish::Mod(uint32_t c)
 	return c | (c1 << 8) | (c2 << 16) | (c1 << 24);
 }
 
-uint32_t drew::Twofish::ReedSolomon(uint32_t hi, uint32_t lo)
+uint32_t drew::Twofish::ReedSolomon(uint32_t hi, uint32_t lo) const
 {
 	for (size_t i = 0; i < 8; i++) {
 		hi = Mod(hi >> 24) ^ (hi << 8) ^ (lo >> 24);
@@ -103,7 +103,7 @@ uint32_t drew::Twofish::ReedSolomon(uint32_t hi, uint32_t lo)
 
 #define Q(a, b, c, d, t) (a[E::GetByte(t, 0)] ^ (b[E::GetByte(t, 1)] << 8) ^ \
 	(c[E::GetByte(t, 2)] << 16) ^ (d[E::GetByte(t, 3)] << 24))
-uint32_t drew::Twofish::h0(uint32_t x, const uint32_t *k, size_t len)
+uint32_t drew::Twofish::h0(uint32_t x, const uint32_t *k, size_t len) const
 {
 	typedef endian_t E;
 
@@ -122,7 +122,7 @@ uint32_t drew::Twofish::h0(uint32_t x, const uint32_t *k, size_t len)
 	return x;
 }
 
-uint32_t drew::Twofish::h(uint32_t x, const uint32_t *k, size_t len)
+uint32_t drew::Twofish::h(uint32_t x, const uint32_t *k, size_t len) const
 {
 	typedef endian_t E;
 
@@ -132,7 +132,7 @@ uint32_t drew::Twofish::h(uint32_t x, const uint32_t *k, size_t len)
 }
 
 #define MAXKEYSZ 32
-void drew::Twofish::SetKey(const uint8_t *key, size_t sz)
+int drew::Twofish::SetKey(const uint8_t *key, size_t sz)
 {
 	uint32_t buf[MAXKEYSZ];
 	size_t len = sz / 8;
@@ -159,16 +159,17 @@ void drew::Twofish::SetKey(const uint8_t *key, size_t sz)
 		m_s[2][i] = mds[2][E::GetByte(t, 2)];
 		m_s[3][i] = mds[3][E::GetByte(t, 3)];
 	}
+	return 0;
 }
 
-uint32_t drew::Twofish::g0(uint32_t x)
+uint32_t drew::Twofish::g0(uint32_t x) const
 {
 	typedef endian_t E;
 	return m_s[0][E::GetByte(x, 0)] ^ m_s[1][E::GetByte(x, 1)] ^
 		m_s[2][E::GetByte(x, 2)] ^ m_s[3][E::GetByte(x, 3)];
 }
 
-uint32_t drew::Twofish::g1(uint32_t x)
+uint32_t drew::Twofish::g1(uint32_t x) const
 {
 	typedef endian_t E;
 	return m_s[0][E::GetByte(x, 3)] ^ m_s[1][E::GetByte(x, 0)] ^
@@ -176,7 +177,7 @@ uint32_t drew::Twofish::g1(uint32_t x)
 }
 
 void drew::Twofish::f(const uint32_t *k, uint32_t a, uint32_t b, uint32_t &c,
-		uint32_t &d)
+		uint32_t &d) const
 {
 	uint32_t x, y;
 	x = g0(a);
@@ -190,7 +191,7 @@ void drew::Twofish::f(const uint32_t *k, uint32_t a, uint32_t b, uint32_t &c,
 }
 
 void drew::Twofish::finv(const uint32_t *k, uint32_t a, uint32_t b, uint32_t &c,
-		uint32_t &d)
+		uint32_t &d) const
 {
 	uint32_t x, y;
 	x = g0(a);
@@ -203,7 +204,7 @@ void drew::Twofish::finv(const uint32_t *k, uint32_t a, uint32_t b, uint32_t &c,
 	c ^= x + k[0];
 }
 
-void drew::Twofish::Encrypt(uint8_t *out, const uint8_t *in)
+int drew::Twofish::Encrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t data[4];
 
@@ -225,9 +226,10 @@ void drew::Twofish::Encrypt(uint8_t *out, const uint8_t *in)
 		data[i] ^= k[i];
 
 	endian_t::Copy(out, data, sizeof(data));
+	return 0;
 }
 
-void drew::Twofish::Decrypt(uint8_t *out, const uint8_t *in)
+int drew::Twofish::Decrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t data[4];
 
@@ -249,6 +251,7 @@ void drew::Twofish::Decrypt(uint8_t *out, const uint8_t *in)
 	for (size_t i = 0; i < 4; i++)
 		data[i] ^= m_k[i];
 	endian_t::Copy(out, data, sizeof(data));
+	return 0;
 }
 
 const uint8_t drew::Twofish::q0[] = {

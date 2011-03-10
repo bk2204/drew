@@ -26,7 +26,7 @@ static int cast5_maintenance_test(void)
 	return result;
 }
 
-static int cast5test(void *, drew_loader_t *)
+static int cast5test(void *, const drew_loader_t *)
 {
 	using namespace drew;
 
@@ -60,7 +60,7 @@ static int cast5test(void *, drew_loader_t *)
 }
 
 extern "C" {
-	PLUGIN_STRUCTURE(cast5, drew::CAST5, CAST5)
+	PLUGIN_STRUCTURE(cast5, CAST5)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(cast5, "CAST-128")
 	PLUGIN_DATA_END()
@@ -71,9 +71,10 @@ drew::CAST5::CAST5()
 {
 }
 
-void drew::CAST5::SetKey(const uint8_t *key, size_t sz)
+int drew::CAST5::SetKey(const uint8_t *key, size_t sz)
 {
 	ComputeSubkeys(key);
+	return 0;
 }
 
 #define sx(a, b) m_s[a][endian_t::GetArrayByte(x, (b ^ 3))]
@@ -139,7 +140,7 @@ void drew::CAST5::ComputeSubkeys(const uint8_t *k)
 	}
 }
 
-void drew::CAST5::Encrypt(uint8_t *out, const uint8_t *in)
+int drew::CAST5::Encrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t l, r;
 
@@ -158,9 +159,11 @@ void drew::CAST5::Encrypt(uint8_t *out, const uint8_t *in)
 
 	endian_t::Copy(out+0, &l, sizeof(l));
 	endian_t::Copy(out+4, &r, sizeof(r));
+
+	return 0;
 }
 
-void drew::CAST5::Decrypt(uint8_t *out, const uint8_t *in)
+int drew::CAST5::Decrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t l, r;
 
@@ -180,4 +183,6 @@ void drew::CAST5::Decrypt(uint8_t *out, const uint8_t *in)
 
 	endian_t::Copy(out+0, &r, sizeof(l));
 	endian_t::Copy(out+4, &l, sizeof(r));
+
+	return 0;
 }

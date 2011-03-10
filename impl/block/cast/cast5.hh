@@ -4,21 +4,21 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "block-plugin.hh"
 #include "util.hh"
 #include "cast.hh"
 
 namespace drew {
 
-class CAST5 : public CAST
+class CAST5 : public CAST, public BlockCipher<8>
 {
 	public:
 		typedef BigEndian endian_t;
-		static const size_t block_size = 8;
 		CAST5();
 		~CAST5() {};
-		void SetKey(const uint8_t *key, size_t sz);
-		void Encrypt(uint8_t *out, const uint8_t *in);
-		void Decrypt(uint8_t *out, const uint8_t *in);
+		int SetKey(const uint8_t *key, size_t sz);
+		int Encrypt(uint8_t *out, const uint8_t *in) const;
+		int Decrypt(uint8_t *out, const uint8_t *in) const;
 	protected:
 	private:
 		void SetUpEndianness();

@@ -11,71 +11,88 @@
 #define DIM(x) (sizeof(x)/sizeof((x)[0]))
 
 struct ofb {
-	drew_loader_t *ldr;
-	void *algo;
-	const drew_block_functbl_t *functbl;
+	const drew_loader_t *ldr;
+	const drew_block_t *algo;
 	uint8_t *buf;
 	size_t blksize;
 	size_t boff;
 };
 
+static int ofb_info(int op, void *p);
+static int ofb_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
+		const drew_param_t *param);
+static int ofb_setpad(drew_mode_t *ctx, const drew_pad_t *pad);
+static int ofb_setblock(drew_mode_t *ctx, const drew_block_t *algoctx);
+static int ofb_setiv(drew_mode_t *ctx, const void *iv, size_t len);
+static int ofb_encrypt(drew_mode_t *ctx, void *out, const void *in,
+		size_t len);
+static int ofb_fini(drew_mode_t *ctx, int flags);
+static int ofb_test(void *p, const drew_loader_t *ldr);
+static int ofb_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags);
+
+static const drew_mode_functbl_t ofb_functbl = {
+	ofb_info, ofb_init, ofb_clone, ofb_fini, ofb_setpad, ofb_setblock,
+	ofb_setiv, ofb_encrypt, ofb_encrypt, ofb_encrypt, ofb_encrypt,
+	ofb_test
+};
+
 static int ofb_info(int op, void *p)
 {
-	return -EINVAL;
+	switch (op) {
+		case DREW_MODE_VERSION:
+			return 2;
+		case DREW_MODE_INTSIZE:
+			return sizeof(struct ofb);
+		case DREW_MODE_QUANTUM:
+		default:
+			return DREW_ERR_INVALID;
+	}
 }
 
-static void ofb_init(void **ctx, drew_loader_t *ldr, const drew_param_t *param)
+static int ofb_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
+		const drew_param_t *param)
 {
-	struct ofb *newctx;
+	struct ofb *newctx = ctx->ctx;
 
-	newctx = malloc(sizeof(*newctx));
+	if (!(flags & DREW_MODE_FIXED))
+		newctx = malloc(sizeof(*newctx));
 	newctx->ldr = ldr;
-	newctx->blksize = 0;
 	newctx->algo = NULL;
-	newctx->functbl = NULL;
 	newctx->boff = 0;
+	
+	ctx->ctx = newctx;
+	ctx->functbl = &ofb_functbl;
 
-	*ctx = newctx;
+	return 0;
 }
 
-static int ofb_setpad(void *ctx, const char *algoname, void *algoctx)
+static int ofb_setpad(drew_mode_t *ctx, const drew_pad_t *algoname)
 {
 	return -EINVAL;
 }
 
-static int ofb_setblock(void *ctx, const char *algoname, void *algoctx)
+static int ofb_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 {
-	struct ofb *c = ctx;
-	const void *tmp;
-	int id;
-
-	id = drew_loader_lookup_by_name(c->ldr, algoname, 0, -1);
-	if (id < 0)
-		return id;
-	drew_loader_get_functbl(c->ldr, id, &tmp);
-	c->functbl = tmp;
+	struct ofb *c = ctx->ctx;
 
 	/* You really do need to pass something for the algoctx parameter, because
 	 * otherwise you haven't set a key for the algorithm.  That's a bit bizarre,
 	 * but we might allow it in the future (such as for PRNGs).
 	 */
-	if (algoctx)
-		c->algo = algoctx;
-	else
-		return -EINVAL;
+	if (!algoctx)
+		return DREW_ERR_INVALID;
 
-	c->blksize = c->functbl->info(DREW_BLOCK_BLKSIZE, NULL);
-	if (!c->blksize)
-		c->blksize = c->blksize;
+	c->algo = algoctx;
+	c->blksize = c->algo->functbl->info(DREW_BLOCK_BLKSIZE, NULL);
 	if (!(c->buf = malloc(c->blksize)))
 		return -ENOMEM;
 
 	return 0;
 }
 
-static int ofb_setiv(void *ctx, const uint8_t *iv, size_t len)
+static int ofb_setiv(drew_mode_t *ctx, const void *iv, size_t len)
 {
-	struct ofb *c = ctx;
+	struct ofb *c = ctx->ctx;
 
 	if (c->blksize != len)
 		return -EINVAL;
@@ -89,9 +106,12 @@ static int ofb_setiv(void *ctx, const uint8_t *iv, size_t len)
 /* There is no decrypt function because encryption and decryption are exactly
  * the same.
  */
-static void ofb_encrypt(void *ctx, uint8_t *out, const uint8_t *in, size_t len)
+static int ofb_encrypt(drew_mode_t *ctx, void *outp, const void *inp,
+		size_t len)
 {
-	struct ofb *c = ctx;
+	struct ofb *c = ctx->ctx;
+	uint8_t *out = outp;
+	const uint8_t *in = inp;
 
 	if (c->boff) {
 		const size_t b = MIN(c->blksize - c->boff, len);
@@ -105,7 +125,7 @@ static void ofb_encrypt(void *ctx, uint8_t *out, const uint8_t *in, size_t len)
 	}
 
 	while (len >= c->blksize) {
-		c->functbl->encrypt(c->algo, c->buf, c->buf);
+		c->algo->functbl->encrypt(c->algo, c->buf, c->buf);
 		for (size_t i = 0; i < c->blksize; i++)
 			out[i] = c->buf[i] ^ in[i];
 		len -= c->blksize;
@@ -114,11 +134,12 @@ static void ofb_encrypt(void *ctx, uint8_t *out, const uint8_t *in, size_t len)
 	}
 
 	if (len) {
-		c->functbl->encrypt(c->algo, c->buf, c->buf);
+		c->algo->functbl->encrypt(c->algo, c->buf, c->buf);
 		for (size_t i = 0; i < len; i++)
 			out[i] = c->buf[i] ^ in[i];
 		c->boff = len;
 	}
+	return 0;
 }
 
 struct test {
@@ -131,14 +152,13 @@ struct test {
 	size_t datasz;
 };
 
-static void ofb_fini(void **ctx);
-
-static int ofb_test_generic(drew_loader_t *ldr, const char *name,
+static int ofb_test_generic(const drew_loader_t *ldr, const char *name,
 		const struct test *testdata, size_t ntests)
 {
 	int id, result = 0;
 	const drew_block_functbl_t *functbl;
-	void *algo, *c;
+	drew_block_t algo;
+	drew_mode_t c;
 	const void *tmp;
 	uint8_t buf[128];
 
@@ -153,42 +173,42 @@ static int ofb_test_generic(drew_loader_t *ldr, const char *name,
 		memset(buf, 0, sizeof(buf));
 		result <<= 1;
 
-		ofb_init(&c, ldr, NULL);
-		functbl->init(&algo, NULL, 0, ldr, NULL);
-		functbl->setkey(algo, testdata[i].key, testdata[i].keysz,
+		ofb_init(&c, 0, ldr, NULL);
+		functbl->init(&algo, 0, ldr, NULL);
+		algo.functbl->setkey(&algo, testdata[i].key, testdata[i].keysz,
 				DREW_BLOCK_MODE_ENCRYPT);
-		ofb_setblock(c, name, algo);
-		ofb_setiv(c, testdata[i].iv, testdata[i].ivsz);
+		ofb_setblock(&c, &algo);
+		ofb_setiv(&c, testdata[i].iv, testdata[i].ivsz);
 		/* We use 9 here because it tests all three code paths for 64-bit
 		 * blocks.
 		 */
 		for (size_t j = 0; j < testdata[i].datasz; j += 9)
-			ofb_encrypt(c, buf+j, testdata[i].input+j,
+			ofb_encrypt(&c, buf+j, testdata[i].input+j,
 					MIN(9, testdata[i].datasz - j));
 
 		result |= !!memcmp(buf, testdata[i].output, testdata[i].datasz);
-		ofb_fini(&c);
-		functbl->fini(&algo, 0);
+		ofb_fini(&c, 0);
+		algo.functbl->fini(&algo, 0);
 
-		ofb_init(&c, ldr, NULL);
-		functbl->init(&algo, NULL, 0, ldr, NULL);
-		functbl->setkey(algo, testdata[i].key, testdata[i].keysz,
+		ofb_init(&c, 0, ldr, NULL);
+		functbl->init(&algo, 0, ldr, NULL);
+		algo.functbl->setkey(&algo, testdata[i].key, testdata[i].keysz,
 				DREW_BLOCK_MODE_ENCRYPT);
-		ofb_setblock(c, name, algo);
-		ofb_setiv(c, testdata[i].iv, testdata[i].ivsz);
+		ofb_setblock(&c, &algo);
+		ofb_setiv(&c, testdata[i].iv, testdata[i].ivsz);
 		for (size_t j = 0; j < testdata[i].datasz; j += 9)
-			ofb_encrypt(c, buf+j, testdata[i].output+j,
+			ofb_encrypt(&c, buf+j, testdata[i].output+j,
 					MIN(9, testdata[i].datasz - j));
 
 		result |= !!memcmp(buf, testdata[i].input, testdata[i].datasz);
-		ofb_fini(&c);
-		functbl->fini(&algo, 0);
+		ofb_fini(&c, 0);
+		algo.functbl->fini(&algo, 0);
 	}
 	
 	return result;
 }
 
-static int ofb_test_cast5(drew_loader_t *ldr, size_t *ntests)
+static int ofb_test_cast5(const drew_loader_t *ldr, size_t *ntests)
 {
 	uint8_t buf[8];
 	struct test testdata[] = {
@@ -221,7 +241,7 @@ static int ofb_test_cast5(drew_loader_t *ldr, size_t *ntests)
 	return ofb_test_generic(ldr, "CAST-128", testdata, DIM(testdata));
 }
 
-static int ofb_test_blowfish(drew_loader_t *ldr, size_t *ntests)
+static int ofb_test_blowfish(const drew_loader_t *ldr, size_t *ntests)
 {
 	struct test testdata[] = {
 		{
@@ -244,13 +264,10 @@ static int ofb_test_blowfish(drew_loader_t *ldr, size_t *ntests)
 	return ofb_test_generic(ldr, "Blowfish", testdata, DIM(testdata));
 }
 
-static int ofb_test(void *p)
+static int ofb_test(void *p, const drew_loader_t *ldr)
 {
-	drew_loader_t *ldr = p;
 	int result = 0, tres;
 	size_t ntests = 0;
-	if (!p)
-		return -EINVAL;
 
 	if ((tres = ofb_test_cast5(ldr, &ntests)) >= 0) {
 		result <<= ntests;
@@ -264,37 +281,31 @@ static int ofb_test(void *p)
 	return result;
 }
 
-static void ofb_fini(void **ctx)
+static int ofb_fini(drew_mode_t *ctx, int flags)
 {
-	struct ofb *c = *ctx;
+	struct ofb *c = ctx->ctx;
 
 	memset(c, 0, sizeof(*c));
-	free(c);
+	if (!(flags & DREW_MODE_FIXED))
+		free(c);
 
-	*ctx = NULL;
-}
-
-static int ofb_clone(void **newctx, void *oldctx, int flags)
-{
-	struct ofb *c;
-	if (flags & DREW_MODE_CLONE_FIXED) {
-		memcpy(*newctx, oldctx, sizeof(*c));
-	}
-	else {
-		c = malloc(sizeof(*c));
-		*newctx = c;
-	}
+	ctx->ctx = NULL;
 	return 0;
 }
 
-static drew_mode_functbl_t ofb_functbl = {
-	ofb_info, ofb_init, ofb_setpad, ofb_setblock, ofb_setiv, ofb_encrypt,
-	ofb_encrypt, ofb_test, ofb_fini, ofb_clone
-};
+static int ofb_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags)
+{
+	if (!(flags & DREW_MODE_FIXED))
+		newctx->ctx = malloc(sizeof(struct ofb));
+	memcpy(newctx->ctx, oldctx->ctx, sizeof(struct ofb));
+	newctx->functbl = oldctx->functbl;
+	return 0;
+}
+
 
 struct plugin {
 	const char *name;
-	drew_mode_functbl_t *functbl;
+	const drew_mode_functbl_t *functbl;
 };
 
 static struct plugin plugin_data[] = {

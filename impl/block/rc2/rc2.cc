@@ -15,11 +15,11 @@ extern "C" {
 
 #define DIM(x) (sizeof(x)/sizeof(x[0]))
 
-static int rc2_info(int op, void *p)
+static int rc2info(int op, void *p)
 {
 	switch (op) {
 		case DREW_BLOCK_VERSION:
-			return 1;
+			return 2;
 		case DREW_BLOCK_BLKSIZE:
 			return 8;
 		case DREW_BLOCK_KEYSIZE:
@@ -36,6 +36,7 @@ static int rc2_info(int op, void *p)
 	}
 }
 
+#if 0
 static int rc2_init(void **ctx, void *, int flags, drew_loader_t *, const drew_param_t *)
 {
 	drew::RC2 *p = new drew::RC2;
@@ -93,8 +94,9 @@ static int rc2_fini(void **ctx, int flags)
 	}
 	return 0;
 }
+#endif
 
-static int rc2_test(void *, drew_loader_t *)
+static int rc2test(void *, const drew_loader_t *)
 {
 	using namespace drew;
 
@@ -113,7 +115,7 @@ static int rc2_test(void *, drew_loader_t *)
 	return res;
 }
 
-	PLUGIN_FUNCTBL(rc2, rc2_info, rc2_init, rc2_setkey, rc2_encrypt, rc2_decrypt, rc2_test, rc2_fini, rc2_clone);
+	PLUGIN_STRUCTURE2(rc2, RC2)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(rc2, "RC2")
 	PLUGIN_DATA_END()
@@ -126,7 +128,7 @@ drew::RC2::RC2()
 {
 }
 
-void drew::RC2::SetKey(const uint8_t *key, size_t len)
+int drew::RC2::SetKey(const uint8_t *key, size_t len)
 {
 	uint8_t k[128];
 	const size_t t8 = len;
@@ -143,16 +145,17 @@ void drew::RC2::SetKey(const uint8_t *key, size_t len)
 		k[i] = pitable[k[i+1] ^ k[i+t8]];
 
 	E::Copy(m_k, k, sizeof(k));
+	return 0;
 }
 
 #define R(i, x) (r[((i)+(x)) & 3])
-void drew::RC2::Mix(uint16_t *r, size_t i, size_t j, size_t s)
+void drew::RC2::Mix(uint16_t *r, size_t i, size_t j, size_t s) const
 {
 	r[i] += m_k[j] + (R(i, 3) & R(i, 2)) + ((~R(i, 3)) & R(i, 1));
 	r[i] = RotateLeft(r[i], s);
 }
 
-void drew::RC2::MixRound(uint16_t *r, size_t j)
+void drew::RC2::MixRound(uint16_t *r, size_t j) const
 {
 	Mix(r, 0, j+0, 1);
 	Mix(r, 1, j+1, 2);
@@ -160,12 +163,12 @@ void drew::RC2::MixRound(uint16_t *r, size_t j)
 	Mix(r, 3, j+3, 5);
 }
 
-void drew::RC2::Mash(uint16_t *r, size_t i)
+void drew::RC2::Mash(uint16_t *r, size_t i) const
 {
 	r[i] += m_k[R(i, 3) & 63];
 }
 
-void drew::RC2::MashRound(uint16_t *r)
+void drew::RC2::MashRound(uint16_t *r) const
 {
 	Mash(r, 0);
 	Mash(r, 1);
@@ -173,7 +176,7 @@ void drew::RC2::MashRound(uint16_t *r)
 	Mash(r, 3);
 }
 
-void drew::RC2::Encrypt(uint8_t *out, const uint8_t *in)
+int drew::RC2::Encrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint16_t r[4];
 	size_t j = 0;
@@ -190,15 +193,16 @@ void drew::RC2::Encrypt(uint8_t *out, const uint8_t *in)
 		MixRound(r, j);
 
 	E::Copy(out, r, sizeof(r));
+	return 0;
 }
 
-void drew::RC2::RMix(uint16_t *r, size_t i, size_t j, size_t s)
+void drew::RC2::RMix(uint16_t *r, size_t i, size_t j, size_t s) const
 {
 	r[i] = RotateRight(r[i], s);
 	r[i] -= m_k[j] + (R(i, 3) & R(i, 2)) + ((~R(i, 3)) & R(i, 1));
 }
 
-void drew::RC2::RMixRound(uint16_t *r, size_t j)
+void drew::RC2::RMixRound(uint16_t *r, size_t j) const
 {
 	RMix(r, 3, j+3, 5);
 	RMix(r, 2, j+2, 3);
@@ -206,12 +210,12 @@ void drew::RC2::RMixRound(uint16_t *r, size_t j)
 	RMix(r, 0, j+0, 1);
 }
 
-void drew::RC2::RMash(uint16_t *r, size_t i)
+void drew::RC2::RMash(uint16_t *r, size_t i) const
 {
 	r[i] -= m_k[R(i, 3) & 63];
 }
 
-void drew::RC2::RMashRound(uint16_t *r)
+void drew::RC2::RMashRound(uint16_t *r) const
 {
 	RMash(r, 3);
 	RMash(r, 2);
@@ -219,7 +223,7 @@ void drew::RC2::RMashRound(uint16_t *r)
 	RMash(r, 0);
 }
 
-void drew::RC2::Decrypt(uint8_t *out, const uint8_t *in)
+int drew::RC2::Decrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint16_t r[4];
 	size_t j = 60;
@@ -236,6 +240,7 @@ void drew::RC2::Decrypt(uint8_t *out, const uint8_t *in)
 		RMixRound(r, j);
 
 	E::Copy(out, r, sizeof(r));
+	return 0;
 }
 
 const uint8_t drew::RC2::pitable[] = {

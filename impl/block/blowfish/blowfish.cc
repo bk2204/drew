@@ -85,7 +85,7 @@ static int blowfish_samekey(void)
 	return res;
 }
 
-static int blowfishtest(void *, drew_loader_t *)
+static int blowfishtest(void *, const drew_loader_t *)
 {
 	int res = 0;
 
@@ -133,7 +133,7 @@ static int blowfishtest(void *, drew_loader_t *)
 }
 
 extern "C" {
-	PLUGIN_STRUCTURE(blowfish, drew::Blowfish, Blowfish)
+	PLUGIN_STRUCTURE(blowfish, Blowfish)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(blowfish, "Blowfish")
 	PLUGIN_DATA_END()
@@ -144,7 +144,7 @@ drew::Blowfish::Blowfish()
 {
 }
 
-inline uint32_t drew::Blowfish::f(uint32_t x)
+inline uint32_t drew::Blowfish::f(uint32_t x) const
 {
 	typedef endian_t E;
 	return ((m_s[E::GetByte(x, 3)] + m_s[0x100 + E::GetByte(x, 2)]) ^
@@ -152,6 +152,7 @@ inline uint32_t drew::Blowfish::f(uint32_t x)
 }
 
 inline void drew::Blowfish::MainAlgorithm(const uint32_t *p, uint32_t d[2])
+	const
 {
 	for (size_t i = 0; i < 16; i += 2) {
 		d[0] ^= p[i];
@@ -163,7 +164,7 @@ inline void drew::Blowfish::MainAlgorithm(const uint32_t *p, uint32_t d[2])
 	d[1] ^= p[17];
 }
 
-void drew::Blowfish::SetKey(const uint8_t *key, size_t sz)
+int drew::Blowfish::SetKey(const uint8_t *key, size_t sz)
 {
 	memcpy(m_s, m_sbox, sizeof(m_sbox));
 	memcpy(m_p, m_parray, sizeof(m_parray));
@@ -189,9 +190,11 @@ void drew::Blowfish::SetKey(const uint8_t *key, size_t sz)
 		std::swap(d[0], d[1]);
 		memcpy(m_s+i, d, sizeof(d));
 	}
+
+	return 0;
 }
 
-void drew::Blowfish::Encrypt(uint8_t *out, const uint8_t *in)
+int drew::Blowfish::Encrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t d[2];
 
@@ -201,9 +204,11 @@ void drew::Blowfish::Encrypt(uint8_t *out, const uint8_t *in)
 
 	endian_t::Copy(out+0, &d[1], sizeof(d[1]));
 	endian_t::Copy(out+4, &d[0], sizeof(d[0]));
+
+	return 0;
 }
 
-void drew::Blowfish::Decrypt(uint8_t *out, const uint8_t *in)
+int drew::Blowfish::Decrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t d[2];
 
@@ -213,6 +218,8 @@ void drew::Blowfish::Decrypt(uint8_t *out, const uint8_t *in)
 
 	endian_t::Copy(out+0, &d[1], sizeof(d[1]));
 	endian_t::Copy(out+4, &d[0], sizeof(d[0]));
+
+	return 0;
 }
 
 const uint32_t drew::Blowfish::m_sbox[4 * 256] = {

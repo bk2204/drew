@@ -34,7 +34,7 @@ static int cast6_maintenance_test(void)
 	return result;
 }
 
-static int cast6test(void *, drew_loader_t *)
+static int cast6test(void *, const drew_loader_t *)
 {
 	using namespace drew;
 
@@ -86,7 +86,7 @@ static int cast6test(void *, drew_loader_t *)
 }
 
 extern "C" {
-	PLUGIN_STRUCTURE(cast6, drew::CAST6, CAST6)
+	PLUGIN_STRUCTURE(cast6, CAST6)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(cast6, "CAST-256")
 	PLUGIN_DATA_END()
@@ -109,7 +109,7 @@ drew::CAST6::CAST6()
 	k[0] ^= f1(k[1], tm[6][i], tr[6][i]); \
 	k[7] ^= f2(k[0], tm[7][i], tr[7][i]); \
 } while (0)
-void drew::CAST6::SetKey(const uint8_t *key, size_t sz)
+int drew::CAST6::SetKey(const uint8_t *key, size_t sz)
 {
 	uint32_t keys[8];
 	uint32_t cm = 0x5a827999, tm[8][24];
@@ -142,6 +142,8 @@ void drew::CAST6::SetKey(const uint8_t *key, size_t sz)
 		m_kr[2][i] = keys[4] & 0x1f;
 		m_kr[3][i] = keys[6] & 0x1f;
 	}
+
+	return 0;
 }
 
 #define Q(a, b, c, d, i) do { \
@@ -159,7 +161,7 @@ void drew::CAST6::SetKey(const uint8_t *key, size_t sz)
 #define Qi(data, i) Q(data[0], data[1], data[2], data[3], i)
 #define Qbari(data, i) Qbar(data[0], data[1], data[2], data[3], i)
 
-void drew::CAST6::Encrypt(uint8_t *out, const uint8_t *in)
+int drew::CAST6::Encrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t data[4];
 
@@ -179,9 +181,11 @@ void drew::CAST6::Encrypt(uint8_t *out, const uint8_t *in)
 	Qbari(data, 11);
 
 	E::Copy(out, data, sizeof(data));
+
+	return 0;
 }
 
-void drew::CAST6::Decrypt(uint8_t *out, const uint8_t *in)
+int drew::CAST6::Decrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t data[4];
 
@@ -201,4 +205,6 @@ void drew::CAST6::Decrypt(uint8_t *out, const uint8_t *in)
 	Qbari(data,  0);
 
 	E::Copy(out, data, sizeof(data));
+	
+	return 0;
 }

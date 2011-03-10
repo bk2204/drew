@@ -29,12 +29,10 @@
  */
 #define DREW_BLOCK_INTSIZE 5  /* Not implemented. */
 
-/* This bit is a flag to the clone function indicating that the new context
- * should be copied into already-existing memory at *newctx.
+/* This bit indicates that the ctx member of drew_block_t is externally
+ * allocated and sufficiently large.
  */
-#define DREW_BLOCK_INIT_FIXED 1
-#define DREW_BLOCK_CLONE_FIXED 1
-#define DREW_BLOCK_FINI_NO_DEALLOC 1
+#define DREW_BLOCK_FIXED 1
 /* These values are passed to setkey to determine the potential usage of the
  * context.  Set bit 0 to disable decryption and set bit 1 to disable
  * encryption.
@@ -65,6 +63,29 @@ typedef struct {
 	int (*test)(void *, drew_loader_t *);
 } drew_block_functbl1_t;
 
-typedef drew_block_functbl1_t drew_block_functbl_t;
+struct drew_block_s;
+typedef struct drew_block_s drew_block_t;
+
+typedef struct {
+	int (*info)(int op, void *p);
+	int (*init)(drew_block_t *, int,
+			const drew_loader_t *, const drew_param_t *);
+	int (*clone)(drew_block_t *, const drew_block_t *, int);
+	int (*fini)(drew_block_t *, int);
+	int (*setkey)(drew_block_t *, const void *, size_t, int);
+	int (*encrypt)(const drew_block_t *, void *, const void *);
+	int (*decrypt)(const drew_block_t *, void *, const void *);
+	int (*encryptfast)(const drew_block_t *, void *, const void *, size_t);
+	int (*decryptfast)(const drew_block_t *, void *, const void *, size_t);
+	int (*test)(void *, const drew_loader_t *);
+} drew_block_functbl2_t;
+
+typedef drew_block_functbl2_t drew_block_functbl_t;
+
+struct drew_block_s {
+	void *ctx;
+	const drew_block_functbl_t *functbl;
+	void *priv; // unused
+};
 
 #endif

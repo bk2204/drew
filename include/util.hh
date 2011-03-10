@@ -17,10 +17,18 @@
 #endif
 
 #if defined(__GNUC__)
-#define ALIGNED_T __attribute__((aligned(32)))
+#define ALIGNED_T __attribute__((aligned(16)))
 #else
 #define ALIGNED_T
 #endif
+
+#define STATIC_ASSERT(e) ((void)sizeof(char[1 - 2*!(e)]))
+
+template<class T, size_t N>
+struct AlignedBlock
+{
+	T data[N] ALIGNED_T;
+};
 
 inline bool IsAligned(const void *p, size_t mul)
 {

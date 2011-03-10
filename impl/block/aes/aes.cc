@@ -42,23 +42,24 @@
 
 extern "C" {
 
-static const int rd_keysz[] =
+static const int rijndaelkeysz[] =
 {
 	16, 24, 32
 };
 
-static const int rd_aes128_keysz[] = {16};
-static const int rd_aes192_keysz[] = {24};
-static const int rd_aes256_keysz[] = {32};
+static const int aes128keysz[] = {16};
+static const int aes192keysz[] = {24};
+static const int aes256keysz[] = {32};
 
 #define DIM(x) (sizeof(x)/sizeof(x[0]))
 
+#if 0
 static int rd_main_info(int op, void *p, size_t blksz, const int *keysz,
 		size_t nkeysz)
 {
 	switch (op) {
 		case DREW_BLOCK_VERSION:
-			return 1;
+			return 2;
 		case DREW_BLOCK_BLKSIZE:
 			return blksz;
 		case DREW_BLOCK_KEYSIZE:
@@ -158,6 +159,7 @@ static int rd_fini(void **ctx, int flags)
 	}
 	return 0;
 }
+#endif
 
 static void str2bytes(uint8_t *bytes, const char *s, size_t len = 0)
 {
@@ -184,7 +186,7 @@ static bool test(const char *key, const char *plain, const char *cipher,
 	if (!keybytes)
 		keybytes = 16;
 
-	AES ctx(blocksz);
+	AES ctx;
 	ctx.SetKey(kb, keybytes);
 	ctx.Encrypt(buf, pb);
 
@@ -197,7 +199,7 @@ static bool test(const char *key, const char *plain, const char *cipher,
 	return !memcmp(buf, pb, blocksz);
 }
 
-static int rd_test(void *, drew_loader_t *)
+static int rd_test(void *, const drew_loader_t *)
 {
 	int res = 0;
 
@@ -236,10 +238,41 @@ static int rd_test(void *, drew_loader_t *)
 	return res;
 }
 
-	PLUGIN_FUNCTBL(rijndael, rd_aes_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
-	PLUGIN_FUNCTBL(aes128, rd_aes128_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
-	PLUGIN_FUNCTBL(aes192, rd_aes192_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
-	PLUGIN_FUNCTBL(aes256, rd_aes256_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
+static int rijndaeltest(void *p, const drew_loader_t *ldr)
+{
+	return rd_test(p, ldr);
+}
+
+static int aes128test(void *p, const drew_loader_t *ldr)
+{
+	return rd_test(p, ldr);
+}
+
+static int aes192test(void *p, const drew_loader_t *ldr)
+{
+	return rd_test(p, ldr);
+}
+
+static int aes256test(void *p, const drew_loader_t *ldr)
+{
+	return rd_test(p, ldr);
+}
+
+	//PLUGIN_FUNCTBL(rijndael, rd_aes_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
+	//PLUGIN_FUNCTBL(aes128, rd_aes128_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
+	//PLUGIN_FUNCTBL(aes192, rd_aes192_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
+	//PLUGIN_FUNCTBL(aes256, rd_aes256_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
+	//PLUGIN_DATA_START()
+	//PLUGIN_DATA(rijndael, "Rijndael")
+	//PLUGIN_DATA(aes128, "AES128")
+	//PLUGIN_DATA(aes192, "AES192")
+	//PLUGIN_DATA(aes256, "AES256")
+	//PLUGIN_DATA_END()
+	//PLUGIN_INTERFACE(aes)
+	PLUGIN_STRUCTURE(rijndael, AES)
+	PLUGIN_STRUCTURE(aes128, AES)
+	PLUGIN_STRUCTURE(aes192, AES)
+	PLUGIN_STRUCTURE(aes256, AES)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(rijndael, "Rijndael")
 	PLUGIN_DATA(aes128, "AES128")
@@ -252,15 +285,15 @@ static int rd_test(void *, drew_loader_t *)
 #define GETU32(pt) (((uint32_t)(pt)[0] << 24) ^ ((uint32_t)(pt)[1] << 16) ^ ((uint32_t)(pt)[2] <<  8) ^ ((uint32_t)(pt)[3]))
 #define PUTU32(ct, st) { (ct)[0] = (uint8_t)((st) >> 24); (ct)[1] = (uint8_t)((st) >> 16); (ct)[2] = (uint8_t)((st) >>  8); (ct)[3] = (uint8_t)(st); }
 
-drew::AES::AES(size_t blocksz)
+drew::AES::AES()
 {
-	m_nb = (blocksz / 4);
 }
 
-void drew::AES::SetKey(const uint8_t *key, size_t len)
+int drew::AES::SetKey(const uint8_t *key, size_t len)
 {
 	SetKeyEncrypt(key, len);
 	SetKeyDecrypt();
+	return 0;
 }
 
 void drew::AES::SetKeyEncrypt(const uint8_t *key, size_t len)
@@ -388,7 +421,7 @@ void drew::AES::SetKeyDecrypt(void)
 	}
 }
 
-void drew::AES::Encrypt(uint8_t *out, const uint8_t *in)
+int drew::AES::Encrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t s0, s1, s2, s3, t0, t1, t2, t3;
 	const uint32_t *rk = m_rk;
@@ -494,9 +527,10 @@ void drew::AES::Encrypt(uint8_t *out, const uint8_t *in)
 		(Te4[(t2      ) & 0xff] & 0x000000ff) ^
 		rk[3];
 	PUTU32(out + 12, s3);
+	return 0;
 }
 
-void drew::AES::Decrypt(uint8_t *out, const uint8_t *in)
+int drew::AES::Decrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t s0, s1, s2, s3, t0, t1, t2, t3;
 	const uint32_t *rk = m_rkd;
@@ -602,6 +636,8 @@ void drew::AES::Decrypt(uint8_t *out, const uint8_t *in)
    		(Td4[(t0      ) & 0xff] & 0x000000ff) ^
    		rk[3];
 	PUTU32(out + 12, s3);
+
+	return 0;
 }
 
 const uint32_t drew::AES::Te0[256] = {

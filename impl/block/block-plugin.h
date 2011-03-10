@@ -17,15 +17,16 @@ extern "C" {
 #include <plugin.h>
 #include <block.h>
 
-#define PLUGIN_FUNCTBL(prefix, info, init, setkey, encrypt, decrypt, test, fini, clone) \
+#define PLUGIN_FUNCTBL(prefix, info, init, setkey, encrypt, decrypt, encryptmult, decryptmult, test, fini, clone) \
 \
-static drew_block_functbl_t prefix ## functbl = { \
-	info, init, clone, fini, setkey, encrypt, decrypt, test \
+static const drew_block_functbl_t prefix ## functbl = { \
+	info, init, clone, fini, setkey, encrypt, decrypt, encryptmult, \
+	decryptmult, test \
 };
 
 struct plugin {
 	const char *name;
-	drew_block_functbl_t *functbl;
+	const drew_block_functbl_t *functbl;
 };
 
 #define PLUGIN_DATA_START() static struct plugin plugin_data[] = {

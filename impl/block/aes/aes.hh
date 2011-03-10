@@ -4,24 +4,26 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "block-plugin.hh"
 #include "util.hh"
 
 namespace drew {
 
-class AES
+class AES : public BlockCipher<16>
 {
 	public:
 		typedef BigEndian endian_t;
-		AES(size_t blocksz);
+		AES();
 		~AES() {};
-		void SetKey(const uint8_t *key, size_t sz);
-		void Encrypt(uint8_t *out, const uint8_t *in);
-		void Decrypt(uint8_t *out, const uint8_t *in);
+		int SetKey(const uint8_t *key, size_t sz);
+		int Encrypt(uint8_t *out, const uint8_t *in) const;
+		int Decrypt(uint8_t *out, const uint8_t *in) const;
 	protected:
 	private:
 		void SetKeyEncrypt(const uint8_t *key, size_t sz);
 		void SetKeyDecrypt(void);
-		size_t m_nr, m_nk, m_nb;
+		static const size_t m_nb = (block_size / 4);
+		size_t m_nr, m_nk;
 		// maxnb*(maxnr+1) = 8 * 9 = 72
 		uint32_t m_rk[72], m_rkd[72];	
 		uint32_t m_km[16];

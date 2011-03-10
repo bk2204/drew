@@ -87,7 +87,7 @@ static bool test3(const char *key, const char *plain, const char *cipher,
 	return test<drew::TripleDES>(key, plain, cipher, keybytes);
 }
 
-static int desedetest(void *, drew_loader_t *)
+static int desedetest(void *, const drew_loader_t *)
 {
 	int res = 0;
 
@@ -102,7 +102,7 @@ static int desedetest(void *, drew_loader_t *)
 	return res;
 }
 
-static int destest(void *, drew_loader_t *)
+static int destest(void *, const drew_loader_t *)
 {
 	int res = 0;
 
@@ -437,8 +437,8 @@ static int destest(void *, drew_loader_t *)
 	return res;
 }
 
-	PLUGIN_STRUCTURE(des, drew::DES, DES)
-	PLUGIN_STRUCTURE(desede, drew::TripleDES, TripleDES)
+	PLUGIN_STRUCTURE(des, DES)
+	PLUGIN_STRUCTURE(desede, TripleDES)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(des, "DES")
 	PLUGIN_DATA(desede, "DESede")
@@ -548,7 +548,7 @@ drew::TripleDES::TripleDES()
 {
 }
 
-void drew::DES::SetKey(const uint8_t *key, size_t len)
+int drew::DES::SetKey(const uint8_t *key, size_t len)
 {
 	uint8_t buffer[56+56+8];
 	uint8_t *const pc1m = buffer;
@@ -588,14 +588,17 @@ void drew::DES::SetKey(const uint8_t *key, size_t len)
 		std::swap(m_kd[i], m_kd[32-2-i]);
 		std::swap(m_kd[i+1], m_kd[32-1-i]);
 	}
+
+	return 0;
 }
 
-void drew::TripleDES::SetKey(const uint8_t *key, size_t len)
+int drew::TripleDES::SetKey(const uint8_t *key, size_t len)
 {
 	m_des1.SetKey(key, 8);
 	m_des2.SetKey(key+8, 8);
 	m_des3.SetKey(key+(len == 24 ? 16 : 0), 8);
 
+	return 0;
 }
 
 void drew::DES::ProcessBlock(const uint32_t *k, uint32_t &m, uint32_t &s) const
@@ -631,7 +634,7 @@ void drew::DES::ProcessBlock(const uint32_t *k, uint32_t &m, uint32_t &s) const
 	m = l; s = r;
 }
 
-void drew::DES::Encrypt(uint8_t *out, const uint8_t *in)
+int drew::DES::Encrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t x[2];
 
@@ -640,9 +643,11 @@ void drew::DES::Encrypt(uint8_t *out, const uint8_t *in)
 	ProcessBlock(m_k, x[0], x[1]);
 	FPERM(x[0], x[1]);
 	E::Copy(out, x, sizeof(x));
+
+	return 0;
 }
 
-void drew::TripleDES::Encrypt(uint8_t *out, const uint8_t *in)
+int drew::TripleDES::Encrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t x[2];
 	const drew::DES *d1 = &m_des1, *d2 = &m_des2, *d3 = &m_des3;
@@ -654,9 +659,11 @@ void drew::TripleDES::Encrypt(uint8_t *out, const uint8_t *in)
 	d3->ProcessBlock(d3->m_k, x[0], x[1]);
 	FPERM(x[0], x[1]);
 	E::Copy(out, x, sizeof(x));
+	
+	return 0;
 }
 
-void drew::DES::Decrypt(uint8_t *out, const uint8_t *in)
+int drew::DES::Decrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t x[2];
 
@@ -665,9 +672,11 @@ void drew::DES::Decrypt(uint8_t *out, const uint8_t *in)
 	ProcessBlock(m_kd, x[0], x[1]);
 	FPERM(x[0], x[1]);
 	E::Copy(out, x, sizeof(x));
+
+	return 0;
 }
 
-void drew::TripleDES::Decrypt(uint8_t *out, const uint8_t *in)
+int drew::TripleDES::Decrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t x[2];
 	const drew::DES *d1 = &m_des3, *d2 = &m_des2, *d3 = &m_des1;
@@ -679,6 +688,8 @@ void drew::TripleDES::Decrypt(uint8_t *out, const uint8_t *in)
 	d3->ProcessBlock(d3->m_kd, x[0], x[1]);
 	FPERM(x[0], x[1]);
 	E::Copy(out, x, sizeof(x));
+
+	return 0;
 }
 
 const uint32_t drew::DES::Spbox[8][64] = {

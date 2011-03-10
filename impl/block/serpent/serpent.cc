@@ -66,7 +66,7 @@ static int serpent_big_test(void)
 	return res;
 }
 
-static int serpenttest(void *, drew_loader_t *)
+static int serpenttest(void *, const drew_loader_t *)
 {
 	int res = 0;
 
@@ -80,7 +80,7 @@ static int serpenttest(void *, drew_loader_t *)
 }
 
 extern "C" {
-	PLUGIN_STRUCTURE(serpent, drew::Serpent, Serpent)
+	PLUGIN_STRUCTURE(serpent, Serpent)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(serpent, "Serpent")
 	PLUGIN_DATA_END()
@@ -522,7 +522,7 @@ static inline void si7(uint32_t *x)
 	SBOX_OUT(3, 0, 1, 4);
 }
 
-void drew::Serpent::SetKey(const uint8_t *key, size_t len)
+int drew::Serpent::SetKey(const uint8_t *key, size_t len)
 {
 	uint32_t *w = m_key = m_keybuf + 8;
 	memset(m_keybuf, 0, sizeof(m_keybuf));
@@ -544,6 +544,8 @@ void drew::Serpent::SetKey(const uint8_t *key, size_t len)
 		s4(w+28);
 	}
 	s3(w);
+
+	return 0;
 }
 
 
@@ -579,7 +581,7 @@ static inline void dround(uint32_t *b, const uint32_t *k,
 		b[i] ^= k[i];
 }
 
-void drew::Serpent::Encrypt(uint8_t *out, const uint8_t *in)
+int drew::Serpent::Encrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t b[4];
 	E::Copy(b, in, sizeof(b));
@@ -606,9 +608,10 @@ void drew::Serpent::Encrypt(uint8_t *out, const uint8_t *in)
 	}
 
 	E::Copy(out, b, sizeof(b));
+	return 0;
 }
 
-void drew::Serpent::Decrypt(uint8_t *out, const uint8_t *in)
+int drew::Serpent::Decrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t b[4];
 	E::Copy(b, in, sizeof(b));
@@ -632,4 +635,5 @@ void drew::Serpent::Decrypt(uint8_t *out, const uint8_t *in)
 	}
 
 	E::Copy(out, b, sizeof(b));
+	return 0;
 }
