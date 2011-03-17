@@ -15,10 +15,10 @@ extern "C" {
 #include <plugin.h>
 #include <prng.h>
 
-#define PLUGIN_FUNCTBL(prefix, info, init, clone, fini, seed, bytes, test) \
+#define PLUGIN_FUNCTBL(prefix, info, init, clone, fini, seed, bytes, entropy, test) \
 \
 static drew_prng_functbl_t prefix ## functbl = { \
-	info, init, clone, fini, seed, bytes, test \
+	info, init, clone, fini, seed, bytes, entropy, test \
 };
 
 struct plugin {

@@ -50,86 +50,107 @@ extern "C" {
 
 #define DIM(x) (sizeof(x)/sizeof(x[0]))
 
+static int a4s_info(int op, void *p);
+static int a4s_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
+		const drew_param_t *);
+static int a4s_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags);
+static int a4s_seed(drew_prng_t *ctx, const void *key, size_t len,
+		size_t entropy);
+static int a4s_bytes(drew_prng_t *ctx, void *out, size_t len);
+static int a4s_entropy(const drew_prng_t *ctx);
+static int a4s_fini(drew_prng_t *ctx, int flags);
+static int a4s_test(void *, const drew_loader_t *);
+
+PLUGIN_FUNCTBL(arc4stir, a4s_info, a4s_init, a4s_clone, a4s_fini, a4s_seed, a4s_bytes, a4s_entropy, a4s_test);
+
 static int a4s_info(int op, void *p)
 {
-	const drew::ARC4Stir *x = reinterpret_cast<drew::ARC4Stir *>(p);
 	switch (op) {
 		case DREW_PRNG_VERSION:
-			return 1;
+			return 2;
 		case DREW_PRNG_BLKSIZE:
 			return 256;
 		case DREW_PRNG_SEEDABLE:
 			return 1;
+		case DREW_PRNG_MUST_SEED:
+			return 0;
 		case DREW_PRNG_INTSIZE:
 			return sizeof(drew::ARC4Stir);
 		case DREW_PRNG_BLOCKING:
 			return 0;
-		case DREW_PRNG_ENTROPY:
-			return x->GetEntropyAvailable();
 		default:
 			return -EINVAL;
 	}
 }
 
-static int a4s_init(void **ctx, void *, int flags, drew_loader_t *, const drew_param_t *)
+static int a4s_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
+		const drew_param_t *)
 {
-	drew::ARC4Stir *p = new drew::ARC4Stir;
-	if (flags & DREW_PRNG_INIT_FIXED) {
-		memcpy(*ctx, p, sizeof(*p));
-		delete p;
-	}
+	drew::ARC4Stir *p;
+	if (flags & DREW_PRNG_FIXED)
+		p = new (ctx->ctx) drew::ARC4Stir;
 	else
-		*ctx = p;
+		p = new drew::ARC4Stir;
+	ctx->ctx = p;
+	ctx->functbl = &arc4stirfunctbl;
 	return 0;
 }
 
-static int a4s_clone(void **newctx, void *oldctx, int flags)
+static int a4s_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags)
 {
 	using namespace drew;
-	ARC4Stir *p = new ARC4Stir(*reinterpret_cast<ARC4Stir *>(oldctx));
-	if (flags & DREW_PRNG_CLONE_FIXED) {
-		memcpy(*newctx, p, sizeof(*p));
-		delete p;
-	}
+	ARC4Stir *p;
+	const ARC4Stir *q = reinterpret_cast<const ARC4Stir *>(oldctx->ctx);
+	if (flags & DREW_PRNG_FIXED)
+		p = new (newctx->ctx) ARC4Stir(*q);
 	else
-		*newctx = p;
+		p = new ARC4Stir(*q);
+	newctx->ctx = p;
+	newctx->functbl = oldctx->functbl;
 	return 0;
 }
 
-static int a4s_seed(void *ctx, const uint8_t *key, size_t len, size_t entropy)
+static int a4s_seed(drew_prng_t *ctx, const void *key, size_t len,
+		size_t entropy)
 {
-	drew::ARC4Stir *p = reinterpret_cast<drew::ARC4Stir *>(ctx);
-	p->AddRandomData(key, len, entropy);
+	drew::ARC4Stir *p = reinterpret_cast<drew::ARC4Stir *>(ctx->ctx);
+	p->AddRandomData(reinterpret_cast<const uint8_t *>(key), len, entropy);
 	return 0;
 }
 
-static int a4s_bytes(void *ctx, uint8_t *out, size_t len)
+static int a4s_bytes(drew_prng_t *ctx, void *out, size_t len)
 {
-	drew::ARC4Stir *p = reinterpret_cast<drew::ARC4Stir *>(ctx);
-	p->GetBytes(out, len);
+	drew::ARC4Stir *p = reinterpret_cast<drew::ARC4Stir *>(ctx->ctx);
+	p->GetBytes(reinterpret_cast<uint8_t *>(out), len);
 	return 0;
 }
 
-static int a4s_fini(void **ctx, int flags)
+static int a4s_entropy(const drew_prng_t *ctx)
 {
-	drew::ARC4Stir *p = reinterpret_cast<drew::ARC4Stir *>(*ctx);
-	if (flags & DREW_PRNG_FINI_NO_DEALLOC)
+	const drew::ARC4Stir *p =
+		reinterpret_cast<const drew::ARC4Stir *>(ctx->ctx);
+	return p->GetEntropyAvailable();
+}
+
+static int a4s_fini(drew_prng_t *ctx, int flags)
+{
+	drew::ARC4Stir *p = reinterpret_cast<drew::ARC4Stir *>(ctx->ctx);
+	if (flags & DREW_PRNG_FIXED)
 		p->~ARC4Stir();
 	else {
 		delete p;
-		*ctx = NULL;
+		ctx->ctx = NULL;
 	}
 	return 0;
 }
 
-static int a4s_test(void *, drew_loader_t *)
+static int a4s_test(void *, const drew_loader_t *)
 {
 	using namespace drew;
 
 	return -DREW_ERR_NOT_IMPL;
 }
 
-	PLUGIN_FUNCTBL(arc4stir, a4s_info, a4s_init, a4s_clone, a4s_fini, a4s_seed, a4s_bytes, a4s_test);
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(arc4stir, "ARC4Stir")
 	PLUGIN_DATA_END()

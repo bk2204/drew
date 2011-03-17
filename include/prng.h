@@ -18,22 +18,17 @@
  * block of memory, such as locked memory.
  */
 #define DREW_PRNG_INTSIZE 2
-/* This value is true if the generator must be seeded before use. */
+/* This value is true if the generator can be seeded. */
 #define DREW_PRNG_SEEDABLE 3
+/* This value is true if the generator must be seeded before use. */
+#define DREW_PRNG_MUST_SEED 4
 /* This value is true if the generator blocks when entropy is exhausted. */
-#define DREW_PRNG_BLOCKING 4
-/* The number of *bits* of entropy remaining in the pool, if available. */
-#define DREW_PRNG_ENTROPY 5
+#define DREW_PRNG_BLOCKING 5
 
 /* This bit is a flag indicating that the new context should be copied into
  * already-existing memory at *newctx.
  */
-#define DREW_PRNG_INIT_FIXED  1
-#define DREW_PRNG_CLONE_FIXED 1
-/* This bit is a flag indicating that the memory storing the context should not
- * be freed because the context was created with INIT_FIXED or CLONE_FIXED.
- */
-#define DREW_PRNG_FINI_NO_DEALLOC 1
+#define DREW_PRNG_FIXED  1
 
 typedef struct {
 	int (*info)(int op, void *p);
@@ -45,6 +40,28 @@ typedef struct {
 	int (*test)(void *, drew_loader_t *);
 } drew_prng_functbl0_t;
 typedef drew_prng_functbl0_t drew_prng_functbl1_t;
-typedef drew_prng_functbl1_t drew_prng_functbl_t;
+
+struct drew_prng_s;
+typedef struct drew_prng_s drew_prng_t;
+
+typedef struct {
+	int (*info)(int op, void *p);
+	int (*init)(drew_prng_t *, int, const drew_loader_t *,
+			const drew_param_t *);
+	int (*clone)(drew_prng_t *, const drew_prng_t *, int);
+	int (*fini)(drew_prng_t *, int);
+	int (*seed)(drew_prng_t *, const void *, size_t, size_t);
+	int (*bytes)(drew_prng_t *, void *, size_t);
+	int (*entropy)(const drew_prng_t *);
+	int (*test)(void *, const drew_loader_t *);
+} drew_prng_functbl2_t;
+
+typedef drew_prng_functbl2_t drew_prng_functbl_t;
+
+struct drew_prng_s {
+	void *ctx;
+	const drew_prng_functbl_t *functbl;
+	void *priv; // unused
+};
 
 #endif
