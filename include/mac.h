@@ -26,12 +26,7 @@
 /* This bit is a flag indicating that the new context should be copied into
  * already-existing memory at *newctx.
  */
-#define DREW_MAC_INIT_FIXED  1
-#define DREW_MAC_CLONE_FIXED 1
-/* This bit is a flag indicating that the memory storing the context should not
- * be freed because the context was created with INIT_FIXED or CLONE_FIXED.
- */
-#define DREW_MAC_FINI_NO_DEALLOC 1
+#define DREW_MAC_FIXED  1
 
 typedef struct {
 	int (*info)(int op, void *p);
@@ -44,6 +39,27 @@ typedef struct {
 	int (*test)(void *, drew_loader_t *);
 } drew_mac_functbl0_t;
 typedef drew_mac_functbl0_t drew_mac_functbl1_t;
-typedef drew_mac_functbl1_t drew_mac_functbl_t;
+
+struct drew_mac_s;
+typedef struct drew_mac_s drew_mac_t;
+
+typedef struct {
+	int (*info)(int op, void *p);
+	int (*init)(drew_mac_t *, int, const drew_loader_t *, const drew_param_t *);
+	int (*clone)(drew_mac_t *, const drew_mac_t *, int);
+	int (*fini)(drew_mac_t *, int);
+	int (*setkey)(drew_mac_t *, const void *, size_t);
+	int (*update)(drew_mac_t *, const void *, size_t);
+	int (*updatefast)(drew_mac_t *, const void *, size_t);
+	int (*final)(drew_mac_t *, void *, int);
+	int (*test)(void *, const drew_loader_t *);
+} drew_mac_functbl2_t;
+typedef drew_mac_functbl2_t drew_mac_functbl_t;
+
+struct drew_mac_s {
+	void *ctx;
+	const drew_mac_functbl_t *functbl;
+	void *priv; // unused
+};
 
 #endif

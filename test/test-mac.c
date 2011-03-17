@@ -38,10 +38,9 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		const void *tbl, int chunk, int nchunks)
 {
 	int i, keysz = 32, resultsz = 512;
-	void *ctx;
 	uint8_t *buf, *key, *result;
 	struct timespec cstart, cend;
-	const drew_mac_functbl_t *functbl = tbl;
+	drew_mac_t ctx;
 	drew_param_t param;
 
 	if (!algo)
@@ -63,14 +62,16 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	if (!result)
 		return ENOMEM;
 
+	ctx.functbl = tbl;
+
 	clock_gettime(USED_CLOCK, &cstart);
-	functbl->init(&ctx, NULL, 0, ldr, &param);
-	functbl->setkey(ctx, key, keysz);
+	ctx.functbl->init(&ctx, 0, ldr, &param);
+	ctx.functbl->setkey(&ctx, key, keysz);
 	for (i = 0; i < nchunks; i++)
-		functbl->update(ctx, buf, chunk);
-	functbl->final(ctx, result, 0);
+		ctx.functbl->update(&ctx, buf, chunk);
+	ctx.functbl->final(&ctx, result, 0);
 	clock_gettime(USED_CLOCK, &cend);
-	functbl->fini(&ctx, 0);
+	ctx.functbl->fini(&ctx, 0);
 
 	free(buf);
 	free(key);
