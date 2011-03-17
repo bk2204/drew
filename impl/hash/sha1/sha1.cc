@@ -19,15 +19,15 @@
 #include "hash-plugin.hh"
 
 extern "C" {
-PLUGIN_STRUCTURE(sha1, drew::SHA1, SHA1)
-PLUGIN_STRUCTURE(sha0, drew::SHA0, SHA0)
+PLUGIN_STRUCTURE(sha1, SHA1)
+PLUGIN_STRUCTURE(sha0, SHA0)
 PLUGIN_DATA_START()
 PLUGIN_DATA(sha1, "SHA-1")
 PLUGIN_DATA(sha0, "SHA-0")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE(sha1)
 
-static int sha1test(void *, drew_loader_t *)
+static int sha1test(void *, const drew_loader_t *)
 {
 	int res = 0;
 
@@ -56,7 +56,7 @@ static int sha1test(void *, drew_loader_t *)
 	return res;
 }
 
-static int sha0test(void *, drew_loader_t *)
+static int sha0test(void *, const drew_loader_t *)
 {
 	int res = 0;
 

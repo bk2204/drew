@@ -59,6 +59,10 @@ class Hash
 				Transform(data);
 			memcpy(buf, data, len);
 		}
+		virtual void UpdateFast(const uint8_t *data, size_t len)
+		{
+			return Update(data, len);
+		}
 		virtual void Pad()
 		{
 			T len[2];

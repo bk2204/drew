@@ -65,32 +65,28 @@ static void drew_impl_libmd_init(void)
 	pthread_mutex_unlock(&drew_impl_libmd__mutex);
 }
 
-struct context {
-	void *ctx;
-};
-
 #define CONCAT(prefix, suffix) prefix ## suffix
 #define INTERFACE(prefix, name) \
 \
-void prefix ## Init(struct context *ctx) \
+void prefix ## Init(drew_hash_t *ctx) \
 { \
 	drew_impl_libmd_init(); \
-	(plugins[CONCAT(PLUGIN_, name)].tbl->init)(&ctx->ctx, NULL, 0, NULL, NULL); \
+	(plugins[CONCAT(PLUGIN_, name)].tbl->init)(ctx, 0, NULL, NULL); \
 } \
  \
-void prefix ## Update(struct context *ctx, const uint8_t *data, size_t len) \
+void prefix ## Update(drew_hash_t *ctx, const uint8_t *data, size_t len) \
 { \
-	(plugins[CONCAT(PLUGIN_, name)].tbl->update)(ctx->ctx, data, len); \
+	(ctx->functbl->update)(ctx, data, len); \
 } \
  \
-void prefix ## Pad(struct context *ctx) \
+void prefix ## Pad(drew_hash_t *ctx) \
 { \
-	(plugins[CONCAT(PLUGIN_, name)].tbl->pad)(ctx->ctx); \
+	(ctx->functbl->pad)(ctx); \
 } \
  \
-void prefix ## Final(uint8_t *digest, struct context *ctx) \
+void prefix ## Final(uint8_t *digest, drew_hash_t *ctx) \
 { \
-	(plugins[CONCAT(PLUGIN_, name)].tbl->final)(ctx->ctx, digest, 0); \
+	(ctx->functbl->final)(ctx, digest, 0); \
 } \
  \
 void prefix ## Transform(void *state, const uint8_t *block) \
@@ -99,14 +95,14 @@ void prefix ## Transform(void *state, const uint8_t *block) \
 	(plugins[CONCAT(PLUGIN_, name)].tbl->transform)(NULL, state, block); \
 } \
  \
-char *prefix ## End(struct context *ctx, char *buf) \
+char *prefix ## End(drew_hash_t *ctx, char *buf) \
 { \
 	const char *hex = "0123456789abcdef"; \
 	uint8_t *data; \
 	int size = 0; \
 	int i; \
  \
-	size = (plugins[CONCAT(PLUGIN_, name)].tbl->info)(DREW_HASH_SIZE, ctx->ctx); \
+	size = (plugins[CONCAT(PLUGIN_, name)].tbl->info)(DREW_HASH_SIZE, ctx); \
 	data = malloc(size); \
 	if (!data) \
 		goto errout; \
@@ -131,7 +127,7 @@ errout: \
  \
 char *prefix ## Data(const uint8_t *data, size_t len, char *buf) \
 { \
-	struct context ctx; \
+	drew_hash_t ctx; \
  \
 	prefix ## Init(&ctx); \
 	prefix ## Update(&ctx, data, len); \
@@ -141,7 +137,7 @@ char *prefix ## FileChunk(const char *filename, char *buf, off_t offset, \
 		off_t length) \
 { \
 	int fd = -1; \
-	struct context ctx; \
+	drew_hash_t ctx; \
  \
 	if (offset < 0) \
 		offset = 0; \

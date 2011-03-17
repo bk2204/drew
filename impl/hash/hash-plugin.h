@@ -17,10 +17,10 @@ extern "C" {
 #include <plugin.h>
 #include <hash.h>
 
-#define PLUGIN_FUNCTBL(prefix, info, init, update, pad, final, transform, test, fini, clone) \
+#define PLUGIN_FUNCTBL(prefix, info, init, update, updatefast, pad, final, transform, test, fini, clone) \
 \
 static drew_hash_functbl_t prefix ## functbl = { \
-	info, init, clone, fini, update, pad, final, transform, test \
+	info, init, clone, fini, update, updatefast, pad, final, transform, test \
 };
 
 struct plugin {

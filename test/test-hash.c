@@ -35,18 +35,17 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 	return print_test_results(functbl->test(NULL, ldr));
 }
 
-inline int test_speed_loop(const drew_hash_functbl_t *functbl, uint8_t *buf,
+inline int test_speed_loop(drew_hash_t *ctx, uint8_t *buf,
 		int chunk, int nchunks)
 {
 	int i;
-	void *ctx;
 
-	functbl->init(&ctx, NULL, 0, NULL, NULL);
+	ctx->functbl->init(ctx, 0, NULL, NULL);
 	for (i = 0; !framework_sigflag && i < nchunks; i++)
-		functbl->update(ctx, buf, chunk);
+		ctx->functbl->update(ctx, buf, chunk);
 	if (!framework_sigflag)
-		functbl->final(ctx, buf, 0);
-	functbl->fini(&ctx, 0);
+		ctx->functbl->final(ctx, buf, 0);
+	ctx->functbl->fini(ctx, 0);
 
 	return i;
 }
@@ -57,17 +56,19 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	int i;
 	uint8_t *buf;
 	struct timespec cstart, cend;
-	const drew_hash_functbl_t *functbl = tbl;
+	drew_hash_t ctx;
 	void *fwdata;
 
 	buf = calloc(chunk, 1);
 	if (!buf)
 		return ENOMEM;
 
+	ctx.functbl = tbl;
+
 	fwdata = framework_setup();
 
 	clock_gettime(USED_CLOCK, &cstart);
-	i = test_speed_loop(functbl, buf, chunk, nchunks);
+	i = test_speed_loop(&ctx, buf, chunk, nchunks);
 	clock_gettime(USED_CLOCK, &cend);
 
 	framework_teardown(fwdata);

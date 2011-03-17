@@ -18,13 +18,13 @@
 #include "hash-plugin.hh"
 
 extern "C" {
-PLUGIN_STRUCTURE(md4, drew::MD4, MD4)
+PLUGIN_STRUCTURE(md4, MD4)
 PLUGIN_DATA_START()
 PLUGIN_DATA(md4, "MD4")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE(md4)
 
-static int md4test(void *, drew_loader_t *)
+static int md4test(void *, const drew_loader_t *)
 {
 	int res = 0;
 

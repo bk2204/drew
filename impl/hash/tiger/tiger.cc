@@ -9,13 +9,13 @@
 #include "hash-plugin.hh"
 
 extern "C" {
-PLUGIN_STRUCTURE(tiger, drew::Tiger, Tiger)
+PLUGIN_STRUCTURE(tiger, Tiger)
 PLUGIN_DATA_START()
 PLUGIN_DATA(tiger, "Tiger")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE(tiger)
 
-static int tigertest(void *, drew_loader_t *)
+static int tigertest(void *, const drew_loader_t *)
 {
 	int res = 0;
 

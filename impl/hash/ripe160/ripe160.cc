@@ -19,13 +19,13 @@
 #include "hash-plugin.hh"
 
 extern "C" {
-PLUGIN_STRUCTURE(rmd160, drew::RIPEMD160, RIPEMD160)
+PLUGIN_STRUCTURE(rmd160, RIPEMD160)
 PLUGIN_DATA_START()
 PLUGIN_DATA(rmd160, "RIPEMD-160")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE(ripe160)
 
-static int rmd160test(void *, drew_loader_t *)
+static int rmd160test(void *, const drew_loader_t *)
 {
 	int res = 0;
 

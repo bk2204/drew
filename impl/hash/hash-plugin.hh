@@ -8,13 +8,30 @@
 #include "hash.h"
 #include "hash-plugin.h"
 
-#define PLUGIN_STRUCTURE(prefix, hname, uname) \
+#define PLUGIN_STRUCTURE(prefix, hname) \
+ \
+static int prefix ## info(int op, void *); \
+static int prefix ## init(drew_hash_t *ctx, int flags, const drew_loader_t *, \
+		const drew_param_t *); \
+static int prefix ## clone(drew_hash_t *newctx, const drew_hash_t *oldctx, \
+		int flags); \
+static int prefix ## update(drew_hash_t *ctx, const void *data, size_t len); \
+static int prefix ## updatefast(drew_hash_t *ctx, const void *data, size_t len); \
+static int prefix ## pad(drew_hash_t *ctx); \
+static int prefix ## final(drew_hash_t *ctx, void *digest, int flags); \
+static int prefix ## transform(const drew_hash_t *, void *state, \
+		const void *data); \
+static int prefix ## fini(drew_hash_t *ctx, int flags); \
+static int prefix ## test(void *, const drew_loader_t *); \
+ \
+PLUGIN_FUNCTBL(prefix, prefix ## info, prefix ## init, prefix ## update, prefix ## updatefast, prefix ## pad, prefix ## final, prefix ## transform, prefix ## test, prefix ## fini, prefix ## clone); \
  \
 static int prefix ## info(int op, void *) \
 { \
+	using namespace drew; \
 	switch (op) { \
 		case DREW_HASH_VERSION: \
-			return 1; \
+			return 2; \
 		case DREW_HASH_QUANTUM: \
 			return sizeof(hname::quantum_t); \
 		case DREW_HASH_SIZE: \
@@ -30,73 +47,87 @@ static int prefix ## info(int op, void *) \
 	} \
 } \
  \
-static int prefix ## init(void **ctx, void *q, int flags, drew_loader_t *, \
+static int prefix ## init(drew_hash_t *ctx, int flags, const drew_loader_t *, \
 		const drew_param_t *) \
 { \
-	hname *p = new hname; \
-	if (flags & DREW_HASH_INIT_FIXED) { \
-		memcpy(*ctx, p, sizeof(*p)); \
-		delete p; \
-	} \
+	using namespace drew; \
+	hname *p; \
+	if (flags & DREW_HASH_FIXED) \
+		p = new (ctx->ctx) hname; \
 	else \
-		*ctx = p; \
+		p = new hname; \
+	ctx->ctx = p; \
+	ctx->functbl = &prefix ## functbl; \
 	return 0; \
 } \
  \
-static int prefix ## clone(void **newctx, void *oldctx, int flags) \
+static int prefix ## clone(drew_hash_t *newctx, const drew_hash_t *oldctx, \
+		int flags) \
 { \
-	hname *p = new hname(*reinterpret_cast<hname *>(oldctx)); \
-	if (flags & DREW_HASH_CLONE_FIXED) { \
-		memcpy(*newctx, p, sizeof(*p)); \
-		delete p; \
-	} \
+	using namespace drew; \
+	hname *p; \
+	const hname *q = reinterpret_cast<const hname *>(oldctx->ctx); \
+	if (flags & DREW_HASH_FIXED) \
+		p = new (newctx->ctx) hname(*q); \
 	else \
-		*newctx = p; \
+		p = new hname(*q); \
+	newctx->ctx = p; \
+	newctx->functbl = oldctx->functbl; \
 	return 0; \
 } \
  \
-static int prefix ## update(void *ctx, const uint8_t *data, size_t len) \
+static int prefix ## update(drew_hash_t *ctx, const void *data, size_t len) \
 { \
-	hname *p = reinterpret_cast<hname *>(ctx); \
-	p->Update(data, len); \
+	using namespace drew; \
+	hname *p = reinterpret_cast<hname *>(ctx->ctx); \
+	p->Update(reinterpret_cast<const uint8_t *>(data), len); \
 	return 0; \
 } \
  \
-static int prefix ## pad(void *ctx) \
+static int prefix ## updatefast(drew_hash_t *ctx, const void *data, size_t len) \
 { \
-	hname *p = reinterpret_cast<hname *>(ctx); \
+	using namespace drew; \
+	hname *p = reinterpret_cast<hname *>(ctx->ctx); \
+	p->UpdateFast(reinterpret_cast<const uint8_t *>(data), len); \
+	return 0; \
+} \
+ \
+static int prefix ## pad(drew_hash_t *ctx) \
+{ \
+	using namespace drew; \
+	hname *p = reinterpret_cast<hname *>(ctx->ctx); \
 	p->Pad(); \
 	return 0; \
 } \
  \
-static int prefix ## final(void *ctx, uint8_t *digest, int flags) \
+static int prefix ## final(drew_hash_t *ctx, void *digest, int flags) \
 { \
-	hname *p = reinterpret_cast<hname *>(ctx); \
-	p->GetDigest(digest, flags & DREW_HASH_FINAL_NO_PAD); \
+	using namespace drew; \
+	hname *p = reinterpret_cast<hname *>(ctx->ctx); \
+	p->GetDigest(reinterpret_cast<uint8_t *>(digest), flags & DREW_HASH_FIXED); \
 	return 0; \
 } \
  \
-static int prefix ## transform(void *, void *state, const uint8_t *data) \
+static int prefix ## transform(const drew_hash_t *, void *state, \
+		const void *data) \
 { \
+	using namespace drew; \
 	hname::quantum_t *st = reinterpret_cast<hname::quantum_t *>(state); \
-	hname::Transform(st, data); \
+	hname::Transform(st, reinterpret_cast<const uint8_t *>(data)); \
 	return 0; \
 } \
  \
-static int prefix ## fini(void **ctx, int flags) \
+static int prefix ## fini(drew_hash_t *ctx, int flags) \
 { \
-	hname *p = reinterpret_cast<hname *>(*ctx); \
-	if (flags & DREW_HASH_FINI_NO_DEALLOC) \
-		p->~uname(); \
+	using namespace drew; \
+	hname *p = reinterpret_cast<hname *>(ctx->ctx); \
+	if (flags & DREW_HASH_FIXED) \
+		p->~hname(); \
 	else { \
 		delete p; \
-		*ctx = NULL; \
+		ctx->ctx = NULL; \
 	} \
 	return 0; \
-} \
- \
-static int prefix ## test(void *, drew_loader_t *); \
- \
-PLUGIN_FUNCTBL(prefix, prefix ## info, prefix ## init, prefix ## update, prefix ## pad, prefix ## final, prefix ## transform, prefix ## test, prefix ## fini, prefix ## clone);
+}
 
 #endif
