@@ -21,6 +21,14 @@
 #define ALIGNED_T
 #endif
 
+#if defined(__GNUC__)
+/* Enable the use of vector types.  If the processor supports vectorization, GCC
+ * will generate vectorized code.  If they are not, GCC will automatically
+ * generate equivalent non-vector code.
+ */
+#define VECTOR_T
+#endif
+
 #define STATIC_ASSERT(e) ((void)sizeof(char[1 - 2*!(e)]))
 
 #endif
