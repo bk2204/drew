@@ -7,15 +7,17 @@
 #include <mode.h>
 #include <block.h>
 #include <plugin.h>
+#include <util.h>
 
 #define DIM(x) (sizeof(x)/sizeof((x)[0]))
 
 struct ofb {
 	const drew_loader_t *ldr;
 	const drew_block_t *algo;
-	uint8_t *buf;
+	uint8_t buf[32] ALIGNED_T;
 	size_t blksize;
 	size_t boff;
+	size_t chunks;
 };
 
 static int ofb_info(int op, void *p);
@@ -26,6 +28,8 @@ static int ofb_setblock(drew_mode_t *ctx, const drew_block_t *algoctx);
 static int ofb_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len);
 static int ofb_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
+static int ofb_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len);
 static int ofb_fini(drew_mode_t *ctx, int flags);
 static int ofb_test(void *p, const drew_loader_t *ldr);
 static int ofb_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags);
@@ -33,6 +37,11 @@ static int ofb_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags);
 static const drew_mode_functbl_t ofb_functbl = {
 	ofb_info, ofb_init, ofb_clone, ofb_fini, ofb_setpad, ofb_setblock,
 	ofb_setiv, ofb_encrypt, ofb_encrypt, ofb_encrypt, ofb_encrypt,
+	ofb_test
+};
+static const drew_mode_functbl_t ofb_functblfast = {
+	ofb_info, ofb_init, ofb_clone, ofb_fini, ofb_setpad, ofb_setblock,
+	ofb_setiv, ofb_encrypt, ofb_encrypt, ofb_encryptfast, ofb_encryptfast,
 	ofb_test
 };
 
@@ -84,8 +93,10 @@ static int ofb_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 
 	c->algo = algoctx;
 	c->blksize = c->algo->functbl->info(DREW_BLOCK_BLKSIZE, NULL);
-	if (!(c->buf = malloc(c->blksize)))
-		return -ENOMEM;
+	if (c->blksize == 8 || c->blksize == 16) {
+		c->chunks = DREW_MODE_ALIGNMENT / c->blksize;
+		ctx->functbl = &ofb_functblfast;
+	}
 
 	return 0;
 }
@@ -141,6 +152,36 @@ static int ofb_encrypt(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 	}
 	return 0;
 }
+
+struct aligned {
+	uint8_t data[DREW_MODE_ALIGNMENT] ALIGNED_T;
+};
+
+static int ofb_encryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
+		size_t len)
+{
+	struct ofb *c = ctx->ctx;
+	struct aligned *out = (struct aligned *)outp;
+	const struct aligned *in = (const struct aligned *)inp;
+
+	len /= DREW_MODE_ALIGNMENT;
+	for (size_t iters = 0; iters < len; iters++, in++, out++) {
+		c->algo->functbl->encryptfast(c->algo, c->buf, c->buf, c->chunks);
+#ifdef VECTOR_T
+		typedef int vector_t __attribute__ ((vector_size (16)));
+		vector_t bufv, inv;
+		memcpy(&bufv, c->buf, sizeof(vector_t));
+		memcpy(&inv, in->data, sizeof(vector_t));
+		bufv ^= inv;
+		memcpy(out->data, &bufv, sizeof(vector_t));
+#else
+		for (int i = 0; i < DREW_MODE_ALIGNMENT; i++)
+			out->data[i] = c->buf[i] ^ in->data[i];
+#endif
+	}
+	return 0;
+}
+
 
 struct test {
 	const uint8_t *key;
