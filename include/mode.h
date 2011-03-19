@@ -8,6 +8,11 @@
 #include "param.h"
 #include "plugin.h"
 
+#define DREW_MODE_ALIGNMENT 16
+#if DREW_BLOCK_ALIGNMENT != DREW_MODE_ALIGNMENT
+#error "mismatched alignment values"
+#endif
+
 /* The ABI version of the hash interface. */
 #define DREW_MODE_VERSION 0 /* Not implemented. */
 /* The number of bytes per quantum. */

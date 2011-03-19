@@ -7,6 +7,8 @@
 #include "param.h"
 #include "plugin.h"
 
+#define DREW_BLOCK_ALIGNMENT 16
+
 /* The ABI version of the hash interface. */
 #define DREW_BLOCK_VERSION 0 /* Not implemented. */
 /* The number of bytes per quantum. */
