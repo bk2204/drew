@@ -106,7 +106,7 @@ static int prefix ## final(drew_hash_t *ctx, uint8_t *digest, int flags) \
 { \
 	using namespace drew; \
 	hname *p = reinterpret_cast<hname *>(ctx->ctx); \
-	p->GetDigest(digest, flags & DREW_HASH_FIXED); \
+	p->GetDigest(digest, flags & DREW_HASH_NO_PAD); \
 	return 0; \
 } \
  \
