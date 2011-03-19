@@ -43,8 +43,8 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	drew_mode_t mctx;
 	uint8_t *buf, *buf2, *key;
 	struct timespec cstart, cend;
-	const drew_mode_functbl_t *functbl = tbl;
 	const drew_block_functbl_t *ftbl;
+	int (*encrypt)(drew_mode_t *, void *, const void *, size_t);
 	int id;
 
 	if (!algo)
@@ -60,8 +60,7 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 
 	blksz = ftbl->info(DREW_BLOCK_BLKSIZE, NULL);
 	keysz = ftbl->info(DREW_BLOCK_KEYSIZE, &keysz);
-	buf = calloc(chunk, 1);
-	if (!buf)
+	if (posix_memalign((void **)&buf, DREW_MODE_ALIGNMENT, chunk))
 		return ENOMEM;
 
 	buf2 = calloc(blksz, 1);
@@ -72,14 +71,16 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	if (!keysz)
 		return ENOMEM;
 
+	mctx.functbl = tbl;
 	clock_gettime(USED_CLOCK, &cstart);
 	ftbl->init(&bctx, 0, NULL, NULL);
 	ftbl->setkey(&bctx, key, keysz, 0);
-	functbl->init(&mctx, 0, ldr, NULL);
-	functbl->setiv(&mctx, buf2, blksz);
-	functbl->setblock(&mctx, &bctx);
+	mctx.functbl->init(&mctx, 0, ldr, NULL);
+	mctx.functbl->setiv(&mctx, buf2, blksz);
+	mctx.functbl->setblock(&mctx, &bctx);
+	encrypt = (chunk & 15) ? mctx.functbl->encrypt : mctx.functbl->encryptfast;
 	for (i = 0; i < nchunks; i++)
-		functbl->encrypt(&mctx, buf, buf, chunk);
+		encrypt(&mctx, buf, buf, chunk);
 	clock_gettime(USED_CLOCK, &cend);
 
 	free(buf);
