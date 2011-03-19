@@ -1,28 +1,7 @@
 #ifndef ENDIAN_HH
 #define ENDIAN_HH
 
-#include <endian.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
-
-#include <utility>
-
-#if defined(__i386__) || defined(__amd64__)
-#define NEEDS_ALIGNMENT 0
-#elif defined(__sparc) || defined(sparc)
-#define NEEDS_ALIGNMENT 1
-#else
-#define NEEDS_ALIGNMENT 1
-#endif
-
-#if defined(__GNUC__)
-#define ALIGNED_T __attribute__((aligned(16)))
-#else
-#define ALIGNED_T
-#endif
-
-#define STATIC_ASSERT(e) ((void)sizeof(char[1 - 2*!(e)]))
+#include "util.h"
 
 template<class T, size_t N>
 struct AlignedBlock
