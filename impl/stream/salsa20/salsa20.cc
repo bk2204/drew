@@ -12,6 +12,21 @@
 
 extern "C" {
 
+static int salsa20_test(void *, const drew_loader_t *);
+static int salsa20_info(int op, void *p);
+static int salsa20_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
+		const drew_param_t *);
+static int salsa20_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
+		int flags);
+static int salsa20_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len);
+static int salsa20_setkey(drew_stream_t *ctx, const uint8_t *key, size_t len,
+		int mode);
+static int salsa20_encrypt(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len);
+static int salsa20_fini(drew_stream_t *ctx, int flags);
+
+PLUGIN_FUNCTBL(salsa20, salsa20_info, salsa20_init, salsa20_setiv, salsa20_setkey, salsa20_encrypt, salsa20_encrypt, salsa20_encrypt, salsa20_encrypt, salsa20_test, salsa20_fini, salsa20_clone);
+
 static int salsa20_maintenance_test(void)
 {
 	using namespace drew;
@@ -33,7 +48,7 @@ static int salsa20_maintenance_test(void)
 	return res;
 }
 
-static int salsa20_test(void *, drew_loader_t *)
+static int salsa20_test(void *, const drew_loader_t *)
 {
 	using namespace drew;
 
@@ -66,66 +81,66 @@ static int salsa20_info(int op, void *p)
 	}
 }
 
-static int salsa20_init(void **ctx, void *data, int flags, drew_loader_t *, const drew_param_t *)
+static int salsa20_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
+		const drew_param_t *)
 {
-	drew::Salsa20 *p = new drew::Salsa20;
-	if (flags & DREW_STREAM_INIT_FIXED) {
-		memcpy(*ctx, p, sizeof(*p));
-		delete p;
-	}
+	drew::Salsa20 *p;
+	if (flags & DREW_STREAM_FIXED)
+		p = new (ctx->ctx) drew::Salsa20;
 	else
-		*ctx = p;
+		p = new drew::Salsa20;
+	ctx->ctx = p;
+	ctx->functbl = &salsa20functbl;
 	return 0;
 }
 
-static int salsa20_clone(void **newctx, void *oldctx, int flags)
+static int salsa20_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
+		int flags)
 {
-	drew::Salsa20 *p =
-		new drew::Salsa20(*reinterpret_cast<drew::Salsa20 *>(oldctx));
-	if (flags & DREW_STREAM_CLONE_FIXED) {
-		memcpy(*newctx, p, sizeof(*p));
-		delete p;
-	}
+	drew::Salsa20 *p;
+	const drew::Salsa20 *q = reinterpret_cast<drew::Salsa20 *>(oldctx->ctx);
+	if (flags & DREW_STREAM_FIXED)
+		p = new (newctx->ctx) drew::Salsa20(*q);
 	else
-		*newctx = p;
+		p = new drew::Salsa20(*q);
+	newctx->ctx = p;
+	newctx->functbl = oldctx->functbl;
 	return 0;
 }
 
-static int salsa20_setiv(void *ctx, const uint8_t *key, size_t len)
+static int salsa20_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len)
 {
-	drew::Salsa20 *p = reinterpret_cast<drew::Salsa20 *>(ctx);
+	drew::Salsa20 *p = reinterpret_cast<drew::Salsa20 *>(ctx->ctx);
 	p->SetNonce(key, len);
 	return 0;
 }
 
-static int salsa20_setkey(void *ctx, const uint8_t *key, size_t len, int mode)
+static int salsa20_setkey(drew_stream_t *ctx, const uint8_t *key, size_t len,
+		int mode)
 {
-	drew::Salsa20 *p = reinterpret_cast<drew::Salsa20 *>(ctx);
+	drew::Salsa20 *p = reinterpret_cast<drew::Salsa20 *>(ctx->ctx);
 	p->SetKey(key, len);
 	return 0;
 }
 
-static int salsa20_encrypt(void *ctx, uint8_t *out, const uint8_t *in,
+static int salsa20_encrypt(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len)
 {
-	drew::Salsa20 *p = reinterpret_cast<drew::Salsa20 *>(ctx);
+	drew::Salsa20 *p = reinterpret_cast<drew::Salsa20 *>(ctx->ctx);
 	p->Encrypt(out, in, len);
 	return 0;
 }
 
-static int salsa20_fini(void **ctx, int flags)
+static int salsa20_fini(drew_stream_t *ctx, int flags)
 {
-	drew::Salsa20 *p = reinterpret_cast<drew::Salsa20 *>(*ctx);
-	if (flags & DREW_STREAM_FINI_NO_DEALLOC)
+	drew::Salsa20 *p = reinterpret_cast<drew::Salsa20 *>(ctx->ctx);
+	if (flags & DREW_STREAM_FIXED)
 		p->~Salsa20();
-	else {
+	else 
 		delete p;
-		*ctx = NULL;
-	}
 	return 0;
 }
 
-PLUGIN_FUNCTBL(salsa20, salsa20_info, salsa20_init, salsa20_setiv, salsa20_setkey, salsa20_encrypt, salsa20_encrypt, salsa20_test, salsa20_fini, salsa20_clone);
 PLUGIN_DATA_START()
 PLUGIN_DATA(salsa20, "Salsa20")
 PLUGIN_DATA_END()

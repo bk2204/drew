@@ -25,13 +25,13 @@
  * permit a nonce, an error will be returned.
  */
 #define DREW_STREAM_IVSIZE 3
+/* The amount of data processed at once in bytes. */
+#define DREW_STREAM_BLKSIZE 4
 
 /* This bit is a flag to the clone function indicating that the new context
  * should be copied into already-existing memory at *newctx.
  */
-#define DREW_STREAM_INIT_FIXED 1
-#define DREW_STREAM_CLONE_FIXED 1
-#define DREW_STREAM_FINI_NO_DEALLOC 1
+#define DREW_STREAM_FIXED 1
 /* These values are passed to setkey to determine the potential usage of the
  * context.  Set bit 0 to disable decryption and set bit 1 to disable
  * encryption.
@@ -53,6 +53,31 @@ typedef struct {
 } drew_stream_functbl1_t;
 
 typedef drew_stream_functbl1_t drew_stream_functbl0_t;
-typedef drew_stream_functbl1_t drew_stream_functbl_t;
+
+struct drew_stream_s;
+typedef struct drew_stream_s drew_stream_t;
+
+typedef struct {
+	int (*info)(int op, void *p);
+	int (*init)(drew_stream_t *,  int, const drew_loader_t *,
+			const drew_param_t *);
+	int (*clone)(drew_stream_t *, const drew_stream_t *, int);
+	int (*fini)(drew_stream_t *, int);
+	int (*setiv)(drew_stream_t *, const uint8_t *, size_t);
+	int (*setkey)(drew_stream_t *, const uint8_t *, size_t, int);
+	int (*encrypt)(drew_stream_t *, uint8_t *, const uint8_t *, size_t);
+	int (*decrypt)(drew_stream_t *, uint8_t *, const uint8_t *, size_t);
+	int (*encryptfast)(drew_stream_t *, uint8_t *, const uint8_t *, size_t);
+	int (*decryptfast)(drew_stream_t *, uint8_t *, const uint8_t *, size_t);
+	int (*test)(void *, const drew_loader_t *);
+} drew_stream_functbl2_t;
+
+typedef drew_stream_functbl2_t drew_stream_functbl_t;
+
+struct drew_stream_s {
+	void *ctx;
+	const drew_stream_functbl_t *functbl;
+	void *priv; // unused
+};
 
 #endif

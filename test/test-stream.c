@@ -38,12 +38,13 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		const void *tbl, int chunk, int nchunks)
 {
 	int i, keysz = 0;
-	void *ctx;
+	drew_stream_t ctx;
 	uint8_t *buf, *buf2, *key;
 	struct timespec cstart, cend;
-	const drew_stream_functbl_t *functbl = tbl;
+	
+	ctx.functbl = tbl;
 
-	keysz = functbl->info(DREW_STREAM_KEYSIZE, &keysz);
+	keysz = ctx.functbl->info(DREW_STREAM_KEYSIZE, &keysz);
 	buf = calloc(chunk, 1);
 	if (!buf)
 		return ENOMEM;
@@ -57,12 +58,12 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		return ENOMEM;
 
 	clock_gettime(USED_CLOCK, &cstart);
-	functbl->init(&ctx, NULL, 0, NULL, NULL);
-	functbl->setkey(ctx, key, keysz, DREW_STREAM_MODE_ENCRYPT);
+	ctx.functbl->init(&ctx, 0, NULL, NULL);
+	ctx.functbl->setkey(&ctx, key, keysz, DREW_STREAM_MODE_ENCRYPT);
 	for (i = 0; i < nchunks; i++)
-		functbl->encrypt(ctx, buf2, buf, chunk);
+		ctx.functbl->encrypt(&ctx, buf2, buf, chunk);
 	clock_gettime(USED_CLOCK, &cend);
-	functbl->fini(&ctx, 0);
+	ctx.functbl->fini(&ctx, 0);
 
 	free(buf);
 
