@@ -44,7 +44,7 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	uint8_t *buf, *buf2, *key;
 	struct timespec cstart, cend;
 	const drew_block_functbl_t *ftbl;
-	int (*encrypt)(drew_mode_t *, void *, const void *, size_t);
+	int (*encrypt)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
 	int id;
 
 	if (!algo)
