@@ -1,0 +1,140 @@
+API
+===
+
+The items in this document will be more formally included in the soon-to-exist
+DocBook documentation.
+
+How do I use this?
+------------------
+
+Include in your program the file plugin.h and the other .h files corresponding
+to the type of data you want to process.
+
+Create a new loader with drew_loader_new.  Call drew_loader_load_plugin with
+plugin and path NULL.  This will load all of the plugins that are available and
+linked into your program (usually through libdrew-impl).  You can also load
+plugins by calling drew_loader_load_plugin with plugin and path arguments.  The
+plugin argument is a filename, not an algorithm name.
+
+You can then look up plugins by calling drew_loader_lookup_by_name.  Specify a
+name and a range [start, end).  You'll probably want to use 0 and -1.  The
+function will return a non-negative algorithm ID or a negative error.  Once you
+know the algorithm ID, you can call drew_loader_get_functbl to get a function
+table.
+
+A function table is a list of entry points into the plugin.  All plugins of the
+same type (e.g. block ciphers) have the same function table.  Each of the
+sections below tell you how to use a given set of algorithms.  In each case, the
+info function is guaranteed to be the first function in a function table.
+
+Once you're done, don't forget to call drew_loader_free to free the loader
+state.
+
+How do I use a block cipher?
+----------------------------
+
+Start with the steps above.  It is assumed you have a loader called +ldr+ and a
+function table called +tbl+.
+
+[source,c]
+----
+int do_crypto(const drew_loader_t *ldr, const void *functbl, const uint8_t *key,
+	size_t keysz, uint8_t *dataout, const uint8_t *datain, size_t datasz)
+{
+	drew_block_t blk;
+	int blksz;
+
+	blk.functbl = tbl;
+	blksz = blk.functbl->info(DREW_BLOCK_BLKSIZE, &blksz);
+
+	assert((datasz % blksz) == 0);
+
+	blk.functbl->init(&blk, 0, ldr, NULL);
+	blk.functbl->setkey(&blk, key, keysz);
+	for (size_t i = 0; i < datasz/blksz; i++, datain += blksz, dataout += blksz)
+		blk.functbl->encrypt(&blk, dataout, datain);
+	blk.functbl->fini(&blk, 0);
+	// blk.ctx is no longer valid, although blk.functbl is.
+}
+----
+
+How do I use the parameter passing functionality?
+-------------------------------------------------
+
+Some algorithms require parameters.  You can include param.h and use
+objects of drew_param_t.  They form a linked list; the last item will have its
+next member set to NULL.
+
+What about the encryptfast and decryptfast interfaces?
+------------------------------------------------------
+
+The API for the encryptfast and decryptfast interfaces requires that the input
+and output data are aligned to a 16-byte boundary.  The amount of data to
+encrypt must be a multiple of 16.  For algorithms with a block size (including
+some stream ciphers that generate blocks of keystream material), the amount of
+data must also be a multiple of the block size.
+
+The size_t argument to these functions differs in meaning between types of
+algorithms.  If the normal encrypt and decrypt interfaces do not have a size_t
+argument (i.e. block ciphers), then the argument to the encryptfast and
+decryptfast routines is the number of blocks to process.  If the normal encrypt
+and decrypt interfaces _do_ have a size_t argument (i.e. stream ciphers), the
+argument to the fast routines is the number of bytes to process.
+
+If the first argument (the algorithm context) is const, then the
+use of encryptfast and decryptfast routines may be mixed freely with calls to
+encrypt and decrypt.  If it is not, then encryptfast and decryptfast calls must
+not occur after encrypt and decrypt calls.
+
+The presence of encryptfast and decryptfast routines is mandatory if the
+function table defines them.  In some cases, these routines may be unoptimized
+or simply call the encrypt and decrypt routines.
+
+What other things should I be aware of?
+---------------------------------------
+
+* You cannot mix calls to encrypt routines and decrypt routines on the same
+  context unless the context in question is const.
+
+* You must call setkey before setiv.
+
+* Amounts of entropy for PRNGs is in _bits_, not bytes.  Bytes are too coarse an
+  amount of data to estimate entropy.
+
+* In some cases, the info function may return -DREW_ERR_MORE_INFO.  In that
+  case, use the void * argument to pass a drew_param_t linked list with a
+	context with name "context" and a loader with name "loader", in addition to
+	any other parameters that would normally be passed to the init function.
+
+Why do some encryption functions use const and others do not?
+-------------------------------------------------------------
+
+A given block cipher (when using the same key) will convert identical input
+blocks to the same output block.  Any information it needs to do so is a
+function of the key; calling the setkey function will do all applicable setup.
+Since all the setup has been done in the setkey function, the context can be
+const.
+
+Stream ciphers, on the other hand, generate a keystream that is combined with
+the data to form the output.  In most such algorithms, the keystream generated
+is dependent on internal state that is constantly changing.  Thus a context
+cannot be const because then the algorithm could not modify its internal state.
+
+What thread safety guarantees do you provide?
+---------------------------------------------
+
+A const object may be safely used by multiple threads.  If any thread accesses
+an object in a non-const way, it must either be used only by that thread or
+protected with an external mutex.
+
+What shouldn't I do?
+--------------------
+
+* Don't #define DREW_IN_BUILD.
+* Don't assume that the function table (functbl attribute) of a context will
+  never change.  Only the info, test, and init functions are guaranteed not to
+	change from the function table the loader passes.  Some algorithms may
+	replace the function table in order to enable high-performance implementations
+	when available.
+
+// vim: set ft=asciidoc:
