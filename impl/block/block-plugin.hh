@@ -98,14 +98,14 @@ static int prefix ## init(drew_block_t *ctx, int flags, \
 		const drew_loader_t *, const drew_param_t *); \
 static int prefix ## clone(drew_block_t *newctx, const drew_block_t *oldctx, \
 		int flags); \
-static int prefix ## setkey(drew_block_t *ctx, const void *key, size_t len, \
+static int prefix ## setkey(drew_block_t *ctx, const uint8_t *key, size_t len, \
 		int mode); \
-static int prefix ## encrypt(const drew_block_t *ctx, void *out, \
-		const void *in); \
-static int prefix ## decrypt(const drew_block_t *ctx, void *out, \
-		const void *in); \
-static int prefix ## encryptfast(const drew_block_t *ctx, void *out, const void *in, size_t n); \
-static int prefix ## decryptfast(const drew_block_t *ctx, void *out, const void *in, size_t n); \
+static int prefix ## encrypt(const drew_block_t *ctx, uint8_t *out, \
+		const uint8_t *in); \
+static int prefix ## decrypt(const drew_block_t *ctx, uint8_t *out, \
+		const uint8_t *in); \
+static int prefix ## encryptfast(const drew_block_t *ctx, uint8_t *out, const uint8_t *in, size_t n); \
+static int prefix ## decryptfast(const drew_block_t *ctx, uint8_t *out, const uint8_t *in, size_t n); \
 static int prefix ## fini(drew_block_t *ctx, int flags); \
 static int prefix ## test(void *, const drew_loader_t *); \
  \
@@ -140,29 +140,29 @@ static int prefix ## clone(drew_block_t *newctx, const drew_block_t *oldctx, \
 	return 0; \
 } \
  \
-static int prefix ## setkey(drew_block_t *ctx, const void *key, size_t len, \
+static int prefix ## setkey(drew_block_t *ctx, const uint8_t *key, size_t len, \
 		int mode) \
 { \
 	using namespace drew; \
 	bname *p = reinterpret_cast<bname *>(ctx->ctx); \
-	return p->SetKey((const uint8_t *)key, len); \
+	return p->SetKey(key, len); \
 } \
  \
-static int prefix ## encrypt(const drew_block_t *ctx, void *out, const void *in) \
+static int prefix ## encrypt(const drew_block_t *ctx, uint8_t *out, const uint8_t *in) \
 { \
 	using namespace drew; \
 	const bname *p = reinterpret_cast<const bname *>(ctx->ctx); \
-	return p->Encrypt((uint8_t *)out, (const uint8_t *)in); \
+	return p->Encrypt(out, in); \
 } \
  \
-static int prefix ## decrypt(const drew_block_t *ctx, void *out, const void *in) \
+static int prefix ## decrypt(const drew_block_t *ctx, uint8_t *out, const uint8_t *in) \
 { \
 	using namespace drew; \
 	const bname *p = reinterpret_cast<const bname *>(ctx->ctx); \
-	return p->Decrypt((uint8_t *)out, (const uint8_t *)in); \
+	return p->Decrypt(out, in); \
 } \
  \
-static int prefix ## encryptfast(const drew_block_t *ctx, void *out, const void *in, size_t n) \
+static int prefix ## encryptfast(const drew_block_t *ctx, uint8_t *out, const uint8_t *in, size_t n) \
 { \
 	using namespace drew; \
 	typedef bname::FastBlock FastBlock; \
@@ -170,7 +170,7 @@ static int prefix ## encryptfast(const drew_block_t *ctx, void *out, const void 
 	return p->EncryptFast((FastBlock *)out, (const FastBlock *)in, n); \
 } \
  \
-static int prefix ## decryptfast(const drew_block_t *ctx, void *out, const void *in, size_t n) \
+static int prefix ## decryptfast(const drew_block_t *ctx, uint8_t *out, const uint8_t *in, size_t n) \
 { \
 	using namespace drew; \
 	typedef bname::FastBlock FastBlock; \

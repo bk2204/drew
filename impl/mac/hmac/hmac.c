@@ -93,7 +93,7 @@ static int hmac_fini(drew_mac_t *ctx, int flags)
 	return 0;
 }
 
-static int hmac_setkey(drew_mac_t *ctxt, const void *data, size_t len)
+static int hmac_setkey(drew_mac_t *ctxt, const uint8_t *data, size_t len)
 {
 	struct hmac *ctx = ctxt->ctx;
 	uint8_t *outpad;
@@ -132,7 +132,7 @@ static int hmac_setkey(drew_mac_t *ctxt, const void *data, size_t len)
 	return 0;
 }
 
-static int hmac_update(drew_mac_t *ctx, const void *data, size_t len)
+static int hmac_update(drew_mac_t *ctx, const uint8_t *data, size_t len)
 {
 	struct hmac *c = ctx->ctx;
 	c->inside.functbl->update(&c->inside, data, len);
@@ -140,7 +140,7 @@ static int hmac_update(drew_mac_t *ctx, const void *data, size_t len)
 	return 0;
 }
 
-static int hmac_final(drew_mac_t *ctx, void *digest, int flags)
+static int hmac_final(drew_mac_t *ctx, uint8_t *digest, int flags)
 {
 	struct hmac *c = ctx->ctx;
 	uint8_t *buf = malloc(c->digestsz);

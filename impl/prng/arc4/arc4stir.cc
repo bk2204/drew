@@ -54,9 +54,9 @@ static int a4s_info(int op, void *p);
 static int a4s_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
 static int a4s_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags);
-static int a4s_seed(drew_prng_t *ctx, const void *key, size_t len,
+static int a4s_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
 		size_t entropy);
-static int a4s_bytes(drew_prng_t *ctx, void *out, size_t len);
+static int a4s_bytes(drew_prng_t *ctx, uint8_t *out, size_t len);
 static int a4s_entropy(const drew_prng_t *ctx);
 static int a4s_fini(drew_prng_t *ctx, int flags);
 static int a4s_test(void *, const drew_loader_t *);
@@ -110,18 +110,18 @@ static int a4s_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags)
 	return 0;
 }
 
-static int a4s_seed(drew_prng_t *ctx, const void *key, size_t len,
+static int a4s_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
 		size_t entropy)
 {
 	drew::ARC4Stir *p = reinterpret_cast<drew::ARC4Stir *>(ctx->ctx);
-	p->AddRandomData(reinterpret_cast<const uint8_t *>(key), len, entropy);
+	p->AddRandomData(key, len, entropy);
 	return 0;
 }
 
-static int a4s_bytes(drew_prng_t *ctx, void *out, size_t len)
+static int a4s_bytes(drew_prng_t *ctx, uint8_t *out, size_t len)
 {
 	drew::ARC4Stir *p = reinterpret_cast<drew::ARC4Stir *>(ctx->ctx);
-	p->GetBytes(reinterpret_cast<uint8_t *>(out), len);
+	p->GetBytes(out, len);
 	return 0;
 }
 

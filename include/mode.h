@@ -53,11 +53,11 @@ typedef struct {
 	int (*fini)(drew_mode_t *, int);
 	int (*setpad)(drew_mode_t *, const drew_pad_t *);
 	int (*setblock)(drew_mode_t *, const drew_block_t *);
-	int (*setiv)(drew_mode_t *, const void *, size_t);
-	int (*encrypt)(drew_mode_t *, void *, const void *, size_t);
-	int (*decrypt)(drew_mode_t *, void *, const void *, size_t);
-	int (*encryptfast)(drew_mode_t *, void *, const void *, size_t);
-	int (*decryptfast)(drew_mode_t *, void *, const void *, size_t);
+	int (*setiv)(drew_mode_t *, const uint8_t *, size_t);
+	int (*encrypt)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
+	int (*decrypt)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
+	int (*encryptfast)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
+	int (*decryptfast)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
 	int (*test)(void *, const drew_loader_t *);
 } drew_mode_functbl2_t;
 

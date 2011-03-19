@@ -15,12 +15,13 @@ static int prefix ## init(drew_hash_t *ctx, int flags, const drew_loader_t *, \
 		const drew_param_t *); \
 static int prefix ## clone(drew_hash_t *newctx, const drew_hash_t *oldctx, \
 		int flags); \
-static int prefix ## update(drew_hash_t *ctx, const void *data, size_t len); \
-static int prefix ## updatefast(drew_hash_t *ctx, const void *data, size_t len); \
+static int prefix ## update(drew_hash_t *ctx, const uint8_t *data, size_t len); \
+static int prefix ## updatefast(drew_hash_t *ctx, const uint8_t *data, \
+		size_t len); \
 static int prefix ## pad(drew_hash_t *ctx); \
-static int prefix ## final(drew_hash_t *ctx, void *digest, int flags); \
+static int prefix ## final(drew_hash_t *ctx, uint8_t *digest, int flags); \
 static int prefix ## transform(const drew_hash_t *, void *state, \
-		const void *data); \
+		const uint8_t *data); \
 static int prefix ## fini(drew_hash_t *ctx, int flags); \
 static int prefix ## test(void *, const drew_loader_t *); \
  \
@@ -76,19 +77,20 @@ static int prefix ## clone(drew_hash_t *newctx, const drew_hash_t *oldctx, \
 	return 0; \
 } \
  \
-static int prefix ## update(drew_hash_t *ctx, const void *data, size_t len) \
+static int prefix ## update(drew_hash_t *ctx, const uint8_t *data, size_t len) \
 { \
 	using namespace drew; \
 	hname *p = reinterpret_cast<hname *>(ctx->ctx); \
-	p->Update(reinterpret_cast<const uint8_t *>(data), len); \
+	p->Update(data, len); \
 	return 0; \
 } \
  \
-static int prefix ## updatefast(drew_hash_t *ctx, const void *data, size_t len) \
+static int prefix ## updatefast(drew_hash_t *ctx, const uint8_t *data, \
+		size_t len) \
 { \
 	using namespace drew; \
 	hname *p = reinterpret_cast<hname *>(ctx->ctx); \
-	p->UpdateFast(reinterpret_cast<const uint8_t *>(data), len); \
+	p->UpdateFast(data, len); \
 	return 0; \
 } \
  \
@@ -100,20 +102,20 @@ static int prefix ## pad(drew_hash_t *ctx) \
 	return 0; \
 } \
  \
-static int prefix ## final(drew_hash_t *ctx, void *digest, int flags) \
+static int prefix ## final(drew_hash_t *ctx, uint8_t *digest, int flags) \
 { \
 	using namespace drew; \
 	hname *p = reinterpret_cast<hname *>(ctx->ctx); \
-	p->GetDigest(reinterpret_cast<uint8_t *>(digest), flags & DREW_HASH_FIXED); \
+	p->GetDigest(digest, flags & DREW_HASH_FIXED); \
 	return 0; \
 } \
  \
 static int prefix ## transform(const drew_hash_t *, void *state, \
-		const void *data) \
+		const uint8_t *data) \
 { \
 	using namespace drew; \
 	hname::quantum_t *st = reinterpret_cast<hname::quantum_t *>(state); \
-	hname::Transform(st, reinterpret_cast<const uint8_t *>(data)); \
+	hname::Transform(st, data); \
 	return 0; \
 } \
  \

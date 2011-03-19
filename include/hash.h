@@ -72,11 +72,11 @@ typedef struct {
 			const drew_param_t *);
 	int (*clone)(drew_hash_t *, const drew_hash_t *, int);
 	int (*fini)(drew_hash_t *, int);
-	int (*update)(drew_hash_t *, const void *, size_t);
-	int (*updatefast)(drew_hash_t *, const void *, size_t);
+	int (*update)(drew_hash_t *, const uint8_t *, size_t);
+	int (*updatefast)(drew_hash_t *, const uint8_t *, size_t);
 	int (*pad)(drew_hash_t *);
-	int (*final)(drew_hash_t *, void *, int);
-	int (*transform)(const drew_hash_t *, void *, const void *);
+	int (*final)(drew_hash_t *, uint8_t *, int);
+	int (*transform)(const drew_hash_t *, void *, const uint8_t *);
 	int (*test)(void *, const drew_loader_t *);
 } drew_hash_functbl2_t;
 

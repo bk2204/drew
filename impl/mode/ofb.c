@@ -23,8 +23,8 @@ static int ofb_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param);
 static int ofb_setpad(drew_mode_t *ctx, const drew_pad_t *pad);
 static int ofb_setblock(drew_mode_t *ctx, const drew_block_t *algoctx);
-static int ofb_setiv(drew_mode_t *ctx, const void *iv, size_t len);
-static int ofb_encrypt(drew_mode_t *ctx, void *out, const void *in,
+static int ofb_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len);
+static int ofb_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
 static int ofb_fini(drew_mode_t *ctx, int flags);
 static int ofb_test(void *p, const drew_loader_t *ldr);
@@ -90,7 +90,7 @@ static int ofb_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 	return 0;
 }
 
-static int ofb_setiv(drew_mode_t *ctx, const void *iv, size_t len)
+static int ofb_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len)
 {
 	struct ofb *c = ctx->ctx;
 
@@ -106,7 +106,7 @@ static int ofb_setiv(drew_mode_t *ctx, const void *iv, size_t len)
 /* There is no decrypt function because encryption and decryption are exactly
  * the same.
  */
-static int ofb_encrypt(drew_mode_t *ctx, void *outp, const void *inp,
+static int ofb_encrypt(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 		size_t len)
 {
 	struct ofb *c = ctx->ctx;

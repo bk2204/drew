@@ -50,8 +50,8 @@ typedef struct {
 			const drew_param_t *);
 	int (*clone)(drew_prng_t *, const drew_prng_t *, int);
 	int (*fini)(drew_prng_t *, int);
-	int (*seed)(drew_prng_t *, const void *, size_t, size_t);
-	int (*bytes)(drew_prng_t *, void *, size_t);
+	int (*seed)(drew_prng_t *, const uint8_t *, size_t, size_t);
+	int (*bytes)(drew_prng_t *, uint8_t *, size_t);
 	int (*entropy)(const drew_prng_t *);
 	int (*test)(void *, const drew_loader_t *);
 } drew_prng_functbl2_t;

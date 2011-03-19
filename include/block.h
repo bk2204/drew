@@ -72,11 +72,13 @@ typedef struct {
 			const drew_loader_t *, const drew_param_t *);
 	int (*clone)(drew_block_t *, const drew_block_t *, int);
 	int (*fini)(drew_block_t *, int);
-	int (*setkey)(drew_block_t *, const void *, size_t, int);
-	int (*encrypt)(const drew_block_t *, void *, const void *);
-	int (*decrypt)(const drew_block_t *, void *, const void *);
-	int (*encryptfast)(const drew_block_t *, void *, const void *, size_t);
-	int (*decryptfast)(const drew_block_t *, void *, const void *, size_t);
+	int (*setkey)(drew_block_t *, const uint8_t *, size_t, int);
+	int (*encrypt)(const drew_block_t *, uint8_t *, const uint8_t *);
+	int (*decrypt)(const drew_block_t *, uint8_t *, const uint8_t *);
+	int (*encryptfast)(const drew_block_t *, uint8_t *, const uint8_t *,
+			size_t);
+	int (*decryptfast)(const drew_block_t *, uint8_t *, const uint8_t *,
+			size_t);
 	int (*test)(void *, const drew_loader_t *);
 } drew_block_functbl2_t;
 

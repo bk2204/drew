@@ -48,10 +48,10 @@ typedef struct {
 	int (*init)(drew_mac_t *, int, const drew_loader_t *, const drew_param_t *);
 	int (*clone)(drew_mac_t *, const drew_mac_t *, int);
 	int (*fini)(drew_mac_t *, int);
-	int (*setkey)(drew_mac_t *, const void *, size_t);
-	int (*update)(drew_mac_t *, const void *, size_t);
-	int (*updatefast)(drew_mac_t *, const void *, size_t);
-	int (*final)(drew_mac_t *, void *, int);
+	int (*setkey)(drew_mac_t *, const uint8_t *, size_t);
+	int (*update)(drew_mac_t *, const uint8_t *, size_t);
+	int (*updatefast)(drew_mac_t *, const uint8_t *, size_t);
+	int (*final)(drew_mac_t *, uint8_t *, int);
 	int (*test)(void *, const drew_loader_t *);
 } drew_mac_functbl2_t;
 typedef drew_mac_functbl2_t drew_mac_functbl_t;
