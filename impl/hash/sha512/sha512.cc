@@ -11,11 +11,96 @@
 extern "C" {
 PLUGIN_STRUCTURE(sha512, SHA512)
 PLUGIN_STRUCTURE(sha384, SHA384)
+PLUGIN_STRUCTURE2(sha512t, SHA512t)
 PLUGIN_DATA_START()
 PLUGIN_DATA(sha512, "SHA-512")
 PLUGIN_DATA(sha384, "SHA-384")
+PLUGIN_DATA(sha512t, "SHA-512/t")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE(sha512)
+
+static int sha512t_get_digest_size(const drew_param_t *param)
+{
+	size_t tval = 0, digestsizeval = 0, result = 0;
+
+	for (const drew_param_t *p = param; p; p = p->next) {
+		if (!p->name)
+			continue;
+		// This is in bytes...
+		if (!digestsizeval && !strcmp(p->name, "digestSize"))
+			digestsizeval = p->param.number;
+		// and this is in bits.
+		if (!tval && !strcmp(p->name, "t"))
+			tval = p->param.number / 8;
+	}
+	if (digestsizeval)
+		result = digestsizeval;
+	else if (tval)
+		result = tval;
+	if (!result)
+		return -DREW_ERR_MORE_INFO;
+	if ((result < (512 / 8)) && (result != (384 / 8)))
+		return result;
+	return -DREW_ERR_INVALID;
+}
+
+static int sha512tinfo(int op, void *p)
+{
+	using namespace drew;
+	const drew_param_t *param = reinterpret_cast<const drew_param_t *>(p);
+	switch (op) {
+		case DREW_HASH_VERSION:
+			return 2;
+		case DREW_HASH_QUANTUM:
+			return sizeof(SHA512t::quantum_t);
+		case DREW_HASH_SIZE:
+			return sha512t_get_digest_size(param);
+		case DREW_HASH_BLKSIZE:
+			return SHA512t::block_size;
+		case DREW_HASH_BUFSIZE:
+			return SHA512t::buffer_size;
+		case DREW_HASH_INTSIZE:
+			return sizeof(SHA512t);
+		default:
+			return -EINVAL;
+	}
+}
+
+static int sha512tinit(drew_hash_t *ctx, int flags, const drew_loader_t *,
+		const drew_param_t *param)
+{
+	using namespace drew;
+	SHA512t *p;
+	int size = sha512t_get_digest_size(param);
+	if (size <= 0)
+		return size;
+	if (flags & DREW_HASH_FIXED)
+		p = new (ctx->ctx) SHA512t(size);
+	else
+		p = new SHA512t(size);
+	ctx->ctx = p;
+	ctx->functbl = &sha512tfunctbl;
+	return 0;
+}
+
+static int sha512ttest(void *, const drew_loader_t *)
+{
+	int res = 0;
+
+	using namespace drew;
+	typedef VariableSizedHashTestCase<SHA512t, 224/8> TestCase224;
+	typedef VariableSizedHashTestCase<SHA512t, 256/8> TestCase256;
+	
+	res |= !TestCase224("abc", 1).Test("4634270f707b6a54daae7530460842e20e37ed265ceee9a43e8924aa");
+	res <<= 1;
+	res |= !TestCase224("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 1).Test("23fec5bb94d60b23308192640b0c453335d664734fe40e7268674af9");
+	res <<= 1;
+	res |= !TestCase256("abc", 1).Test("53048e2681941ef99b2e29b76b4c7dabe4c2d0c634fc6d46e0e2f13107e7af23");
+	res <<= 1;
+	res |= !TestCase256("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 1).Test("3928e184fb8690f840da3988121d31be65cb9d3ef83ee6146feac861e19b563a");
+
+	return res;
+}
 
 static int sha512test(void *, const drew_loader_t *)
 {
@@ -164,6 +249,26 @@ drew::SHA512::SHA512()
 	m_hash[5] = 0x9b05688c2b3e6c1f;
 	m_hash[6] = 0x1f83d9abfb41bd6b;
 	m_hash[7] = 0x5be0cd19137e2179;
+	Initialize();
+}
+
+drew::SHA512t::SHA512t(size_t t_) : t(t_)
+{
+	char buf[64];
+
+	m_hash[0] = 0x6a09e667f3bcc908 ^ 0xa5a5a5a5a5a5a5a5;
+	m_hash[1] = 0xbb67ae8584caa73b ^ 0xa5a5a5a5a5a5a5a5;
+	m_hash[2] = 0x3c6ef372fe94f82b ^ 0xa5a5a5a5a5a5a5a5;
+	m_hash[3] = 0xa54ff53a5f1d36f1 ^ 0xa5a5a5a5a5a5a5a5;
+	m_hash[4] = 0x510e527fade682d1 ^ 0xa5a5a5a5a5a5a5a5;
+	m_hash[5] = 0x9b05688c2b3e6c1f ^ 0xa5a5a5a5a5a5a5a5;
+	m_hash[6] = 0x1f83d9abfb41bd6b ^ 0xa5a5a5a5a5a5a5a5;
+	m_hash[7] = 0x5be0cd19137e2179 ^ 0xa5a5a5a5a5a5a5a5;
+	Initialize();
+
+	int nbytes = snprintf(buf, sizeof(buf), "SHA-512/%zu", t * 8);
+	Update(reinterpret_cast<uint8_t *>(buf), nbytes);
+	Pad();
 	Initialize();
 }
 
