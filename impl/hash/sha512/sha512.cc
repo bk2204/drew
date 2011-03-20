@@ -105,6 +105,7 @@ static int sha512ttest(void *, const drew_loader_t *)
 static int sha512test(void *, const drew_loader_t *)
 {
 	int res = 0;
+	uint8_t zero[] = {0x00};
 
 	using namespace drew;
 	
@@ -128,6 +129,32 @@ static int sha512test(void *, const drew_loader_t *)
 	res <<= 1;
 	res |= !HashTestCase<SHA512>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 15625).Test("e718483d0ce769644e2e42c7bc15b4638e1f98b13b2044285632a803afa973ebde0ff244877ea60a4cb0432ce577c31beb009c5c2c49aa2e4eadb217ad8cc09b");
 	res <<= 1;
+	// The following test vectors are from
+	// http://csrc.nist.gov/groups/ST/toolkit/documents/Examples/SHA2_Additional.pdf
+	// The same document contains testcases for SHA-224, SHA-256, SHA-384, and
+	// SHA-512.
+	res |= !HashTestCase<SHA512>(zero, 1, 111).Test("77ddd3a542e530fd047b8977c657ba6ce72f1492e360b2b2212cd264e75ec03882e4ff0525517ab4207d14c70c2259ba88d4d335ee0e7e20543d22102ab1788c");
+	res <<= 1;
+	res |= !HashTestCase<SHA512>(zero, 1, 112).Test("2be2e788c8a8adeaa9c89a7f78904cacea6e39297d75e0573a73c756234534d6627ab4156b48a6657b29ab8beb73334040ad39ead81446bb09c70704ec707952");
+	res <<= 1;
+	res |= !HashTestCase<SHA512>(zero, 1, 113).Test("0e67910bcf0f9ccde5464c63b9c850a12a759227d16b040d98986d54253f9f34322318e56b8feb86c5fb2270ed87f31252f7f68493ee759743909bd75e4bb544");
+	res <<= 1;
+	res |= !HashTestCase<SHA512>(zero, 1, 122).Test("4f3f095d015be4a7a7cc0b8c04da4aa09e74351e3a97651f744c23716ebd9b3e822e5077a01baa5cc0ed45b9249e88ab343d4333539df21ed229da6f4a514e0f");
+	res <<= 1;
+	res |= !HashTestCase<SHA512>(zero, 1, 1000).Test("ca3dff61bb23477aa6087b27508264a6f9126ee3a004f53cb8db942ed345f2f2d229b4b59c859220a1cf1913f34248e3803bab650e849a3d9a709edc09ae4a76");
+	res <<= 1;
+	res |= !HashTestCase<SHA512>("A", 1000).Test("329c52ac62d1fe731151f2b895a00475445ef74f50b979c6f7bb7cae349328c1d4cb4f7261a0ab43f936a24b000651d4a824fcdd577f211aef8f806b16afe8af");
+	res <<= 1;
+	res |= !HashTestCase<SHA512>("U", 1005).Test("59f5e54fe299c6a8764c6b199e44924a37f59e2b56c3ebad939b7289210dc8e4c21b9720165b0f4d4374c90f1bf4fb4a5ace17a1161798015052893a48c3d161");
+	res <<= 1;
+	res |= !HashTestCase<SHA512>(zero, 1, 1000000).Test("ce044bc9fd43269d5bbc946cbebc3bb711341115cc4abdf2edbc3ff2c57ad4b15deb699bda257fea5aef9c6e55fcf4cf9dc25a8c3ce25f2efe90908379bff7ed");
+	res <<= 1;
+	res |= !HashTestCase<SHA512>("Z", 0x20000000).Test("da172279f3ebbda95f6b6e1e5f0ebec682c25d3d93561a1624c2fa9009d64c7e9923f3b46bcaf11d39a531f43297992ba4155c7e827bd0f1e194ae7ed6de4cac");
+	res <<= 1;
+	res |= !HashTestCase<SHA512>(zero, 1, 0x41000000).Test("14b1be901cb43549b4d831e61e5f9df1c791c85b50e85f9d6bc64135804ad43ce8402750edbe4e5c0fc170b99cf78b9f4ecb9c7e02a157911d1bd1832d76784f");
+	res <<= 1;
+	res |= !HashTestCase<SHA512>("B", 0x6000003e).Test("fd05e13eb771f05190bd97d62647157ea8f1f6949a52bb6daaedbad5f578ec59b1b8d6c4a7ecb2feca6892b4dc138771670a0f3bd577eea326aed40ab7dd58b1");
+	res <<= 1;
 	res |= !HashTestCase<SHA512>::MaintenanceTest("2b237afa2664b8f340cdcd819861b477d55ca41b3538a12e961bb3eb5365f1078a88d993cf38ec080fcae5f43024660fb25264befbb79a2b1036e34908ba170c");
 
 	return res;
@@ -136,6 +163,7 @@ static int sha512test(void *, const drew_loader_t *)
 static int sha384test(void *, const drew_loader_t *)
 {
 	int res = 0;
+	uint8_t zero[] = {0x00};
 
 	using namespace drew;
 
@@ -158,6 +186,28 @@ static int sha384test(void *, const drew_loader_t *)
 	res |= !HashTestCase<SHA384>("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 1).Test("09330c33f71147e83d192fc782cd1b4753111b173b3b05d22fa08086e3b0f712fcc7c71a557e2db966c3e9fa91746039");
 	res <<= 1;
 	res |= !HashTestCase<SHA384>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 15625).Test("9d0e1809716474cb086e834e310a4a1ced149e9c00f248527972cec5704c2a5b07b8b3dc38ecc4ebae97ddd87f3d8985");
+	res <<= 1;
+	res |= !HashTestCase<SHA384>(zero, 1, 111).Test("435770712c611be7293a66dd0dc8d1450dc7ff7337bfe115bf058ef2eb9bed09cee85c26963a5bcc0905dc2df7cc6a76");
+	res <<= 1;
+	res |= !HashTestCase<SHA384>(zero, 1, 112).Test("3e0cbf3aee0e3aa70415beae1bd12dd7db821efa446440f12132edffce76f635e53526a111491e75ee8e27b9700eec20");
+	res <<= 1;
+	res |= !HashTestCase<SHA384>(zero, 1, 113).Test("6be9af2cf3cd5dd12c8d9399ec2b34e66034fbd699d4e0221d39074172a380656089caafe8f39963f94cc7c0a07e3d21");
+	res <<= 1;
+	res |= !HashTestCase<SHA384>(zero, 1, 122).Test("12a72ae4972776b0db7d73d160a15ef0d19645ec96c7f816411ab780c794aa496a22909d941fe671ed3f3caee900bdd5");
+	res <<= 1;
+	res |= !HashTestCase<SHA384>(zero, 1, 1000).Test("aae017d4ae5b6346dd60a19d52130fb55194b6327dd40b89c11efc8222292de81e1a23c9b59f9f58b7f6ad463fa108ca");
+	res <<= 1;
+	res |= !HashTestCase<SHA384>("A", 1000).Test("7df01148677b7f18617eee3a23104f0eed6bb8c90a6046f715c9445ff43c30d69e9e7082de39c3452fd1d3afd9ba0689");
+	res <<= 1;
+	res |= !HashTestCase<SHA384>("U", 1005).Test("1bb8e256da4a0d1e87453528254f223b4cb7e49c4420dbfa766bba4adba44eeca392ff6a9f565bc347158cc970ce44ec");
+	res <<= 1;
+	res |= !HashTestCase<SHA384>(zero, 1, 1000000).Test("8a1979f9049b3fff15ea3a43a4cf84c634fd14acad1c333fecb72c588b68868b66a994386dc0cd1687b9ee2e34983b81");
+	res <<= 1;
+	res |= !HashTestCase<SHA384>("Z", 0x20000000).Test("18aded227cc6b562cc7fb259e8f404549e52914531aa1c5d85167897c779cc4b25d0425fd1590e40bd763ec3f4311c1a");
+	res <<= 1;
+	res |= !HashTestCase<SHA384>(zero, 1, 0x41000000).Test("83ab05ca483abe3faa597ad524d31291ae827c5be2b3efcb6391bfed31ccd937b6135e0378c6c7f598857a7c516f207a");
+	res <<= 1;
+	res |= !HashTestCase<SHA384>("B", 0x6000003e).Test("cf852304f8d80209351b37ce69ca7dcf34972b4edb7817028ec55ab67ad3bc96eecb8241734258a85d2afce65d4571e2");
 	res <<= 1;
 	res |= !HashTestCase<SHA384>::MaintenanceTest("03a953c09e78a5e0de89c9767037c56e86f2ba5575375355ac8607214452dadc710bacf3f50ec40a0de85cba01755b41");
 
