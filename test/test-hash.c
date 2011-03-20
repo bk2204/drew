@@ -36,13 +36,13 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 }
 
 inline int test_speed_loop(drew_hash_t *ctx, uint8_t *buf,
-		int chunk, int nchunks)
+		int chunk, int nchunks,
+		int (*update)(drew_hash_t *, const uint8_t *, size_t))
 {
 	int i;
 
-	ctx->functbl->init(ctx, 0, NULL, NULL);
 	for (i = 0; !framework_sigflag && i < nchunks; i++)
-		ctx->functbl->update(ctx, buf, chunk);
+		update(ctx, buf, chunk);
 	if (!framework_sigflag)
 		ctx->functbl->final(ctx, buf, 0);
 	ctx->functbl->fini(ctx, 0);
@@ -53,22 +53,28 @@ inline int test_speed_loop(drew_hash_t *ctx, uint8_t *buf,
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		const void *tbl, int chunk, int nchunks)
 {
-	int i;
+	int i, res, blksize;
 	uint8_t *buf;
 	struct timespec cstart, cend;
 	drew_hash_t ctx;
 	void *fwdata;
+	int (*update)(drew_hash_t *, const uint8_t *, size_t);
 
-	buf = calloc(chunk, 1);
-	if (!buf)
-		return ENOMEM;
+	if ((res = posix_memalign((void **)&buf, DREW_HASH_ALIGNMENT, chunk)))
+		return res;
 
 	ctx.functbl = tbl;
+	blksize = ctx.functbl->info(DREW_HASH_BLKSIZE, NULL);
+	if (blksize <= 0)
+		return -DREW_ERR_INVALID;
 
 	fwdata = framework_setup();
 
+	ctx.functbl->init(&ctx, 0, NULL, NULL);
+	update = (!(chunk % blksize) && !(chunk % DREW_HASH_ALIGNMENT)) ? 
+		ctx.functbl->updatefast : ctx.functbl->update;
 	clock_gettime(USED_CLOCK, &cstart);
-	i = test_speed_loop(&ctx, buf, chunk, nchunks);
+	i = test_speed_loop(&ctx, buf, chunk, nchunks, update);
 	clock_gettime(USED_CLOCK, &cend);
 
 	framework_teardown(fwdata);
