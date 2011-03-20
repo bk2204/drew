@@ -61,7 +61,15 @@ class Hash
 		}
 		virtual void UpdateFast(const uint8_t *data, size_t len)
 		{
-			return Update(data, len);
+			const T t = m_len[0];
+
+			if ((m_len[0] += len) < t)
+				m_len[1]++;
+
+			len /= BlkSize;
+
+			for (size_t i = 0; i < len; i++, data += BlkSize)
+				Transform(data);
 		}
 		virtual void Pad()
 		{
