@@ -70,7 +70,19 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 
 	fwdata = framework_setup();
 
-	ctx.functbl->init(&ctx, 0, NULL, NULL);
+	if ((res = ctx.functbl->init(&ctx, 0, NULL, NULL)) == -DREW_ERR_MORE_INFO) {
+		size_t vals[] = {512, 384, 256, 224, 160, 128};
+		for (int i = 0; i < DIM(vals); i++) {
+			drew_param_t param;
+			param.name = "digestSize";
+			param.param.number = vals[i] / 8;
+			param.next = NULL;
+			if (!(res = ctx.functbl->init(&ctx, 0, NULL, &param)))
+				break;
+		}
+	}
+	if (res)
+		return res;
 	update = (!(chunk % blksize) && !(chunk % DREW_HASH_ALIGNMENT)) ? 
 		ctx.functbl->updatefast : ctx.functbl->update;
 	clock_gettime(USED_CLOCK, &cstart);
