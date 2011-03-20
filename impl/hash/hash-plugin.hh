@@ -9,24 +9,7 @@
 #include "hash-plugin.h"
 
 #define PLUGIN_STRUCTURE(prefix, hname) \
- \
-static int prefix ## info(int op, void *); \
-static int prefix ## init(drew_hash_t *ctx, int flags, const drew_loader_t *, \
-		const drew_param_t *); \
-static int prefix ## clone(drew_hash_t *newctx, const drew_hash_t *oldctx, \
-		int flags); \
-static int prefix ## update(drew_hash_t *ctx, const uint8_t *data, size_t len); \
-static int prefix ## updatefast(drew_hash_t *ctx, const uint8_t *data, \
-		size_t len); \
-static int prefix ## pad(drew_hash_t *ctx); \
-static int prefix ## final(drew_hash_t *ctx, uint8_t *digest, int flags); \
-static int prefix ## transform(const drew_hash_t *, void *state, \
-		const uint8_t *data); \
-static int prefix ## fini(drew_hash_t *ctx, int flags); \
-static int prefix ## test(void *, const drew_loader_t *); \
- \
-PLUGIN_FUNCTBL(prefix, prefix ## info, prefix ## init, prefix ## update, prefix ## updatefast, prefix ## pad, prefix ## final, prefix ## transform, prefix ## test, prefix ## fini, prefix ## clone); \
- \
+PLUGIN_STRUCTURE2(prefix, hname) \
 static int prefix ## info(int op, void *) \
 { \
 	using namespace drew; \
@@ -60,7 +43,26 @@ static int prefix ## init(drew_hash_t *ctx, int flags, const drew_loader_t *, \
 	ctx->ctx = p; \
 	ctx->functbl = &prefix ## functbl; \
 	return 0; \
-} \
+}
+
+#define PLUGIN_STRUCTURE2(prefix, hname) \
+ \
+static int prefix ## info(int op, void *); \
+static int prefix ## init(drew_hash_t *ctx, int flags, const drew_loader_t *, \
+		const drew_param_t *); \
+static int prefix ## clone(drew_hash_t *newctx, const drew_hash_t *oldctx, \
+		int flags); \
+static int prefix ## update(drew_hash_t *ctx, const uint8_t *data, size_t len); \
+static int prefix ## updatefast(drew_hash_t *ctx, const uint8_t *data, \
+		size_t len); \
+static int prefix ## pad(drew_hash_t *ctx); \
+static int prefix ## final(drew_hash_t *ctx, uint8_t *digest, int flags); \
+static int prefix ## transform(const drew_hash_t *, void *state, \
+		const uint8_t *data); \
+static int prefix ## fini(drew_hash_t *ctx, int flags); \
+static int prefix ## test(void *, const drew_loader_t *); \
+ \
+PLUGIN_FUNCTBL(prefix, prefix ## info, prefix ## init, prefix ## update, prefix ## updatefast, prefix ## pad, prefix ## final, prefix ## transform, prefix ## test, prefix ## fini, prefix ## clone); \
  \
 static int prefix ## clone(drew_hash_t *newctx, const drew_hash_t *oldctx, \
 		int flags) \
