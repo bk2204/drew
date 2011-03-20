@@ -104,6 +104,10 @@ class Hash
 
 			E::Copy(digest, m_hash, Size);
 		}
+		virtual size_t GetDigestSize() const
+		{
+			return Size;
+		}
 		static void Transform(T *, const uint8_t *data);
 	protected:
 		virtual void Transform(const uint8_t *data) = 0;
