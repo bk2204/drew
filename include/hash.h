@@ -39,6 +39,8 @@
  */
 #define DREW_HASH_NO_PAD 2
 
+#define DREW_HASH_ALIGNMENT 16
+
 typedef struct {
 	int (*info)(int op, void *p);
 	void (*init)(void **, drew_loader_t *, const drew_param_t *);
