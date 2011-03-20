@@ -18,6 +18,8 @@
 
 #include <plugin.h>
 
+#define DIM(x) (sizeof(x)/sizeof((x)[0]))
+
 #define MODE_SPEED			1
 #define MODE_TEST			2
 #define MODE_TEST_INTERNAL	3
