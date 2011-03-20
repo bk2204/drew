@@ -67,13 +67,14 @@ inline T RotateRight(T x, size_t n)
 class Endian
 {
 	public:
-		inline static void InplaceSwap(uint8_t *dest, size_t len, size_t sz)
+		inline static void CopyBackwards(uint8_t *dest, const uint8_t *src,
+				size_t len, const size_t sz)
 		{
-			uint8_t *p = dest;
-			size_t i, j;
-			for (i = 0; i < len; i += sz)
-				for (j = 0; j < sz/2; j++)
-					std::swap(p[i+j], p[i+(sz-j-1)]);
+			for (size_t i = 0; i < len; ) {
+				const size_t blk = i;
+				for (size_t j = 0; i < len && j < sz; j++, i++)
+					dest[blk+j] = src[blk+(sz-j-1)];
+			}
 		}
 		template<class T>
 		inline static uint8_t GetByte(T x, size_t n)
@@ -109,9 +110,11 @@ class BigEndian : public Endian
 		inline static uint8_t *Copy(uint8_t *dest, const T *src, size_t len,
 				const size_t sz)
 		{
+#if BYTE_ORDER == BIG_ENDIAN
 			memcpy(dest, src, len);
-#if BYTE_ORDER == LITTLE_ENDIAN
-			InplaceSwap(dest, len, sz);
+#else
+			CopyBackwards(dest, reinterpret_cast<const uint8_t *>(src), len,
+					sz);
 #endif
 			return dest;
 		}
@@ -119,9 +122,10 @@ class BigEndian : public Endian
 		inline static T *Copy(T *dest, const uint8_t *src, size_t len,
 				const size_t sz)
 		{
+#if BYTE_ORDER == BIG_ENDIAN
 			memcpy(dest, src, len);
-#if BYTE_ORDER == LITTLE_ENDIAN
-			InplaceSwap(reinterpret_cast<uint8_t *>(dest), len, sz);
+#else
+			CopyBackwards(reinterpret_cast<uint8_t *>(dest), src, len, sz);
 #endif
 			return dest;
 		}
@@ -172,9 +176,11 @@ class LittleEndian : public Endian
 		inline static uint8_t *Copy(uint8_t *dest, const T *src, size_t len,
 				const size_t sz)
 		{
+#if BYTE_ORDER == LITTLE_ENDIAN
 			memcpy(dest, src, len);
-#if BYTE_ORDER == BIG_ENDIAN
-			InplaceSwap(dest, len, sz);
+#else
+			CopyBackwards(dest, reinterpret_cast<const uint8_t *>(src), len,
+					sz);
 #endif
 			return dest;
 		}
@@ -182,9 +188,10 @@ class LittleEndian : public Endian
 		inline static T *Copy(T *dest, const uint8_t *src, size_t len,
 				const size_t sz)
 		{
+#if BYTE_ORDER == LITTLE_ENDIAN
 			memcpy(dest, src, len);
-#if BYTE_ORDER == BIG_ENDIAN
-			InplaceSwap(reinterpret_cast<uint8_t *>(dest), len, sz);
+#else
+			CopyBackwards(reinterpret_cast<uint8_t *>(dest), src, len, sz);
 #endif
 			return dest;
 		}
