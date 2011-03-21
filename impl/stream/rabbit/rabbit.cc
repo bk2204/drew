@@ -12,7 +12,7 @@
 
 extern "C" {
 
-static int rabbit_test(void *, drew_loader_t *)
+static int rabbit_test(void *, const drew_loader_t *)
 {
 	using namespace drew;
 
@@ -63,7 +63,7 @@ static int rabbit_info(int op, void *p)
 {
 	switch (op) {
 		case DREW_STREAM_VERSION:
-			return 1;
+			return 2;
 		case DREW_STREAM_KEYSIZE:
 			{
 				const int *x = reinterpret_cast<int *>(p);
@@ -76,68 +76,74 @@ static int rabbit_info(int op, void *p)
 	}
 }
 
-static int rabbit_init(void **ctx, void *data, int flags, drew_loader_t *, const drew_param_t *)
+static int rabbit_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
+		const drew_param_t *);
+
+static int rabbit_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
+		int flags)
 {
-	drew::Rabbit *p = new drew::Rabbit;
-	if (flags & DREW_STREAM_INIT_FIXED) {
-		memcpy(*ctx, p, sizeof(*p));
-		delete p;
-	}
+	drew::Rabbit *p;
+	const drew::Rabbit *q = reinterpret_cast<const drew::Rabbit *>(oldctx->ctx);
+	if (flags & DREW_STREAM_FIXED)
+		p = new (newctx->ctx) drew::Rabbit(*q);
 	else
-		*ctx = p;
+		p = new drew::Rabbit(*q);
+	newctx->ctx = p;
+	newctx->functbl = oldctx->functbl;
 	return 0;
 }
 
-static int rabbit_clone(void **newctx, void *oldctx, int flags)
+static int rabbit_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len)
 {
-	drew::Rabbit *p = new drew::Rabbit(*reinterpret_cast<drew::Rabbit *>(oldctx));
-	if (flags & DREW_STREAM_CLONE_FIXED) {
-		memcpy(*newctx, p, sizeof(*p));
-		delete p;
-	}
-	else
-		*newctx = p;
-	return 0;
-}
-
-static int rabbit_setiv(void *ctx, const uint8_t *key, size_t len)
-{
-	drew::Rabbit *p = reinterpret_cast<drew::Rabbit *>(ctx);
+	drew::Rabbit *p = reinterpret_cast<drew::Rabbit *>(ctx->ctx);
 	p->SetNonce(key, len);
 	return 0;
 }
 
-static int rabbit_setkey(void *ctx, const uint8_t *key, size_t len, int mode)
+static int rabbit_setkey(drew_stream_t *ctx, const uint8_t *key, size_t len,
+		int mode)
 {
-	drew::Rabbit *p = reinterpret_cast<drew::Rabbit *>(ctx);
+	drew::Rabbit *p = reinterpret_cast<drew::Rabbit *>(ctx->ctx);
 	p->SetKey(key, len);
 	return 0;
 }
 
-static int rabbit_encrypt(void *ctx, uint8_t *out, const uint8_t *in, size_t len)
+static int rabbit_encrypt(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len)
 {
-	drew::Rabbit *p = reinterpret_cast<drew::Rabbit *>(ctx);
+	drew::Rabbit *p = reinterpret_cast<drew::Rabbit *>(ctx->ctx);
 	p->Encrypt(out, in, len);
 	return 0;
 }
 
-static int rabbit_fini(void **ctx, int flags)
+static int rabbit_fini(drew_stream_t *ctx, int flags)
 {
-	drew::Rabbit *p = reinterpret_cast<drew::Rabbit *>(*ctx);
-	if (flags & DREW_STREAM_FINI_NO_DEALLOC)
+	drew::Rabbit *p = reinterpret_cast<drew::Rabbit *>(ctx->ctx);
+	if (flags & DREW_STREAM_FIXED)
 		p->~Rabbit();
-	else {
+	else
 		delete p;
-		*ctx = NULL;
-	}
 	return 0;
 }
 
-PLUGIN_FUNCTBL(rabbit, rabbit_info, rabbit_init, rabbit_setiv, rabbit_setkey, rabbit_encrypt, rabbit_encrypt, rabbit_test, rabbit_fini, rabbit_clone);
+PLUGIN_FUNCTBL(rabbit, rabbit_info, rabbit_init, rabbit_setiv, rabbit_setkey, rabbit_encrypt, rabbit_encrypt, rabbit_encrypt, rabbit_encrypt, rabbit_test, rabbit_fini, rabbit_clone);
 PLUGIN_DATA_START()
 PLUGIN_DATA(rabbit, "Rabbit")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE()
+
+static int rabbit_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
+		const drew_param_t *)
+{
+	drew::Rabbit *p;
+	if (flags & DREW_STREAM_FIXED)
+		p = new (ctx->ctx) drew::Rabbit;
+	else
+		p = new drew::Rabbit;
+	ctx->ctx = p;
+	ctx->functbl = &rabbitfunctbl;
+	return 0;
+}
 
 }
 
