@@ -33,15 +33,19 @@ static int ofb_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 static int ofb_fini(drew_mode_t *ctx, int flags);
 static int ofb_test(void *p, const drew_loader_t *ldr);
 static int ofb_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags);
+static int ofb_setdata(drew_mode_t *, const uint8_t *, size_t);
+static int ofb_final(drew_mode_t *, uint8_t *, size_t);
 
 static const drew_mode_functbl_t ofb_functbl = {
 	ofb_info, ofb_init, ofb_clone, ofb_fini, ofb_setpad, ofb_setblock,
 	ofb_setiv, ofb_encrypt, ofb_encrypt, ofb_encrypt, ofb_encrypt,
+	ofb_setdata, ofb_final, ofb_final,
 	ofb_test
 };
 static const drew_mode_functbl_t ofb_functblfast = {
 	ofb_info, ofb_init, ofb_clone, ofb_fini, ofb_setpad, ofb_setblock,
 	ofb_setiv, ofb_encrypt, ofb_encrypt, ofb_encryptfast, ofb_encryptfast,
+	ofb_setdata, ofb_final, ofb_final,
 	ofb_test
 };
 
@@ -180,6 +184,16 @@ static int ofb_encryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 #endif
 	}
 	return 0;
+}
+
+static int ofb_setdata(drew_mode_t *ctx, const uint8_t *data, size_t len)
+{
+	return -DREW_ERR_NOT_ALLOWED;
+}
+
+static int ofb_final(drew_mode_t *ctx, uint8_t *data, size_t len)
+{
+	return -DREW_ERR_NOT_ALLOWED;
 }
 
 
