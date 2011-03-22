@@ -28,6 +28,7 @@ CFG_DES			= m
 CFG_CAMELLIA	= m
 CFG_RC2			= m
 CFG_SERPENT		= m
+CFG_TEA			= m
 
 # Modes.
 CFG_CFB			= m
