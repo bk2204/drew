@@ -191,16 +191,17 @@ int drew::TEA::Encrypt(uint8_t *out, const uint8_t *in) const
 	E::Copy(v, in, sizeof(v));
 
 	const uint32_t delta = 0x9e3779b9;
-	uint32_t y = v[0], z = v[1], sum = 0;
+	uint32_t sum = 0;
 
-	for (size_t i = 0; i < 32; i++) {
+	for (size_t i = 0; i < 32; i += 2) {
 		sum += delta;
-		y += ((z << 4) + m_k[0]) ^ (z + sum) ^ ((z >> 5) + m_k[1]);
-		z += ((y << 4) + m_k[2]) ^ (y + sum) ^ ((y >> 5) + m_k[3]);
-	}
+		v[0] += ((v[1] << 4) + m_k[0]) ^ (v[1] + sum) ^ ((v[1] >> 5) + m_k[1]);
+		v[1] += ((v[0] << 4) + m_k[2]) ^ (v[0] + sum) ^ ((v[0] >> 5) + m_k[3]);
 
-	v[0] = y;
-	v[1] = z;
+		sum += delta;
+		v[0] += ((v[1] << 4) + m_k[0]) ^ (v[1] + sum) ^ ((v[1] >> 5) + m_k[1]);
+		v[1] += ((v[0] << 4) + m_k[2]) ^ (v[0] + sum) ^ ((v[0] >> 5) + m_k[3]);
+	}
 
 	E::Copy(out, v, sizeof(v));
 	return 0;
@@ -213,16 +214,17 @@ int drew::TEA::Decrypt(uint8_t *out, const uint8_t *in) const
 	E::Copy(v, in, sizeof(v));
 
 	const uint32_t delta = 0x9e3779b9;
-	uint32_t y = v[0], z = v[1], sum = delta << 5;
+	uint32_t sum = delta << 5;
 
-	for (size_t i = 0; i < 32; i++) {
-		z -= ((y << 4) + m_k[2]) ^ (y + sum) ^ ((y >> 5) + m_k[3]);
-		y -= ((z << 4) + m_k[0]) ^ (z + sum) ^ ((z >> 5) + m_k[1]);
+	for (size_t i = 0; i < 32; i += 2) {
+		v[1] -= ((v[0] << 4) + m_k[2]) ^ (v[0] + sum) ^ ((v[0] >> 5) + m_k[3]);
+		v[0] -= ((v[1] << 4) + m_k[0]) ^ (v[1] + sum) ^ ((v[1] >> 5) + m_k[1]);
+		sum -= delta;
+
+		v[1] -= ((v[0] << 4) + m_k[2]) ^ (v[0] + sum) ^ ((v[0] >> 5) + m_k[3]);
+		v[0] -= ((v[1] << 4) + m_k[0]) ^ (v[1] + sum) ^ ((v[1] >> 5) + m_k[1]);
 		sum -= delta;
 	}
-
-	v[0] = y;
-	v[1] = z;
 
 	E::Copy(out, v, sizeof(v));
 	return 0;
