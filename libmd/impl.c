@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <hash.h>
-#include <plugin.h>
+#include <drew/hash.h>
+#include <drew/plugin.h>
 
 struct plugin_info {
 	const char *name;

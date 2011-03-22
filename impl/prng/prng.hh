@@ -2,7 +2,7 @@
 #define BMC_PRNG_HH
 
 #include <internal.h>
-#include <prng.h>
+#include <drew/prng.h>
 
 #include <stddef.h>
 #include <stdint.h>

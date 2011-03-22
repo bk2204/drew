@@ -15,8 +15,8 @@
 #include <string.h>
 #include <time.h>
 
-#include <plugin.h>
-#include <hash.h>
+#include <drew/plugin.h>
+#include <drew/hash.h>
 
 int test_get_type(void)
 {

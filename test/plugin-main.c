@@ -1,4 +1,4 @@
-#include "plugin.h"
+#include <drew/plugin.h>
 
 #include <errno.h>
 #include <stddef.h>

@@ -21,7 +21,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <plugin.h>
+#include <drew/plugin.h>
 
 double sec_from_timespec(const struct timespec *ts)
 {

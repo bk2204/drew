@@ -4,10 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <mode.h>
-#include <block.h>
-#include <plugin.h>
-#include <util.h>
+#include <drew/mode.h>
+#include <drew/block.h>
+#include <drew/plugin.h>
+#include "util.h"
 
 #define DIM(x) (sizeof(x)/sizeof((x)[0]))
 

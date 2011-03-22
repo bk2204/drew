@@ -5,7 +5,7 @@
 #error "You really don't want to include this.  I promise."
 #endif
 
-#include "hash.h"
+#include <drew/hash.h>
 #include "hash-plugin.h"
 
 #define PLUGIN_STRUCTURE(prefix, hname) \

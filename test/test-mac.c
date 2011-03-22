@@ -14,8 +14,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include <plugin.h>
-#include <mac.h>
+#include <drew/plugin.h>
+#include <drew/mac.h>
 
 int test_get_type(void)
 {

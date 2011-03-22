@@ -14,8 +14,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include <plugin.h>
-#include <prng.h>
+#include <drew/plugin.h>
+#include <drew/prng.h>
 
 int test_get_type(void)
 {

@@ -12,8 +12,8 @@
 extern "C" {
 #endif
 
-#include <plugin.h>
-#include <prng.h>
+#include <drew/plugin.h>
+#include <drew/prng.h>
 
 #define PLUGIN_FUNCTBL(prefix, info, init, clone, fini, seed, bytes, entropy, test) \
 \

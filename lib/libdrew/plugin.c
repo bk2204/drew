@@ -1,5 +1,5 @@
 #include "internal.h"
-#include "plugin.h"
+#include <drew/plugin.h>
 
 #include <dlfcn.h>
 #include <errno.h>

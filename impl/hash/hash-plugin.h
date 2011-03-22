@@ -8,14 +8,12 @@
 #include <errno.h>
 #include <string.h>
 
-#include <hash.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <plugin.h>
-#include <hash.h>
+#include <drew/plugin.h>
+#include <drew/hash.h>
 
 #define PLUGIN_FUNCTBL(prefix, info, init, update, updatefast, pad, final, transform, test, fini, clone) \
 \

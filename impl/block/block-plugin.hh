@@ -7,7 +7,7 @@
 
 #include <new>
 
-#include "block.h"
+#include <drew/block.h>
 #include "block-plugin.h"
 #include "util.hh"
 

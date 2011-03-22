@@ -12,8 +12,8 @@
 extern "C" {
 #endif
 
-#include <plugin.h>
-#include <stream.h>
+#include <drew/plugin.h>
+#include <drew/stream.h>
 
 #define PLUGIN_FUNCTBL(prefix, info, init, setiv, setkey, encrypt, decrypt, encryptfast, decryptfast, test, fini, clone) \
 \

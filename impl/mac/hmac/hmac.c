@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <mac.h>
-#include <hash.h>
-#include <plugin.h>
+#include <drew/mac.h>
+#include <drew/hash.h>
+#include <drew/plugin.h>
 
 #define DIM(x) (sizeof(x)/sizeof((x)[0]))
 

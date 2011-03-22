@@ -6,7 +6,7 @@
 
 #include <algorithm>
 
-#include <block.h>
+#include <drew/block.h>
 #include "block-plugin.h"
 #include "block-plugin.hh"
 #include "btestcase.hh"

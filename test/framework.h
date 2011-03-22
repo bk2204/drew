@@ -16,7 +16,7 @@
 #include <time.h>
 #include <signal.h>
 
-#include <plugin.h>
+#include <drew/plugin.h>
 
 #define DIM(x) (sizeof(x)/sizeof((x)[0]))
 
