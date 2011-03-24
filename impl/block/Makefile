@@ -11,6 +11,7 @@ PLUGINS_BLOCK-${CFG_CAMELLIA}	+= camellia/camellia
 PLUGINS_BLOCK-${CFG_RC2}		+= rc2/rc2
 PLUGINS_BLOCK-${CFG_SERPENT}	+= serpent/serpent
 PLUGINS_BLOCK-${CFG_TEA}		+= tea/tea
+PLUGINS_BLOCK-${CFG_SEED}		+= seed/seed
 
 ${BLOCK_DIR}/cast/cast5-all.o: ${BLOCK_DIR}/cast/sboxes.o
 ${BLOCK_DIR}/cast/cast6-all.o: ${BLOCK_DIR}/cast/sboxes.o
