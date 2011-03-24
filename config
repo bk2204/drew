@@ -30,6 +30,7 @@ CFG_RC2			= m
 CFG_SERPENT		= m
 CFG_TEA			= m
 CFG_SEED		= m
+CFG_IDEA		= No, thanks.  I'm patented.
 
 # Modes.
 CFG_CFB			= m
@@ -41,6 +42,7 @@ CFG_HMAC		= m
 ## Stream ciphers.
 CFG_RC4			= m
 CFG_SALSA20		= m
+CFG_RABBIT		= No, thanks.  I'm patented.
 
 ## PRNGs.
 CFG_ARC4STIR	= m

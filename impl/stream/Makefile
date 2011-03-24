@@ -1,5 +1,6 @@
 PLUGINS_STREAM-${CFG_RC4}		+= rc4/rc4
 PLUGINS_STREAM-${CFG_SALSA20}	+= salsa20/salsa20
+PLUGINS_STREAM-${CFG_RABBIT}	+= rabbit/rabbit
 
 STREAM_DIR		:= impl/stream
 STREAM_PLUGINS	:= $(patsubst %,${STREAM_DIR}/%,$(PLUGINS_STREAM-m))
