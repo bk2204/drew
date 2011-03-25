@@ -29,6 +29,7 @@ CFG_CAMELLIA	= m
 CFG_RC2			= m
 CFG_SERPENT		= m
 CFG_TEA			= m
+CFG_XTEA		= m
 CFG_SEED		= m
 CFG_IDEA		= No, thanks.  I'm patented.
 
