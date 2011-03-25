@@ -15,6 +15,12 @@ extern "C" {
 
 #define DIM(x) (sizeof(x)/sizeof(x[0]))
 
+	PLUGIN_STRUCTURE2(rc2, RC2)
+	PLUGIN_DATA_START()
+	PLUGIN_DATA(rc2, "RC2")
+	PLUGIN_DATA_END()
+	PLUGIN_INTERFACE(rc2)
+
 static int rc2info(int op, void *p)
 {
 	switch (op) {
@@ -34,6 +40,21 @@ static int rc2info(int op, void *p)
 		default:
 			return -EINVAL;
 	}
+}
+
+static int rc2init(drew_block_t *ctx, int flags,
+		const drew_loader_t *, const drew_param_t *)
+{
+	using namespace drew;
+	RC2 *p;
+
+	if (flags & DREW_BLOCK_FIXED)
+		p = new (ctx->ctx) RC2;
+	else
+		p = new RC2;
+	ctx->ctx = p;
+	ctx->functbl = &rc2functbl;
+	return 0;
 }
 
 #if 0
@@ -114,12 +135,6 @@ static int rc2test(void *, const drew_loader_t *)
 
 	return res;
 }
-
-	PLUGIN_STRUCTURE2(rc2, RC2)
-	PLUGIN_DATA_START()
-	PLUGIN_DATA(rc2, "RC2")
-	PLUGIN_DATA_END()
-	PLUGIN_INTERFACE(rc2)
 }
 
 typedef drew::RC2::endian_t E;

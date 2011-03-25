@@ -89,6 +89,19 @@ static int prefix ## info(int op, void *p) \
 		default: \
 			return -EINVAL; \
 	} \
+} \
+static int prefix ## init(drew_block_t *ctx, int flags, \
+		const drew_loader_t *, const drew_param_t *) \
+{ \
+	using namespace drew; \
+	bname *p; \
+	if (flags & DREW_BLOCK_FIXED) \
+		p = new (ctx->ctx) bname; \
+	else \
+		p = new bname; \
+	ctx->ctx = p; \
+	ctx->functbl = &prefix ## functbl; \
+	return 0; \
 }
 
 #define PLUGIN_STRUCTURE2(prefix, bname) \
@@ -110,20 +123,6 @@ static int prefix ## fini(drew_block_t *ctx, int flags); \
 static int prefix ## test(void *, const drew_loader_t *); \
  \
 PLUGIN_FUNCTBL(prefix, prefix ## info, prefix ## init, prefix ## setkey, prefix ## encrypt, prefix ## decrypt, prefix ## encryptfast, prefix ## decryptfast, prefix ## test, prefix ## fini, prefix ## clone); \
- \
-static int prefix ## init(drew_block_t *ctx, int flags, \
-		const drew_loader_t *, const drew_param_t *) \
-{ \
-	using namespace drew; \
-	bname *p; \
-	if (flags & DREW_BLOCK_FIXED) \
-		p = new (ctx->ctx) bname; \
-	else \
-		p = new bname; \
-	ctx->ctx = p; \
-	ctx->functbl = &prefix ## functbl; \
-	return 0; \
-} \
  \
 static int prefix ## clone(drew_block_t *newctx, const drew_block_t *oldctx, \
 		int flags) \
