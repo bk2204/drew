@@ -1,5 +1,5 @@
-#ifndef SALSA20_HH
-#define SALSA20_HH
+#ifndef HC128_HH
+#define HC128_HH
 
 #include <stddef.h>
 #include <stdint.h>
