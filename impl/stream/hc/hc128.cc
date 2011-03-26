@@ -314,7 +314,7 @@ void drew::HC128Keystream::GetValue(uint8_t buf[4])
 	size_t j = ctr % 512;
 	uint32_t s;
 
-	if ((ctr % 1024) < 512) {
+	if (!(ctr & 0x200)) {
 		P[j] += g1(P[M(j, 3)], P[M(j, 10)], P[M(j, 511)]);
 		s = h1(P[M(j, 12)]) ^ P[j];
 	}
