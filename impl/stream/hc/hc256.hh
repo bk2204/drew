@@ -19,7 +19,6 @@ class HC256Keystream
 		void GetValue(uint8_t *);
 		void Reset();
 	protected:
-		uint32_t GetValue();
 		static inline uint32_t f1(uint32_t x);
 		static inline uint32_t f2(uint32_t x);
 		inline uint32_t g1(uint32_t x, uint32_t y);

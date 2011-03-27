@@ -305,12 +305,13 @@ void drew::HC256Keystream::SetNonce(const uint8_t *iv, size_t sz)
 	memcpy(P, w+ 512, 1024*sizeof(*w));
 	memcpy(Q, w+1536, 1024*sizeof(*w));
 
+	uint8_t dummy[4];
 	for (size_t i = 0; i < 4096; i++)
-		GetValue();
+		GetValue(dummy);
 	ctr = 0;
 }
 
-uint32_t drew::HC256Keystream::GetValue()
+void drew::HC256Keystream::GetValue(uint8_t buf[4])
 {
 	size_t j = ctr % 1024;
 	uint32_t s;
@@ -324,11 +325,5 @@ uint32_t drew::HC256Keystream::GetValue()
 		s = h2(Q[M(j, 12)]) ^ Q[j];
 	}
 	ctr++;
-	return s;
-}
-
-void drew::HC256Keystream::GetValue(uint8_t buf[4])
-{
-	uint32_t s = GetValue();
 	E::Copy(buf, &s, sizeof(s));
 }
