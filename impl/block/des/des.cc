@@ -484,35 +484,25 @@ static const int bytebit[] = {
 	   0200,0100,040,020,010,04,02,01
 };
 
-static inline uint32_t rol(uint32_t x, size_t n)
-{
-	return (x << n) | (x >> (32-n));
-}
-
-static inline uint32_t ror(uint32_t x, size_t n)
-{
-	return (x >> n) | (x << (32-n));
-}
-
 static inline void IPERM(uint32_t &left, uint32_t &right)
 {
 	uint32_t work;
 
-	right = rol(right, 4U);
+	right = RotateLeft(right, 4U);
 	work = (left ^ right) & 0xf0f0f0f0;
 	left ^= work;
-	right = ror(right^work, 20U);
+	right = RotateRight(right^work, 20U);
 	work = (left ^ right) & 0xffff0000;
 	left ^= work;
-	right = ror(right^work, 18U);
+	right = RotateRight(right^work, 18U);
 	work = (left ^ right) & 0x33333333;
 	left ^= work;
-	right = ror(right^work, 6U);
+	right = RotateRight(right^work, 6U);
 	work = (left ^ right) & 0x00ff00ff;
 	left ^= work;
-	right = rol(right^work, 9U);
+	right = RotateLeft(right^work, 9U);
 	work = (left ^ right) & 0xaaaaaaaa;
-	left = rol(left^work, 1U);
+	left = RotateLeft(left^work, 1U);
 	right ^= work;
 }
 
@@ -520,22 +510,22 @@ static inline void FPERM(uint32_t &left, uint32_t &right)
 {
 	uint32_t work;
 
-	right = ror(right, 1U);
+	right = RotateRight(right, 1U);
 	work = (left ^ right) & 0xaaaaaaaa;
 	right ^= work;
-	left = ror(left^work, 9U);
+	left = RotateRight(left^work, 9U);
 	work = (left ^ right) & 0x00ff00ff;
 	right ^= work;
-	left = rol(left^work, 6U);
+	left = RotateLeft(left^work, 6U);
 	work = (left ^ right) & 0x33333333;
 	right ^= work;
-	left = rol(left^work, 18U);
+	left = RotateLeft(left^work, 18U);
 	work = (left ^ right) & 0xffff0000;
 	right ^= work;
-	left = rol(left^work, 20U);
+	left = RotateLeft(left^work, 20U);
 	work = (left ^ right) & 0xf0f0f0f0;
 	right ^= work;
-	left = ror(left^work, 4U);
+	left = RotateRight(left^work, 4U);
 }
 
 typedef drew::DES::endian_t E;
@@ -608,7 +598,7 @@ void drew::DES::ProcessBlock(const uint32_t *k, uint32_t &m, uint32_t &s) const
 
 	for (unsigned i = 0; i < 8; i++, kptr += 4)
 	{
-		uint32_t work = ror(r, 4) ^ kptr[0];
+		uint32_t work = RotateRight(r, 4) ^ kptr[0];
 		l ^= Spbox[6][(work) & 0x3f]
 		  ^  Spbox[4][(work >> 8) & 0x3f]
 		  ^  Spbox[2][(work >> 16) & 0x3f]
@@ -619,7 +609,7 @@ void drew::DES::ProcessBlock(const uint32_t *k, uint32_t &m, uint32_t &s) const
 		  ^  Spbox[3][(work >> 16) & 0x3f]
 		  ^  Spbox[1][(work >> 24) & 0x3f];
 
-		work = ror(l, 4) ^ kptr[2];
+		work = RotateRight(l, 4) ^ kptr[2];
 		r ^= Spbox[6][(work) & 0x3f]
 		  ^  Spbox[4][(work >> 8) & 0x3f]
 		  ^  Spbox[2][(work >> 16) & 0x3f]

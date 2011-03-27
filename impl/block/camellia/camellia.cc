@@ -71,11 +71,6 @@ inline void rolpair(uint64_t &a, uint64_t &b, uint64_t x, uint64_t y,
 	b = (y << n) | (x >> (64-n));
 }
 
-inline uint32_t rol32(uint32_t x, unsigned n)
-{
-	return (x << n) | (x >> (32-n));
-}
-
 drew::Camellia::Camellia()
 {
 }
@@ -196,7 +191,7 @@ inline uint64_t drew::Camellia::fl(uint64_t x, uint64_t k) const
 {
 	uint32_t xl = (x >> 32), xr = x, kl = (k >> 32), kr = k;
 
-	uint32_t yr = rol32(xl & kl, 1) ^ xr;
+	uint32_t yr = RotateLeft(xl & kl, 1) ^ xr;
 	uint32_t yl = (yr | kr) ^ xl;
 
 	return (((uint64_t)yl) << 32) | yr;
@@ -207,7 +202,7 @@ inline uint64_t drew::Camellia::flinv(uint64_t y, uint64_t k) const
 	uint32_t yl = (y >> 32), yr = y, kl = (k >> 32), kr = k;
 
 	uint32_t xl = (yr | kr) ^ yl;
-	uint32_t xr = rol32(xl & kl, 1) ^ yr;
+	uint32_t xr = RotateLeft(xl & kl, 1) ^ yr;
 
 	return (((uint64_t)xl) << 32) | xr;
 }

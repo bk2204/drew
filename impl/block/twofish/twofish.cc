@@ -69,16 +69,6 @@ extern "C" {
 	PLUGIN_INTERFACE(twofish)
 }
 
-inline uint32_t rol(uint32_t x, unsigned n)
-{
-	return (x << n) | (x >> (32-n));
-}
-
-inline uint32_t ror(uint32_t x, unsigned n)
-{
-	return (x >> n) | (x << (32-n));
-}
-
 drew::Twofish::Twofish()
 {
 }
@@ -143,9 +133,9 @@ int drew::Twofish::SetKey(const uint8_t *key, size_t sz)
 
 	for (size_t i = 0; i < 40; i += 2) {
 		uint32_t a = h(i, m, len);
-		uint32_t b = rol(h(i+1, m+1, len), 8);
+		uint32_t b = RotateLeft(h(i+1, m+1, len), 8);
 		m_k[i] = a + b;
-		m_k[i+1] = rol(a+(2*b), 9);
+		m_k[i+1] = RotateLeft(a+(2*b), 9);
 	}
 
 	uint32_t svec[2 * (MAXKEYSZ/8)];
@@ -184,10 +174,10 @@ void drew::Twofish::f(const uint32_t *k, uint32_t a, uint32_t b, uint32_t &c,
 	y = g1(b);
 	x += y;
 	y += x;
-	d = rol(d, 1);
+	d = RotateLeft(d, 1);
 	c ^= x + k[0];
 	d ^= y + k[1];
-	c = ror(c, 1);
+	c = RotateRight(c, 1);
 }
 
 void drew::Twofish::finv(const uint32_t *k, uint32_t a, uint32_t b, uint32_t &c,
@@ -199,8 +189,8 @@ void drew::Twofish::finv(const uint32_t *k, uint32_t a, uint32_t b, uint32_t &c,
 	x += y;
 	y += x;
 	d ^= y + k[1];
-	d = ror(d, 1); 
-	c = rol(c, 1);
+	d = RotateRight(d, 1); 
+	c = RotateLeft(c, 1);
 	c ^= x + k[0];
 }
 
