@@ -15,6 +15,9 @@
 
 #include <time.h>
 #include <signal.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <sys/types.h>
 
 #include <drew/plugin.h>
 
@@ -31,6 +34,14 @@
 #else
 #define USED_CLOCK CLOCK_REALTIME
 #endif
+
+#define TEST_OK				0
+#define TEST_FAILURE		1
+#define TEST_FAILED 		TEST_FAILURE
+#define TEST_EXECUTE		2
+#define TEST_CORRUPT		3
+#define TEST_NOT_FOR_US		4
+#define TEST_NOT_IMPL		5
 
 /* When performing speed tests, try to operate on NCHUNKS chunks of size CHUNK
  * each, but not for longer than NSECONDS.
@@ -49,7 +60,15 @@ const char *test_get_default_algo(drew_loader_t *ldr, const char *name);
 void print_speed_info(int chunk, int nchunks, const struct timespec *cstart,
 		const struct timespec *cend);
 int print_test_results(int result);
-void *framework_setup(void);
 void framework_teardown(void *data);
+void *framework_setup(void);
+void test_reset_data(void *p, int do_free);
+void *test_create_data();
+const char *test_get_filename();
+int test_execute(void *data, const char *name, const void *tbl,
+		const drew_loader_t *);
+int process_bytes(ssize_t len, uint8_t **buf, const char *data);
+int test_process_testcase(void *data, int type, const char *item);
+int test_external(const drew_loader_t *ldr, const char *name, const void *tbl);
 
 #endif

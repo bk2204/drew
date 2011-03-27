@@ -12,10 +12,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #include <drew/plugin.h>
 #include <drew/stream.h>
+
+#define FILENAME "test/vectors-stream"
 
 int test_get_type(void)
 {
@@ -34,6 +37,162 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 	return print_test_results(functbl->test(NULL, ldr));
 }
 
+struct testcase {
+	char *id;
+	char *algo;
+	size_t klen;
+	size_t nlen;
+	uint8_t *key;
+	uint8_t *nonce;
+	size_t offstart;
+	size_t offend;
+	uint8_t *pt;
+	uint8_t *ct;
+};
+
+const char *test_get_filename()
+{
+	return FILENAME;
+}
+
+void test_reset_data(void *p, int do_free)
+{
+	struct testcase *tc = p;
+	if (do_free) {
+		free(tc->id);
+		free(tc->algo);
+		free(tc->key);
+		free(tc->nonce);
+		free(tc->pt);
+		free(tc->ct);
+	}
+	memset(p, 0, sizeof(struct testcase));
+}
+
+void *test_create_data()
+{
+	void *p = malloc(sizeof(struct testcase));
+	test_reset_data(p, 0);
+	return p;
+}
+
+int test_execute(void *data, const char *name, const void *tbl,
+		const drew_loader_t *ldr)
+{
+	int result = 0;
+	struct testcase *tc = data;
+	// If the test isn't for us or is corrupt, we succeed since it isn't
+	// relevant for our case.
+	if (!tc->algo)
+		return TEST_CORRUPT;
+	if (strcmp(name, tc->algo))
+		return TEST_NOT_FOR_US;
+	ssize_t len = tc->offend - tc->offstart;
+	if (len <= 0)
+		return TEST_CORRUPT;
+	if (!tc->pt || !tc->ct)
+		return TEST_CORRUPT;
+	uint8_t *buf = malloc(len);
+
+	drew_stream_t ctx;
+	ctx.functbl = tbl;
+	ctx.functbl->init(&ctx, 0, ldr, NULL);
+	ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0);
+	ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
+	for (size_t i = 0; i < tc->offstart/len; i++) {
+		// Encrypt throwaway data to get to the proper offset.
+		ctx.functbl->encrypt(&ctx, buf, buf, len);
+	}
+	size_t extra = tc->offstart % len;
+	if (extra)
+		ctx.functbl->encrypt(&ctx, buf, buf, extra);
+	// Now at the proper offset.
+	memset(buf, 0, len);
+	ctx.functbl->encrypt(&ctx, buf, tc->pt, len);
+	ctx.functbl->fini(&ctx, 0);
+	if (memcmp(buf, tc->ct, len)) {
+		printf("%02x %02x\n", buf[0], tc->ct[0]);
+		result = TEST_FAILED;
+		goto out;
+	}
+
+	ctx.functbl->init(&ctx, 0, ldr, NULL);
+	ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0);
+	ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
+	for (size_t i = 0; i < tc->offstart/len; i++) {
+		// Encrypt throwaway data to get to the proper offset.
+		ctx.functbl->decrypt(&ctx, buf, buf, len);
+	}
+	extra = tc->offstart % len;
+	if (extra)
+		ctx.functbl->decrypt(&ctx, buf, buf, extra);
+
+	// Now at the proper offset.
+	ctx.functbl->encrypt(&ctx, buf, tc->ct, len);
+	ctx.functbl->fini(&ctx, 0);
+	if (memcmp(buf, tc->pt, len))
+		result = TEST_FAILED;
+
+out:
+	free(buf);
+	return result;
+}
+
+
+int test_process_testcase(void *data, int type, const char *item)
+{
+	struct testcase *tc = data;
+
+	switch (type) {
+		case 'T':
+			if (!tc->id)
+				tc->id = strdup(item);
+			else if (strcmp(tc->id, item))
+				return TEST_EXECUTE;
+			break;
+		case 'a':
+			tc->algo = strdup(item);
+			break;
+		case 'K':
+			if (sscanf(item, "%zu", &tc->klen) != 1)
+				return TEST_CORRUPT;
+			break;
+		case 'k':
+			if (!tc->klen)
+				return TEST_CORRUPT;
+			if (process_bytes(tc->klen, &tc->key, item))
+				return TEST_CORRUPT;
+			break;
+		case 'N':
+			if (sscanf(item, "%zu", &tc->nlen) != 1)
+				return TEST_CORRUPT;
+			break;
+		case 'n':
+			if (!tc->nlen)
+				return TEST_CORRUPT;
+			if (process_bytes(tc->nlen, &tc->nonce, item))
+				return TEST_CORRUPT;
+			break;
+		case 'S':
+			if (sscanf(item, "%zu", &tc->offstart) != 1)
+				return TEST_CORRUPT;
+			break;
+		case 'E':
+			if (sscanf(item, "%zu", &tc->offend) != 1)
+				return TEST_CORRUPT;
+			break;
+		case 'p':
+			if (process_bytes(tc->offend - tc->offstart, &tc->pt, item))
+				return TEST_CORRUPT;
+			break;
+		case 'c':
+			if (process_bytes(tc->offend - tc->offstart, &tc->ct, item))
+				return TEST_CORRUPT;
+			break;
+	}
+
+	return TEST_OK;
+}
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		const void *tbl, int chunk, int nchunks)
 {

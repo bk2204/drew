@@ -50,6 +50,32 @@ inline int test_speed_loop(drew_hash_t *ctx, uint8_t *buf,
 	return i;
 }
 
+const char *test_get_filename()
+{
+	return NULL;
+}
+
+void test_reset_data(void *p, int do_free)
+{
+}
+
+void *test_create_data()
+{
+	return NULL;
+}
+
+int test_execute(void *data, const char *name, const void *tbl,
+		const drew_loader_t *ldr)
+{
+	return TEST_NOT_IMPL;
+}
+
+
+int test_process_testcase(void *data, int type, const char *item)
+{
+	return TEST_OK;
+}
+
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		const void *tbl, int chunk, int nchunks)
 {

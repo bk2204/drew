@@ -113,6 +113,86 @@ void print_speed_info(int chunk, int nchunks, const struct timespec *cstart,
 	printf("%d bytes in %0.3fs (%0.3f MiB/s)\n", (nchunks*chunk), diff, rate);
 }
 
+int process_bytes(ssize_t len, uint8_t **buf, const char *data)
+{
+	uint8_t *p;
+	if (len < 0)
+		return TEST_CORRUPT;
+	if (strlen(data) != len * 2) {
+		return TEST_CORRUPT;
+	}
+	*buf = p = malloc(len);
+	for (size_t i = 0; i < len; i++) {
+		if (sscanf(data+(i*2), "%02hhx", p+i) != 1) {
+			free(p);
+			return TEST_CORRUPT;
+		}
+	}
+	return TEST_OK;
+}
+
+int test_external(const drew_loader_t *ldr, const char *name, const void *tbl)
+{
+	char buf[2048];
+	char *saveptr;
+	FILE *fp;
+	int ret = 0, results = 0, ntests = 0;
+	size_t lineno = 0;
+	void *data = test_create_data();
+	const char *filename = test_get_filename();
+
+	if (!filename)
+		return 0;
+
+	if (!(fp = fopen(test_get_filename(), "r")))
+		return errno;
+
+	while (fgets(buf, sizeof(buf), fp)) {
+		char *p = buf, *tok;
+		size_t off = strlen(buf);
+
+		if (buf[off-1] != '\n')
+			continue;
+		lineno++;
+		buf[off-1] = 0;
+
+		while ((tok = strtok_r(p, " ", &saveptr))) {
+			p = NULL;
+			ret = test_process_testcase(data, tok[0], tok+1);
+			if (ret == TEST_EXECUTE) {
+				ret = test_execute(data, name, tbl, ldr);
+				switch (ret) {
+					case TEST_OK:
+					case TEST_FAILED:
+						results <<= 1;
+						results |= ret;
+						ntests++;
+						break;
+					case TEST_CORRUPT:
+						goto out;
+				}
+				test_reset_data(data, 1);
+				ret = test_process_testcase(data, tok[0], tok+1);
+			}
+			if (ret == TEST_CORRUPT)
+				goto out;
+		}
+	}
+
+out:
+	if (!ntests)
+		results = -DREW_ERR_NOT_IMPL;
+	test_reset_data(data, 1);
+	free(data);
+	fclose(fp);
+	if (ret == TEST_CORRUPT) {
+		printf("corrupt test at line %zu\n", lineno);
+		return -DREW_ERR_INVALID;
+	}
+	else
+		return print_test_results(results);
+}
+
 int main(int argc, char **argv)
 {
 	int error = 0;
@@ -222,6 +302,10 @@ int main(int argc, char **argv)
 				test_speed(ldr, name, algo, functbl, chunk, nchunks);
 				break;
 			case MODE_TEST:
+				result = test_external(ldr, name, functbl);
+				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
+					error++;
+				break;
 			case MODE_TEST_INTERNAL:
 				result = test_internal(ldr, name, functbl);
 				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
