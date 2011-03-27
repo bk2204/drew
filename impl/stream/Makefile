@@ -1,6 +1,7 @@
 PLUGINS_STREAM-${CFG_RC4}		+= rc4/rc4
 PLUGINS_STREAM-${CFG_SALSA20}	+= salsa20/salsa20
 PLUGINS_STREAM-${CFG_HC128}		+= hc/hc128
+PLUGINS_STREAM-${CFG_HC256}		+= hc/hc256
 PLUGINS_STREAM-${CFG_RABBIT}	+= rabbit/rabbit
 
 STREAM_DIR		:= impl/stream
