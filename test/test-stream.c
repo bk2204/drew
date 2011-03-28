@@ -34,7 +34,7 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 {
 	const drew_stream_functbl_t *functbl = tbl;
 	
-	return print_test_results(functbl->test(NULL, ldr));
+	return print_test_results(functbl->test(NULL, ldr), NULL);
 }
 
 struct testcase {
@@ -76,6 +76,12 @@ void *test_create_data()
 	return p;
 }
 
+char *test_get_id(void *data)
+{
+	struct testcase *tc = data;
+	return strdup(tc->id);
+}
+
 int test_execute(void *data, const char *name, const void *tbl,
 		const drew_loader_t *ldr)
 {
@@ -111,7 +117,6 @@ int test_execute(void *data, const char *name, const void *tbl,
 	ctx.functbl->encrypt(&ctx, buf, tc->pt, len);
 	ctx.functbl->fini(&ctx, 0);
 	if (memcmp(buf, tc->ct, len)) {
-		printf("%02x %02x\n", buf[0], tc->ct[0]);
 		result = TEST_FAILED;
 		goto out;
 	}

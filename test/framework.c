@@ -72,20 +72,26 @@ void framework_teardown(void *data)
 	timer_settime(fwdata->timer, 0, &timerspec, NULL);
 }
 
-int print_test_results(int result)
+int print_test_results(int result, char **ids)
 {
 	printf("self-test ");
 	if (!result) {
 		printf("ok");
 	}
 	else if (result > 0) {
-		/* Tests are numbered starting with 0. */
-		int last = -1;
 		printf("failed (test%s: ", (result & (result-1)) ? "s" : "");
-		for (int x = result; x; x &= ~(1 << (last))) {
-			const char *s = (last >= 0) ? ", " : "";
-			last = ffs(x) - 1;
-			printf("%s%d", s, last);
+		if (!ids) {
+			/* Tests are numbered starting with 0. */
+			int last = -1;
+			for (int x = result; x; x &= ~(1 << (last))) {
+				const char *s = (last >= 0) ? ", " : "";
+				last = ffs(x) - 1;
+				printf("%s%d", s, last);
+			}
+		}
+		else {
+			for (char **p = ids; p && *p; p++)
+				printf("%s%s", (p != ids) ? ", " : "", *p);
 		}
 		printf(")");
 	}
@@ -131,15 +137,59 @@ int process_bytes(ssize_t len, uint8_t **buf, const char *data)
 	return TEST_OK;
 }
 
+struct test_external {
+	char **ids;
+	size_t nids;
+	void *data;
+	int results;
+	size_t ntests;
+	const char *name;
+	const void *tbl;
+	const drew_loader_t *ldr;
+};
+
+static void add_id(struct test_external *tep, char *p)
+{
+	tep->nids++;
+	// FIXME: handle NULL.
+	tep->ids = realloc(tep->ids, tep->nids*sizeof(*tep->ids));
+	tep->ids[tep->nids-1] = p;
+}
+
+static int execute_test_external(int ret, struct test_external *tep)
+{
+	ret = test_execute(tep->data, tep->name, tep->tbl, tep->ldr);
+	switch (ret) {
+		case TEST_FAILED:
+			add_id(tep, test_get_id(tep->data));
+			// fallthru
+		case TEST_OK:
+			tep->results <<= 1;
+			tep->results |= ret;
+			tep->ntests++;
+			break;
+	}
+	return ret;
+}
+
 int test_external(const drew_loader_t *ldr, const char *name, const void *tbl)
 {
 	char buf[2048];
 	char *saveptr;
 	FILE *fp;
-	int ret = 0, results = 0, ntests = 0;
+	int ret = 0;
 	size_t lineno = 0;
-	void *data = test_create_data();
 	const char *filename = test_get_filename();
+	struct test_external tes;
+
+	tes.results = 0;
+	tes.ntests = 0;
+	tes.name = name;
+	tes.ldr = ldr;
+	tes.tbl = tbl;
+	tes.data = test_create_data();
+	tes.nids = 0;
+	tes.ids = NULL;
 
 	if (!filename)
 		return 0;
@@ -155,42 +205,44 @@ int test_external(const drew_loader_t *ldr, const char *name, const void *tbl)
 			continue;
 		lineno++;
 		buf[off-1] = 0;
+		if (buf[0] == '#')
+			continue;
 
 		while ((tok = strtok_r(p, " ", &saveptr))) {
 			p = NULL;
-			ret = test_process_testcase(data, tok[0], tok+1);
+			ret = test_process_testcase(tes.data, tok[0], tok+1);
 			if (ret == TEST_EXECUTE) {
-				ret = test_execute(data, name, tbl, ldr);
-				switch (ret) {
-					case TEST_OK:
-					case TEST_FAILED:
-						results <<= 1;
-						results |= ret;
-						ntests++;
-						break;
-					case TEST_CORRUPT:
-						goto out;
-				}
-				test_reset_data(data, 1);
-				ret = test_process_testcase(data, tok[0], tok+1);
+				ret = execute_test_external(ret, &tes);
+				if (ret == TEST_CORRUPT)
+					goto out;
+				test_reset_data(tes.data, 1);
+				ret = test_process_testcase(tes.data, tok[0], tok+1);
 			}
 			if (ret == TEST_CORRUPT)
 				goto out;
 		}
 	}
+	ret = execute_test_external(ret, &tes);
 
 out:
-	if (!ntests)
-		results = -DREW_ERR_NOT_IMPL;
-	test_reset_data(data, 1);
-	free(data);
+	if (!tes.ntests)
+		tes.results = -DREW_ERR_NOT_IMPL;
+	test_reset_data(tes.data, 1);
+	free(tes.data);
 	fclose(fp);
 	if (ret == TEST_CORRUPT) {
 		printf("corrupt test at line %zu\n", lineno);
-		return -DREW_ERR_INVALID;
+		tes.results = -DREW_ERR_INVALID;
 	}
-	else
-		return print_test_results(results);
+	else {
+		if (tes.nids)
+			add_id(&tes, NULL);
+		tes.results = print_test_results(tes.results, tes.ids);
+	}
+	for (size_t i = 0; i < tes.nids; i++)
+		free(tes.ids[i]);
+	free(tes.ids);
+	return tes.results;
 }
 
 int main(int argc, char **argv)

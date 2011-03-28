@@ -59,12 +59,13 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *functbl);
 const char *test_get_default_algo(drew_loader_t *ldr, const char *name);
 void print_speed_info(int chunk, int nchunks, const struct timespec *cstart,
 		const struct timespec *cend);
-int print_test_results(int result);
+int print_test_results(int result, char **ids);
 void framework_teardown(void *data);
 void *framework_setup(void);
 void test_reset_data(void *p, int do_free);
 void *test_create_data();
 const char *test_get_filename();
+char *test_get_id(void *data);
 int test_execute(void *data, const char *name, const void *tbl,
 		const drew_loader_t *);
 int process_bytes(ssize_t len, uint8_t **buf, const char *data);
