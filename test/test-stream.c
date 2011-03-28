@@ -55,24 +55,30 @@ const char *test_get_filename()
 	return FILENAME;
 }
 
-void test_reset_data(void *p, int do_free)
+void test_reset_data(void *p, int flags)
 {
 	struct testcase *tc = p;
-	if (do_free) {
+	if (flags & TEST_RESET_PARTIAL) {
+		free(tc->id);
+		tc->id = NULL;
+	}
+	if (flags & TEST_RESET_FREE) {
 		free(tc->id);
 		free(tc->algo);
 		free(tc->key);
 		free(tc->nonce);
 		free(tc->pt);
 		free(tc->ct);
+		memset(p, 0, sizeof(struct testcase));
 	}
-	memset(p, 0, sizeof(struct testcase));
+	if (flags & TEST_RESET_ZERO)
+		memset(p, 0, sizeof(struct testcase));
 }
 
 void *test_create_data()
 {
 	void *p = malloc(sizeof(struct testcase));
-	test_reset_data(p, 0);
+	test_reset_data(p, TEST_RESET_ZERO);
 	return p;
 }
 
@@ -156,6 +162,7 @@ int test_process_testcase(void *data, int type, const char *item)
 				return TEST_EXECUTE;
 			break;
 		case 'a':
+			free(tc->algo);
 			tc->algo = strdup(item);
 			break;
 		case 'K':

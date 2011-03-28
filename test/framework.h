@@ -43,6 +43,11 @@
 #define TEST_NOT_FOR_US		4
 #define TEST_NOT_IMPL		5
 
+#define TEST_RESET_PARTIAL	1
+#define TEST_RESET_FREE		2
+#define TEST_RESET_ZERO		4
+#define TEST_RESET_FULL		(~0)
+
 /* When performing speed tests, try to operate on NCHUNKS chunks of size CHUNK
  * each, but not for longer than NSECONDS.
  */
@@ -62,7 +67,7 @@ void print_speed_info(int chunk, int nchunks, const struct timespec *cstart,
 int print_test_results(int result, char **ids);
 void framework_teardown(void *data);
 void *framework_setup(void);
-void test_reset_data(void *p, int do_free);
+void test_reset_data(void *p, int flags);
 void *test_create_data();
 const char *test_get_filename();
 char *test_get_id(void *data);

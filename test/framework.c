@@ -127,6 +127,7 @@ int process_bytes(ssize_t len, uint8_t **buf, const char *data)
 	if (strlen(data) != len * 2) {
 		return TEST_CORRUPT;
 	}
+	free(*buf);
 	*buf = p = malloc(len);
 	for (size_t i = 0; i < len; i++) {
 		if (sscanf(data+(i*2), "%02hhx", p+i) != 1) {
@@ -215,7 +216,7 @@ int test_external(const drew_loader_t *ldr, const char *name, const void *tbl)
 				ret = execute_test_external(ret, &tes);
 				if (ret == TEST_CORRUPT)
 					goto out;
-				test_reset_data(tes.data, 1);
+				test_reset_data(tes.data, TEST_RESET_PARTIAL);
 				ret = test_process_testcase(tes.data, tok[0], tok+1);
 			}
 			if (ret == TEST_CORRUPT)
@@ -227,7 +228,7 @@ int test_external(const drew_loader_t *ldr, const char *name, const void *tbl)
 out:
 	if (!tes.ntests)
 		tes.results = -DREW_ERR_NOT_IMPL;
-	test_reset_data(tes.data, 1);
+	test_reset_data(tes.data, TEST_RESET_FULL);
 	free(tes.data);
 	fclose(fp);
 	if (ret == TEST_CORRUPT) {
