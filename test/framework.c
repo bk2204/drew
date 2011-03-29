@@ -173,15 +173,18 @@ static int execute_test_external(int ret, struct test_external *tep)
 	return ret;
 }
 
-int test_external(const drew_loader_t *ldr, const char *name, const void *tbl)
+int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
+		const char *filename)
 {
 	char buf[2048];
 	char *saveptr;
 	FILE *fp;
 	int ret = 0;
 	size_t lineno = 0;
-	const char *filename = test_get_filename();
 	struct test_external tes;
+
+	if (!filename)
+		filename = test_get_filename();
 
 	tes.results = 0;
 	tes.ntests = 0;
@@ -195,7 +198,7 @@ int test_external(const drew_loader_t *ldr, const char *name, const void *tbl)
 	if (!filename)
 		return 0;
 
-	if (!(fp = fopen(test_get_filename(), "r")))
+	if (!(fp = fopen(filename, "r")))
 		return errno;
 
 	while (fgets(buf, sizeof(buf), fp)) {
@@ -260,11 +263,12 @@ int main(int argc, char **argv)
 	int success_only = 0;
 	const char *optalgo = NULL;
 	const char *only = NULL;
+	const char *resource = NULL; // A filename of testcases.
 	drew_loader_t *ldr = NULL;
 
 	drew_loader_new(&ldr);
 
-	while ((opt = getopt(argc, argv, "stifa:c:n:o:")) != -1) {
+	while ((opt = getopt(argc, argv, "stifa:c:n:o:r:")) != -1) {
 		switch (opt) {
 			case 's':
 				mode = MODE_SPEED;
@@ -289,6 +293,9 @@ int main(int argc, char **argv)
 				break;
 			case 'o':
 				only = optarg;
+				break;
+			case 'r':
+				resource = optarg;
 				break;
 		}
 	}
@@ -355,7 +362,7 @@ int main(int argc, char **argv)
 				test_speed(ldr, name, algo, functbl, chunk, nchunks);
 				break;
 			case MODE_TEST:
-				result = test_external(ldr, name, functbl);
+				result = test_external(ldr, name, functbl, resource);
 				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
 					error++;
 				break;
