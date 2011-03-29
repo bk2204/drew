@@ -4,8 +4,8 @@
 #include <string.h>
 
 #include <internal.h>
-#include <plugin.h>
-#include <stream.h>
+#include <drew/plugin.h>
+#include <drew/stream.h>
 #include "rabbit.hh"
 #include "stream-plugin.h"
 #include "testcase.hh"
