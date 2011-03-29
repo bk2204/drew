@@ -1,11 +1,12 @@
 #!/usr/bin/perl -w
 
 # 0 = garbage, 1 = processing lines matching /\w+ = /, 2 = continuation lines
-# 3 = continuation lines for key.
+# 3 = continuation lines for key, 4 = continuation lines for nonce.
 $state = 0;
 $p = qr/[A-Fa-f0-9]/;
 $cnt = 0;
 $key = "";
+$iv = "";
 
 while (<>) {
 	chomp;
@@ -20,13 +21,23 @@ while (<>) {
 		printf "T%04x K%d k%s\n", $cnt, length($key)/2, $key;
 		$key = "";
 	}
+	elsif ($state == 4) {
+		$state = 1;
+		if (/^\s+($p+)/) {
+			s/^\s+//;
+			$iv .= $_;
+		}
+		printf "T%04x N%d n%s\n", $cnt, length($iv)/2, $iv;
+		$iv = "";
+	}
+
 	if (/key = ($p+)/) {
 		$key = $1;
 		$state = 3;
 	}
 	elsif (/IV = ($p+)/) {
-		printf "T%04x N%d n%s\n", $cnt, length($1)/2, $1;
-		$state = 1;
+		$iv = $1;
+		$state = 4;
 	}
 	elsif (/stream\[(\d+)..(\d+)\] = ($p+)/) {
 		print "\n" if $state == 2;
