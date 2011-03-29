@@ -1,0 +1,55 @@
+#!/usr/bin/perl -w
+
+# 0 = garbage, 1 = processing lines matching /\w+ = /, 2 = continuation lines
+# 3 = continuation lines for key.
+$state = 0;
+$p = qr/[A-Fa-f0-9]/;
+$cnt = 0;
+$key = "";
+
+while (<>) {
+	chomp;
+	next if (!$state && !/key = /);
+	y/A-F/a-f/;
+	if ($state == 3) {
+		$state = 1;
+		if (/^\s+($p+)/) {
+			s/^\s+//;
+			$key .= $_;
+		}
+		printf "T%04x K%d k%s\n", $cnt, length($key)/2, $key;
+		$key = "";
+	}
+	if (/key = ($p+)/) {
+		$key = $1;
+		$state = 3;
+	}
+	elsif (/IV = ($p+)/) {
+		printf "T%04x N%d n%s\n", $cnt, length($1)/2, $1;
+		$state = 1;
+	}
+	elsif (/stream\[(\d+)..(\d+)\] = ($p+)/) {
+		print "\n" if $state == 2;
+		printf "T%04x S%d E%d\n", $cnt, $1, $2+1;
+		printf "T%04x p%s\n", $cnt, "00" x 64 if (!$cnt);
+		printf "T%04x c%s", $cnt, $3;
+		$state = 2;
+		$cnt++;
+	}
+	elsif (/xor-digest = /) {
+		print "\n";
+		$state = 0;
+	}
+	elsif ($state == 2) {
+		if (!/^\s+(?:$p){32}/) {
+			$state = 1;
+			print "\n";
+			next;
+		}
+		s/^\s+//;
+		print;
+	}
+	elsif (/^\s*$/) {
+		$state = 0;
+	}
+}
