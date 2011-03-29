@@ -75,6 +75,5 @@ int test_execute(void *data, const char *name, const void *tbl,
 		const drew_loader_t *);
 int process_bytes(ssize_t len, uint8_t **buf, const char *data);
 int test_process_testcase(void *data, int type, const char *item);
-int test_external(const drew_loader_t *ldr, const char *name, const void *tbl);
 
 #endif
