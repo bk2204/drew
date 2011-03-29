@@ -157,6 +157,17 @@ static void add_id(struct test_external *tep, char *p)
 	tep->ids[tep->nids-1] = p;
 }
 
+// Rotate the bits, except don't allow the result to become negative.
+static int rol31(int x)
+{
+	int r = (x << 1) | (x >> (32-1));
+	if (r & 0x80000000) {
+		r |= 1;
+		r &= ~0x80000000;
+	}
+	return r;
+}
+
 static int execute_test_external(int ret, struct test_external *tep)
 {
 	ret = test_execute(tep->data, tep->name, tep->tbl, tep->ldr);
@@ -165,7 +176,7 @@ static int execute_test_external(int ret, struct test_external *tep)
 			add_id(tep, test_get_id(tep->data));
 			// fallthru
 		case TEST_OK:
-			tep->results <<= 1;
+			tep->results = rol31(tep->results);
 			tep->results |= ret;
 			tep->ntests++;
 			break;
