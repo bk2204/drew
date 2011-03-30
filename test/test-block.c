@@ -12,10 +12,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #include <drew/plugin.h>
 #include <drew/block.h>
+
+#define FILENAME "test/vectors-block"
 
 int test_get_type(void)
 {
@@ -49,7 +52,148 @@ inline int test_speed_loop(const drew_block_functbl_t *functbl, uint8_t *buf,
 	return i;
 }
 
-#include "stubs.c"
+struct testcase {
+	char *id;
+	char *algo;
+	size_t klen;
+	uint8_t *key;
+	size_t blksize;
+	uint8_t *pt;
+	uint8_t *ct;
+};
+
+const char *test_get_filename()
+{
+	return FILENAME;
+}
+
+void test_reset_data(void *p, int flags)
+{
+	struct testcase *tc = p;
+	if (flags & TEST_RESET_PARTIAL) {
+		free(tc->id);
+		tc->id = NULL;
+	}
+	if (flags & TEST_RESET_FREE) {
+		free(tc->id);
+		free(tc->algo);
+		free(tc->key);
+		free(tc->pt);
+		free(tc->ct);
+		memset(p, 0, sizeof(struct testcase));
+	}
+	if (flags & TEST_RESET_ZERO)
+		memset(p, 0, sizeof(struct testcase));
+}
+
+void *test_create_data()
+{
+	void *p = malloc(sizeof(struct testcase));
+	test_reset_data(p, TEST_RESET_ZERO);
+	return p;
+}
+
+char *test_get_id(void *data)
+{
+	struct testcase *tc = data;
+	return strdup(tc->id);
+}
+
+int test_execute(void *data, const char *name, const void *tbl,
+		struct test_external *tep)
+{
+	int result = 0;
+	struct testcase *tc = data;
+	// If the test isn't for us or is corrupt, we succeed since it isn't
+	// relevant for our case.
+	if (!tc->algo)
+		return TEST_CORRUPT;
+	if (strcmp(name, tc->algo))
+		return TEST_NOT_FOR_US;
+	size_t len = tc->blksize;
+	if (!tc->pt || !tc->ct)
+		return TEST_CORRUPT;
+	uint8_t *buf = malloc(len);
+
+	drew_block_t ctx;
+	ctx.functbl = tbl;
+	ctx.functbl->init(&ctx, 0, tep->ldr, NULL);
+	ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0);
+	ctx.functbl->encrypt(&ctx, buf, tc->pt);
+	ctx.functbl->fini(&ctx, 0);
+	if (memcmp(buf, tc->ct, len)) {
+		result = TEST_FAILED;
+		goto out;
+	}
+
+	ctx.functbl->init(&ctx, 0, tep->ldr, NULL);
+	ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0);
+	ctx.functbl->decrypt(&ctx, buf, tc->ct);
+	ctx.functbl->fini(&ctx, 0);
+	if (memcmp(buf, tc->pt, len))
+		result = TEST_FAILED;
+
+out:
+	free(buf);
+	return result;
+}
+
+
+int test_process_testcase(void *data, int type, const char *item,
+		struct test_external *tep)
+{
+	struct testcase *tc = data;
+	int res = 0;
+	drew_block_t ctx;
+	const void *tbl;
+
+	switch (type) {
+		case 'T':
+			if (!tc->id)
+				tc->id = strdup(item);
+			else if (strcmp(tc->id, item))
+				return TEST_EXECUTE;
+			break;
+		case 'a':
+			free(tc->algo);
+			tc->algo = strdup(item);
+			// We're looking for the block size here, so any implementation will
+			// do, since every implementation of the same algorithm should have
+			// the same block size.
+			if ((res = drew_loader_lookup_by_name(tep->ldr, tc->algo, 0, -1))
+					< 0)
+				return TEST_INTERNAL_ERR;
+			if (drew_loader_get_type(tep->ldr, res) != test_get_type())
+				return TEST_INTERNAL_ERR;
+			if (drew_loader_get_functbl(tep->ldr, res, &tbl) < 0)
+				return TEST_INTERNAL_ERR;
+			ctx.functbl = tbl;
+			if ((res = ctx.functbl->info(DREW_BLOCK_BLKSIZE, 0)) < 0)
+				return TEST_INTERNAL_ERR;
+			tc->blksize = res;
+			break;
+		case 'K':
+			if (sscanf(item, "%zu", &tc->klen) != 1)
+				return TEST_CORRUPT;
+			break;
+		case 'k':
+			if (!tc->klen)
+				return TEST_CORRUPT;
+			if (process_bytes(tc->klen, &tc->key, item))
+				return TEST_CORRUPT;
+			break;
+		case 'p':
+			if (process_bytes(tc->blksize, &tc->pt, item))
+				return TEST_CORRUPT;
+			break;
+		case 'c':
+			if (process_bytes(tc->blksize, &tc->ct, item))
+				return TEST_CORRUPT;
+			break;
+	}
+
+	return TEST_OK;
+}
 
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		const void *tbl, int chunk, int nchunks)
