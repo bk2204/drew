@@ -76,15 +76,15 @@ static bool testd(const char *key, const char *plain, const char *cipher,
 	memcpy(k3 + 16, key, 16);
 	memcpy(k3 + 32, key, 16);
 	k3[48] = 0;
-	return test<drew::DES>(key, plain, cipher, keybytes) &&
+	return !(test<drew::DES>(key, plain, cipher, keybytes) &&
 		test<drew::TripleDES>(k3, plain, cipher, 24) &&
-		test<drew::TripleDES>(k3, plain, cipher, 16);
+		test<drew::TripleDES>(k3, plain, cipher, 16));
 }
 
 static bool test3(const char *key, const char *plain, const char *cipher,
 		size_t keybytes = 0)
 {
-	return test<drew::TripleDES>(key, plain, cipher, keybytes);
+	return !test<drew::TripleDES>(key, plain, cipher, keybytes);
 }
 
 static int desedetest(void *, const drew_loader_t *)
