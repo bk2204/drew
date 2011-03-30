@@ -1,20 +1,5 @@
 include config
 
-#MD_SRC-${CFG_SHA1}		+= sha1.c md-pad.c
-#MD_SRC-${CFG_SHA256}	+= sha256.c md-pad.c
-#MD_SRC-${CFG_RMD160}	+= ripe160.c md-pad.c
-#MD_SRC-${CFG_MD5}		+= md5.c md-pad.c
-#MD_SRC-${CFG_MD4}		+= md4.c md-pad.c
-#MD_SRC-${CFG_MD2}		+= md2.c
-#
-#MD_MODS					:= SHA1 RMD160 MD5 MD4 MD2 SHA256
-#
-#.for i in ${MD_MODS}
-#CFLAGS-${CFG_$i}		+= -DCFG_$i
-#.endfor
-#
-#MD_OBJS			:= ${MD_SRC-y:O:u:.c=.o}
-
 CATEGORIES		:= hash block mode mac stream prng
 
 TEST_SRC		+= libmd/testsuite.c
