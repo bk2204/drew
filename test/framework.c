@@ -138,17 +138,6 @@ int process_bytes(ssize_t len, uint8_t **buf, const char *data)
 	return TEST_OK;
 }
 
-struct test_external {
-	char **ids;
-	size_t nids;
-	void *data;
-	int results;
-	size_t ntests;
-	const char *name;
-	const void *tbl;
-	const drew_loader_t *ldr;
-};
-
 static void add_id(struct test_external *tep, char *p)
 {
 	tep->nids++;
@@ -170,7 +159,7 @@ static int rol31(int x)
 
 static int execute_test_external(int ret, struct test_external *tep)
 {
-	ret = test_execute(tep->data, tep->name, tep->tbl, tep->ldr);
+	ret = test_execute(tep->data, tep->name, tep->tbl, tep);
 	switch (ret) {
 		case TEST_FAILED:
 			add_id(tep, test_get_id(tep->data));
@@ -225,13 +214,13 @@ int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
 
 		while ((tok = strtok_r(p, " ", &saveptr))) {
 			p = NULL;
-			ret = test_process_testcase(tes.data, tok[0], tok+1);
+			ret = test_process_testcase(tes.data, tok[0], tok+1, &tes);
 			if (ret == TEST_EXECUTE) {
 				ret = execute_test_external(ret, &tes);
 				if (ret == TEST_CORRUPT)
 					goto out;
 				test_reset_data(tes.data, TEST_RESET_PARTIAL);
-				ret = test_process_testcase(tes.data, tok[0], tok+1);
+				ret = test_process_testcase(tes.data, tok[0], tok+1, &tes);
 			}
 			if (ret == TEST_CORRUPT)
 				goto out;

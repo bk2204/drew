@@ -18,13 +18,14 @@ void *test_create_data()
 }
 
 int test_execute(void *data, const char *name, const void *tbl,
-		const drew_loader_t *ldr)
+		struct test_external *ldr)
 {
 	return TEST_NOT_IMPL;
 }
 
 
-int test_process_testcase(void *data, int type, const char *item)
+int test_process_testcase(void *data, int type, const char *item,
+		struct test_external *tep)
 {
 	return TEST_OK;
 }

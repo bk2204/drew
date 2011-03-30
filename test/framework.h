@@ -56,6 +56,18 @@
 #define NCHUNKS 40960
 #define NSECONDS 5
 
+struct test_external {
+	char **ids;
+	size_t nids;
+	void *data;
+	int results;
+	size_t ntests;
+	const char *name;
+	const void *tbl;
+	const drew_loader_t *ldr;
+};
+
+
 extern volatile sig_atomic_t framework_sigflag;
 
 int test_get_type(void);
@@ -73,8 +85,9 @@ void *test_create_data();
 const char *test_get_filename();
 char *test_get_id(void *data);
 int test_execute(void *data, const char *name, const void *tbl,
-		const drew_loader_t *);
+		struct test_external *);
 int process_bytes(ssize_t len, uint8_t **buf, const char *data);
-int test_process_testcase(void *data, int type, const char *item);
+int test_process_testcase(void *data, int type, const char *item,
+		struct test_external *tep);
 
 #endif

@@ -89,7 +89,7 @@ char *test_get_id(void *data)
 }
 
 int test_execute(void *data, const char *name, const void *tbl,
-		const drew_loader_t *ldr)
+		struct test_external *tep)
 {
 	int result = 0;
 	struct testcase *tc = data;
@@ -108,7 +108,7 @@ int test_execute(void *data, const char *name, const void *tbl,
 
 	drew_stream_t ctx;
 	ctx.functbl = tbl;
-	ctx.functbl->init(&ctx, 0, ldr, NULL);
+	ctx.functbl->init(&ctx, 0, tep->ldr, NULL);
 	ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0);
 	ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
 	for (size_t i = 0; i < tc->offstart/len; i++) {
@@ -127,7 +127,7 @@ int test_execute(void *data, const char *name, const void *tbl,
 		goto out;
 	}
 
-	ctx.functbl->init(&ctx, 0, ldr, NULL);
+	ctx.functbl->init(&ctx, 0, tep->ldr, NULL);
 	ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0);
 	ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
 	for (size_t i = 0; i < tc->offstart/len; i++) {
@@ -150,7 +150,8 @@ out:
 }
 
 
-int test_process_testcase(void *data, int type, const char *item)
+int test_process_testcase(void *data, int type, const char *item,
+		struct test_external *tep)
 {
 	struct testcase *tc = data;
 
