@@ -42,6 +42,7 @@
 #define TEST_CORRUPT		3
 #define TEST_NOT_FOR_US		4
 #define TEST_NOT_IMPL		5
+#define TEST_INTERNAL_ERR	6
 
 #define TEST_RESET_PARTIAL	1
 #define TEST_RESET_FREE		2
