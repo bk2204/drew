@@ -91,7 +91,7 @@ clean:
 
 test: .PHONY
 
-test check: test-scripts test-libmd
+test check: test-scripts testx-scripts test-libmd
 speed speed-test: speed-scripts
 
 test-libmd: ${TEST_EXE}
@@ -103,6 +103,13 @@ test-scripts: $(TEST_BINARIES) plugins
 		find plugins -type f | sed -e 's,.*/,,g' | \
 		sort | grep -vE '.rdf$$' | \
 		xargs env LD_LIBRARY_PATH=. test/test-$$i -i; \
+		done
+
+testx-scripts: $(TEST_BINARIES) plugins
+	for i in $(CATEGORIES); do \
+		find plugins -type f | sed -e 's,.*/,,g' | \
+		sort | grep -vE '.rdf$$' | \
+		xargs env LD_LIBRARY_PATH=. test/test-$$i -t; \
 		done
 
 speed-scripts: $(TEST_BINARIES) plugins
