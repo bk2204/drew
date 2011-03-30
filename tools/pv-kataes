@@ -1,0 +1,25 @@
+#!/usr/bin/perl -w
+
+$p = qr/[A-Fa-f0-9]/;
+$cnt = -2;
+
+while (<>) {
+	if (/KEY = ($p+)/) {
+		my $bytes = length($1) / 2;
+		my $bits = $bytes * 8;
+		$cnt++;
+		printf "T%04x aRijndael\n", $cnt if ($cnt >= 0);
+		$cnt++;
+		printf "T%04x aAES%d K%d\nT%04x k%s\n", $cnt, $bits, $bytes, $cnt, $1;
+	}
+	elsif (/PLAINTEXT = ($p+)/) {
+		printf "T%04x p%s\n", $cnt, $1;
+	}
+	elsif (/CIPHERTEXT = ($p+)/) {
+		printf "T%04x c%s\n", $cnt, $1;
+	}
+}
+if ($cnt > 0) {
+	$cnt++;
+	printf "T%04x aRijndael\n", $cnt;
+}

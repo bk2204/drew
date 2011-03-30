@@ -1,0 +1,25 @@
+#!/usr/bin/perl -w
+# There are several sets of test vectors on the skepticfiles.org page.  In some
+# cases, the plaintext and ciphertext are reversed without warning.  The set of
+# vectors  that should be used here is the set that Dennis Coskun posted,
+# possibly with the addition of Joe Cychosz's.
+
+
+$p = qr/[A-Fa-f0-9]{16}/;
+$cnt = 0;
+
+while (<>) {
+	chomp;
+	y/A-F/a-f/;
+	next if /^#/;
+	if (/($p)\s+($p)\s+($p)/) {
+		my $pt = $2;
+		my $ct = $3;
+		printf "T%04x aDES K8 k%s\nT%04x p%s c%s\n", $cnt, $1, $cnt, $pt, $ct;
+		$cnt++;
+		printf "T%04x aDESede K16 k%s%s\n", $cnt, $1, $1;
+		$cnt++;
+		printf "T%04x aDESede K24 k%s%s%s\n", $cnt, $1, $1, $1;
+		$cnt++;
+	}
+}
