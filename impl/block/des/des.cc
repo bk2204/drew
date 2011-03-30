@@ -31,16 +31,13 @@ static void str2bytes(uint8_t *bytes, const char *s, size_t len = 0)
 
 template<class T>
 static bool test(const char *key, const char *plain, const char *cipher,
-		size_t keybytes = 0)
+		size_t keybytes)
 {
 	const size_t blocksz = 8;
 	uint8_t kb[32], pb[32], cb[32], buf[32];
 	str2bytes(kb, key, keybytes * 2);
 	str2bytes(pb, plain, blocksz * 2);
 	str2bytes(cb, cipher, blocksz * 2);
-
-	if (!keybytes)
-		keybytes = 16;
 
 	T ctx;
 	ctx.SetKey(kb, keybytes);
@@ -68,15 +65,14 @@ static const int desedekeysz[] =
 	16, 24
 };
 
-static bool testd(const char *key, const char *plain, const char *cipher,
-		size_t keybytes = 0)
+static bool testd(const char *key, const char *plain, const char *cipher)
 {
 	char k3[16 * 3 + 1];
 	memcpy(k3 +  0, key, 16);
 	memcpy(k3 + 16, key, 16);
 	memcpy(k3 + 32, key, 16);
 	k3[48] = 0;
-	return !(test<drew::DES>(key, plain, cipher, keybytes) &&
+	return !(test<drew::DES>(key, plain, cipher, 8) &&
 		test<drew::TripleDES>(k3, plain, cipher, 24) &&
 		test<drew::TripleDES>(k3, plain, cipher, 16));
 }
@@ -91,13 +87,19 @@ static int desedetest(void *, const drew_loader_t *)
 {
 	int res = 0;
 
-	const char *key = "0123456789abcdef23456789abcdef0456789abcdef0123";
+	const char *key = "0123456789abcdef23456789abcdef01456789abcdef0123";
 
-	res |= test3(key, "5468652071756663", "a826fd8ce53b855f");
+	res |= test3(key, "5468652071756663", "a826fd8ce53b855f", 24);
 	res <<= 1;
-	res |= test3(key, "6b2062726f776e20", "cce21c8112256fe6");
+	res |= test3(key, "6b2062726f776e20", "cce21c8112256fe6", 24);
 	res <<= 1;
-	res |= test3(key, "666f78206a756d70", "68d5c05dd9b6b900");
+	res |= test3(key, "666f78206a756d70", "68d5c05dd9b6b900", 24);
+	res <<= 1;
+	res |= test3("0123456789abcdeffedcba9876543210",
+			"0123456789abcde7", "7f1d0a77826b8aff", 16);
+	res <<= 1;
+	res |= test3("0123456789abcdeffedcba987654321089abcdef01234567",
+			"0123456789abcde7", "de0b7c06ae5e0ed5", 24);
 
 	return res;
 }
@@ -115,7 +117,6 @@ static int destest(void *, const drew_loader_t *)
 	res |= testd("0101010101010101", "6CC5DEFAAF04512F", "0200000000000000");
 	res |= testd("0101010101010101", "0D9F279BA5D87260", "0100000000000000");
 	res |= testd("0101010101010101", "D9031B0271BD5A0A", "0080000000000000");
-	res <<= 1;
 	res |= testd("0101010101010101", "424250B37C3DD951", "0040000000000000");
 	res |= testd("0101010101010101", "B8061B7ECD9A21E5", "0020000000000000");
 	res |= testd("0101010101010101", "F15D0F286B65BD28", "0010000000000000");
@@ -133,7 +134,6 @@ static int destest(void *, const drew_loader_t *)
 	res |= testd("0101010101010101", "A484C3AD38DC9C19", "0000020000000000");
 	res |= testd("0101010101010101", "FBE00A8A1EF8AD72", "0000010000000000");
 	res |= testd("0101010101010101", "750D079407521363", "0000008000000000");
-	res <<= 1;
 	res |= testd("0101010101010101", "64FEED9C724C2FAF", "0000004000000000");
 	res |= testd("0101010101010101", "F02B263B328E2B60", "0000002000000000");
 	res |= testd("0101010101010101", "9D64555A9A10B852", "0000001000000000");
@@ -151,7 +151,6 @@ static int destest(void *, const drew_loader_t *)
 	res |= testd("0101010101010101", "814EEB3B91D90726", "0000000002000000");
 	res |= testd("0101010101010101", "4D49DB1532919C9F", "0000000001000000");
 	res |= testd("0101010101010101", "25EB5FC3F8CF0621", "0000000000800000");
-	res <<= 1;
 	res |= testd("0101010101010101", "AB6A20C0620D1C6F", "0000000000400000");
 	res |= testd("0101010101010101", "79E90DBC98F92CCA", "0000000000200000");
 	res |= testd("0101010101010101", "866ECEDD8072BB0E", "0000000000100000");
@@ -169,7 +168,6 @@ static int destest(void *, const drew_loader_t *)
 	res |= testd("0101010101010101", "48221B9937748A23", "0000000000000200");
 	res |= testd("0101010101010101", "DD7C0BBD61FAFD54", "0000000000000100");
 	res |= testd("0101010101010101", "2FBC291A570DB5C4", "0000000000000080");
-	res <<= 1;
 	res |= testd("0101010101010101", "E07C30D7E4E26E12", "0000000000000040");
 	res |= testd("0101010101010101", "0953E2258E8E90A1", "0000000000000020");
 	res |= testd("0101010101010101", "5B711BC4CEEBF2EE", "0000000000000010");
@@ -196,7 +194,6 @@ static int destest(void *, const drew_loader_t *)
 	res |= testd("0101010101010101", "0002000000000000", "ECBFE3BD3F591A5E");
 	res |= testd("0101010101010101", "0001000000000000", "F356834379D165CD");
 	res |= testd("0101010101010101", "0000800000000000", "2B9F982F20037FA9");
-	res <<= 1;
 	res |= testd("0101010101010101", "0000400000000000", "889DE068A16F0BE6");
 	res |= testd("0101010101010101", "0000200000000000", "E19E275D846A1298");
 	res |= testd("0101010101010101", "0000100000000000", "329A8ED523D71AEC");
@@ -214,7 +211,6 @@ static int destest(void *, const drew_loader_t *)
 	res |= testd("0101010101010101", "0000000200000000", "E428581186EC8F46");
 	res |= testd("0101010101010101", "0000000100000000", "AEB5F5EDE22D1A36");
 	res |= testd("0101010101010101", "0000000080000000", "E943D7568AEC0C5C");
-	res <<= 1;
 	res |= testd("0101010101010101", "0000000040000000", "DF98C8276F54B04B");
 	res |= testd("0101010101010101", "0000000020000000", "B160E4680F6C696F");
 	res |= testd("0101010101010101", "0000000010000000", "FA0752B07D9C4AB8");
@@ -232,7 +228,6 @@ static int destest(void *, const drew_loader_t *)
 	res |= testd("0101010101010101", "0000000000020000", "CAFFC6AC4542DE31");
 	res |= testd("0101010101010101", "0000000000010000", "8DD45A2DDF90796C");
 	res |= testd("0101010101010101", "0000000000008000", "1029D55E880EC2D0");
-	res <<= 1;
 	res |= testd("0101010101010101", "0000000000004000", "5D86CB23639DBEA9");
 	res |= testd("0101010101010101", "0000000000002000", "1D1CA853AE7C0C5F");
 	res |= testd("0101010101010101", "0000000000001000", "CE332329248F3228");
@@ -259,7 +254,6 @@ static int destest(void *, const drew_loader_t *)
 	res |= testd("0201010101010101", "0000000000000000", "4615AA1D33E72F10");
 	res |= testd("0180010101010101", "0000000000000000", "2055123350C00858");
 	res |= testd("0140010101010101", "0000000000000000", "DF3B99D6577397C8");
-	res <<= 1;
 	res |= testd("0120010101010101", "0000000000000000", "31FE17369B5288C9");
 	res |= testd("0110010101010101", "0000000000000000", "DFDD3CC64DAE1642");
 	res |= testd("0108010101010101", "0000000000000000", "178C83CE2B399D94");
@@ -277,7 +271,6 @@ static int destest(void *, const drew_loader_t *)
 	res |= testd("0101014001010101", "0000000000000000", "C22F0A294A71F29F");
 	res |= testd("0101012001010101", "0000000000000000", "EE371483714C02EA");
 	res |= testd("0101011001010101", "0000000000000000", "A81FBD448F9E522F");
-	res <<= 1;
 	res |= testd("0101010801010101", "0000000000000000", "4F644C92E192DFED");
 	res |= testd("0101010401010101", "0000000000000000", "1AFA9A66A6DF92AE");
 	res |= testd("0101010201010101", "0000000000000000", "B3C1CC715CB879D8");
@@ -304,7 +297,6 @@ static int destest(void *, const drew_loader_t *)
 	res |= testd("0101010101010801", "0000000000000000", "DA99DBBC9A03F379");
 	res |= testd("0101010101010401", "0000000000000000", "B7FC92F91D8E92E9");
 	res |= testd("0101010101010201", "0000000000000000", "AE8E5CAA3CA04E85");
-	res <<= 1;
 	res |= testd("0101010101010180", "0000000000000000", "9CC62DF43B6EED74");
 	res |= testd("0101010101010140", "0000000000000000", "D863DBB5C59A91A0");
 	res |= testd("0101010101010120", "0000000000000000", "A1AB2190545B91D7");
@@ -322,7 +314,6 @@ static int destest(void *, const drew_loader_t *)
 	res |= testd("0201010101010101", "0000000000000000", "4615AA1D33E72F10");
 	res |= testd("0180010101010101", "0000000000000000", "2055123350C00858");
 	res |= testd("0140010101010101", "0000000000000000", "DF3B99D6577397C8");
-	res <<= 1;
 	res |= testd("0120010101010101", "0000000000000000", "31FE17369B5288C9");
 	res |= testd("0110010101010101", "0000000000000000", "DFDD3CC64DAE1642");
 	res |= testd("0108010101010101", "0000000000000000", "178C83CE2B399D94");
@@ -349,7 +340,6 @@ static int destest(void *, const drew_loader_t *)
 	res |= testd("0101010120010101", "0000000000000000", "B7265F7F447AC6F3");
 	res |= testd("0101010110010101", "0000000000000000", "9DB73B3C0D163F54");
 	res |= testd("0101010108010101", "0000000000000000", "8181B65BABF4A975");
-	res <<= 1;
 	res |= testd("0101010104010101", "0000000000000000", "93C9B64042EAA240");
 	res |= testd("0101010102010101", "0000000000000000", "5570530829705592");
 	res |= testd("0101010101800101", "0000000000000000", "8638809E878787A0");
@@ -367,7 +357,6 @@ static int destest(void *, const drew_loader_t *)
 	res |= testd("0101010101010801", "0000000000000000", "DA99DBBC9A03F379");
 	res |= testd("0101010101010401", "0000000000000000", "B7FC92F91D8E92E9");
 	res |= testd("0101010101010201", "0000000000000000", "AE8E5CAA3CA04E85");
-	res <<= 1;
 	res |= testd("0101010101010180", "0000000000000000", "9CC62DF43B6EED74");
 	res |= testd("0101010101010140", "0000000000000000", "D863DBB5C59A91A0");
 	res |= testd("0101010101010120", "0000000000000000", "A1AB2190545B91D7");
@@ -394,7 +383,6 @@ static int destest(void *, const drew_loader_t *)
 	res |= testd("9107D01589190101", "0000000000000000", "9592CB4110430787");
 	res |= testd("1007D01598980120", "0000000000000000", "A6B7FF68A318DDD3");
 	res |= testd("1007940498190101", "0000000000000000", "4D102196C914CA16");
-	res <<= 1;
 	res |= testd("0107910491190401", "0000000000000000", "2DFA9F4573594965");
 	res |= testd("0107910491190101", "0000000000000000", "B46604816C0E0774");
 	res |= testd("0107940491190401", "0000000000000000", "6E7E6221A4F34E87");
@@ -412,7 +400,6 @@ static int destest(void *, const drew_loader_t *)
 	res |= testd("1002911598100201", "0000000000000000", "E2F5728F0995013C");
 	res |= testd("1002911698100101", "0000000000000000", "1AEAC39A61F0A464");
 	res |= testd("7CA110454A1A6E57", "01A1D6D039776742", "690F5B0D9A26939B");
-	res <<= 1;
 	res |= testd("0131D9619DC1376E", "5CD54CA83DEF57DA", "7A389D10354BD271");
 	res |= testd("07A1133E4A0B2686", "0248D43806F67172", "868EBB51CAB4599A");
 	res |= testd("3849674C2602319E", "51454B582DDF440A", "7178876E01F19B2A");
@@ -430,7 +417,6 @@ static int destest(void *, const drew_loader_t *)
 	res |= testd("49793EBC79B3258F", "437540C8698F3CFA", "6FBF1CAFCFFD0556");
 	res |= testd("4FB05E1515AB73A7", "072D43A077075292", "2F22E49BAB7CA1AC");
 	res |= testd("49E95D6D4CA229BF", "02FE55778117F12A", "5A6B612CC26CCE4A");
-	res <<= 1;
 	res |= testd("018310DC409B26D6", "1D9D5C5018F728C2", "5F4C038ED12B2E41");
 	res |= testd("1C587F1C13924FEF", "305532286D6F295A", "63FAC0D034D9F793");
 
@@ -544,7 +530,7 @@ int drew::DES::SetKey(const uint8_t *key, size_t len)
 	uint8_t *const pc1m = buffer;
 	uint8_t *const pcr = pc1m + 56;
 	uint8_t *const ks = pcr+56;
-	
+
 	for (int j = 0; j < 56; j++) {
 		int l = pc1[j] - 1;
 		int m = l & 07;
@@ -632,6 +618,7 @@ int drew::DES::Encrypt(uint8_t *out, const uint8_t *in) const
 	IPERM(x[0], x[1]);
 	ProcessBlock(m_k, x[0], x[1]);
 	FPERM(x[0], x[1]);
+	std::swap(x[0], x[1]);
 	E::Copy(out, x, sizeof(x));
 
 	return 0;
@@ -648,6 +635,7 @@ int drew::TripleDES::Encrypt(uint8_t *out, const uint8_t *in) const
 	d2->ProcessBlock(d2->m_kd, x[1], x[0]);
 	d3->ProcessBlock(d3->m_k, x[0], x[1]);
 	FPERM(x[0], x[1]);
+	std::swap(x[0], x[1]);
 	E::Copy(out, x, sizeof(x));
 	
 	return 0;
@@ -661,6 +649,7 @@ int drew::DES::Decrypt(uint8_t *out, const uint8_t *in) const
 	IPERM(x[0], x[1]);
 	ProcessBlock(m_kd, x[0], x[1]);
 	FPERM(x[0], x[1]);
+	std::swap(x[0], x[1]);
 	E::Copy(out, x, sizeof(x));
 
 	return 0;
@@ -677,6 +666,7 @@ int drew::TripleDES::Decrypt(uint8_t *out, const uint8_t *in) const
 	d2->ProcessBlock(d2->m_k, x[1], x[0]);
 	d3->ProcessBlock(d3->m_kd, x[0], x[1]);
 	FPERM(x[0], x[1]);
+	std::swap(x[0], x[1]);
 	E::Copy(out, x, sizeof(x));
 
 	return 0;
