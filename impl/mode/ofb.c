@@ -34,7 +34,8 @@ static int ofb_fini(drew_mode_t *ctx, int flags);
 static int ofb_test(void *p, const drew_loader_t *ldr);
 static int ofb_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags);
 static int ofb_setdata(drew_mode_t *, const uint8_t *, size_t);
-static int ofb_final(drew_mode_t *, uint8_t *, size_t);
+static int ofb_final(drew_mode_t *ctx, uint8_t *out, size_t outlen,
+		const uint8_t *in, size_t inlen);
 
 static const drew_mode_functbl_t ofb_functbl = {
 	ofb_info, ofb_init, ofb_clone, ofb_fini, ofb_setpad, ofb_setblock,
@@ -56,6 +57,9 @@ static int ofb_info(int op, void *p)
 			return 2;
 		case DREW_MODE_INTSIZE:
 			return sizeof(struct ofb);
+		case DREW_MODE_FINAL_INSIZE:
+		case DREW_MODE_FINAL_OUTSIZE:
+			return 0;
 		case DREW_MODE_QUANTUM:
 		default:
 			return DREW_ERR_INVALID;
@@ -191,11 +195,12 @@ static int ofb_setdata(drew_mode_t *ctx, const uint8_t *data, size_t len)
 	return -DREW_ERR_NOT_ALLOWED;
 }
 
-static int ofb_final(drew_mode_t *ctx, uint8_t *data, size_t len)
+static int ofb_final(drew_mode_t *ctx, uint8_t *out, size_t outlen,
+		const uint8_t *in, size_t inlen)
 {
-	return -DREW_ERR_NOT_ALLOWED;
+	ofb_encrypt(ctx, out, in, inlen);
+	return inlen;
 }
-
 
 struct test {
 	const uint8_t *key;

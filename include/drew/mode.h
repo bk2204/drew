@@ -22,6 +22,12 @@
  * block of memory, such as locked memory.
  */
 #define DREW_MODE_INTSIZE 2 /* Not implemented. */
+/* The number of bytes to pass as input to the final method instead of to the
+ * normal one.
+ */
+#define DREW_MODE_FINAL_INSIZE 3
+/* The number of bytes required for output from the final method. */
+#define DREW_MODE_FINAL_OUTSIZE 4
 
 /* This bit indicates that the ctx member of drew_mode_t is externally
  * allocated and sufficiently large.
@@ -64,8 +70,10 @@ typedef struct {
 	int (*encryptfast)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
 	int (*decryptfast)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
 	int (*setdata)(drew_mode_t *, const uint8_t *, size_t);
-	int (*encryptfinal)(drew_mode_t *, uint8_t *, size_t);
-	int (*decryptfinal)(drew_mode_t *, uint8_t *, size_t);
+	int (*encryptfinal)(drew_mode_t *, uint8_t *, size_t, const uint8_t *,
+			size_t);
+	int (*decryptfinal)(drew_mode_t *, uint8_t *, size_t, const uint8_t *,
+			size_t);
 	int (*test)(void *, const drew_loader_t *);
 } drew_mode_functbl2_t;
 

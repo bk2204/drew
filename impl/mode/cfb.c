@@ -35,12 +35,15 @@ static int cfb_fini(drew_mode_t *ctx, int flags);
 static int cfb_test(void *p, const drew_loader_t *ldr);
 static int cfb_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags);
 static int cfb_setdata(drew_mode_t *, const uint8_t *, size_t);
-static int cfb_final(drew_mode_t *, uint8_t *, size_t);
+static int cfb_encryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
+		const uint8_t *in, size_t inlen);
+static int cfb_decryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
+		const uint8_t *in, size_t inlen);
 
 static const drew_mode_functbl_t cfb_functbl = {
 	cfb_info, cfb_init, cfb_clone, cfb_fini, cfb_setpad, cfb_setblock,
 	cfb_setiv, cfb_encrypt, cfb_decrypt, cfb_encrypt, cfb_decrypt,
-	cfb_setdata, cfb_final, cfb_final, cfb_test
+	cfb_setdata, cfb_encryptfinal, cfb_decryptfinal, cfb_test
 };
 
 static int cfb_info(int op, void *p)
@@ -50,6 +53,9 @@ static int cfb_info(int op, void *p)
 			return 2;
 		case DREW_MODE_INTSIZE:
 			return sizeof(struct cfb);
+		case DREW_MODE_FINAL_INSIZE:
+		case DREW_MODE_FINAL_OUTSIZE:
+			return 0;
 		case DREW_MODE_QUANTUM:
 		default:
 			return DREW_ERR_INVALID;
@@ -208,9 +214,18 @@ static int cfb_setdata(drew_mode_t *ctx, const uint8_t *data, size_t len)
 	return -DREW_ERR_NOT_ALLOWED;
 }
 
-static int cfb_final(drew_mode_t *ctx, uint8_t *data, size_t len)
+static int cfb_encryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
+		const uint8_t *in, size_t inlen)
 {
-	return -DREW_ERR_NOT_ALLOWED;
+	cfb_encrypt(ctx, out, in, inlen);
+	return inlen;
+}
+
+static int cfb_decryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
+		const uint8_t *in, size_t inlen)
+{
+	cfb_decrypt(ctx, out, in, inlen);
+	return inlen;
 }
 
 struct test {
