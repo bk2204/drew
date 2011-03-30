@@ -138,14 +138,31 @@ out:
 	return result;
 }
 
+// We return 0 if we don't know.  Maybe the algorithm hasn't been loaded yet.
+static size_t get_block_size(struct test_external *tep, struct testcase *tc)
+{
+	int res = 0;
+	drew_block_t ctx;
+	const void *tbl;
+	// We're looking for the block size here, so any implementation will
+	// do, since every implementation of the same algorithm should have
+	// the same block size.
+	if ((res = drew_loader_lookup_by_name(tep->ldr, tc->algo, 0, -1)) < 0)
+		return 0;
+	if (drew_loader_get_type(tep->ldr, res) != test_get_type())
+		return 0;
+	if (drew_loader_get_functbl(tep->ldr, res, &tbl) < 0)
+		return 0;
+	ctx.functbl = tbl;
+	if ((res = ctx.functbl->info(DREW_BLOCK_BLKSIZE, 0)) < 0)
+		return 0;
+	return res;
+}
 
 int test_process_testcase(void *data, int type, const char *item,
 		struct test_external *tep)
 {
 	struct testcase *tc = data;
-	int res = 0;
-	drew_block_t ctx;
-	const void *tbl;
 
 	switch (type) {
 		case 'T':
@@ -157,20 +174,7 @@ int test_process_testcase(void *data, int type, const char *item,
 		case 'a':
 			free(tc->algo);
 			tc->algo = strdup(item);
-			// We're looking for the block size here, so any implementation will
-			// do, since every implementation of the same algorithm should have
-			// the same block size.
-			if ((res = drew_loader_lookup_by_name(tep->ldr, tc->algo, 0, -1))
-					< 0)
-				return TEST_INTERNAL_ERR;
-			if (drew_loader_get_type(tep->ldr, res) != test_get_type())
-				return TEST_INTERNAL_ERR;
-			if (drew_loader_get_functbl(tep->ldr, res, &tbl) < 0)
-				return TEST_INTERNAL_ERR;
-			ctx.functbl = tbl;
-			if ((res = ctx.functbl->info(DREW_BLOCK_BLKSIZE, 0)) < 0)
-				return TEST_INTERNAL_ERR;
-			tc->blksize = res;
+			tc->blksize = get_block_size(tep, tc);
 			break;
 		case 'K':
 			if (sscanf(item, "%zu", &tc->klen) != 1)
@@ -183,10 +187,14 @@ int test_process_testcase(void *data, int type, const char *item,
 				return TEST_CORRUPT;
 			break;
 		case 'p':
+			if (!tc->blksize)
+				tc->blksize = strlen(item) / 2;
 			if (process_bytes(tc->blksize, &tc->pt, item))
 				return TEST_CORRUPT;
 			break;
 		case 'c':
+			if (!tc->blksize)
+				tc->blksize = strlen(item) / 2;
 			if (process_bytes(tc->blksize, &tc->ct, item))
 				return TEST_CORRUPT;
 			break;
