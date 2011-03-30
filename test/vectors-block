@@ -6087,3 +6087,19 @@ TDES-pvdsf0264 aDES K8 kfedcba9876543210
 TDES-pvdsf0264 pffffffffffffffff c2a2bb008df97c2f2
 TDES-pvdsf0265 aDESede K16 kfedcba9876543210fedcba9876543210
 TDES-pvdsf0266 aDESede K24 kfedcba9876543210fedcba9876543210fedcba9876543210
+# From NIST's SP 800-67.
+T3DES-00 aDESede K24 k0123456789abcdef23456789abcdef01456789abcdef0123
+T3DES-00 p5468652071756663
+T3DES-00 ca826fd8ce53b855f
+T3DES-01 p6b2062726f776e20
+T3DES-01 ccce21c8112256fe6
+T3DES-02 p666f78206a756d70
+T3DES-02 c68d5c05dd9b6b900
+# From Crypto++ 5.6.1.  Note that there is a third testcase listed in the file.
+# It is, however, incorrect.  Neither this implementation nor Crypto++ match
+# the behavior of this third testcase.
+T3DES-03 aDESede K16 k0123456789abcdeffedcba9876543210
+T3DES-03 p0123456789abcde7
+T3DES-03 c7f1d0a77826b8aff
+T3DES-04 K24 k0123456789abcdeffedcba987654321089abcdef01234567
+T3DES-04 cde0b7c06ae5e0ed5
