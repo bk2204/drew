@@ -6104,154 +6104,154 @@ T3DES-03 c7f1d0a77826b8aff
 T3DES-04 K24 k0123456789abcdeffedcba987654321089abcdef01234567
 T3DES-04 cde0b7c06ae5e0ed5
 # From <http://www.schneier.com/code/vectors.txt>, using pv-schneier.
-T0000 aBlowfish K8 k0000000000000000
-T0000 p0000000000000000
-T0000 c4ef997456198dd78
-T0001 aBlowfish K8 kffffffffffffffff
-T0001 pffffffffffffffff
-T0001 c51866fd5b85ecb8a
-T0002 aBlowfish K8 k3000000000000000
-T0002 p1000000000000001
-T0002 c7d856f9a613063f2
-T0003 aBlowfish K8 k1111111111111111
-T0003 p1111111111111111
-T0003 c2466dd878b963c9d
-T0004 aBlowfish K8 k0123456789abcdef
-T0004 p1111111111111111
-T0004 c61f9c3802281b096
-T0005 aBlowfish K8 k1111111111111111
-T0005 p0123456789abcdef
-T0005 c7d0cc630afda1ec7
-T0006 aBlowfish K8 k0000000000000000
-T0006 p0000000000000000
-T0006 c4ef997456198dd78
-T0007 aBlowfish K8 kfedcba9876543210
-T0007 p0123456789abcdef
-T0007 c0aceab0fc6a0a28d
-T0008 aBlowfish K8 k7ca110454a1a6e57
-T0008 p01a1d6d039776742
-T0008 c59c68245eb05282b
-T0009 aBlowfish K8 k0131d9619dc1376e
-T0009 p5cd54ca83def57da
-T0009 cb1b8cc0b250f09a0
-T000a aBlowfish K8 k07a1133e4a0b2686
-T000a p0248d43806f67172
-T000a c1730e5778bea1da4
-T000b aBlowfish K8 k3849674c2602319e
-T000b p51454b582ddf440a
-T000b ca25e7856cf2651eb
-T000c aBlowfish K8 k04b915ba43feb5b6
-T000c p42fd443059577fa2
-T000c c353882b109ce8f1a
-T000d aBlowfish K8 k0113b970fd34f2ce
-T000d p059b5e0851cf143a
-T000d c48f4d0884c379918
-T000e aBlowfish K8 k0170f175468fb5e6
-T000e p0756d8e0774761d2
-T000e c432193b78951fc98
-T000f aBlowfish K8 k43297fad38e373fe
-T000f p762514b829bf486a
-T000f c13f04154d69d1ae5
-T0010 aBlowfish K8 k07a7137045da2a16
-T0010 p3bdd119049372802
-T0010 c2eedda93ffd39c79
-T0011 aBlowfish K8 k04689104c2fd3b2f
-T0011 p26955f6835af609a
-T0011 cd887e0393c2da6e3
-T0012 aBlowfish K8 k37d06bb516cb7546
-T0012 p164d5e404f275232
-T0012 c5f99d04f5b163969
-T0013 aBlowfish K8 k1f08260d1ac2465e
-T0013 p6b056e18759f5cca
-T0013 c4a057a3b24d3977b
-T0014 aBlowfish K8 k584023641aba6176
-T0014 p004bd6ef09176062
-T0014 c452031c1e4fada8e
-T0015 aBlowfish K8 k025816164629b007
-T0015 p480d39006ee762f2
-T0015 c7555ae39f59b87bd
-T0016 aBlowfish K8 k49793ebc79b3258f
-T0016 p437540c8698f3cfa
-T0016 c53c55f9cb49fc019
-T0017 aBlowfish K8 k4fb05e1515ab73a7
-T0017 p072d43a077075292
-T0017 c7a8e7bfa937e89a3
-T0018 aBlowfish K8 k49e95d6d4ca229bf
-T0018 p02fe55778117f12a
-T0018 ccf9c5d7a4986adb5
-T0019 aBlowfish K8 k018310dc409b26d6
-T0019 p1d9d5c5018f728c2
-T0019 cd1abb290658bc778
-T001a aBlowfish K8 k1c587f1c13924fef
-T001a p305532286d6f295a
-T001a c55cb3774d13ef201
-T001b aBlowfish K8 k0101010101010101
-T001b p0123456789abcdef
-T001b cfa34ec4847b268b2
-T001c aBlowfish K8 k1f1f1f1f0e0e0e0e
-T001c p0123456789abcdef
-T001c ca790795108ea3cae
-T001d aBlowfish K8 ke0fee0fef1fef1fe
-T001d p0123456789abcdef
-T001d cc39e072d9fac631d
-T001e aBlowfish K8 k0000000000000000
-T001e pffffffffffffffff
-T001e c014933e0cdaff6e4
-T001f aBlowfish K8 kffffffffffffffff
-T001f p0000000000000000
-T001f cf21e9a77b71c49bc
-T0020 aBlowfish K8 k0123456789abcdef
-T0020 p0000000000000000
-T0020 c245946885754369a
-T0021 aBlowfish K8 kfedcba9876543210
-T0021 pffffffffffffffff
-T0021 c6b5c5a9c5d9e0a5a
-T0022 aBlowfish pfedcba9876543210
-T0022 K1 kf0
-T0022 cf9ad597c49db005e
-T0023 K2 kf0e1
-T0023 ce91d21c1d961a6d6
-T0024 K3 kf0e1d2
-T0024 ce9c2b70a1bc65cf3
-T0025 K4 kf0e1d2c3
-T0025 cbe1e639408640f05
-T0026 K5 kf0e1d2c3b4
-T0026 cb39e44481bdb1e6e
-T0027 K6 kf0e1d2c3b4a5
-T0027 c9457aa83b1928c0d
-T0028 K7 kf0e1d2c3b4a596
-T0028 c8bb77032f960629d
-T0029 K8 kf0e1d2c3b4a59687
-T0029 ce87a244e2cc85e82
-T002a K9 kf0e1d2c3b4a5968778
-T002a c15750e7a4f4ec577
-T002b K10 kf0e1d2c3b4a596877869
-T002b c122ba70b3ab64ae0
-T002c K11 kf0e1d2c3b4a5968778695a
-T002c c3a833c9affc537f6
-T002d K12 kf0e1d2c3b4a5968778695a4b
-T002d c9409da87a90f6bf2
-T002e K13 kf0e1d2c3b4a5968778695a4b3c
-T002e c884f80625060b8b4
-T002f K14 kf0e1d2c3b4a5968778695a4b3c2d
-T002f c1f85031c19e11968
-T0030 K15 kf0e1d2c3b4a5968778695a4b3c2d1e
-T0030 c79d9373a714ca34f
-T0031 K16 kf0e1d2c3b4a5968778695a4b3c2d1e0f
-T0031 c93142887ee3be15c
-T0032 K17 kf0e1d2c3b4a5968778695a4b3c2d1e0f00
-T0032 c03429e838ce2d14b
-T0033 K18 kf0e1d2c3b4a5968778695a4b3c2d1e0f0011
-T0033 ca4299e27469ff67b
-T0034 K19 kf0e1d2c3b4a5968778695a4b3c2d1e0f001122
-T0034 cafd5aed1c1bc96a8
-T0035 K20 kf0e1d2c3b4a5968778695a4b3c2d1e0f00112233
-T0035 c10851c0e3858da9f
-T0036 K21 kf0e1d2c3b4a5968778695a4b3c2d1e0f0011223344
-T0036 ce6f51ed79b9db21f
-T0037 K22 kf0e1d2c3b4a5968778695a4b3c2d1e0f001122334455
-T0037 c64a6e14afd36b46f
-T0038 K23 kf0e1d2c3b4a5968778695a4b3c2d1e0f00112233445566
-T0038 c80c7d7d45a5479ad
-T0039 K24 kf0e1d2c3b4a5968778695a4b3c2d1e0f0011223344556677
-T0039 c05044b62fa52d080
+TBlowfish-pvs0000 aBlowfish K8 k0000000000000000
+TBlowfish-pvs0000 p0000000000000000
+TBlowfish-pvs0000 c4ef997456198dd78
+TBlowfish-pvs0001 aBlowfish K8 kffffffffffffffff
+TBlowfish-pvs0001 pffffffffffffffff
+TBlowfish-pvs0001 c51866fd5b85ecb8a
+TBlowfish-pvs0002 aBlowfish K8 k3000000000000000
+TBlowfish-pvs0002 p1000000000000001
+TBlowfish-pvs0002 c7d856f9a613063f2
+TBlowfish-pvs0003 aBlowfish K8 k1111111111111111
+TBlowfish-pvs0003 p1111111111111111
+TBlowfish-pvs0003 c2466dd878b963c9d
+TBlowfish-pvs0004 aBlowfish K8 k0123456789abcdef
+TBlowfish-pvs0004 p1111111111111111
+TBlowfish-pvs0004 c61f9c3802281b096
+TBlowfish-pvs0005 aBlowfish K8 k1111111111111111
+TBlowfish-pvs0005 p0123456789abcdef
+TBlowfish-pvs0005 c7d0cc630afda1ec7
+TBlowfish-pvs0006 aBlowfish K8 k0000000000000000
+TBlowfish-pvs0006 p0000000000000000
+TBlowfish-pvs0006 c4ef997456198dd78
+TBlowfish-pvs0007 aBlowfish K8 kfedcba9876543210
+TBlowfish-pvs0007 p0123456789abcdef
+TBlowfish-pvs0007 c0aceab0fc6a0a28d
+TBlowfish-pvs0008 aBlowfish K8 k7ca110454a1a6e57
+TBlowfish-pvs0008 p01a1d6d039776742
+TBlowfish-pvs0008 c59c68245eb05282b
+TBlowfish-pvs0009 aBlowfish K8 k0131d9619dc1376e
+TBlowfish-pvs0009 p5cd54ca83def57da
+TBlowfish-pvs0009 cb1b8cc0b250f09a0
+TBlowfish-pvs000a aBlowfish K8 k07a1133e4a0b2686
+TBlowfish-pvs000a p0248d43806f67172
+TBlowfish-pvs000a c1730e5778bea1da4
+TBlowfish-pvs000b aBlowfish K8 k3849674c2602319e
+TBlowfish-pvs000b p51454b582ddf440a
+TBlowfish-pvs000b ca25e7856cf2651eb
+TBlowfish-pvs000c aBlowfish K8 k04b915ba43feb5b6
+TBlowfish-pvs000c p42fd443059577fa2
+TBlowfish-pvs000c c353882b109ce8f1a
+TBlowfish-pvs000d aBlowfish K8 k0113b970fd34f2ce
+TBlowfish-pvs000d p059b5e0851cf143a
+TBlowfish-pvs000d c48f4d0884c379918
+TBlowfish-pvs000e aBlowfish K8 k0170f175468fb5e6
+TBlowfish-pvs000e p0756d8e0774761d2
+TBlowfish-pvs000e c432193b78951fc98
+TBlowfish-pvs000f aBlowfish K8 k43297fad38e373fe
+TBlowfish-pvs000f p762514b829bf486a
+TBlowfish-pvs000f c13f04154d69d1ae5
+TBlowfish-pvs0010 aBlowfish K8 k07a7137045da2a16
+TBlowfish-pvs0010 p3bdd119049372802
+TBlowfish-pvs0010 c2eedda93ffd39c79
+TBlowfish-pvs0011 aBlowfish K8 k04689104c2fd3b2f
+TBlowfish-pvs0011 p26955f6835af609a
+TBlowfish-pvs0011 cd887e0393c2da6e3
+TBlowfish-pvs0012 aBlowfish K8 k37d06bb516cb7546
+TBlowfish-pvs0012 p164d5e404f275232
+TBlowfish-pvs0012 c5f99d04f5b163969
+TBlowfish-pvs0013 aBlowfish K8 k1f08260d1ac2465e
+TBlowfish-pvs0013 p6b056e18759f5cca
+TBlowfish-pvs0013 c4a057a3b24d3977b
+TBlowfish-pvs0014 aBlowfish K8 k584023641aba6176
+TBlowfish-pvs0014 p004bd6ef09176062
+TBlowfish-pvs0014 c452031c1e4fada8e
+TBlowfish-pvs0015 aBlowfish K8 k025816164629b007
+TBlowfish-pvs0015 p480d39006ee762f2
+TBlowfish-pvs0015 c7555ae39f59b87bd
+TBlowfish-pvs0016 aBlowfish K8 k49793ebc79b3258f
+TBlowfish-pvs0016 p437540c8698f3cfa
+TBlowfish-pvs0016 c53c55f9cb49fc019
+TBlowfish-pvs0017 aBlowfish K8 k4fb05e1515ab73a7
+TBlowfish-pvs0017 p072d43a077075292
+TBlowfish-pvs0017 c7a8e7bfa937e89a3
+TBlowfish-pvs0018 aBlowfish K8 k49e95d6d4ca229bf
+TBlowfish-pvs0018 p02fe55778117f12a
+TBlowfish-pvs0018 ccf9c5d7a4986adb5
+TBlowfish-pvs0019 aBlowfish K8 k018310dc409b26d6
+TBlowfish-pvs0019 p1d9d5c5018f728c2
+TBlowfish-pvs0019 cd1abb290658bc778
+TBlowfish-pvs001a aBlowfish K8 k1c587f1c13924fef
+TBlowfish-pvs001a p305532286d6f295a
+TBlowfish-pvs001a c55cb3774d13ef201
+TBlowfish-pvs001b aBlowfish K8 k0101010101010101
+TBlowfish-pvs001b p0123456789abcdef
+TBlowfish-pvs001b cfa34ec4847b268b2
+TBlowfish-pvs001c aBlowfish K8 k1f1f1f1f0e0e0e0e
+TBlowfish-pvs001c p0123456789abcdef
+TBlowfish-pvs001c ca790795108ea3cae
+TBlowfish-pvs001d aBlowfish K8 ke0fee0fef1fef1fe
+TBlowfish-pvs001d p0123456789abcdef
+TBlowfish-pvs001d cc39e072d9fac631d
+TBlowfish-pvs001e aBlowfish K8 k0000000000000000
+TBlowfish-pvs001e pffffffffffffffff
+TBlowfish-pvs001e c014933e0cdaff6e4
+TBlowfish-pvs001f aBlowfish K8 kffffffffffffffff
+TBlowfish-pvs001f p0000000000000000
+TBlowfish-pvs001f cf21e9a77b71c49bc
+TBlowfish-pvs0020 aBlowfish K8 k0123456789abcdef
+TBlowfish-pvs0020 p0000000000000000
+TBlowfish-pvs0020 c245946885754369a
+TBlowfish-pvs0021 aBlowfish K8 kfedcba9876543210
+TBlowfish-pvs0021 pffffffffffffffff
+TBlowfish-pvs0021 c6b5c5a9c5d9e0a5a
+TBlowfish-pvs0022 aBlowfish pfedcba9876543210
+TBlowfish-pvs0022 K1 kf0
+TBlowfish-pvs0022 cf9ad597c49db005e
+TBlowfish-pvs0023 K2 kf0e1
+TBlowfish-pvs0023 ce91d21c1d961a6d6
+TBlowfish-pvs0024 K3 kf0e1d2
+TBlowfish-pvs0024 ce9c2b70a1bc65cf3
+TBlowfish-pvs0025 K4 kf0e1d2c3
+TBlowfish-pvs0025 cbe1e639408640f05
+TBlowfish-pvs0026 K5 kf0e1d2c3b4
+TBlowfish-pvs0026 cb39e44481bdb1e6e
+TBlowfish-pvs0027 K6 kf0e1d2c3b4a5
+TBlowfish-pvs0027 c9457aa83b1928c0d
+TBlowfish-pvs0028 K7 kf0e1d2c3b4a596
+TBlowfish-pvs0028 c8bb77032f960629d
+TBlowfish-pvs0029 K8 kf0e1d2c3b4a59687
+TBlowfish-pvs0029 ce87a244e2cc85e82
+TBlowfish-pvs002a K9 kf0e1d2c3b4a5968778
+TBlowfish-pvs002a c15750e7a4f4ec577
+TBlowfish-pvs002b K10 kf0e1d2c3b4a596877869
+TBlowfish-pvs002b c122ba70b3ab64ae0
+TBlowfish-pvs002c K11 kf0e1d2c3b4a5968778695a
+TBlowfish-pvs002c c3a833c9affc537f6
+TBlowfish-pvs002d K12 kf0e1d2c3b4a5968778695a4b
+TBlowfish-pvs002d c9409da87a90f6bf2
+TBlowfish-pvs002e K13 kf0e1d2c3b4a5968778695a4b3c
+TBlowfish-pvs002e c884f80625060b8b4
+TBlowfish-pvs002f K14 kf0e1d2c3b4a5968778695a4b3c2d
+TBlowfish-pvs002f c1f85031c19e11968
+TBlowfish-pvs0030 K15 kf0e1d2c3b4a5968778695a4b3c2d1e
+TBlowfish-pvs0030 c79d9373a714ca34f
+TBlowfish-pvs0031 K16 kf0e1d2c3b4a5968778695a4b3c2d1e0f
+TBlowfish-pvs0031 c93142887ee3be15c
+TBlowfish-pvs0032 K17 kf0e1d2c3b4a5968778695a4b3c2d1e0f00
+TBlowfish-pvs0032 c03429e838ce2d14b
+TBlowfish-pvs0033 K18 kf0e1d2c3b4a5968778695a4b3c2d1e0f0011
+TBlowfish-pvs0033 ca4299e27469ff67b
+TBlowfish-pvs0034 K19 kf0e1d2c3b4a5968778695a4b3c2d1e0f001122
+TBlowfish-pvs0034 cafd5aed1c1bc96a8
+TBlowfish-pvs0035 K20 kf0e1d2c3b4a5968778695a4b3c2d1e0f00112233
+TBlowfish-pvs0035 c10851c0e3858da9f
+TBlowfish-pvs0036 K21 kf0e1d2c3b4a5968778695a4b3c2d1e0f0011223344
+TBlowfish-pvs0036 ce6f51ed79b9db21f
+TBlowfish-pvs0037 K22 kf0e1d2c3b4a5968778695a4b3c2d1e0f001122334455
+TBlowfish-pvs0037 c64a6e14afd36b46f
+TBlowfish-pvs0038 K23 kf0e1d2c3b4a5968778695a4b3c2d1e0f00112233445566
+TBlowfish-pvs0038 c80c7d7d45a5479ad
+TBlowfish-pvs0039 K24 kf0e1d2c3b4a5968778695a4b3c2d1e0f0011223344556677
+TBlowfish-pvs0039 c05044b62fa52d080
