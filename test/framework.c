@@ -347,7 +347,7 @@ int main(int argc, char **argv)
 			continue;
 
 		algo = optalgo;
-		if (!algo)
+		if (!algo && mode != MODE_TEST)
 			algo = test_get_default_algo(ldr, name);
 		if (algo) {
 			char buf[16];
