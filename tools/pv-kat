@@ -1,0 +1,38 @@
+#!/usr/bin/perl -w
+# This tool generates test vectors from the AES *submission* known answer tests
+# and as such, works with all the files from AES submissions (including those of
+# e.g. Serpent and Twofish).  This is a different format from the Rijndael tests
+# that were prepared by NIST; that format is handled by pv-kataes.
+#
+# Suitable vectors for input to this program can be found at
+# <http://www.gnu.org/software/gnu-crypto/vectors/>.
+
+$cnt = 0;
+$p = qr/[A-Fa-f0-9]/;
+$p16 = qr/$p{32}/;
+$name = "";
+
+sub tag {
+	return sprintf "T%s-pvk%04x ", $name, $cnt;
+}
+
+while (<>) {
+	chomp;
+	if (/Algorithm Name:\s+([A-Za-z0-9]+)/) {
+		$name = $1;
+		# Fix up the case of the name.
+		$name =~ s/TWOFISH/Twofish/;
+		print tag, "a$name\n";
+	}
+	y/A-Z/a-z/;
+	if (/keysize=(\d+)/) {
+		printf "%sK%d\n", tag, int($1)/8;
+	}
+	elsif (/key=($p+)/) {
+		print tag, "k$1\n";
+	}
+	elsif (/(p|c)t=($p16)/) {
+		print tag, "$1$2\n";
+		$cnt++ if $1 eq "c";
+	}
+}
