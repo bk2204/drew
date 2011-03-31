@@ -1,0 +1,29 @@
+#!/usr/bin/perl -w
+# This script processes test vectors from
+# <http://www.schneier.com/code/vectors.txt>.
+
+$p = qr/[A-Fa-f0-9]/;
+$p8 = qr/$p{16}/;
+$cnt = 0;
+$data = "";
+
+while (<>) {
+	chomp;
+	y/A-F/a-f/;
+	if (/($p8)\s+($p8)\s+($p8)/) {
+		printf "T%04x aBlowfish K8 k%s\n", $cnt, $1;
+		printf "T%04x p%s\n", $cnt, $2;
+		printf "T%04x c%s\n", $cnt, $3;
+		$cnt++;
+	}
+	elsif (/data\[8\]\s*=\s*($p8)/) {
+		$data = $1;
+		printf "T%04x aBlowfish p%s\n", $cnt, $1;
+		# $cnt is intentionally not incremented here.
+	}
+	elsif (/c=($p8)\s+k\[\s*(\d+)\]=($p+)/) {
+		printf "T%04x K%d k%s\n", $cnt, $2, $3;
+		printf "T%04x c%s\n", $cnt, $1;
+		$cnt++;
+	}
+}
