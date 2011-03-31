@@ -47,6 +47,7 @@ struct testcase {
 	uint8_t *key;
 	uint8_t *nonce;
 	size_t len;
+	size_t feedbackBits;
 	uint8_t *pt;
 	uint8_t *ct;
 };
@@ -132,6 +133,11 @@ int test_execute(void *data, const char *name, const void *tbl,
 
 	drew_mode_t ctx;
 	drew_block_t *bctx = new_block_cipher(tep, tc->algo);
+	drew_param_t param;
+
+	param.next = NULL;
+	param.name = "feedbackBits";
+	param.param.number = tc->feedbackBits;
 
 	// If we don't have the block cipher available, fail gracefully.
 	if (!bctx)
@@ -141,7 +147,7 @@ int test_execute(void *data, const char *name, const void *tbl,
 
 	uint8_t *buf = malloc(tc->len);
 	ctx.functbl = tbl;
-	ctx.functbl->init(&ctx, 0, tep->ldr, NULL);
+	ctx.functbl->init(&ctx, 0, tep->ldr, tc->feedbackBits ? &param : NULL);
 	ctx.functbl->setblock(&ctx, bctx);
 	ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
 	ctx.functbl->encrypt(&ctx, buf, tc->pt, tc->len);
@@ -151,7 +157,7 @@ int test_execute(void *data, const char *name, const void *tbl,
 		goto out;
 	}
 
-	ctx.functbl->init(&ctx, 0, tep->ldr, NULL);
+	ctx.functbl->init(&ctx, 0, tep->ldr, tc->feedbackBits ? &param : NULL);
 	ctx.functbl->setblock(&ctx, bctx);
 	ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
 	ctx.functbl->decrypt(&ctx, buf, tc->ct, tc->len);
@@ -184,6 +190,10 @@ int test_process_testcase(void *data, int type, const char *item,
 		case 'm':
 			free(tc->mode);
 			tc->mode = strdup(item);
+			break;
+		case 'F':
+			if (sscanf(item, "%zu", &tc->feedbackBits) != 1)
+				return TEST_CORRUPT;
 			break;
 		case 'K':
 			if (sscanf(item, "%zu", &tc->klen) != 1)
