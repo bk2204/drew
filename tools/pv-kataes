@@ -1,7 +1,26 @@
 #!/usr/bin/perl -w
 
+unless (scalar @ARGV) {
+	print STDERR <<EOM;
+Need an argument.
+
+Use -block for block cipher tests.
+Use -cfb   for CFB128 tests.
+Use -cfb8  for CFB8 tests.
+Use -ofb   for OFB128 tests.
+EOM
+	exit 1;
+}
+
 $p = qr/[A-Fa-f0-9]/;
 $cnt = -2;
+
+$mode = shift @ARGV;
+$mode =~ y/a-z/A-Z/;
+$mode = "" if $mode eq "-BLOCK";
+$mode =~ /(.FB)(\d*)/;
+$fbits = $2 ? "F$2 " : "";
+$mode =  $1 ? "m$1 " : "";
 
 while (<>) {
 	if (/KEY = ($p+)/) {
@@ -10,7 +29,11 @@ while (<>) {
 		$cnt++;
 		printf "T%04x aRijndael\n", $cnt if ($cnt >= 0);
 		$cnt++;
-		printf "T%04x aAES%d K%d\nT%04x k%s\n", $cnt, $bits, $bytes, $cnt, $1;
+		printf "T%04x aAES%d %s%sK%d\n", $cnt, $bits, $mode, $fbits, $bytes;
+		printf "T%04x k%s\n", $cnt, $1;
+	}
+	elsif (/IV = ($p+)/) {
+		printf "T%04x N16 n%s\n", $cnt, $1;
 	}
 	elsif (/PLAINTEXT = ($p+)/) {
 		printf "T%04x p%s\n", $cnt, $1;
