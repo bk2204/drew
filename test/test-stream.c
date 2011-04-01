@@ -206,24 +206,28 @@ int test_process_testcase(void *data, int type, const char *item,
 
 	return TEST_OK;
 }
+
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		const void *tbl, int chunk, int nchunks)
 {
-	int i, keysz = 0;
+	int i, keysz = 0, blksz;
 	drew_stream_t ctx;
 	uint8_t *buf, *buf2, *key;
+	int (*encfunc)(drew_stream_t *, uint8_t *, const uint8_t *, size_t);
 	struct timespec cstart, cend;
 	
 	ctx.functbl = tbl;
 
 	keysz = ctx.functbl->info(DREW_STREAM_KEYSIZE, &keysz);
-	buf = calloc(chunk, 1);
-	if (!buf)
+	blksz = ctx.functbl->info(DREW_STREAM_BLKSIZE, NULL);
+	if (posix_memalign((void **)&buf, 16, chunk))
 		return ENOMEM;
 
-	buf2 = calloc(chunk, 1);
-	if (!buf2)
+	if (posix_memalign((void **)&buf2, 16, chunk))
 		return ENOMEM;
+
+	encfunc = (chunk >= 16 && (chunk % blksz) == 0) ?
+		ctx.functbl->encryptfast : ctx.functbl->encrypt;
 
 	key = calloc(keysz, 1);
 	if (!keysz)
@@ -233,7 +237,7 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	ctx.functbl->init(&ctx, 0, NULL, NULL);
 	ctx.functbl->setkey(&ctx, key, keysz, DREW_STREAM_MODE_ENCRYPT);
 	for (i = 0; i < nchunks; i++)
-		ctx.functbl->encrypt(&ctx, buf2, buf, chunk);
+		encfunc(&ctx, buf2, buf, chunk);
 	clock_gettime(USED_CLOCK, &cend);
 	ctx.functbl->fini(&ctx, 0);
 
