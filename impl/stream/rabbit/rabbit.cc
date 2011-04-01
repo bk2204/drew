@@ -191,7 +191,7 @@ void drew::RabbitKeystream::CounterUpdate()
 	// this.
 	for (size_t i = 0; i < 8; i++) {
 		uint64_t temp = c[i] + a[i] + b;
-		b = (temp & 0xffffffff00000000);
+		b = temp >> 32;
 		c[i] = uint32_t(temp);
 	}
 }
