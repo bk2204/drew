@@ -64,6 +64,28 @@ inline T RotateRight(T x, size_t n)
 	return (x >> n) | (x << ((sizeof(T)*8) - n));
 }
 
+// This function copies data from in to out, xoring each byte with the contents
+// of mbuf, starting bufrem bytes from the end.  If mbuf runs out of data,
+// obj.FillBuffer() is called to add more data.  On return, bufrem contains the
+// number of bytes left in mbuf.
+template<class T>
+inline void CopyAndXor(uint8_t *out, const uint8_t *in, size_t len,
+		uint8_t *mbuf, const size_t bufsz, size_t &bufrem, T &obj)
+{
+	const uint8_t *buf = mbuf + (bufsz - bufoff);
+	for (; bufoff && len; bufoff--, len--)
+		*out++ = *in++ ^ *buf++;
+	while (len) {
+		obj.FillBuffer(mbuf);
+		bufoff = bufsz;
+		buf = mbuf;
+		for (; bufoff && len; bufoff--, len--)
+			*out++ = *in++ ^ *buf++;
+	}
+	if (bufoff > bufsz)
+		bufoff = 0;
+}
+
 class Endian
 {
 	public:
