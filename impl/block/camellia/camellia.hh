@@ -26,6 +26,8 @@ class Camellia : public BlockCipher<16>
 		void Encrypt256(uint64_t d[2]) const;
 		void Decrypt128(uint64_t d[2]) const;
 		void Decrypt256(uint64_t d[2]) const;
+		inline void EncryptPair(uint64_t &, uint64_t &, unsigned) const;
+		inline void DecryptPair(uint64_t &, uint64_t &, unsigned) const;
 		uint64_t f(uint64_t x, uint64_t k) const;
 		uint64_t fl(uint64_t x, uint64_t k) const;
 		uint64_t flinv(uint64_t y, uint64_t k) const;

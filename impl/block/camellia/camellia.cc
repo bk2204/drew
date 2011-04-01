@@ -214,12 +214,6 @@ inline uint64_t drew::Camellia::spfunc(uint64_t x) const
 	return SP(0) ^ SP(1) ^ SP(2) ^ SP(3) ^ SP(4) ^ SP(5) ^ SP(6) ^ SP(7);
 }
 
-#define E128_ROUND2(x, y, n) do { \
-	y ^= f(x, ku[n]); x ^= f(y, ku[n+1]); \
-} while(0)
-#define D128_ROUND2(x, y, n) do { \
-	y ^= f(x, ku[n+1]); x ^= f(y, ku[n]); \
-} while(0)
 int drew::Camellia::Encrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint64_t d[2];
@@ -230,25 +224,37 @@ int drew::Camellia::Encrypt(uint8_t *out, const uint8_t *in) const
 	return 0;
 }
 
+void drew::Camellia::EncryptPair(uint64_t &x, uint64_t &y, unsigned n) const
+{
+	y ^= f(x, ku[n]);
+	x ^= f(y, ku[n+1]);
+}
+
+void drew::Camellia::DecryptPair(uint64_t &x, uint64_t &y, unsigned n) const
+{
+	y ^= f(x, ku[n+1]);
+	x ^= f(y, ku[n]);
+}
+
 void drew::Camellia::Encrypt128(uint64_t d[2]) const
 {
 	uint64_t &x = d[0], &y = d[1];
 
 	x ^= kw[0];
 	y ^= kw[1];
-	E128_ROUND2(x, y,  0);
-	E128_ROUND2(x, y,  2);
-	E128_ROUND2(x, y,  4);
+	EncryptPair(x, y,  0);
+	EncryptPair(x, y,  2);
+	EncryptPair(x, y,  4);
 	x = fl(x, kl[0]);
 	y = flinv(y, kl[1]);
-	E128_ROUND2(x, y,  6);
-	E128_ROUND2(x, y,  8);
-	E128_ROUND2(x, y, 10);
+	EncryptPair(x, y,  6);
+	EncryptPair(x, y,  8);
+	EncryptPair(x, y, 10);
 	x = fl(x, kl[2]);
 	y = flinv(y, kl[3]);
-	E128_ROUND2(x, y, 12);
-	E128_ROUND2(x, y, 14);
-	E128_ROUND2(x, y, 16);
+	EncryptPair(x, y, 12);
+	EncryptPair(x, y, 14);
+	EncryptPair(x, y, 16);
 	y ^= kw[2];
 	x ^= kw[3];
 	std::swap(x, y);
@@ -260,24 +266,24 @@ void drew::Camellia::Encrypt256(uint64_t d[2]) const
 
 	x ^= kw[0];
 	y ^= kw[1];
-	E128_ROUND2(x, y,  0);
-	E128_ROUND2(x, y,  2);
-	E128_ROUND2(x, y,  4);
+	EncryptPair(x, y,  0);
+	EncryptPair(x, y,  2);
+	EncryptPair(x, y,  4);
 	x = fl(x, kl[0]);
 	y = flinv(y, kl[1]);
-	E128_ROUND2(x, y,  6);
-	E128_ROUND2(x, y,  8);
-	E128_ROUND2(x, y, 10);
+	EncryptPair(x, y,  6);
+	EncryptPair(x, y,  8);
+	EncryptPair(x, y, 10);
 	x = fl(x, kl[2]);
 	y = flinv(y, kl[3]);
-	E128_ROUND2(x, y, 12);
-	E128_ROUND2(x, y, 14);
-	E128_ROUND2(x, y, 16);
+	EncryptPair(x, y, 12);
+	EncryptPair(x, y, 14);
+	EncryptPair(x, y, 16);
 	x = fl(x, kl[4]);
 	y = flinv(y, kl[5]);
-	E128_ROUND2(x, y, 18);
-	E128_ROUND2(x, y, 20);
-	E128_ROUND2(x, y, 22);
+	EncryptPair(x, y, 18);
+	EncryptPair(x, y, 20);
+	EncryptPair(x, y, 22);
 	y ^= kw[2];
 	x ^= kw[3];
 	std::swap(x, y);
@@ -299,19 +305,19 @@ void drew::Camellia::Decrypt128(uint64_t d[2]) const
 
 	x ^= kw[2];
 	y ^= kw[3];
-	D128_ROUND2(x, y, 16);
-	D128_ROUND2(x, y, 14);
-	D128_ROUND2(x, y, 12);
+	DecryptPair(x, y, 16);
+	DecryptPair(x, y, 14);
+	DecryptPair(x, y, 12);
 	x = fl(x, kl[3]);
 	y = flinv(y, kl[2]);
-	D128_ROUND2(x, y, 10);
-	D128_ROUND2(x, y,  8);
-	D128_ROUND2(x, y,  6);
+	DecryptPair(x, y, 10);
+	DecryptPair(x, y,  8);
+	DecryptPair(x, y,  6);
 	x = fl(x, kl[1]);
 	y = flinv(y, kl[0]);
-	D128_ROUND2(x, y,  4);
-	D128_ROUND2(x, y,  2);
-	D128_ROUND2(x, y,  0);
+	DecryptPair(x, y,  4);
+	DecryptPair(x, y,  2);
+	DecryptPair(x, y,  0);
 	x ^= kw[0];
 	y ^= kw[1];
 }
@@ -322,24 +328,24 @@ void drew::Camellia::Decrypt256(uint64_t d[2]) const
 
 	x ^= kw[2];
 	y ^= kw[3];
-	D128_ROUND2(x, y, 22);
-	D128_ROUND2(x, y, 20);
-	D128_ROUND2(x, y, 18);
+	DecryptPair(x, y, 22);
+	DecryptPair(x, y, 20);
+	DecryptPair(x, y, 18);
 	x = fl(x, kl[5]);
 	y = flinv(y, kl[4]);
-	D128_ROUND2(x, y, 16);
-	D128_ROUND2(x, y, 14);
-	D128_ROUND2(x, y, 12);
+	DecryptPair(x, y, 16);
+	DecryptPair(x, y, 14);
+	DecryptPair(x, y, 12);
 	x = fl(x, kl[3]);
 	y = flinv(y, kl[2]);
-	D128_ROUND2(x, y, 10);
-	D128_ROUND2(x, y,  8);
-	D128_ROUND2(x, y,  6);
+	DecryptPair(x, y, 10);
+	DecryptPair(x, y,  8);
+	DecryptPair(x, y,  6);
 	x = fl(x, kl[1]);
 	y = flinv(y, kl[0]);
-	D128_ROUND2(x, y,  4);
-	D128_ROUND2(x, y,  2);
-	D128_ROUND2(x, y,  0);
+	DecryptPair(x, y,  4);
+	DecryptPair(x, y,  2);
+	DecryptPair(x, y,  0);
 	x ^= kw[0];
 	y ^= kw[1];
 }
