@@ -95,6 +95,8 @@ static int rc4_info(int op, void *p)
 			return 0;
 		case DREW_STREAM_INTSIZE:
 			return sizeof(drew::RC4);
+		case DREW_STREAM_BLKSIZE:
+			return 1;
 		default:
 			return -EINVAL;
 	}

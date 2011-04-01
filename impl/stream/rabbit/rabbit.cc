@@ -71,6 +71,8 @@ static int rabbit_info(int op, void *p)
 			}
 		case DREW_STREAM_INTSIZE:
 			return sizeof(drew::Rabbit);
+		case DREW_STREAM_BLKSIZE:
+			return 16;
 		default:
 			return -EINVAL;
 	}

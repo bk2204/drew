@@ -132,6 +132,8 @@ static int hc256_info(int op, void *p)
 			return 0;
 		case DREW_STREAM_INTSIZE:
 			return sizeof(drew::HC256);
+		case DREW_STREAM_BLKSIZE:
+			return 4;
 		default:
 			return -EINVAL;
 	}

@@ -76,6 +76,8 @@ static int salsa20_info(int op, void *p)
 			return 0;
 		case DREW_STREAM_INTSIZE:
 			return sizeof(drew::Salsa20);
+		case DREW_STREAM_BLKSIZE:
+			return 64;
 		default:
 			return -EINVAL;
 	}
