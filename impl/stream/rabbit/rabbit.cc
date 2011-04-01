@@ -165,18 +165,7 @@ void drew::Rabbit::SetNonce(const uint8_t *nonce, size_t sz)
 
 void drew::Rabbit::Encrypt(uint8_t *out, const uint8_t *in, size_t len)
 {
-	const uint8_t *buf = m_buf + (sizeof(m_buf) - m_nbytes);
-	while (m_nbytes-- && len--)
-		*out++ = *in++ ^ *buf++;
-	while (len) {
-		m_ks.GetValue(m_buf);
-		m_nbytes = sizeof(m_buf);
-		buf = m_buf;
-		while (m_nbytes-- && len--)
-			*out++ = *in++ ^ *buf++;
-	}
-	if (m_nbytes > sizeof(m_buf))
-		m_nbytes = 0;
+	CopyAndXor(out, in, len, m_buf, sizeof(m_buf), m_nbytes, m_ks);
 }
 
 void drew::Rabbit::Decrypt(uint8_t *out, const uint8_t *in, size_t len)
@@ -289,7 +278,7 @@ void drew::RabbitKeystream::GetValue(uint32_t s[4])
 	s[3] = x[6] ^ (x[3] >> 16) ^ (x[1] << 16);
 }
 
-void drew::RabbitKeystream::GetValue(uint8_t buf[16])
+void drew::RabbitKeystream::FillBuffer(uint8_t buf[16])
 {
 	uint32_t s[4];
 	GetValue(s);

@@ -18,7 +18,7 @@ class RabbitKeystream
 		void SetNonce(const uint8_t *, size_t sz);
 		void Reset();
 		void GetValue(uint32_t val[4]);
-		void GetValue(uint8_t val[16]);
+		void FillBuffer(uint8_t val[16]);
 	protected:
 	private:
 		void CounterUpdate();
