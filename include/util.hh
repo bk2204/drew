@@ -1,6 +1,7 @@
 #ifndef ENDIAN_HH
 #define ENDIAN_HH
 
+#include <algorithm>
 #include "util.h"
 
 template<class T, size_t N>
@@ -72,18 +73,34 @@ template<class T>
 inline void CopyAndXor(uint8_t *out, const uint8_t *in, size_t len,
 		uint8_t *mbuf, const size_t bufsz, size_t &bufrem, T &obj)
 {
-	const uint8_t *buf = mbuf + (bufsz - bufrem);
-	for (; bufrem && len; bufrem--, len--)
-		*out++ = *in++ ^ *buf++;
-	while (len) {
-		obj.FillBuffer(mbuf);
-		bufrem = bufsz;
-		buf = mbuf;
-		for (; bufrem && len; bufrem--, len--)
-			*out++ = *in++ ^ *buf++;
+	size_t boff = (bufsz - bufrem) % bufsz;
+	if (bufrem) {
+		const size_t b = std::min(bufrem, len);
+		for (size_t i = 0; i < b; i++)
+			out[i] = mbuf[boff + i] ^ in[i];
+		if ((boff += b) == bufsz)
+			boff = 0;
+		len -= b;
+		out += b;
+		in += b;
 	}
-	if (bufrem > bufsz)
-		bufrem = 0;
+
+	while (len >= bufsz) {
+		obj.FillBuffer(mbuf);
+		for (size_t i = 0; i < bufsz; i++)
+			out[i] = mbuf[i] ^ in[i];
+		len -= bufsz;
+		out += bufsz;
+		in += bufsz;
+	}
+
+	if (len) {
+		obj.FillBuffer(mbuf);
+		for (size_t i = 0; i < len; i++)
+			out[i] = mbuf[i] ^ in[i];
+		boff = len;
+	}
+	bufrem = (bufsz - boff) % bufsz;
 }
 
 class Endian
