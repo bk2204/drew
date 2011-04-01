@@ -103,6 +103,39 @@ inline void CopyAndXor(uint8_t *out, const uint8_t *in, size_t len,
 	bufrem = (bufsz - boff) % bufsz;
 }
 
+// This is like CopyAndXor, but we're always working with bufsz-sized chunks.
+template<class T>
+inline void CopyAndXorAligned(uint8_t *outp, const uint8_t *inp, size_t len,
+		uint8_t *mbufp, const size_t bufsz, T &obj)
+{
+	struct AlignedData {
+		uint8_t data[16] ALIGNED_T;
+	};
+
+	AlignedData *mbuf = reinterpret_cast<AlignedData *>(mbufp);
+	for (size_t i = 0; i < len; i += bufsz) {
+		AlignedData *out = reinterpret_cast<AlignedData *>(outp+i);
+		const AlignedData *in = reinterpret_cast<const AlignedData *>(inp+i);
+		// This strictly may overfill the buffer; nevertheless, we know that
+		// there's enough space by the contract of the function.
+		obj.FillBufferAligned(mbuf->data);
+#ifdef VECTOR_T
+		typedef int vector_t __attribute__ ((vector_size (16)));
+		for (size_t j = 0; j < bufsz; j += 16, out++, in++) {
+			vector_t buf, buf2;
+			memcpy(&buf, in->data, 16);
+			memcpy(&buf2, mbuf->data, 16);
+			buf ^= buf2;
+			memcpy(out->data, &buf, 16);
+		}
+#else
+		for (size_t j = 0; j < bufsz; j++) {
+			out->data[j] = mbuf->data[j] ^ in->data[j];
+		}
+#endif
+	}
+}
+
 class Endian
 {
 	public:
