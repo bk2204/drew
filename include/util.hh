@@ -72,18 +72,18 @@ template<class T>
 inline void CopyAndXor(uint8_t *out, const uint8_t *in, size_t len,
 		uint8_t *mbuf, const size_t bufsz, size_t &bufrem, T &obj)
 {
-	const uint8_t *buf = mbuf + (bufsz - bufoff);
-	for (; bufoff && len; bufoff--, len--)
+	const uint8_t *buf = mbuf + (bufsz - bufrem);
+	for (; bufrem && len; bufrem--, len--)
 		*out++ = *in++ ^ *buf++;
 	while (len) {
 		obj.FillBuffer(mbuf);
-		bufoff = bufsz;
+		bufrem = bufsz;
 		buf = mbuf;
-		for (; bufoff && len; bufoff--, len--)
+		for (; bufrem && len; bufrem--, len--)
 			*out++ = *in++ ^ *buf++;
 	}
-	if (bufoff > bufsz)
-		bufoff = 0;
+	if (bufrem > bufsz)
+		bufrem = 0;
 }
 
 class Endian
