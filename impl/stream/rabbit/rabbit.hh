@@ -25,8 +25,8 @@ class RabbitKeystream
 		uint64_t square(uint32_t term);
 		uint32_t g(uint32_t u, uint32_t v);
 		void NextState();
-		uint32_t x[8];
-		uint32_t c[8];
+		uint32_t x[8] ALIGNED_T;
+		uint32_t c[8] ALIGNED_T;
 		bool b;
 };
 
@@ -44,7 +44,7 @@ class Rabbit
 	protected:
 	private:
 		RabbitKeystream m_ks;
-		uint8_t m_buf[16];
+		uint8_t m_buf[16] ALIGNED_T;
 		size_t m_nbytes;
 };
 

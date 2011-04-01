@@ -209,7 +209,7 @@ inline uint32_t drew::RabbitKeystream::g(uint32_t u, uint32_t v)
 
 void drew::RabbitKeystream::NextState()
 {
-	uint32_t g[8];
+	uint32_t g[8] ALIGNED_T;
 	for (size_t i = 0; i < 8; i++)
 		g[i] = this->g(x[i], c[i]);
 	x[0] = g[0] + RotateLeft(g[7], 16) + RotateLeft(g[6], 16);
