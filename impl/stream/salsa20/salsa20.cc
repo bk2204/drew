@@ -167,18 +167,7 @@ void drew::Salsa20::SetNonce(const uint8_t *iv, size_t sz)
 
 void drew::Salsa20::Encrypt(uint8_t *out, const uint8_t *in, size_t len)
 {
-	const uint8_t *buf = m_buf + (sizeof(m_buf) - m_nbytes);
-	for (; m_nbytes && len; m_nbytes--, len--)
-		*out++ = *in++ ^ *buf++;
-	while (len) {
-		m_ks.GetValue(m_buf);
-		m_nbytes = sizeof(m_buf);
-		buf = m_buf;
-		for (; m_nbytes && len; m_nbytes--, len--)
-			*out++ = *in++ ^ *buf++;
-	}
-	if (m_nbytes > sizeof(m_buf))
-		m_nbytes = 0;
+	CopyAndXor(out, in, len, m_buf, sizeof(m_buf), m_nbytes, m_ks);
 }
 
 void drew::Salsa20::Decrypt(uint8_t *out, const uint8_t *in, size_t len)
@@ -296,7 +285,7 @@ inline void drew::Salsa20Keystream::DoHash(AlignedData &cur)
 		cur.buf[i] += st.buf[i];
 }
 
-void drew::Salsa20Keystream::GetValue(uint8_t buf[64])
+void drew::Salsa20Keystream::FillBuffer(uint8_t buf[64])
 {
 	AlignedData cur;
 

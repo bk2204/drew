@@ -16,7 +16,7 @@ class HC256Keystream
 		~HC256Keystream() {}
 		void SetKey(const uint8_t *key, size_t sz);
 		void SetNonce(const uint8_t *key, size_t sz);
-		void GetValue(uint8_t *);
+		void FillBuffer(uint8_t *);
 		void Reset();
 	protected:
 		static inline uint32_t f1(uint32_t x);

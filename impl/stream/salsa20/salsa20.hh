@@ -17,7 +17,7 @@ class Salsa20Keystream
 		void SetKey(const uint8_t *key, size_t sz);
 		void SetNonce(const uint8_t *key, size_t sz);
 		void Reset();
-		void GetValue(uint8_t *);
+		void FillBuffer(uint8_t *);
 	protected:
 	private:
 		struct AlignedData
