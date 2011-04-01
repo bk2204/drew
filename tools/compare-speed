@@ -25,8 +25,8 @@ for ($i = 0; $i < scalar @oldbuf; $i++) {
 	$ntag = $y = $newbuf[$i];
 	#chomp $otag;
 	#chomp $ntag;
-	$otag =~ s/^([A-Za-z0-9-]+)\s*:.*$/$1/;
-	$ntag =~ s/^([A-Za-z0-9-]+)\s*:.*$/$1/;
+	$otag =~ s/^([A-Za-z0-9-()]+)\s*:.*$/$1/;
+	$ntag =~ s/^([A-Za-z0-9-()]+)\s*:.*$/$1/;
 	# skip this line if there's no tag.
 	next if (($otag eq $x) && ($ntag eq $y));
 	die "tag mismatch: '$otag' != '$ntag'" if ($otag ne $ntag);
