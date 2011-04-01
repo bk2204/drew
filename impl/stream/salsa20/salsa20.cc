@@ -321,12 +321,18 @@ void drew::Salsa20Keystream::FillBufferAligned(uint8_t bufp[64])
 	{
 		uint8_t buf[64] ALIGNED_T;
 	};
-	AlignedBytes *buf = reinterpret_cast<AlignedBytes *>(bufp);
 
 	state.buf[8] = uint32_t(ctr);
 	state.buf[9] = ctr >> 32;
 
-	DoHash(cur);
+	if (E::GetEndianness() == NativeEndian::GetEndianness()) {
+		AlignedData *buf = reinterpret_cast<AlignedData *>(bufp);
+		DoHash(*buf);
+	}
+	else {
+		AlignedBytes *buf = reinterpret_cast<AlignedBytes *>(bufp);
+		DoHash(cur);
+		E::Copy(buf->buf, cur.buf, sizeof(cur.buf));
+	}
 	ctr++;
-	E::Copy(buf->buf, cur.buf, sizeof(cur.buf));
 }
