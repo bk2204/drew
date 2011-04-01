@@ -23,9 +23,11 @@ static int salsa20_setkey(drew_stream_t *ctx, const uint8_t *key, size_t len,
 		int mode);
 static int salsa20_encrypt(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
+static int salsa20_encryptfast(drew_stream_t *ctx, uint8_t *out,
+		const uint8_t *in, size_t len);
 static int salsa20_fini(drew_stream_t *ctx, int flags);
 
-PLUGIN_FUNCTBL(salsa20, salsa20_info, salsa20_init, salsa20_setiv, salsa20_setkey, salsa20_encrypt, salsa20_encrypt, salsa20_encrypt, salsa20_encrypt, salsa20_test, salsa20_fini, salsa20_clone);
+PLUGIN_FUNCTBL(salsa20, salsa20_info, salsa20_init, salsa20_setiv, salsa20_setkey, salsa20_encrypt, salsa20_encrypt, salsa20_encryptfast, salsa20_encryptfast, salsa20_test, salsa20_fini, salsa20_clone);
 
 static int salsa20_maintenance_test(void)
 {
@@ -133,6 +135,14 @@ static int salsa20_encrypt(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
 	return 0;
 }
 
+static int salsa20_encryptfast(drew_stream_t *ctx, uint8_t *out,
+		const uint8_t *in, size_t len)
+{
+	drew::Salsa20 *p = reinterpret_cast<drew::Salsa20 *>(ctx->ctx);
+	p->EncryptFast(out, in, len);
+	return 0;
+}
+
 static int salsa20_fini(drew_stream_t *ctx, int flags)
 {
 	drew::Salsa20 *p = reinterpret_cast<drew::Salsa20 *>(ctx->ctx);
@@ -165,6 +175,11 @@ void drew::Salsa20::SetKey(const uint8_t *key, size_t sz)
 void drew::Salsa20::SetNonce(const uint8_t *iv, size_t sz)
 {
 	m_ks.SetNonce(iv, sz);
+}
+
+void drew::Salsa20::EncryptFast(uint8_t *out, const uint8_t *in, size_t len)
+{
+	CopyAndXorAligned(out, in, len, m_buf, sizeof(m_buf), m_ks);
 }
 
 void drew::Salsa20::Encrypt(uint8_t *out, const uint8_t *in, size_t len)
@@ -297,4 +312,21 @@ void drew::Salsa20Keystream::FillBuffer(uint8_t buf[64])
 	DoHash(cur);
 	ctr++;
 	E::Copy(buf, cur.buf, sizeof(cur.buf));
+}
+
+void drew::Salsa20Keystream::FillBufferAligned(uint8_t bufp[64])
+{
+	AlignedData cur;
+	struct AlignedBytes
+	{
+		uint8_t buf[64] ALIGNED_T;
+	};
+	AlignedBytes *buf = reinterpret_cast<AlignedBytes *>(bufp);
+
+	state.buf[8] = uint32_t(ctr);
+	state.buf[9] = ctr >> 32;
+
+	DoHash(cur);
+	ctr++;
+	E::Copy(buf->buf, cur.buf, sizeof(cur.buf));
 }

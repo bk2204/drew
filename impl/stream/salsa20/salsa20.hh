@@ -18,6 +18,7 @@ class Salsa20Keystream
 		void SetNonce(const uint8_t *key, size_t sz);
 		void Reset();
 		void FillBuffer(uint8_t *);
+		void FillBufferAligned(uint8_t *);
 	protected:
 	private:
 		struct AlignedData
@@ -44,6 +45,7 @@ class Salsa20
 		void SetKey(const uint8_t *key, size_t sz);
 		void Encrypt(uint8_t *out, const uint8_t *in, size_t len);
 		void Decrypt(uint8_t *out, const uint8_t *in, size_t len);
+		void EncryptFast(uint8_t *out, const uint8_t *in, size_t len);
 	protected:
 	private:
 		Salsa20Keystream m_ks;
