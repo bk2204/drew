@@ -19,6 +19,9 @@ CLIKEFLAGS		+= -pg
 endif
 CPPFLAGS		+= -Iinclude
 CLIKEFLAGS		+= -Wall -fPIC -O3 -g -pipe -D_POSIX_SOURCE=200112L -D_XOPEN_SOURCE=600
+CLIKEFLAGS		+= -Wunsafe-loop-optimizations -funsafe-loop-optimizations
+CLIKEFLAGS		+= -fmodulo-sched -fmodulo-sched-allow-regmoves
+CLIKEFLAGS		+= -fsched-pressure
 CLIKEFLAGS		+= ${CFLAGS-y}
 CXXFLAGS		:= ${CLIKEFLAGS}
 CFLAGS			:= ${CLIKEFLAGS}
