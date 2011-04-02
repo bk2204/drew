@@ -15,8 +15,8 @@ PLUGINS_BLOCK-${CFG_XTEA}		+= xtea/xtea
 PLUGINS_BLOCK-${CFG_SEED}		+= seed/seed
 PLUGINS_BLOCK-${CFG_IDEA}		+= idea/idea
 
-${BLOCK_DIR}/cast/cast5-all.o: ${BLOCK_DIR}/cast/sboxes.o
-${BLOCK_DIR}/cast/cast6-all.o: ${BLOCK_DIR}/cast/sboxes.o
+${BLOCK_DIR}/cast/cast5.so: ${BLOCK_DIR}/cast/sboxes.o
+${BLOCK_DIR}/cast/cast6.so: ${BLOCK_DIR}/cast/sboxes.o
 
 EXTRA_OBJECTS-${CFG_CAST5}		+= ${BLOCK_DIR}/cast/sboxes.o
 EXTRA_OBJECTS-${CFG_CAST6}		+= ${BLOCK_DIR}/cast/sboxes.o
