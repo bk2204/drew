@@ -112,10 +112,13 @@ uint64_t drew::SEED::f(uint64_t k, uint64_t r)
 {
 	const uint32_t r0 = r >> 32, r1 = uint32_t(r);
 	const uint32_t k0 = k >> 32, k1 = uint32_t(k);
+	const uint32_t aa = r0 ^ k0 ^ r1 ^ k1;
+	const uint32_t a0 = r0 ^ k0;
+	const uint32_t ga = g(aa);
+	const uint32_t g0 = ga + a0;
 
-	uint32_t r0p = g(g(g(r0 ^ k0 ^ r1 ^ k1) + (r0 ^ k0)) + g(r0 ^ k0 ^ r1 ^ k1))
-		+ g(g(r0 ^ k0 ^ r1 ^ k1) + (r0 ^ k0));
-	uint32_t r1p = g(g(g(r0 ^ k0 ^ r1 ^ k1) + (r0 ^ k0)) + g(r0 ^ k0 ^ r1 ^ k1));
+	uint32_t r0p = g(g(g0) + ga) + g(g0);
+	uint32_t r1p = g(g(g0) + ga);
 
 	return (uint64_t(r0p) << 32) | r1p;
 }
