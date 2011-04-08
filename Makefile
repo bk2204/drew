@@ -68,7 +68,7 @@ ${PLUGINS}: %: %.so
 	@:
 
 $(PLUGINS:=.so): %.so: %.o
-	${CXX} ${LIBCFLAGS} ${CXXFLAGS} -o ${.TARGET} ${.ALLSRC} ${LDFLAGS}
+	${CXX} ${LIBCFLAGS} ${CXXFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
 test/test-%: test/test-%.o test/framework.o ${DREW_SONAME} ${DREW_IMPL_SONAME}
 	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
