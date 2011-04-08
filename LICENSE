@@ -6,6 +6,7 @@ libdrew is licensed under the MIT License.  It consists of:
   * lib/libdrew/plugin.c
   * lib/libdrew/Makefile
   * include/drew/block.h
+  * include/drew/bignum.h
   * include/drew/hash.h
   * include/drew/mac.h
   * include/drew/mode.h

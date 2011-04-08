@@ -60,6 +60,7 @@ typedef void drew_loader_t;
 #define DREW_TYPE_MAC 4
 #define DREW_TYPE_STREAM 5
 #define DREW_TYPE_PRNG 6
+#define DREW_TYPE_BIGNUM 7
 
 /* The system dynamic loader failed. */
 #define DREW_ERR_RESOLUTION		0x10001
@@ -75,6 +76,8 @@ typedef void drew_loader_t;
 #define DREW_ERR_INVALID		0x10006
 /* More information is needed to complete the request. */
 #define DREW_ERR_MORE_INFO		0x10007
+/* The implementation had an internal error. */
+#define DREW_ERR_BUG			0x10008
 
 int drew_loader_new(drew_loader_t **ldr);
 int drew_loader_free(drew_loader_t **ldr);

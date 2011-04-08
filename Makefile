@@ -1,6 +1,6 @@
 include config
 
-CATEGORIES		:= hash block mode mac stream prng
+CATEGORIES		:= hash block mode mac stream prng bignum
 
 TEST_SRC		+= libmd/testsuite.c
 TEST_OBJ		:= ${SRC:.c=.o} ${TEST_SRC:.c=.o}

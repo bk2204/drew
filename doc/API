@@ -127,8 +127,8 @@ A const object may be safely used by multiple threads.  If any thread accesses
 an object in a non-const way, it must either be used only by that thread or
 protected with an external mutex.
 
-What shouldn't I do?
---------------------
+What other things should I be aware of?
+---------------------------------------
 
 * Don't #define DREW_IN_BUILD.
 * Don't assume that the function table (functbl attribute) of a context will
@@ -136,5 +136,8 @@ What shouldn't I do?
 	change from the function table the loader passes.  Some algorithms may
 	replace the function table in order to enable high-performance implementations
 	when available.
+* When using a plugin interface that requires multiple pointers to the same type
+	of context, all of those contexts must be from the same plugin.  This is most
+	notable with the bignum interface.
 
 // vim: set ft=asciidoc:
