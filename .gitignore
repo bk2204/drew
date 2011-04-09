@@ -6,6 +6,7 @@ test/test-mac
 test/test-stream
 test/test-prng
 test/test-bignum
+test/test-pkenc
 test/plugin-main
 *.o
 *.gen

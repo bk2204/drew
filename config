@@ -53,4 +53,7 @@ CFG_ARC4STIR	= m
 ## Bignum implementations.
 CFG_TOMMATH		= m
 
+## Public key encryption.
+CFG_RSAENC		= m
+
 CFG_LIBMD		= y
