@@ -68,7 +68,9 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 
 	ctx.functbl = tbl;
 
-	// We take the chunk size as bits, here.
+	// We take the chunk size as bits here.
+	if (chunk > 4096)
+		chunk = 2048;
 	chunk /= 8;
 
 	buf = malloc(chunk);
