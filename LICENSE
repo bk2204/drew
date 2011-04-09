@@ -5,15 +5,7 @@ libdrew is licensed under the MIT License.  It consists of:
 
   * lib/libdrew/plugin.c
   * lib/libdrew/Makefile
-  * include/drew/block.h
-  * include/drew/bignum.h
-  * include/drew/hash.h
-  * include/drew/mac.h
-  * include/drew/mode.h
-  * include/drew/param.h
-  * include/drew/plugin.h
-  * include/drew/prng.h
-  * include/drew/stream.h
+  * include/drew/*.h
   * include/internal.h
 
 libmd is licensed under the MIT License.  It consists of those items in the
