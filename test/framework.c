@@ -72,9 +72,9 @@ void framework_teardown(void *data)
 	timer_settime(fwdata->timer, 0, &timerspec, NULL);
 }
 
-int print_test_results(int result, char **ids)
+int print_test_results_impl(int result, char **ids, const char *text)
 {
-	printf("self-test ");
+	printf("%s ", text);
 	if (!result) {
 		printf("ok");
 	}
@@ -103,6 +103,11 @@ int print_test_results(int result, char **ids)
 	}
 	printf(" (result code %d)\n", result);
 	return result;
+}
+
+int print_test_results(int result, char **ids)
+{
+	return print_test_results_impl(result, ids, "self-test");
 }
 
 void print_speed_info(int chunk, int nchunks, const struct timespec *cstart,
@@ -359,7 +364,11 @@ int main(int argc, char **argv)
 
 		switch (mode) {
 			case MODE_SPEED:
-				test_speed(ldr, name, algo, functbl, chunk, nchunks);
+				result = test_speed(ldr, name, algo, functbl, chunk, nchunks);
+				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
+					error++;
+				if (result == -DREW_ERR_NOT_IMPL)
+					print_test_results_impl(result, NULL, "speed test");
 				break;
 			case MODE_TEST:
 				result = test_external(ldr, name, functbl, resource);
