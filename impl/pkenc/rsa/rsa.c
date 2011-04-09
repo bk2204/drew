@@ -70,6 +70,58 @@ static int rsa_info(int op, void *p)
 
 #include "../../multi/rsa/rsa.c"
 
+static int rsa_test(void *ptr, const drew_loader_t *ldr)
+{
+	uint8_t p[] = {0x3d}, q[] = {0x35}, n[] = {0x0c, 0xa1}, e[] = {0x11},
+			d[] = {0x0a, 0xc1}, m[] = {0x41}, c[] = {0x0a, 0xe6};
+	uint8_t buf[2];
+	const void *functbl;
+	drew_pkenc_t ctx;
+	int res = 0, id;
+	drew_param_t param;
+	const char *bignum = "Bignum";
+	drew_bignum_t bns[1];
+
+	param.next = NULL;
+	param.name = "bignum";
+	param.param.string = bignum;
+
+	id = drew_loader_lookup_by_name(ldr, bignum, 0, -1);
+	if (id < 0)
+		return id;
+	if (drew_loader_get_type(ldr, id) != DREW_TYPE_BIGNUM)
+		return -DREW_ERR_INVALID;
+	if ((res = drew_loader_get_functbl(ldr, id, &functbl)) < 0)
+		return res;
+	bns[0].functbl = functbl;
+
+	res = 0;
+
+	bns[0].functbl->init(&bns[0], 0, ldr, NULL);
+
+	ctx.functbl = &rsa_functbl;
+	if (ctx.functbl->init(&ctx, 0, ldr, &param) != 0)
+		return 3;
+	ctx.functbl->setval(&ctx, "p", p, DIM(p));
+	ctx.functbl->setval(&ctx, "q", q, DIM(q));
+	ctx.functbl->setval(&ctx, "n", n, DIM(n));
+	ctx.functbl->setval(&ctx, "e", e, DIM(e));
+	ctx.functbl->setval(&ctx, "d", d, DIM(d));
+	bns[0].functbl->setbytes(&bns[0], m, sizeof(m));
+	ctx.functbl->encrypt(&ctx, bns, bns);
+	bns[0].functbl->bytes(&bns[0], buf, sizeof(buf));
+	res |= !!memcmp(buf, c, sizeof(c));
+	bns[0].functbl->setbytes(&bns[0], c, sizeof(c));
+	ctx.functbl->decrypt(&ctx, bns, bns);
+	bns[0].functbl->bytes(&bns[0], buf, sizeof(buf));
+	res <<= 1;
+	res |= !!memcmp(buf, m, sizeof(m));
+	ctx.functbl->fini(&ctx, 0);
+	bns[0].functbl->fini(&bns[0], 0);
+
+	return res;
+}
+
 static int rsa_init(drew_pkenc_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param)
 {
@@ -93,6 +145,8 @@ static int rsa_fini(drew_pkenc_t *ctx, int flags)
 	struct rsa *c = ctx->ctx;
 
 	fini(c, flags);
+	if (!(flags & DREW_PKENC_FIXED))
+		free(c);
 
 	ctx->ctx = NULL;
 	return 0;
