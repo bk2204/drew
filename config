@@ -56,4 +56,7 @@ CFG_TOMMATH		= m
 ## Public key encryption.
 CFG_RSAENC		= m
 
+## Public key signatures.
+CFG_RSASIG		= m
+
 CFG_LIBMD		= y

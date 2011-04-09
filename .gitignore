@@ -7,6 +7,7 @@ test/test-stream
 test/test-prng
 test/test-bignum
 test/test-pkenc
+test/test-pksig
 test/plugin-main
 *.o
 *.gen
