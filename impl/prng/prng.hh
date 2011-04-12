@@ -17,14 +17,10 @@ class PRNG
 		{
 			m_entropy.SetValue(0);
 		}
-		virtual uint8_t GetByte() = 0;
 		virtual int AddRandomData(const uint8_t *buf, size_t len,
 				size_t entropy) = 0;
-		virtual void GetBytes(uint8_t *buf, size_t nbytes)
-		{
-			for (size_t i = 0; i < nbytes; i++)
-				buf[i] = GetByte();
-		}
+		virtual uint8_t GetByte() = 0;
+		virtual void GetBytes(uint8_t *buf, size_t nbytes) = 0;
 		virtual uint32_t GetInteger()
 		{
 			return ((GetByte() << 24) | (GetByte() << 16) | (GetByte() << 8) |
@@ -76,8 +72,29 @@ class PRNG
 	private:
 };
 
+class BytePRNG : public virtual PRNG
+{
+	public:
+		virtual void GetBytes(uint8_t *buf, size_t nbytes)
+		{
+			for (size_t i = 0; i < nbytes; i++)
+				buf[i] = GetByte();
+		}
+};
+
+class BlockPRNG : public virtual PRNG
+{
+	public:
+		virtual uint8_t GetByte()
+		{
+			uint8_t b;
+			GetBytes(&b, 1);
+			return b;
+		}
+};
+
 // This class is for PRNGs that must be seeded before use.
-class SeededPRNG : public PRNG
+class SeededPRNG : public virtual PRNG
 {
 	public:
 		virtual int AddRandomData(const uint8_t *buf, size_t len,
@@ -87,7 +104,7 @@ class SeededPRNG : public PRNG
 };
 
 // This class is for PRNGs that cannot be seeded.
-class SeedlessPRNG : public PRNG
+class SeedlessPRNG : public virtual PRNG
 {
 	public:
 		virtual int AddRandomData(const uint8_t *buf, size_t len,
