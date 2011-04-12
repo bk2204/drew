@@ -80,6 +80,8 @@ typedef void drew_loader_t;
 #define DREW_ERR_MORE_INFO		0x10007
 /* The implementation had an internal error. */
 #define DREW_ERR_BUG			0x10008
+/* More data is needed to complete the request. */
+#define DREW_ERR_MORE_DATA		0x10009
 
 int drew_loader_new(drew_loader_t **ldr);
 int drew_loader_free(drew_loader_t **ldr);
