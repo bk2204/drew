@@ -7,7 +7,7 @@
 
 namespace drew {
 
-class ARC4Stir : public PRNG
+class ARC4Stir : public BytePRNG
 {
 	public:
 		ARC4Stir();
