@@ -4,8 +4,12 @@
 #include <internal.h>
 #include <drew/prng.h>
 
+#include <fcntl.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <unistd.h>
+
+#define RANDOM_DEVICE "/dev/urandom"
 
 namespace drew {
 
@@ -114,6 +118,20 @@ class SeedlessPRNG : public virtual PRNG
 		}
 	protected:
 	private:
+};
+
+class DevURandom : public SeedlessPRNG, public BlockPRNG
+{
+	public:
+		void GetBytes(uint8_t *buf, size_t nbytes)
+		{
+			int fd = open(RANDOM_DEVICE, O_RDONLY);
+			read(fd, buf, nbytes);
+			close(fd);
+		}
+		using SeedlessPRNG::AddRandomData;
+	protected:
+		void Stir() {}
 };
 
 }
