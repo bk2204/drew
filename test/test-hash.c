@@ -114,6 +114,9 @@ int test_execute(void *data, const char *name, const void *tbl,
 		return TEST_CORRUPT;
 	uint8_t *buf = malloc(len);
 
+	if (!tc->nrepeats)
+		tc->nrepeats = 1;
+
 	drew_param_t param;
 	param.name = "digestSize";
 	param.param.number = tc->digestsize;
@@ -121,7 +124,7 @@ int test_execute(void *data, const char *name, const void *tbl,
 	drew_hash_t ctx;
 	ctx.functbl = tbl;
 	ctx.functbl->init(&ctx, 0, tep->ldr, &param);
-	for (size_t i = 0; i <= tc->nrepeats; i++)
+	for (size_t i = 0; i < tc->nrepeats; i++)
 		ctx.functbl->update(&ctx, tc->in, tc->insize);
 	ctx.functbl->final(&ctx, buf, 0);
 	ctx.functbl->fini(&ctx, 0);
