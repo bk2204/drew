@@ -124,6 +124,7 @@ void print_speed_info(int chunk, int nchunks, const struct timespec *cstart,
 	printf("%d bytes in %0.3fs (%0.3f MiB/s)\n", (nchunks*chunk), diff, rate);
 }
 
+// Some algorithms will need to handle the empty input.
 int process_bytes(ssize_t len, uint8_t **buf, const char *data)
 {
 	uint8_t *p;
@@ -133,7 +134,8 @@ int process_bytes(ssize_t len, uint8_t **buf, const char *data)
 		return TEST_CORRUPT;
 	}
 	free(*buf);
-	*buf = p = malloc(len);
+	// Make sure we don't get a NULL pointer if len is 0.
+	*buf = p = malloc(len ? len : 1);
 	for (size_t i = 0; i < len; i++) {
 		if (sscanf(data+(i*2), "%02hhx", p+i) != 1) {
 			free(p);
