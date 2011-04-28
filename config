@@ -59,5 +59,6 @@ CFG_RSAENC		= m
 
 ## Public key signatures.
 CFG_RSASIG		= m
+CFG_DSA			= m
 
 CFG_LIBMD		= y
