@@ -52,23 +52,44 @@ static const drew_pkenc_functbl_t rsa_functbl = {
 	.test = rsa_test
 };
 
+#include "../../multi/rsa/rsa.c"
+
 static int rsa_info(int op, void *p)
 {
+	drew_param_t *param = p;
 	switch (op) {
 		case DREW_PKENC_VERSION:
 			return 2;
 		case DREW_PKENC_INTSIZE:
 			return sizeof(struct rsa);
-		case DREW_PKENC_PLAIN_BIGNUMS:
-			return 1;
-		case DREW_PKENC_CIPHER_BIGNUMS:
-			return 1;
+		case DREW_PKENC_DECRYPT_IN:
+			return DIM(dec_in);
+		case DREW_PKENC_DECRYPT_OUT:
+			return DIM(dec_out);
+		case DREW_PKENC_ENCRYPT_IN:
+			return DIM(enc_in);
+		case DREW_PKENC_ENCRYPT_OUT:
+			return DIM(enc_out);
+		case DREW_PKENC_DECRYPT_IN_NAME_TO_INDEX:
+			return name_to_index(param, DIM(dec_in), dec_in);
+		case DREW_PKENC_DECRYPT_IN_INDEX_TO_NAME:
+			return index_to_name(param, DIM(dec_in), dec_in);
+		case DREW_PKENC_DECRYPT_OUT_NAME_TO_INDEX:
+			return name_to_index(param, DIM(dec_out), dec_out);
+		case DREW_PKENC_DECRYPT_OUT_INDEX_TO_NAME:
+			return index_to_name(param, DIM(dec_out), dec_out);
+		case DREW_PKENC_ENCRYPT_IN_NAME_TO_INDEX:
+			return name_to_index(param, DIM(enc_in), enc_in);
+		case DREW_PKENC_ENCRYPT_IN_INDEX_TO_NAME:
+			return index_to_name(param, DIM(enc_in), enc_in);
+		case DREW_PKENC_ENCRYPT_OUT_NAME_TO_INDEX:
+			return name_to_index(param, DIM(enc_out), enc_out);
+		case DREW_PKENC_ENCRYPT_OUT_INDEX_TO_NAME:
+			return index_to_name(param, DIM(enc_out), enc_out);
 		default:
 			return -DREW_ERR_INVALID;
 	}
 }
-
-#include "../../multi/rsa/rsa.c"
 
 static int rsa_test(void *ptr, const drew_loader_t *ldr)
 {

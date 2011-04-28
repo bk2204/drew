@@ -1,3 +1,43 @@
+struct mapping {
+	const char *name;
+	size_t index;
+};
+
+static const struct mapping enc_in[] = {
+	{"m", 0},
+},
+enc_out[] = {
+	{"c", 0},
+},
+dec_in[] = {
+	{"c", 0},
+},
+dec_out[] = {
+	{"m", 0}
+};
+
+static int name_to_index(drew_param_t *p, size_t nentries,
+		const struct mapping *map)
+{
+	const char *name = p->param.string;
+	for (size_t i = 0; i < nentries; i++)
+		if (!strcmp(name, map[i].name)) {
+			p->param.number = map[i].index;
+			return 0;
+		}
+	return -DREW_ERR_INVALID;
+}
+
+static int index_to_name(drew_param_t *p, size_t nentries,
+		const struct mapping *map)
+{
+	size_t index = p->param.number;
+	if (index >= nentries)
+		return -DREW_ERR_INVALID;
+	p->param.string = map[index].name;
+	return 0;
+}
+
 static drew_bignum_t *init_bignum(const drew_loader_t *ldr,
 		const drew_param_t *param, const void *functbl)
 {

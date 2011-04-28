@@ -15,10 +15,34 @@
  * block of memory, such as locked memory.
  */
 #define DREW_PKSIG_INTSIZE 1  /* Not implemented. */
-/* The number of bignums that make up a plaintext message.  */
-#define DREW_PKSIG_PLAIN_BIGNUMS 2
-/* The number of bignums that make up a ciphertext message.  */
-#define DREW_PKSIG_CIPHER_BIGNUMS 3
+
+#define DREW__PKSIG_COMBINE(b) DREW__PKSIG_ ## b
+#define DREW__PKSIG_VAL(sv, io, type) \
+	(DREW__PKSIG_PSTART | \
+	 DREW__PKSIG_COMBINE(sv) | \
+	 DREW__PKSIG_COMBINE(io) | \
+	 DREW__PKSIG_COMBINE(type))
+#define DREW__PKSIG_PSTART 16
+#define DREW__PKSIG_SIGN 0
+#define DREW__PKSIG_VERIFY 1
+#define DREW__PKSIG_IN 0
+#define DREW__PKSIG_OUT 2
+#define DREW__PKSIG_COUNT 0
+#define DREW__PKSIG_N2I 4
+#define DREW__PKSIG_I2N 8
+
+#define DREW_PKSIG_SIGN_IN DREW__PKSIG_VAL(SIGN, IN, COUNT)
+#define DREW_PKSIG_SIGN_OUT DREW__PKSIG_VAL(SIGN, OUT, COUNT)
+#define DREW_PKSIG_VERIFY_IN DREW__PKSIG_VAL(VERIFY, IN, COUNT)
+#define DREW_PKSIG_VERIFY_OUT DREW__PKSIG_VAL(VERIFY, OUT, COUNT)
+#define DREW_PKSIG_SIGN_IN_NAME_TO_INDEX DREW__PKSIG_VAL(SIGN, IN, N2I)
+#define DREW_PKSIG_SIGN_OUT_NAME_TO_INDEX DREW__PKSIG_VAL(SIGN, OUT, N2I)
+#define DREW_PKSIG_VERIFY_IN_NAME_TO_INDEX DREW__PKSIG_VAL(VERIFY, IN, N2I)
+#define DREW_PKSIG_VERIFY_OUT_NAME_TO_INDEX DREW__PKSIG_VAL(VERIFY, OUT, N2I)
+#define DREW_PKSIG_SIGN_IN_INDEX_TO_NAME DREW__PKSIG_VAL(SIGN, IN, I2N)
+#define DREW_PKSIG_SIGN_OUT_INDEX_TO_NAME DREW__PKSIG_VAL(SIGN, OUT, I2N)
+#define DREW_PKSIG_VERIFY_IN_INDEX_TO_NAME DREW__PKSIG_VAL(VERIFY, IN, I2N)
+#define DREW_PKSIG_VERIFY_OUT_INDEX_TO_NAME DREW__PKSIG_VAL(VERIFY, OUT, I2N)
 
 /* This bit indicates that the ctx member of drew_pksig_t is externally
  * allocated and sufficiently large.

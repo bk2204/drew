@@ -52,23 +52,44 @@ static const drew_pksig_functbl_t rsa_functbl = {
 	.test = rsa_test
 };
 
+#include "../../multi/rsa/rsa.c"
+
 static int rsa_info(int op, void *p)
 {
+	drew_param_t *param = p;
 	switch (op) {
 		case DREW_PKSIG_VERSION:
 			return 2;
 		case DREW_PKSIG_INTSIZE:
 			return sizeof(struct rsa);
-		case DREW_PKSIG_PLAIN_BIGNUMS:
-			return 1;
-		case DREW_PKSIG_CIPHER_BIGNUMS:
-			return 1;
+		case DREW_PKSIG_SIGN_IN:
+			return DIM(dec_in);
+		case DREW_PKSIG_SIGN_OUT:
+			return DIM(dec_out);
+		case DREW_PKSIG_VERIFY_IN:
+			return DIM(enc_in);
+		case DREW_PKSIG_VERIFY_OUT:
+			return DIM(enc_out);
+		case DREW_PKSIG_SIGN_IN_NAME_TO_INDEX:
+			return name_to_index(param, DIM(dec_in), dec_in);
+		case DREW_PKSIG_SIGN_IN_INDEX_TO_NAME:
+			return index_to_name(param, DIM(dec_in), dec_in);
+		case DREW_PKSIG_SIGN_OUT_NAME_TO_INDEX:
+			return name_to_index(param, DIM(dec_out), dec_out);
+		case DREW_PKSIG_SIGN_OUT_INDEX_TO_NAME:
+			return index_to_name(param, DIM(dec_out), dec_out);
+		case DREW_PKSIG_VERIFY_IN_NAME_TO_INDEX:
+			return name_to_index(param, DIM(enc_in), enc_in);
+		case DREW_PKSIG_VERIFY_IN_INDEX_TO_NAME:
+			return index_to_name(param, DIM(enc_in), enc_in);
+		case DREW_PKSIG_VERIFY_OUT_NAME_TO_INDEX:
+			return name_to_index(param, DIM(enc_out), enc_out);
+		case DREW_PKSIG_VERIFY_OUT_INDEX_TO_NAME:
+			return index_to_name(param, DIM(enc_out), enc_out);
 		default:
 			return -DREW_ERR_INVALID;
 	}
 }
-
-#include "../../multi/rsa/rsa.c"
 
 static int rsa_test(void *ptr, const drew_loader_t *ldr)
 {
