@@ -1,0 +1,16 @@
+DREW_TLS_DIR			:= lib/libdrew-tls
+DREW_TLS_SONAME			:= libdrew-tls.so.0
+DREW_TLS_SYMLINK		:= $(basename $(DREW_TLS_SONAME))
+
+DREW_TLS_OBJS			+= global.o
+
+DREW_TLS_DIROBJS		:= $(patsubst %,$(DREW_TLS_DIR)/%,$(DREW_TLS_OBJS))
+
+$(DREW_TLS_DIR)/$(DREW_TLS_SONAME): $(DREW_TLS_DIROBJS)
+	$(CC) $(CFLAGS) $(LIBCFLAGS) -o $(.TARGET) $(.ALLSRC) $(LIBS)
+
+$(DREW_TLS_SONAME): $(DREW_TLS_DIR)/$(DREW_TLS_SONAME)
+	ln -sf $(.ALLSRC) $(.TARGET)
+
+$(DREW_TLS_SYMLINK): $(DREW_TLS_SONAME)
+	ln -sf $(.ALLSRC) $(.TARGET)

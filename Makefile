@@ -43,12 +43,15 @@ all:
 include lib/libdrew/Makefile
 include $(patsubst %,impl/%/Makefile,$(CATEGORIES))
 include lib/libdrew-impl/Makefile
+include lib/libdrew-tls/Makefile
+include lib/libdrew-gnutls/Makefile
 include libmd/Makefile
 
 all: ${PLUG_EXE} ${DREW_SONAME} standard
 
 standard: ${DREW_SONAME} ${MD_SONAME} plugins libmd/testsuite
 standard: $(TEST_BINARIES)
+standard: $(DREW_TLS_SONAME) $(DREW_GNUTLS_SONAME)
 
 ${TEST_EXE}: ${TEST_SRC} ${MD_SONAME} ${DREW_SONAME}
 	${CC} -Ilibmd/include ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
