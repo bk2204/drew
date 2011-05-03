@@ -14,3 +14,4 @@ test/plugin-main
 *.so*
 plugins/*
 gmon.out
+misc/devel
