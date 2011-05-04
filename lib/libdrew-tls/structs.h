@@ -19,6 +19,10 @@ typedef enum {
 	content_type_application_data = 23
 } drew_tls_content_type_t;
 
+typedef enum {
+	compression_method_null = 0;
+} drew_tls_compression_method_t;
+
 typedef struct {
 	int end;
 	drew_block_t *block;
@@ -81,5 +85,29 @@ typedef struct {
 		drew_tls_generic_block_cipher_t generic_block_cipher;
 	} fragment;
 } drew_tls_tls_ciphertext_t;
+
+typedef struct {
+	uint32_t gmt_unix_time;
+	uint8_t random_bytes[28];
+} drew_tls_random_t;
+
+typedef struct {
+	uint8_t length;
+	uint8_t *sessionid;
+} drew_tls_session_id_t;
+
+typedef struct {
+	uint8_t val[2];
+} drew_tls_cipher_suite_t;
+
+typedef struct {
+	drew_tls_protocol_version_t version;
+	drew_tls_random_t random;
+	drew_tls_session_id_t session_id;
+	uint16_t cipher_suites_length;
+	drew_tls_cipher_suite_t *cipher_suites;
+	uint8_t compression_methods_length;
+	drew_tls_compression_method_t compression_method;
+} drew_tls_client_hello_t;
 
 #endif
