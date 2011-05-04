@@ -1,7 +1,25 @@
 #ifndef DREW_GNUTLS_H
 #define DREW_GNUTLS_H
 
-typedef void (*gnutls_log_func)(int level, const char *s);
+#define GNUTLS_SERVER 0
+#define GNUTLS_CLIENT 1
+
+typedef void (*gnutls_log_func)(int, const char *);
+
+typedef void *(*gnutls_alloc_function)(size_t);
+typedef void *(*gnutls_calloc_function)(size_t, size_t);
+typedef int (*gnutls_is_secure_function)(const void *);
+typedef void (*gnutls_free_function)(void *);
+typedef void *(*gnutls_realloc_function)(void *, size_t);
+
+// The functions using these are not implemented, so they are for compatibility
+// only.
+typedef int (*mutex_init_func)(void **);
+typedef int (*mutex_lock_func)(void **);
+typedef int (*mutex_unlock_func)(void **);
+typedef int (*mutex_deinit_func)(void **);
+
+
 
 /* Yes, these look ugly, but they're the result of a perl script. */
 int gnutls_init(gnutls_session_t *session, gnutls_connection_end_t con_end);
