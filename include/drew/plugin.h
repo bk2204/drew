@@ -82,6 +82,9 @@ typedef void drew_loader_t;
 #define DREW_ERR_BUG			0x10008
 /* More data is needed to complete the request. */
 #define DREW_ERR_MORE_DATA		0x10009
+/* There is no more of the requested item or the requested item does not exist.
+ */
+#define DREW_ERR_NONEXISTENT	0x1000a
 
 int drew_loader_new(drew_loader_t **ldr);
 int drew_loader_free(drew_loader_t **ldr);
