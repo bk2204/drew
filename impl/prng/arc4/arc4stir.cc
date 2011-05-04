@@ -166,13 +166,11 @@ drew::ARC4Stir::ARC4Stir()
 
 uint8_t drew::ARC4Stir::GetByte()
 {
-	uint8_t t = InternalGetByte();
-
 	if (--m_cnt <= 0)
 		Stir();
 
 	m_entropy -= 8;
-	return t;
+	return InternalGetByte();
 }
 
 uint8_t drew::ARC4Stir::InternalGetByte()
