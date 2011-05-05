@@ -1,8 +1,14 @@
 #ifndef DREW_OPGP_PARSER_H
 #define DREW_OPGP_PARSER_H
 
+#include <stdbool.h>
+#include <stdint.h>
+#include <sys/types.h>
+
 #define DREW_OPGP_MAX_MPIS_ENCRYPT 2
 #define DREW_OPGP_MAX_MPIS_SIGN 2
+#define DREW_OPGP_MAX_MPIS_PUBKEY 4
+#define DREW_OPGP_MAX_MPIS_PRIVKEY 4
 
 #define DREW_OPGP_MAX_SK_BLOCK_SIZE 16
 #define DREW_OPGP_MAX_SK_KEY_SIZE 32
@@ -20,6 +26,13 @@ typedef struct {
 	uint16_t len;
 	uint8_t *data;
 } drew_opgp_mpi_t;
+
+typedef struct {
+	uint8_t type;
+	uint8_t mdalgo;
+	uint8_t salt[8];
+	uint8_t count;
+} drew_opgp_s2k_t;
 
 typedef struct {
 	uint8_t ver;
@@ -88,6 +101,43 @@ typedef struct {
 } drew_opgp_packet_onepass_sig_t;
 
 typedef struct {
+	uint32_t ctime;
+	uint16_t valid_days;
+	uint8_t pkalgo;
+	drew_opgp_mpi_t mpi[DREW_OPGP_MAX_MPIS_PUBKEY];
+} drew_opgp_packet_pubkeyv3_t;
+
+typedef struct {
+	uint32_t ctime;
+	uint16_t valid_days;
+	uint8_t pkalgo;
+	drew_opgp_mpi_t mpi[DREW_OPGP_MAX_MPIS_PUBKEY];
+} drew_opgp_packet_pubkeyv4_t;
+
+typedef struct {
+	uint8_t ver;
+	union {
+		drew_opgp_packet_pubkeyv3_t pubkeyv3;
+		drew_opgp_packet_pubkeyv4_t pubkeyv4;
+	} data;
+} drew_opgp_packet_pubkey_t;
+
+typedef struct {
+	uint8_t ver;
+	drew_opgp_packet_pubkey_t pubkey;
+	uint8_t s2k_usage;
+	uint8_t skalgo;
+	drew_opgp_s2k_t s2k;
+	uint8_t iv[DREW_OPGP_MAX_SK_BLOCK_SIZE];
+	union {
+		uint16_t cksum;
+		uint8_t sha1sum[20];
+	} checksum;
+	size_t mpidatalen;
+	uint8_t *mpidata;
+} drew_opgp_packet_privkey_t;
+
+typedef struct {
 	uint8_t tag;
 	uint8_t ver;
 	uint8_t type;
@@ -95,24 +145,22 @@ typedef struct {
 	drew_opgp_len_t len;
 	union {
 		drew_opgp_packet_pkesk_t pkesk;
+		drew_opgp_packet_sig_t sig;
 		drew_opgp_packet_skesk_t skesk;
 		drew_opgp_packet_onepass_sig_t onepass_sig;
+		drew_opgp_packet_pubkey_t pubkey;
+		drew_opgp_packet_privkey_t privkey;
 	} data;
 } drew_opgp_packet_t;
 
-// The header information is corrupt.
-#define DREW_OPGP_ERR_INVALID_HEADER	0x20001
-#define DREW_OPGP_ERR_INVALID			0x20001
-// More data is needed to continue.
-#define DREW_OPGP_ERR_MORE_DATA			0x20002
-// That functionality is not implemented.
-#define DREW_OPGP_ERR_NOT_IMPL			0x20003
-
-// The data is not in compliance with the versions specified.
-#define DREW_OPGP_ERR_WRONG_VERSION		0x20101
 
 #define DREW_OPGP_F0_RFC1991			(1 << 0)
 #define DREW_OPGP_F0_RFC2440			(1 << 1)
 #define DREW_OPGP_F0_RFC2440_BIS0		(1 << 2)
+
+int drew_opgp_parser_parse_packet_header(drew_opgp_parser_t *parser,
+		drew_opgp_packet_t *pkt, const uint8_t *data, size_t datalen);
+int drew_opgp_parser_parse_packet_contents(drew_opgp_parser_t *parser,
+		drew_opgp_packet_t *pkt, const uint8_t *data, size_t datalen);
 
 #endif

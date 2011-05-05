@@ -1,3 +1,10 @@
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <drew/plugin.h>
+
+#include <drew-opgp/drew-opgp.h>
 
 #include "parser.h"
 
@@ -5,16 +12,19 @@
 
 int drew_opgp_parser_new(drew_opgp_parser_t *p, int mode, const int *flags)
 {
+	return 0;
 }
 
 int drew_opgp_parser_free(drew_opgp_parser_t *p)
 {
+	return 0;
 }
 
 int drew_opgp_parser_parse_packets(drew_opgp_parser_t *p,
 		drew_opgp_packet_t *packets, size_t *npackets, const uint8_t *data,
 		size_t datalen, size_t *off)
 {
+	return 0;
 }
 
 static inline uint16_t get_uint16(const uint8_t **datap)
@@ -56,15 +66,21 @@ int drew_opgp_parser_parse_packet(drew_opgp_parser_t *parser,
 		drew_opgp_packet_t *pkt, const uint8_t *data, size_t datalen)
 {
 	int res = 0;
+	int cnt = 0;
 
 	res = drew_opgp_parser_parse_packet_header(parser, pkt, data, datalen);
 	if (res < 0)
 		return res;
+	cnt += res;
 	data += res;
 	datalen -= res;
 	res = drew_opgp_parser_parse_packet_contents(parser, pkt, data, datalen);
 	if (res < 0)
 		return res;
+	cnt += res;
+	data += res;
+	datalen -= res;
+	return cnt;
 }
 
 int drew_opgp_parser_parse_packet_header(drew_opgp_parser_t *parser,
@@ -75,7 +91,7 @@ int drew_opgp_parser_parse_packet_header(drew_opgp_parser_t *parser,
 		return -DREW_ERR_MORE_DATA;
 	pkt->tag = *data++;
 	if (!(pkt->tag & 0x80))
-		return -DREW_ERR_INVALID_HEADER;
+		return -DREW_OPGP_ERR_INVALID_HEADER;
 	pkt->ver = (pkt->tag & 0x40) ? 4 : 3;
 	if (pkt->ver <= 3) {
 		pkt->type = (pkt->tag >> 2) & 0x0f;
@@ -106,16 +122,16 @@ int drew_opgp_parser_parse_packet_header(drew_opgp_parser_t *parser,
 			DECLARE_NEED(1);
 			pkt->lenoflen = 2;
 			uint8_t b2 = *data++;
-			pkt->len = (drew_opgp_len_t(lenbyte - 0xc0) << 8) + b2 + 0xc0;
+			pkt->len = (((drew_opgp_len_t)(lenbyte - 0xc0)) << 8) + b2 + 0xc0;
 		}
 		else if (lenbyte == 0xff) {
 			DECLARE_NEED(4);
 			pkt->lenoflen = 4;
-			pkt->len = GET_UINT32()
+			pkt->len = GET_UINT32();
 		}
 		else {
 			pkt->lenoflen = -1;
-			pkt->len = drew_opgp_len_t(1) << (lenbyte & 0x1f);
+			pkt->len = ((drew_opgp_len_t)(1)) << (lenbyte & 0x1f);
 		}
 	}
 	return data-origdata;
@@ -237,7 +253,7 @@ static int parse_pkesk(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	const uint8_t *origdata = data;
-	drew_opgp_packet_pkesk_t *p = &pkt.data.pkesk;
+	drew_opgp_packet_pkesk_t *p = &pkt->data.pkesk;
 	DECLARE_NEED(1 + 8 + 1 + 2);
 	DECLARE_NEED(pkt->len);
 
@@ -260,8 +276,8 @@ static int parse_sigv3(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	const uint8_t *origdata = data;
-	drew_opgp_packet_sig_t *sig = &pkt.data.sig;
-	drew_opgp_packet_sigv3_t *p = &sig->sigv3;
+	drew_opgp_packet_sig_t *sig = &pkt->data.sig;
+	drew_opgp_packet_sigv3_t *p = &sig->data.sigv3;
 
 	DECLARE_NEED(1 + 1 + 1 + 4 + 8 + 1 + 1 + 2 + 2);
 	sig->ver = *data++;
@@ -316,7 +332,7 @@ static int load_subpackets(drew_opgp_subpacket_t **sparr, size_t *nsp,
 			DECLARE_NEED(1);
 			sp[i].lenoflen = 2;
 			uint8_t b2 = *data++;
-			sp[i].len = (size_t(lenbyte - 0xc0) << 8) + b2 + 0xc0;
+			sp[i].len = (((size_t)(lenbyte - 0xc0)) << 8) + b2 + 0xc0;
 		}
 		else {
 			DECLARE_NEED(4);
@@ -335,14 +351,16 @@ static int load_subpackets(drew_opgp_subpacket_t **sparr, size_t *nsp,
 		// FIXME: split into data chunks.
 		(*nsp)++;
 	}
+
+	return data-origdata;
 }
 
 static int parse_sigv4(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	const uint8_t *origdata = data;
-	drew_opgp_packet_sig_t *sig = &pkt.data.sig;
-	drew_opgp_packet_sigv4_t *p = &sig->sigv4;
+	drew_opgp_packet_sig_t *sig = &pkt->data.sig;
+	drew_opgp_packet_sigv4_t *p = &sig->data.sigv4;
 	int res = 0;
 
 	DECLARE_NEED(1 + 1 + 1 + 1 + 2 + 2 + 2 + 2);
@@ -371,7 +389,7 @@ static int parse_sigv4(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 
 	size_t nmpis = get_nmpis_signature(p->pkalgo);
 	// FIXME: Decide what to do it nmpis is zero (invalid).
-	int res = load_mpis(p->mpi, nmpis, data,
+	res = load_mpis(p->mpi, nmpis, data,
 			datalen - (data - origdata));
 	if (res < 0)
 		return res;
@@ -415,7 +433,7 @@ static int parse_skesk(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	const uint8_t *origdata = data;
-	drew_opgp_packet_skesk_t *p = &pkt.data.skesk;
+	drew_opgp_packet_skesk_t *p = &pkt->data.skesk;
 	DECLARE_NEED(1 + 1 + 2);
 
 	p->ver = *data++;
@@ -440,7 +458,7 @@ static int parse_onepass_sig(drew_opgp_parser_t *parser,
 		drew_opgp_packet_t *pkt, const uint8_t *data, size_t datalen)
 {
 	const uint8_t *origdata = data;
-	drew_opgp_packet_skesk_t *p = &pkt.data.onepass_sig;
+	drew_opgp_packet_onepass_sig_t *p = &pkt->data.onepass_sig;
 	DECLARE_NEED(1 + 1 + 1 + 1 + 8 + 1);
 
 	p->ver = *data++;
@@ -454,40 +472,21 @@ static int parse_onepass_sig(drew_opgp_parser_t *parser,
 }
 
 static int parse_pubkeyv3(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
-		const uint8_t *data, size_t datalen)
+		const uint8_t *data, size_t datalen, drew_opgp_packet_pubkey_t *pk)
 {
 	const uint8_t *origdata = data;
-	drew_opgp_packet_pubkey_t *pk = &pkt.data.pubkey;
-	drew_opgp_packet_pubkeyv3_t *p = &pk->pubkeyv3;
+	drew_opgp_packet_pubkeyv3_t *p = &pk->data.pubkeyv3;
 	int res = 0;
 
 	DECLARE_NEED(1 + 4 + 2 + 1);
-	sig->ver = *data++;
-	p->type = *data++;
+	pk->ver = *data++;
+	p->ctime = GET_UINT32();
+	p->valid_days = GET_UINT16();
 	p->pkalgo = *data++;
-	p->mdalgo = *data++;
-	p->hashedlen = GET_UINT16();
 
-	DECLARE_NEED(p->hashedlen);
-	res = load_subpackets(&p->hashed, &p->nhashed, data, p->hashedlen);
-	if (res < 0)
-		return res;
-	data += p->hashedlen;
-
-	p->unhashedlen = GET_UINT16();
-
-	DECLARE_NEED(p->unhashedlen);
-	res = load_subpackets(&p->unhashed, &p->nunhashed, data, p->unhashedlen);
-	if (res < 0)
-		return res;
-	data += p->hashedlen;
-
-	memcpy(p->left, data, sizeof(p->left));
-	data += sizeof(p->left);
-
-	size_t nmpis = get_nmpis_signature(p->pkalgo);
+	size_t nmpis = get_nmpis_pubkey(p->pkalgo);
 	// FIXME: Decide what to do it nmpis is zero (invalid).
-	int res = load_mpis(p->mpi, nmpis, data,
+	res = load_mpis(p->mpi, nmpis, data,
 			datalen - (data - origdata));
 	if (res < 0)
 		return res;
@@ -495,18 +494,122 @@ static int parse_pubkeyv3(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 	return data-origdata;
 }
 
+static int parse_pubkeyv4(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+		const uint8_t *data, size_t datalen, drew_opgp_packet_pubkey_t *pk)
+{
+	const uint8_t *origdata = data;
+	drew_opgp_packet_pubkeyv4_t *p = &pk->data.pubkeyv4;
+	int res = 0;
+
+	DECLARE_NEED(1 + 4 + 1);
+	pk->ver = *data++;
+	p->ctime = GET_UINT32();
+	p->pkalgo = *data++;
+
+	size_t nmpis = get_nmpis_pubkey(p->pkalgo);
+	// FIXME: Decide what to do it nmpis is zero (invalid).
+	res = load_mpis(p->mpi, nmpis, data,
+			datalen - (data - origdata));
+	if (res < 0)
+		return res;
+	data += res;
+	return data-origdata;
+}
 
 static int parse_pubkey(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	uint8_t ver = *data; // Not incrementing intentionally.
 	if (ver <= 3)
-		return parse_pubkeyv3(parser, pkt, data, datalen);
+		return parse_pubkeyv3(parser, pkt, data, datalen, &pkt->data.pubkey);
 	else
-		return parse_pubkeyv4(parser, pkt, data, datalen);
+		return parse_pubkeyv4(parser, pkt, data, datalen, &pkt->data.pubkey);
 }
 
-static const int (*func[64])(drew_opgp_parser_t *, drew_opgp_packet_t *,
+static int parse_privkey_impl(drew_opgp_parser_t *parser,
+		drew_opgp_packet_t *pkt, const uint8_t *data, size_t datalen,
+		size_t dataused)
+{
+	const uint8_t *origdata = data;
+	drew_opgp_packet_privkey_t *pk = &pkt->data.privkey;
+	int res = 0;
+
+	DECLARE_NEED(1);
+	pk->s2k_usage = *data++;
+
+	if (pk->s2k_usage >= 254) {
+		DECLARE_NEED(2);
+		pk->skalgo = *data++;
+		res = parse_s2k(parser, &pk->s2k, data, datalen - (data-origdata));
+		if (res < 0)
+			return res;
+		data += res;
+	}
+	else
+		pk->skalgo = pk->s2k_usage;
+
+	if (pk->s2k_usage) {
+		size_t blksize = get_sk_block_size(pk->skalgo);
+		DECLARE_NEED(blksize);
+		memcpy(pk->iv, data, blksize);
+		data += blksize;
+	}
+
+	dataused += data - origdata;
+	pk->mpidatalen = pkt->len - dataused;
+	if (!(pk->mpidata = malloc(pk->mpidatalen)))
+		return -ENOMEM;
+	memcpy(pk->mpidata, data, pk->mpidatalen);
+	data += pk->mpidatalen;
+	return data-origdata;
+}
+
+
+static int parse_privkeyv3(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+		const uint8_t *data, size_t datalen)
+{
+	const uint8_t *origdata = data;
+	drew_opgp_packet_privkey_t *pk = &pkt->data.privkey;
+	int res = 0;
+
+	DECLARE_NEED(1);
+	pk->ver = *data; // Intentionally not incremented.
+	res = parse_pubkeyv3(parser, pkt, data, datalen, &pk->pubkey);
+	data += res;
+
+	size_t dataused = data - origdata;
+
+	return parse_privkey_impl(parser, pkt, data, datalen - dataused, dataused);
+}
+
+static int parse_privkeyv4(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+		const uint8_t *data, size_t datalen)
+{
+	const uint8_t *origdata = data;
+	drew_opgp_packet_privkey_t *pk = &pkt->data.privkey;
+	int res = 0;
+
+	DECLARE_NEED(1);
+	pk->ver = *data; // Intentionally not incremented.
+	res = parse_pubkeyv4(parser, pkt, data, datalen, &pk->pubkey);
+	data += res;
+
+	size_t dataused = data - origdata;
+
+	return parse_privkey_impl(parser, pkt, data, datalen - dataused, dataused);
+}
+
+static int parse_privkey(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+		const uint8_t *data, size_t datalen)
+{
+	uint8_t ver = *data; // Not incrementing intentionally.
+	if (ver <= 3)
+		return parse_privkeyv3(parser, pkt, data, datalen);
+	else
+		return parse_privkeyv4(parser, pkt, data, datalen);
+}
+
+static int (*const func[64])(drew_opgp_parser_t *, drew_opgp_packet_t *,
 		const uint8_t *, size_t) = {
 	NULL,
 	parse_pkesk,
@@ -529,4 +632,5 @@ int drew_opgp_parser_parse_packet_contents(drew_opgp_parser_t *parser,
 		return -DREW_OPGP_ERR_NOT_IMPL;
 
 	int res = func[pkt->type](parser, pkt, data, datalen);
+	return res;
 }
