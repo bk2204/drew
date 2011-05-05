@@ -150,6 +150,22 @@ int drew_loader_free(drew_loader_t **ldr)
 	if (!ldr)
 		return -EINVAL;
 
+	drew_loader_t *p = *ldr;
+
+	if (!p)
+		return 0;
+
+	for (int i = 0; i < p->nentries; i++) {
+		free(p->entry[i].name);
+		free(p->entry[i].aname);
+		free(p->entry[i].path);
+		free(p->entry[i].metadata);
+		free(p->entry[i].functbl);
+		dlclose(p->entry[i].handle);
+		memset(&p->entry[i], 0, sizeof(*p->entry));
+	}
+	free(p->entry);
+
 	free(*ldr);
 	*ldr = NULL;
 	return 0;
@@ -186,7 +202,7 @@ static int drew_loader__lookup_plugin(drew_loader_t *ldr, void **obj,
 		return -ENOMEM;
 
 	for (; dpath && (elem = strsep(&dpath, ":")); ) {
-		char *plugpath;
+		char *plugpath = NULL;
 		int elemsz = strlen(elem), sz;
 		int plugsz = strlen(plugin);
 
@@ -206,6 +222,7 @@ static int drew_loader__lookup_plugin(drew_loader_t *ldr, void **obj,
 		if ((handle = drew_loader__open_plugin(ldr, plugpath))) {
 			err = 0;
 			*fullpath = realpath(plugpath, NULL);
+			free(plugpath);
 			goto out;
 		}
 	}
