@@ -34,6 +34,8 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 	return print_test_results(functbl->test(NULL, ldr), NULL);
 }
 
+#define STUBS_EXTERNAL 1
+#define STUBS_API 1
 #include "stubs.c"
 
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,

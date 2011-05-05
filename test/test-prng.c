@@ -49,6 +49,8 @@ inline int test_speed_loop(drew_prng_t *ctx, uint8_t *buf,
 	return i;
 }
 
+#define STUBS_EXTERNAL 1
+#define STUBS_API 1
 #include "stubs.c"
 
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
