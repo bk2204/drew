@@ -197,6 +197,7 @@ int test_process_testcase(void *data, int type, const char *item,
 #define HASH_BAD_PAD		(1 << 15)
 #define HASH_BAD_FINAL		(1 << 16)
 #define HASH_BAD_FINI		(1 << 17)
+#define HASH_BAD_ERROR		(1 << 18)
 
 int test_api_context(drew_hash_t *ctx, const drew_loader_t *ldr,
 		const drew_param_t *paramp, size_t intsize, size_t hashsize)
@@ -331,6 +332,12 @@ int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
 		retval |= HASH_BAD_INTSIZE;
 	else
 		intsize = res;
+
+	res = ctx->functbl->info(0xdeadbeef, NULL);
+	if (is_forbidden_errno(res))
+		retval |= HASH_BAD_ERRNO;
+	if (res != -DREW_ERR_INVALID)
+		retval |= HASH_BAD_ERROR;
 
 	ctx->ctx = NULL;
 	retval |= test_api_context(ctx, ldr, &param, intsize, hashsize);
