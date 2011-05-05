@@ -61,8 +61,10 @@ static int sha512tinfo(int op, void *p)
 			return SHA512t::buffer_size;
 		case DREW_HASH_INTSIZE:
 			return sizeof(SHA512t);
+		case DREW_HASH_ENDIAN:
+			return SHA512t::endian_t::GetEndianness();
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
 

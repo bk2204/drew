@@ -26,8 +26,10 @@ static int prefix ## info(int op, void *) \
 			return hname::buffer_size; \
 		case DREW_HASH_INTSIZE: \
 			return sizeof(hname); \
+		case DREW_HASH_ENDIAN: \
+			return hname::endian_t::GetEndianness(); \
 		default: \
-			return -EINVAL; \
+			return -DREW_ERR_INVALID; \
 	} \
 } \
  \
