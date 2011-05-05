@@ -139,6 +139,7 @@ int drew_loader_new(drew_loader_t **ldr)
 	p = malloc(sizeof(*p));
 	if (!p)
 		return -ENOMEM;
+	memset(p, 0, sizeof(*p));
 
 	*ldr = p;
 	return 0;
