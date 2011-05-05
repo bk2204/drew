@@ -249,6 +249,8 @@ int test_api_context(drew_hash_t *ctx, const drew_loader_t *ldr,
 	if (ctx->functbl->fini(ctx, flag))
 		retval |= HASH_BAD_FINI;
 
+	free(buf);
+
 	return retval;
 }
 
