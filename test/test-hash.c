@@ -345,7 +345,7 @@ int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
 		retval |= HASH_BAD_NULLIFY;
 	ctx->ctx = mem = malloc(intsize);
 	retval |= test_api_context(ctx, ldr, &param, intsize, hashsize);
-	if (ctx->ctx)
+	if (ctx->ctx != mem)
 		retval |= HASH_BAD_NULLIFY;
 	free(mem);
 
