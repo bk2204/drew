@@ -294,8 +294,8 @@ int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
 			param.name = "digestSize";
 			param.param.number = vals[i] / 8;
 			param.next = NULL;
-			res = ctx->functbl->info(DREW_HASH_BLKSIZE, &param);
-			if (!res)
+			res = ctx->functbl->info(DREW_HASH_SIZE, &param);
+			if (res == param.param.number)
 				break;
 			if (res != -DREW_ERR_MORE_INFO && res != -DREW_ERR_INVALID)
 				break;
