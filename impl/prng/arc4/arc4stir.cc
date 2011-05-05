@@ -227,7 +227,7 @@ void drew::ARC4Stir::Stir()
 		close(rnd.fd);
 	}
 	AddRandomData((const uint8_t *)&rnd, sizeof(rnd),
-			std::min(rnd.nbytes, 0) * 8);
+			std::min<ssize_t>(rnd.nbytes, 0) * 8);
 }
 
 // Note that this does not reset the S-box to the initial state.
