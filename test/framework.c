@@ -23,6 +23,17 @@
 
 #include <drew/plugin.h>
 
+bool is_forbidden_errno(int val)
+{
+	if (val >= 0)
+		return 0;
+	if (-val >= 0x10000)
+		return 0;
+	if (-val == ENOMEM)
+		return 0;
+	return 1;
+}
+
 double sec_from_timespec(const struct timespec *ts)
 {
 	return ts->tv_sec + (ts->tv_nsec / 1000000000.0);
@@ -275,13 +286,16 @@ int main(int argc, char **argv)
 
 	drew_loader_new(&ldr);
 
-	while ((opt = getopt(argc, argv, "stifa:c:n:o:r:")) != -1) {
+	while ((opt = getopt(argc, argv, "stipfa:c:n:o:r:")) != -1) {
 		switch (opt) {
 			case 's':
 				mode = MODE_SPEED;
 				break;
 			case 't':
 				mode = MODE_TEST;
+				break;
+			case 'p':
+				mode = MODE_TEST_API;
 				break;
 			case 'i':
 				mode = MODE_TEST_INTERNAL;
@@ -381,6 +395,11 @@ int main(int argc, char **argv)
 				result = test_internal(ldr, name, functbl);
 				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
 					error++;
+			case MODE_TEST_API:
+				result = test_api(ldr, name, algo, functbl);
+				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
+					error++;
+				print_test_results_impl(result, NULL, "API test");
 			default:
 				break;
 		}
