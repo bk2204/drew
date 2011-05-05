@@ -13,6 +13,7 @@ class HashHelper
 {
 	public:
 		HashHelper(const drew_hash_t *hash);
+		~HashHelper();
 		void AddData(const uint8_t *data, size_t len);
 		void GetDigest(uint8_t *data, size_t len);
 		size_t GetSeedLength() const;
@@ -44,8 +45,8 @@ class DRBG : public SeededPRNG, public BlockPRNG
 class HashDRBG : public DRBG
 {
 	public:
-		HashDRBG();
-		virtual ~HashDRBG() {}
+		HashDRBG(const drew_hash_t &);
+		virtual ~HashDRBG();
 		void GetBytes(uint8_t *, size_t);
 	protected:
 		void Initialize(const uint8_t *, size_t);
