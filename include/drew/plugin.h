@@ -83,6 +83,7 @@ typedef void drew_loader_t;
 /* More data is needed to complete the request. */
 #define DREW_ERR_MORE_DATA		0x10009
 /* There is no more of the requested item or the requested item does not exist.
+ * Alternately, no item matching the criteria was available.
  */
 #define DREW_ERR_NONEXISTENT	0x1000a
 
