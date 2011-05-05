@@ -35,11 +35,12 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 }
 
 inline int test_speed_loop(drew_prng_t *ctx, uint8_t *buf,
-		uint8_t *blk, int blksz, int chunk, int nchunks)
+		uint8_t *blk, int blksz, int chunk, int nchunks,
+		const drew_loader_t *ldr)
 {
 	int i;
 
-	ctx->functbl->init(ctx, 0, NULL, NULL);
+	ctx->functbl->init(ctx, 0, ldr, NULL);
 	ctx->functbl->seed(ctx, blk, blksz, blksz);
 	for (i = 0; !framework_sigflag && i < nchunks; i++)
 		ctx->functbl->bytes(ctx, buf, chunk);
@@ -73,7 +74,7 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	fwdata = framework_setup();
 
 	clock_gettime(USED_CLOCK, &cstart);
-	i = test_speed_loop(&ctx, buf, blk, blksz, chunk, nchunks);
+	i = test_speed_loop(&ctx, buf, blk, blksz, chunk, nchunks, ldr);
 	clock_gettime(USED_CLOCK, &cend);
 
 	framework_teardown(fwdata);
