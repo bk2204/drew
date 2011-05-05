@@ -43,12 +43,14 @@ all:
 include lib/libdrew/Makefile
 include $(patsubst %,impl/%/Makefile,$(CATEGORIES))
 include lib/libdrew-impl/Makefile
+include lib/libdrew-openpgp/Makefile
 include libmd/Makefile
 
 all: ${PLUG_EXE} ${DREW_SONAME} standard
 
 standard: ${DREW_SONAME} ${MD_SONAME} plugins libmd/testsuite
 standard: $(TEST_BINARIES)
+standard: $(DREW_OPGP_SONAME)
 
 ${TEST_EXE}: ${TEST_SRC} ${MD_SONAME} ${DREW_SONAME}
 	${CC} -Ilibmd/include ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
