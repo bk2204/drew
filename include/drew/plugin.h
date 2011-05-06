@@ -16,7 +16,7 @@ typedef struct {
 	char *object;
 } drew_metadata_t;
 
-#if defined(DREW_IN_BUILD)
+#if defined(DREW_IN_BUILD) && defined(DREW_IN_BUILD_PLUGIN_C)
 typedef struct {
 	int version;
 	int flags;
@@ -39,6 +39,9 @@ typedef struct {
 	int nentries;
 	drew_loader_entry_t *entry;
 } drew_loader_t;
+#elif defined(DREW_IN_BUILD)
+struct drew_loader_s;
+typedef struct drew_loader_s drew_loader_t;
 #else
 typedef void drew_loader_entry_t;
 typedef void drew_loader_t;

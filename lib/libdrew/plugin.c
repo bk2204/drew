@@ -1,4 +1,5 @@
 #include "internal.h"
+#define DREW_IN_BUILD_PLUGIN_C
 #include <drew/plugin.h>
 
 #include <dlfcn.h>
