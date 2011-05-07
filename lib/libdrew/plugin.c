@@ -292,7 +292,7 @@ int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
 
 		ldr->entry[nid].handle = handle;
 		ldr->entry[nid].name = strdup(plugin);
-		ldr->entry[nid].path = fullpath;
+		ldr->entry[nid].path = strdup(fullpath);
 		if ((err = drew_loader__load_info(ldr, nid, i)))
 			goto errout;
 	}
