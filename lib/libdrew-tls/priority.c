@@ -44,6 +44,6 @@ int drew_tls_priority_fini(drew_tls_priority_t *prio)
 {
 }
 
-int drew_tls_priority_set_string(drew_tls_priority prio, const char *s)
+int drew_tls_priority_set_string(drew_tls_priority_t prio, const char *s)
 {
 }

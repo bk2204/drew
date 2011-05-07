@@ -20,8 +20,14 @@ typedef enum {
 } drew_tls_content_type_t;
 
 typedef enum {
-	compression_method_null = 0;
+	compression_method_null = 0
 } drew_tls_compression_method_t;
+
+typedef enum {
+	cipher_type_stream = 0,
+	cipher_type_block,
+	cipher_type_null = 256 // Non-standard.
+} drew_tls_cipher_type_t;
 
 typedef struct {
 	int end;
@@ -48,17 +54,14 @@ typedef struct {
 } drew_tls_connection_parameters_t;
 
 typedef struct {
-	uint8_t major, minor;
-} drew_tls_protocol_version_t;
-
-typedef struct {
 	drew_tls_content_type_t type;
 	drew_tls_protocol_version_t version;
 	uint16_t length;
 	uint8_t *fragment;
-} drew_tls_tls_plaintext_t;
+} drew_tls_record_t;
 
-typedef drew_tls_tls_plaintext_t drew_tls_tls_compressed_t;
+typedef drew_tls_record_t drew_tls_tls_plaintext_t;
+typedef drew_tls_record_t drew_tls_tls_compressed_t;
 
 typedef struct {
 	uint8_t *content;
@@ -92,11 +95,6 @@ typedef struct {
 } drew_tls_random_t;
 
 typedef struct {
-	uint8_t length;
-	uint8_t *sessionid;
-} drew_tls_session_id_t;
-
-typedef struct {
 	uint8_t val[2];
 } drew_tls_cipher_suite_t;
 
@@ -107,7 +105,15 @@ typedef struct {
 	uint16_t cipher_suites_length;
 	drew_tls_cipher_suite_t *cipher_suites;
 	uint8_t compression_methods_length;
-	drew_tls_compression_method_t compression_method;
+	drew_tls_compression_method_t *compression_methods;
 } drew_tls_client_hello_t;
+
+typedef struct {
+	drew_tls_protocol_version_t version;
+	drew_tls_random_t random;
+	drew_tls_session_id_t session_id;
+	drew_tls_cipher_suite_t cipher_suite;
+	drew_tls_compression_method_t compression_method;
+} drew_tls_server_hello_t;
 
 #endif
