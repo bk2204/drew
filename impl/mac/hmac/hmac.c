@@ -101,7 +101,7 @@ static int hmac_setkey(drew_mac_t *ctxt, const uint8_t *data, size_t len)
 	uint8_t *outpad;
 	uint8_t *inpad;
 	size_t i;
-	const uint8_t *k = data;
+	const uint8_t *k = ctx->keybuf;
 	drew_hash_t keyhash;
 
 	if (len > ctx->blksz) {
@@ -109,7 +109,6 @@ static int hmac_setkey(drew_mac_t *ctxt, const uint8_t *data, size_t len)
 		keyhash.functbl->init(&keyhash, 0, ctx->ldr, ctx->param);
 		keyhash.functbl->update(&keyhash, data, len);
 		keyhash.functbl->final(&keyhash, ctx->keybuf, 0);
-		k = ctx->keybuf;
 		ctx->keybufsz = len = ctx->digestsz;
 	}
 	else if (data != ctx->keybuf) {
