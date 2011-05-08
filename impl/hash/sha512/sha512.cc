@@ -217,12 +217,6 @@ static int sha384test(void *, const drew_loader_t *)
 }
 }
 
-/* 32-bit rotate-right. */
-static inline uint64_t ROR(uint64_t x, int n)
-{
-	return ((x>>n)|(x<<(64-n)));
-}
-
 static inline uint64_t Ch(uint64_t x, uint64_t y, uint64_t z)
 {
 	return (z^(x&(y^z)));
@@ -233,19 +227,19 @@ static inline uint64_t Maj(uint64_t x, uint64_t y, uint64_t z)
 }
 static inline uint64_t S0(uint64_t x)
 {
-	return ROR(x, 28)^ROR(x, 34)^ROR(x, 39);
+	return RotateRight(x, 28) ^ RotateRight(x, 34) ^ RotateRight(x, 39);
 }
 static inline uint64_t S1(uint64_t x)
 {
-	return ROR(x, 14)^ROR(x, 18)^ROR(x, 41);
+	return RotateRight(x, 14) ^ RotateRight(x, 18) ^ RotateRight(x, 41);
 }
 static inline uint64_t s0(uint64_t x)
 {
-	return ROR(x, 1)^ROR(x, 8)^(x>>7);
+	return RotateRight(x, 1) ^ RotateRight(x, 8) ^ (x >> 7);
 }
 static inline uint64_t s1(uint64_t x)
 {
-	return ROR(x, 19)^ROR(x, 61)^(x>>6);
+	return RotateRight(x, 19) ^ RotateRight(x, 61) ^ (x >> 6);
 }
 
 static const uint64_t k[]={

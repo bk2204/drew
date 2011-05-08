@@ -16,6 +16,7 @@
 
 #include "ripe160.hh"
 #include "testcase.hh"
+#include "util.hh"
 #include "hash-plugin.hh"
 
 extern "C" {
@@ -49,12 +50,6 @@ static int rmd160test(void *, const drew_loader_t *)
 
 	return res;
 }
-}
-
-/* 32-bit rotate-left. */
-static inline uint32_t ROL(uint32_t x, int n)
-{
-	return ((x<<n)|(x>>(32-n)));
 }
 
 static inline uint32_t ff(uint32_t x, uint32_t y, uint32_t z)
@@ -122,9 +117,10 @@ void drew::RIPEMD160::Reset()
 	Initialize();
 }
 
-#define STD(a, b, c, d, e) a=e; e=d; d=ROL(c, 10); c=b; b=t;
-#define OP(f, r, s, k, a, b, c, d, e) t=ROL(a+f(b, c, d)+blk[r[i]]+k, s[i])+e; \
-										STD(a, b, c, d, e);
+#define STD(a, b, c, d, e) a=e; e=d; d=RotateLeft(c, 10); c=b; b=t;
+#define OP(f, r, s, k, a, b, c, d, e) \
+	t=RotateLeft(a+f(b, c, d)+blk[r[i]]+k, s[i])+e; \
+	STD(a, b, c, d, e);
 
 void drew::RIPEMD160::Transform(quantum_t *state, const uint8_t *block)
 {

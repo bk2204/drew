@@ -54,12 +54,6 @@ static int md4test(void *, const drew_loader_t *)
 #define G(x, y, z) (((x)&(y))|((z)&((x)|(y))))
 #define H(x, y, z) ((x)^(y)^(z))
 
-/* 32-bit rotate-left. */
-static inline uint32_t ROL(uint32_t x, int n)
-{
-	return ((x<<n)|(x>>(32-n)));
-}
-
 drew::MD4::MD4()
 {
 	Reset();
@@ -74,7 +68,7 @@ void drew::MD4::Reset()
 	Initialize();
 }
 
-#define OP(a, b, c, d, f, k, s, x) a=ROL((a+f(b,c,d)+blk[k]+x), s)
+#define OP(a, b, c, d, f, k, s, x) a=RotateLeft((a+f(b,c,d)+blk[k]+x), s)
 #define FF(a, b, c, d, k, s) OP(a, b, c, d, F, k, s, 0)
 #define GG(a, b, c, d, k, s) OP(a, b, c, d, G, k, s, 0x5a827999)
 #define HH(a, b, c, d, k, s) OP(a, b, c, d, H, k, s, 0x6ed9eba1)
