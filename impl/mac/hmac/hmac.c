@@ -56,7 +56,7 @@ static int hmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
 	p->outside.functbl = p->inside.functbl = tbl;
 	p->blksz = p->outside.functbl->info(DREW_HASH_BLKSIZE, NULL);
 	p->digestsz = p->outside.functbl->info(DREW_HASH_SIZE, NULL);
-	p->keybuf = malloc(p->digestsz);
+	p->keybuf = malloc(p->blksz);
 	p->keybufsz = 0;
 	p->param = oparam;
 
