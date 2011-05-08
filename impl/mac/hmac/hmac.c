@@ -57,6 +57,7 @@ static int hmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
 	p->blksz = p->outside.functbl->info(DREW_HASH_BLKSIZE, NULL);
 	p->digestsz = p->outside.functbl->info(DREW_HASH_SIZE, NULL);
 	p->keybuf = malloc(p->digestsz);
+	p->keybufsz = 0;
 	p->param = oparam;
 
 	if (flags & DREW_MAC_FIXED) {
@@ -104,13 +105,14 @@ static int hmac_setkey(drew_mac_t *ctxt, const uint8_t *data, size_t len)
 	drew_hash_t keyhash;
 
 	if (len > ctx->blksz) {
+		keyhash.functbl = ctx->inside.functbl;
 		keyhash.functbl->init(&keyhash, 0, ctx->ldr, ctx->param);
 		keyhash.functbl->update(&keyhash, data, len);
 		keyhash.functbl->final(&keyhash, ctx->keybuf, 0);
 		k = ctx->keybuf;
-		len = ctx->digestsz;
+		ctx->keybufsz = len = ctx->digestsz;
 	}
-	if (data != ctx->keybuf) {
+	else if (data != ctx->keybuf) {
 		memcpy(ctx->keybuf, data, len);
 		ctx->keybufsz = len;
 	}
@@ -137,10 +139,13 @@ static int hmac_setkey(drew_mac_t *ctxt, const uint8_t *data, size_t len)
 
 static int hmac_reset(drew_mac_t *ctx)
 {
+	int res = 0;
 	struct hmac *c = ctx->ctx;
 	c->outside.functbl->reset(&c->outside); 
 	c->inside.functbl->reset(&c->inside);
-	return hmac_setkey(ctx, c->keybuf, c->keybufsz);
+	if (c->keybufsz)
+		res = hmac_setkey(ctx, c->keybuf, c->keybufsz);
+	return res;
 }
 
 static int hmac_update(drew_mac_t *ctx, const uint8_t *data, size_t len)
