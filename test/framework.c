@@ -395,6 +395,7 @@ int main(int argc, char **argv)
 				result = test_internal(ldr, name, functbl);
 				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
 					error++;
+				break;
 			case MODE_TEST_API:
 				result = test_api(ldr, name, algo, functbl);
 				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
