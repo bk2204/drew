@@ -293,6 +293,11 @@ static const uint64_t k[]={
 
 drew::SHA512::SHA512()
 {
+	Reset();
+}
+
+void drew::SHA512::Reset()
+{
 	m_hash[0] = 0x6a09e667f3bcc908;
 	m_hash[1] = 0xbb67ae8584caa73b;
 	m_hash[2] = 0x3c6ef372fe94f82b;
@@ -305,6 +310,11 @@ drew::SHA512::SHA512()
 }
 
 drew::SHA512t::SHA512t(size_t t_) : t(t_)
+{
+	Reset();
+}
+
+void drew::SHA512t::Reset()
 {
 	char buf[64];
 
@@ -325,6 +335,11 @@ drew::SHA512t::SHA512t(size_t t_) : t(t_)
 }
 
 drew::SHA384::SHA384()
+{
+	Reset();
+}
+
+void drew::SHA384::Reset()
 {
 	m_hash[0] = 0xcbbb9d5dc1059ed8;
 	m_hash[1] = 0x629a292a367cd507;

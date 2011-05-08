@@ -137,6 +137,11 @@ static const uint32_t k[]={
 
 drew::SHA256::SHA256()
 {
+	Reset();
+}
+
+void drew::SHA256::Reset()
+{
 	m_hash[0] = 0x6a09e667;
 	m_hash[1] = 0xbb67ae85;
 	m_hash[2] = 0x3c6ef372;
@@ -149,6 +154,11 @@ drew::SHA256::SHA256()
 }
 
 drew::SHA224::SHA224()
+{
+	Reset();
+}
+
+void drew::SHA224::Reset()
 {
 	m_hash[0] = 0xc1059ed8;
 	m_hash[1] = 0x367cd507;

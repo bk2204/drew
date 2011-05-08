@@ -62,6 +62,11 @@ static inline uint32_t ROL(uint32_t x, int n)
 
 drew::MD4::MD4()
 {
+	Reset();
+}
+
+void drew::MD4::Reset()
+{
 	m_hash[0] = 0x67452301;
 	m_hash[1] = 0xefcdab89;
 	m_hash[2] = 0x98badcfe;

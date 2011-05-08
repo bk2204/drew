@@ -35,6 +35,7 @@ class Hash
 			memset(m_len, 0, sizeof(m_len));
 			memset(m_buf, 0, sizeof(m_buf));
 		}
+		virtual void Reset() = 0;
 		virtual void Update(const uint8_t *data, size_t len)
 		{
 			const T t = m_len[0];

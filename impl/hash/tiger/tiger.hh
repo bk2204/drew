@@ -12,6 +12,7 @@ class Tiger : public Hash<uint64_t, 24, 24, 64, LittleEndian>
 	public:
 		Tiger();
 		virtual ~Tiger() {}
+		void Reset();
 		static void Transform(uint64_t *state, const uint8_t *data);
 		void Pad();
 	protected:

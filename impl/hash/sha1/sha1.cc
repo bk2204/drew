@@ -106,6 +106,12 @@ static inline uint32_t ROL(uint32_t x, int n)
 template<int Rotate>
 drew::SHA<Rotate>::SHA()
 {
+	Reset();
+}
+
+template<int Rotate>
+void drew::SHA<Rotate>::Reset()
+{
 	m_hash[0] = 0x67452301;
 	m_hash[1] = 0xefcdab89;
 	m_hash[2] = 0x98badcfe;

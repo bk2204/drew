@@ -50,6 +50,11 @@ typedef drew::Tiger::endian_t E;
 
 drew::Tiger::Tiger()
 {
+	Reset();
+}
+
+void drew::Tiger::Reset()
+{
 	m_hash[0] = 0x0123456789abcdef;
 	m_hash[1] = 0xfedcba9876543210;
 	m_hash[2] = 0xf096a5b4c3b2e187;
