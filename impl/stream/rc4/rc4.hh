@@ -33,6 +33,7 @@ class RC4
 		RC4(size_t drop);
 		~RC4() {}
 		inline void SetNonce(const uint8_t *, size_t sz) {}
+		void Reset();
 		void SetKey(const uint8_t *key, size_t sz);
 		void Encrypt(uint8_t *out, const uint8_t *in, size_t len);
 		void Decrypt(uint8_t *out, const uint8_t *in, size_t len);
@@ -40,6 +41,8 @@ class RC4
 	private:
 		RC4Keystream m_ks;
 		size_t m_drop;
+		uint8_t m_key[256];
+		size_t m_sz;
 };
 
 }

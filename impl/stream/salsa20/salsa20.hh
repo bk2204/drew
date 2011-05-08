@@ -41,6 +41,7 @@ class Salsa20
 	public:
 		Salsa20();
 		~Salsa20() {}
+		void Reset();
 		void SetNonce(const uint8_t *, size_t sz);
 		void SetKey(const uint8_t *key, size_t sz);
 		void Encrypt(uint8_t *out, const uint8_t *in, size_t len);

@@ -16,6 +16,7 @@ static int hc128_test(void *, const drew_loader_t *);
 static int hc128_info(int op, void *p);
 static int hc128_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
+static int hc128_reset(drew_stream_t *ctx);
 static int hc128_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
 		int flags);
 static int hc128_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len);
@@ -25,7 +26,7 @@ static int hc128_encrypt(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
 static int hc128_fini(drew_stream_t *ctx, int flags);
 
-PLUGIN_FUNCTBL(hc128, hc128_info, hc128_init, hc128_setiv, hc128_setkey, hc128_encrypt, hc128_encrypt, hc128_encrypt, hc128_encrypt, hc128_test, hc128_fini, hc128_clone);
+PLUGIN_FUNCTBL(hc128, hc128_info, hc128_init, hc128_setiv, hc128_setkey, hc128_encrypt, hc128_encrypt, hc128_encrypt, hc128_encrypt, hc128_test, hc128_fini, hc128_clone, hc128_reset);
 
 static int hc128_repeated_test(void)
 {
@@ -160,6 +161,13 @@ static int hc128_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
 	return 0;
 }
 
+static int hc128_reset(drew_stream_t *ctx)
+{
+	drew::HC128 *p = reinterpret_cast<drew::HC128 *>(ctx->ctx);
+	p->Reset();
+	return 0;
+}
+
 static int hc128_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len)
 {
 	drew::HC128 *p = reinterpret_cast<drew::HC128 *>(ctx->ctx);
@@ -212,8 +220,16 @@ void drew::HC128::SetKey(const uint8_t *key, size_t sz)
 	m_nbytes = 0;
 }
 
+void drew::HC128::Reset()
+{
+	m_ks.Reset();
+	m_ks.SetNonce(m_iv, 16);
+	m_nbytes = 0;
+}
+
 void drew::HC128::SetNonce(const uint8_t *iv, size_t sz)
 {
+	memcpy(m_iv, iv, sz);
 	m_ks.SetNonce(iv, sz);
 }
 

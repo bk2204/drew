@@ -16,6 +16,7 @@ static int hc256_test(void *, const drew_loader_t *);
 static int hc256_info(int op, void *p);
 static int hc256_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
+static int hc256_reset(drew_stream_t *ctx);
 static int hc256_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
 		int flags);
 static int hc256_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len);
@@ -25,7 +26,7 @@ static int hc256_encrypt(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
 static int hc256_fini(drew_stream_t *ctx, int flags);
 
-PLUGIN_FUNCTBL(hc256, hc256_info, hc256_init, hc256_setiv, hc256_setkey, hc256_encrypt, hc256_encrypt, hc256_encrypt, hc256_encrypt, hc256_test, hc256_fini, hc256_clone);
+PLUGIN_FUNCTBL(hc256, hc256_info, hc256_init, hc256_setiv, hc256_setkey, hc256_encrypt, hc256_encrypt, hc256_encrypt, hc256_encrypt, hc256_test, hc256_fini, hc256_clone, hc256_reset);
 
 static int hc256_repeated_test(void)
 {
@@ -57,8 +58,7 @@ static int hc256_repeated_test(void)
 	res |= !!memcmp(data, ct, sizeof(data));
 	res <<= 1;
 
-	algo.SetKey(keyiv, sizeof(keyiv));
-	algo.SetNonce(keyiv, sizeof(keyiv));
+	algo.Reset();
 	for (size_t i = 0; i < 65536; i++)
 		algo.Decrypt(data, data, sizeof(data));
 	res |= !!memcmp(data, zero, sizeof(data));
@@ -166,6 +166,13 @@ static int hc256_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
 	return 0;
 }
 
+static int hc256_reset(drew_stream_t *ctx)
+{
+	drew::HC256 *p = reinterpret_cast<drew::HC256 *>(ctx->ctx);
+	p->Reset();
+	return 0;
+}
+
 static int hc256_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len)
 {
 	drew::HC256 *p = reinterpret_cast<drew::HC256 *>(ctx->ctx);
@@ -218,8 +225,16 @@ void drew::HC256::SetKey(const uint8_t *key, size_t sz)
 	m_nbytes = 0;
 }
 
+void drew::HC256::Reset()
+{
+	m_ks.Reset();
+	m_ks.SetNonce(m_iv, 32);
+	m_nbytes = 0;
+}
+
 void drew::HC256::SetNonce(const uint8_t *iv, size_t sz)
 {
+	memcpy(m_iv, iv, sz);
 	m_ks.SetNonce(iv, sz);
 }
 

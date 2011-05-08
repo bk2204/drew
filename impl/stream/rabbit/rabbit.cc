@@ -95,6 +95,13 @@ static int rabbit_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
 	return 0;
 }
 
+static int rabbit_reset(drew_stream_t *ctx)
+{
+	drew::Rabbit *p = reinterpret_cast<drew::Rabbit *>(ctx->ctx);
+	p->Reset();
+	return 0;
+}
+
 static int rabbit_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len)
 {
 	drew::Rabbit *p = reinterpret_cast<drew::Rabbit *>(ctx->ctx);
@@ -128,7 +135,7 @@ static int rabbit_fini(drew_stream_t *ctx, int flags)
 	return 0;
 }
 
-PLUGIN_FUNCTBL(rabbit, rabbit_info, rabbit_init, rabbit_setiv, rabbit_setkey, rabbit_encrypt, rabbit_encrypt, rabbit_encrypt, rabbit_encrypt, rabbit_test, rabbit_fini, rabbit_clone);
+PLUGIN_FUNCTBL(rabbit, rabbit_info, rabbit_init, rabbit_setiv, rabbit_setkey, rabbit_encrypt, rabbit_encrypt, rabbit_encrypt, rabbit_encrypt, rabbit_test, rabbit_fini, rabbit_clone, rabbit_reset);
 PLUGIN_DATA_START()
 PLUGIN_DATA(rabbit, "Rabbit")
 PLUGIN_DATA_END()
@@ -155,13 +162,23 @@ drew::Rabbit::Rabbit()
 
 void drew::Rabbit::SetKey(const uint8_t *key, size_t sz)
 {
+	memcpy(m_key, key, sz);
 	m_ks.Reset();
 	m_ks.SetKey(key, sz);
 	m_nbytes = 0;
 }
 
+void drew::Rabbit::Reset()
+{
+	m_ks.Reset();
+	m_ks.SetKey(m_key, sizeof(m_key));
+	m_ks.SetNonce(m_nonce, sizeof(m_nonce));
+	m_nbytes = 0;
+}
+
 void drew::Rabbit::SetNonce(const uint8_t *nonce, size_t sz)
 {
+	memcpy(m_nonce, nonce, sz);
 	m_ks.SetNonce(nonce, sz);
 }
 

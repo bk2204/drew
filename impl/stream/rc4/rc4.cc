@@ -16,6 +16,7 @@ static int rc4_test(void *, const drew_loader_t *);
 static int rc4_info(int op, void *p);
 static int rc4_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
+static int rc4_reset(drew_stream_t *ctx);
 static int rc4_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
 		int flags);
 static int rc4_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len);
@@ -25,7 +26,7 @@ static int rc4_encrypt(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
 static int rc4_fini(drew_stream_t *ctx, int flags);
 
-PLUGIN_FUNCTBL(rc4, rc4_info, rc4_init, rc4_setiv, rc4_setkey, rc4_encrypt, rc4_encrypt, rc4_encrypt, rc4_encrypt, rc4_test, rc4_fini, rc4_clone);
+PLUGIN_FUNCTBL(rc4, rc4_info, rc4_init, rc4_setiv, rc4_setkey, rc4_encrypt, rc4_encrypt, rc4_encrypt, rc4_encrypt, rc4_test, rc4_fini, rc4_clone, rc4_reset);
 
 static int rc4_maintenance_test(void)
 {
@@ -134,6 +135,13 @@ static int rc4_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len)
 	return -EINVAL;
 }
 
+static int rc4_reset(drew_stream_t *ctx)
+{
+	drew::RC4 *p = reinterpret_cast<drew::RC4 *>(ctx->ctx);
+	p->Reset();
+	return 0;
+}
+
 static int rc4_setkey(drew_stream_t *ctx, const uint8_t *key, size_t len,
 		int mode)
 {
@@ -177,12 +185,19 @@ drew::RC4::RC4(size_t drop)
 {
 }
 
-void drew::RC4::SetKey(const uint8_t *key, size_t sz)
+void drew::RC4::Reset()
 {
 	m_ks.Reset();
-	m_ks.SetKey(key, sz);
+	m_ks.SetKey(m_key, m_sz);
 	for (size_t i = 0; i < m_drop; i++)
 		m_ks.GetValue();
+}
+
+void drew::RC4::SetKey(const uint8_t *key, size_t sz)
+{
+	memcpy(m_key, key, sz);
+	m_sz = sz;
+	Reset();
 }
 
 void drew::RC4::Encrypt(uint8_t *out, const uint8_t *in, size_t len)

@@ -62,6 +62,7 @@ typedef struct {
 	int (*init)(drew_stream_t *,  int, const drew_loader_t *,
 			const drew_param_t *);
 	int (*clone)(drew_stream_t *, const drew_stream_t *, int);
+	int (*reset)(drew_stream_t *);
 	int (*fini)(drew_stream_t *, int);
 	int (*setiv)(drew_stream_t *, const uint8_t *, size_t);
 	int (*setkey)(drew_stream_t *, const uint8_t *, size_t, int);
