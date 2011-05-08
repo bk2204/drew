@@ -15,6 +15,7 @@ struct ofb {
 	const drew_loader_t *ldr;
 	const drew_block_t *algo;
 	uint8_t buf[32] ALIGNED_T;
+	uint8_t iv[32];
 	size_t blksize;
 	size_t boff;
 	size_t chunks;
@@ -23,6 +24,7 @@ struct ofb {
 static int ofb_info(int op, void *p);
 static int ofb_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param);
+static int ofb_reset(drew_mode_t *ctx);
 static int ofb_setpad(drew_mode_t *ctx, const drew_pad_t *pad);
 static int ofb_setblock(drew_mode_t *ctx, const drew_block_t *algoctx);
 static int ofb_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len);
@@ -38,15 +40,15 @@ static int ofb_final(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 		const uint8_t *in, size_t inlen);
 
 static const drew_mode_functbl_t ofb_functbl = {
-	ofb_info, ofb_init, ofb_clone, ofb_fini, ofb_setpad, ofb_setblock,
-	ofb_setiv, ofb_encrypt, ofb_encrypt, ofb_encrypt, ofb_encrypt,
+	ofb_info, ofb_init, ofb_clone, ofb_reset, ofb_fini, ofb_setpad,
+	ofb_setblock, ofb_setiv, ofb_encrypt, ofb_encrypt, ofb_encrypt, ofb_encrypt,
 	ofb_setdata, ofb_final, ofb_final,
 	ofb_test
 };
 static const drew_mode_functbl_t ofb_functblfast = {
-	ofb_info, ofb_init, ofb_clone, ofb_fini, ofb_setpad, ofb_setblock,
-	ofb_setiv, ofb_encrypt, ofb_encrypt, ofb_encryptfast, ofb_encryptfast,
-	ofb_setdata, ofb_final, ofb_final,
+	ofb_info, ofb_init, ofb_clone, ofb_reset, ofb_fini, ofb_setpad,
+	ofb_setblock, ofb_setiv, ofb_encrypt, ofb_encrypt, ofb_encryptfast,
+	ofb_encryptfast, ofb_setdata, ofb_final, ofb_final,
 	ofb_test
 };
 
@@ -64,6 +66,17 @@ static int ofb_info(int op, void *p)
 		default:
 			return DREW_ERR_INVALID;
 	}
+}
+
+static int ofb_reset(drew_mode_t *ctx)
+{
+	struct ofb *c = ctx->ctx;
+	int res = 0;
+
+	if ((res = ofb_setiv(ctx, c->iv, c->blksize)))
+		return res;
+	c->boff = 0;
+	return 0;
 }
 
 static int ofb_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
@@ -117,6 +130,8 @@ static int ofb_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len)
 		return -EINVAL;
 
 	memcpy(c->buf, iv, len);
+	if (iv != c->iv)
+		memcpy(c->iv, iv, len);
 	return 0;
 }
 
