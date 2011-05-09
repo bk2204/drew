@@ -191,6 +191,9 @@ void drew::RC4::Reset()
 	m_ks.SetKey(m_key, m_sz);
 	for (size_t i = 0; i < m_drop; i++)
 		m_ks.GetValue();
+	m_nbytes = 0;
+	for (size_t i = m_drop & 0xff; i < 256; i++, m_nbytes++)
+		m_buf[i] = m_ks.GetValue();
 }
 
 void drew::RC4::SetKey(const uint8_t *key, size_t sz)
@@ -202,8 +205,7 @@ void drew::RC4::SetKey(const uint8_t *key, size_t sz)
 
 void drew::RC4::Encrypt(uint8_t *out, const uint8_t *in, size_t len)
 {
-	for (size_t i = 0; i < len; i++)
-		*out++ = *in++ ^ m_ks.GetValue();
+	CopyAndXor(out, in, len, m_buf, sizeof(m_buf), m_nbytes, m_ks);
 }
 
 void drew::RC4::Decrypt(uint8_t *out, const uint8_t *in, size_t len)
