@@ -8,17 +8,38 @@
 
 namespace drew {
 
+template<class T>
 class RC4Keystream
 {
 	public:
-		// This can be set to int, which may be more advantageous on machines
-		// that do not have byte-oriented registers (such as RISC machines).
-		typedef uint8_t obj_t;
-		RC4Keystream();
+		typedef T obj_t;
+		RC4Keystream() {}
 		~RC4Keystream() {}
-		void SetKey(const uint8_t *key, size_t sz);
-		void Reset();
-		obj_t GetValue();
+		void SetKey(const uint8_t *key, size_t sz)
+		{
+			Reset();
+			obj_t j = 0;
+			for (size_t i = 0; i < 256; i++) {
+				j += s[i] + key[i % sz];
+				std::swap(s[i], s[uint8_t(j)]);
+			}
+		}
+		void Reset()
+		{
+			for (size_t i = 0; i < 256; i++)
+				s[i] = i;
+			this->i = 0;
+			this->j = 0;
+		}
+		obj_t GetValue()
+		{
+			i++;
+			obj_t &x = s[uint8_t(i)];
+			j += x;
+			obj_t &y = s[uint8_t(j)];
+			std::swap(x, y);
+			return s[uint8_t(x + y)];
+		}
 	protected:
 	private:
 		obj_t s[256];
@@ -39,7 +60,7 @@ class RC4
 		void Decrypt(uint8_t *out, const uint8_t *in, size_t len);
 	protected:
 	private:
-		RC4Keystream m_ks;
+		RC4Keystream<uint8_t> m_ks;
 		size_t m_drop;
 		uint8_t m_key[256];
 		size_t m_sz;

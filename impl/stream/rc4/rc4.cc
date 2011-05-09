@@ -210,35 +210,3 @@ void drew::RC4::Decrypt(uint8_t *out, const uint8_t *in, size_t len)
 {
 	return Encrypt(out, in, len);
 }
-
-drew::RC4Keystream::RC4Keystream()
-{
-	Reset();
-}
-
-void drew::RC4Keystream::SetKey(const uint8_t *key, size_t sz)
-{
-	obj_t j = 0;
-	for (size_t i = 0; i < 256; i++) {
-		j += s[i] + key[i % sz];
-		std::swap(s[i], s[uint8_t(j)]);
-	}
-}
-
-void drew::RC4Keystream::Reset()
-{
-	for (size_t i = 0; i < 256; i++)
-		s[i] = i;
-	this->i = 0;
-	this->j = 0;
-}
-
-drew::RC4Keystream::obj_t drew::RC4Keystream::GetValue()
-{
-	i++;
-	obj_t &x = s[uint8_t(i)];
-	j += x;
-	obj_t &y = s[uint8_t(j)];
-	std::swap(x, y);
-	return s[uint8_t(x + y)];
-}
