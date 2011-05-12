@@ -15,3 +15,7 @@ test/plugin-main
 plugins/*
 gmon.out
 misc/devel
+*.pdf
+*.ps
+*.txml
+*.fo
