@@ -147,20 +147,7 @@ inline void CopyAndXorAligned(uint8_t *outp, const uint8_t *inp, size_t len,
 		// This strictly may overfill the buffer; nevertheless, we know that
 		// there's enough space by the contract of the function.
 		obj.FillBufferAligned(mbuf->data);
-#ifdef VECTOR_T
-		typedef int vector_t __attribute__ ((vector_size (16)));
-		for (size_t j = 0; j < bufsz; j += 16, out++, in++) {
-			vector_t buf, buf2;
-			memcpy(&buf, in->data, 16);
-			memcpy(&buf2, mbuf->data, 16);
-			buf ^= buf2;
-			memcpy(out->data, &buf, 16);
-		}
-#else
-		for (size_t j = 0; j < bufsz; j++) {
-			out->data[j] = mbuf->data[j] ^ in->data[j];
-		}
-#endif
+		XorAligned(out->data, in->data, mbuf->data, bufsz);
 	}
 }
 
