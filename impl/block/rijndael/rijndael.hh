@@ -63,10 +63,10 @@ class GenericRijndael : public Rijndael, public BlockCipher<BlockSize/8>
 			return Rijndael::Decrypt(out, in);
 		}
 	protected:
-		static const size_t m_nb = BlockSize / 32;
-		static const size_t m_bc = BlockSize / 4;
-		static const uint64_t m_bcmask = (((uint64_t(1) << (m_bc-1))-1)<<1)|1;
-		static const size_t shiftoffset = (m_nb-4);
+		static const size_t m_nb;
+		static const size_t m_bc;
+		static const uint64_t m_bcmask;
+		static const size_t shiftoffset;
 		inline uint64_t shift(uint64_t x, unsigned n) const
 		{
 			return ((x >> n) | (x << (m_bc - n))) & m_bcmask;
