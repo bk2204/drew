@@ -22,7 +22,7 @@ class AES : public BlockCipher<16>
 	private:
 		void SetKeyEncrypt(const uint8_t *key, size_t sz);
 		void SetKeyDecrypt(void);
-		static const size_t m_nb = (block_size / 4);
+		static const size_t m_nb;
 		size_t m_nr, m_nk;
 		// maxnb*(maxnr+1) = 8 * 9 = 72
 		uint32_t m_rk[72], m_rkd[72];	
