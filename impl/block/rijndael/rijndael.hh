@@ -37,6 +37,7 @@ class Rijndael
 		static const uint8_t S[];
 		static const uint32_t Et0[], Et1[], Et2[], Et3[];
 		inline virtual void DecryptBlock(uint64_t *) const;
+		static const uint8_t rcon[];
 	private:
 		inline void Substitution(uint64_t *, const uint8_t *) const;
 		virtual void ShiftRow(uint64_t *, const uint8_t *) const = 0;
@@ -47,7 +48,6 @@ class Rijndael
 		void SetKeyDecrypt(void);
 		static const uint8_t Si[];
 		static const uint8_t shifts0[5][4];
-		static const uint8_t rcon[];
 
 };
 
