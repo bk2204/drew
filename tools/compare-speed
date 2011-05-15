@@ -30,12 +30,15 @@ for ($i = 0; $i < scalar @oldbuf; $i++) {
 	# skip this line if there's no tag.
 	next if (($otag eq $x) && ($ntag eq $y));
 	die "tag mismatch: '$otag' != '$ntag'" if ($otag ne $ntag);
-	$x =~ s/^.*\((\d+\.\d+)\s+MiB\/s\).*$/$1/;
-	$y =~ s/^.*\((\d+\.\d+)\s+MiB\/s\).*$/$1/;
-	$x += 0.0;
-	$y += 0.0;
-	$y /= $factor;
-	$v = (($y - $x) / $x) * 100.0;
-	chomp $otag;
-	printf "%-16s: change is %7.3f%%\n", $otag, $v;
+	$ok = 1;
+	$ok &&= $x =~ s/^.*\((\d+\.\d+)\s+MiB\/s\).*$/$1/;
+	$ok &&= $y =~ s/^.*\((\d+\.\d+)\s+MiB\/s\).*$/$1/;
+	if ($ok) {
+		$x += 0.0;
+		$y += 0.0;
+		$y /= $factor;
+		$v = (($y - $x) / $x) * 100.0;
+		chomp $otag;
+		printf "%-16s: change is %7.3f%%\n", $otag, $v;
+	}
 }
