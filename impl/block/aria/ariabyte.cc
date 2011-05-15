@@ -82,23 +82,35 @@ int drew::ARIABytewise::SetKey(const uint8_t *key, size_t len)
 	}
 
 	const AlignedData *ck = c + m_off;
-	AlignedData w[4];
-	memcpy(w[0].data, kl.data, 16);
-	fo(w[1], w[0], ck[0]);
-	XorAligned(w[1].data, w[1].data, kr.data, 16);
-	fe(w[2], w[1], ck[1]);
-	XorAligned(w[2].data, w[2].data, w[0].data, 16);
-	fo(w[3], w[2], ck[2]);
-	XorAligned(w[3].data, w[3].data, w[1].data, 16);
+	AlignedData ckp[3];
+	for (size_t i = 0; i < 3; i++)
+		Permute(ckp[i].data, ck[i].data);
+	AlignedData wp[4], krp;
+	Permute(krp.data, kr.data);
+	Permute(wp[0].data, kl.data);
+	fo(wp[1], wp[0], ckp[0]);
+	XorAligned(wp[1].data, wp[1].data, krp.data, 16);
+	fe(wp[2], wp[1], ckp[1]);
+	XorAligned(wp[2].data, wp[2].data, wp[0].data, 16);
+	fo(wp[3], wp[2], ckp[2]);
+	XorAligned(wp[3].data, wp[3].data, wp[1].data, 16);
 
+	AlignedData w[4];
+	for (size_t i = 0; i < 4; i++)
+		Permute(w[i].data, wp[i].data);
+
+	AlignedData ek[17];
 	static const size_t offsets[] = {19, 31, 67, 97};
 	for (size_t i = 0, j = 0; i < 16; i += 4, j++) {
-		RotateRightAndXor(m_ek[i + 0], w[1], w[0], offsets[j]);
-		RotateRightAndXor(m_ek[i + 1], w[2], w[1], offsets[j]);
-		RotateRightAndXor(m_ek[i + 2], w[3], w[2], offsets[j]);
-		RotateRightAndXor(m_ek[i + 3], w[0], w[3], offsets[j]);
+		RotateRightAndXor(ek[i + 0], w[1], w[0], offsets[j]);
+		RotateRightAndXor(ek[i + 1], w[2], w[1], offsets[j]);
+		RotateRightAndXor(ek[i + 2], w[3], w[2], offsets[j]);
+		RotateRightAndXor(ek[i + 3], w[0], w[3], offsets[j]);
 	}
-	RotateRightAndXor(m_ek[16], w[1], w[0], 109);
+	RotateRightAndXor(ek[16], w[1], w[0], 109);
+
+	for (size_t i = 0; i < 17; i++)
+		Permute(m_ek[i].data, ek[i].data);
 
 	memcpy(m_dk[0].data, m_ek[nrounds].data, 16);
 	for (size_t i = 1; i < nrounds; i++)

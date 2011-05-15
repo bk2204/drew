@@ -19,25 +19,31 @@ typedef drew::ARIA128::endian_t E;
 
 drew::ARIA128::uint128_t drew::ARIA128::fo128(uint128_t a, uint128_t b) const
 {
-	AlignedData abuf, bbuf, cbuf;
+	AlignedData abuf, bbuf, cbuf, t;
 	uint128_t c;
 
-	E::Copy(abuf.data, &a, sizeof(abuf));
-	E::Copy(bbuf.data, &b, sizeof(bbuf));
+	E::Copy(t.data, &a, sizeof(t));
+	Permute(abuf.data, t.data);
+	E::Copy(t.data, &b, sizeof(t));
+	Permute(bbuf.data, t.data);
 	fo(cbuf, abuf, bbuf);
-	E::Copy(&c, cbuf.data, sizeof(cbuf));
+	Permute(t.data, cbuf.data);
+	E::Copy(&c, t.data, sizeof(t));
 	return c;
 }
 
 drew::ARIA128::uint128_t drew::ARIA128::fe128(uint128_t a, uint128_t b) const
 {
-	AlignedData abuf, bbuf, cbuf;
+	AlignedData abuf, bbuf, cbuf, t;
 	uint128_t c;
 
-	E::Copy(abuf.data, &a, sizeof(abuf));
-	E::Copy(bbuf.data, &b, sizeof(bbuf));
+	E::Copy(t.data, &a, sizeof(t));
+	Permute(abuf.data, t.data);
+	E::Copy(t.data, &b, sizeof(t));
+	Permute(bbuf.data, t.data);
 	fe(cbuf, abuf, bbuf);
-	E::Copy(&c, cbuf.data, sizeof(cbuf));
+	Permute(t.data, cbuf.data);
+	E::Copy(&c, t.data, sizeof(t));
 	return c;
 }
 
@@ -95,8 +101,11 @@ int drew::ARIA128::SetKey(const uint8_t *key, size_t len)
 	}
 	ek[16] = w[0] ^ RotateLeft(w[1], 19);
 
-	for (size_t i = 0; i < 17; i++) 
-		E::Copy(m_ek[i].data, &ek[i], 16);
+	for (size_t i = 0; i < 17; i++) {
+		AlignedData d;
+		E::Copy(d.data, &ek[i], 16);
+		Permute(m_ek[i].data, d.data);
+	}
 
 	memcpy(m_dk[0].data, m_ek[nrounds].data, 16);
 	for (size_t i = 1; i < nrounds; i++)

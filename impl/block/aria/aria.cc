@@ -46,6 +46,26 @@ drew::ARIA::ARIA()
 {
 }
 
+void drew::ARIA::Permute(uint8_t *out, const uint8_t *in) const
+{
+	out[ 0] = in[ 0];
+	out[ 1] = in[ 4];
+	out[ 2] = in[ 8];
+	out[ 3] = in[12];
+	out[ 4] = in[ 1];
+	out[ 5] = in[ 5];
+	out[ 6] = in[ 9];
+	out[ 7] = in[13];
+	out[ 8] = in[ 2];
+	out[ 9] = in[ 6];
+	out[10] = in[10];
+	out[11] = in[14];
+	out[12] = in[ 3];
+	out[13] = in[ 7];
+	out[14] = in[11];
+	out[15] = in[15];
+}
+
 void drew::ARIA::sl1(AlignedData &out, const AlignedData &in,
 		const AlignedData &x) const
 {
@@ -53,20 +73,20 @@ void drew::ARIA::sl1(AlignedData &out, const AlignedData &in,
 	XorAligned(t.data, in.data, x.data, 16);
 
 	out.data[ 0] = sb1[t.data[ 0]];
-	out.data[ 4] = sb1[t.data[ 4]];
-	out.data[ 8] = sb1[t.data[ 8]];
-	out.data[12] = sb1[t.data[12]];
-	out.data[ 1] = sb2[t.data[ 1]];
+	out.data[ 1] = sb1[t.data[ 1]];
+	out.data[ 2] = sb1[t.data[ 2]];
+	out.data[ 3] = sb1[t.data[ 3]];
+	out.data[ 4] = sb2[t.data[ 4]];
 	out.data[ 5] = sb2[t.data[ 5]];
-	out.data[ 9] = sb2[t.data[ 9]];
-	out.data[13] = sb2[t.data[13]];
-	out.data[ 2] = sb3[t.data[ 2]];
-	out.data[ 6] = sb3[t.data[ 6]];
+	out.data[ 6] = sb2[t.data[ 6]];
+	out.data[ 7] = sb2[t.data[ 7]];
+	out.data[ 8] = sb3[t.data[ 8]];
+	out.data[ 9] = sb3[t.data[ 9]];
 	out.data[10] = sb3[t.data[10]];
-	out.data[14] = sb3[t.data[14]];
-	out.data[ 3] = sb4[t.data[ 3]];
-	out.data[ 7] = sb4[t.data[ 7]];
-	out.data[11] = sb4[t.data[11]];
+	out.data[11] = sb3[t.data[11]];
+	out.data[12] = sb4[t.data[12]];
+	out.data[13] = sb4[t.data[13]];
+	out.data[14] = sb4[t.data[14]];
 	out.data[15] = sb4[t.data[15]];
 }
 
@@ -77,20 +97,20 @@ void drew::ARIA::sl2(AlignedData &out, const AlignedData &in,
 	XorAligned(t.data, in.data, x.data, 16);
 
 	out.data[ 0] = sb3[t.data[ 0]];
-	out.data[ 4] = sb3[t.data[ 4]];
-	out.data[ 8] = sb3[t.data[ 8]];
-	out.data[12] = sb3[t.data[12]];
-	out.data[ 1] = sb4[t.data[ 1]];
-	out.data[ 9] = sb4[t.data[ 9]];
+	out.data[ 1] = sb3[t.data[ 1]];
+	out.data[ 2] = sb3[t.data[ 2]];
+	out.data[ 3] = sb3[t.data[ 3]];
+	out.data[ 4] = sb4[t.data[ 4]];
 	out.data[ 5] = sb4[t.data[ 5]];
-	out.data[13] = sb4[t.data[13]];
-	out.data[ 2] = sb1[t.data[ 2]];
-	out.data[ 6] = sb1[t.data[ 6]];
+	out.data[ 6] = sb4[t.data[ 6]];
+	out.data[ 7] = sb4[t.data[ 7]];
+	out.data[ 8] = sb1[t.data[ 8]];
+	out.data[ 9] = sb1[t.data[ 9]];
 	out.data[10] = sb1[t.data[10]];
-	out.data[14] = sb1[t.data[14]];
-	out.data[ 3] = sb2[t.data[ 3]];
-	out.data[ 7] = sb2[t.data[ 7]];
-	out.data[11] = sb2[t.data[11]];
+	out.data[11] = sb1[t.data[11]];
+	out.data[12] = sb2[t.data[12]];
+	out.data[13] = sb2[t.data[13]];
+	out.data[14] = sb2[t.data[14]];
 	out.data[15] = sb2[t.data[15]];
 }
 
@@ -103,37 +123,37 @@ uint8_t drew::ARIA::combine(const AlignedData &d, unsigned v1, unsigned v2,
 
 void drew::ARIA::afunc(AlignedData &out, const AlignedData &in) const
 {
-	const uint8_t p349e = in.data[3] ^ in.data[4] ^ in.data[9] ^ in.data[14];
-	const uint8_t p0b = in.data[0] ^ in.data[11];
-	const uint8_t p1a = in.data[1] ^ in.data[10];
-	const uint8_t p6d = in.data[6] ^ in.data[13];
-	const uint8_t p7c = in.data[7] ^ in.data[12];
-	out.data[14] = p349e ^ p0b ^ in.data[5];
+	const uint8_t p349e = in.data[12] ^ in.data[1] ^ in.data[6] ^ in.data[11];
+	const uint8_t p0b = in.data[0] ^ in.data[14];
+	const uint8_t p1a = in.data[4] ^ in.data[10];
+	const uint8_t p6d = in.data[9] ^ in.data[7];
+	const uint8_t p7c = in.data[13] ^ in.data[3];
+	out.data[11] = p349e ^ p0b ^ in.data[5];
 	out.data[ 5] = p349e ^ p1a ^ in.data[15];
-	out.data[ 0] = p349e ^ p6d ^ in.data[8];
-	out.data[11] = p349e ^ p7c ^ in.data[2];
+	out.data[ 0] = p349e ^ p6d ^ in.data[2];
+	out.data[14] = p349e ^ p7c ^ in.data[8];
 
-	const uint8_t p258f = in.data[2] ^ in.data[5] ^ in.data[8] ^ in.data[15];
-	out.data[ 4] = p258f ^ p0b ^ in.data[14];
-	out.data[15] = p258f ^ p1a ^ in.data[4];
-	out.data[10] = p258f ^ p6d ^ in.data[3];
-	out.data[ 1] = p258f ^ p7c ^ in.data[9];
+	const uint8_t p258f = in.data[8] ^ in.data[5] ^ in.data[2] ^ in.data[15];
+	out.data[ 1] = p258f ^ p0b ^ in.data[11];
+	out.data[15] = p258f ^ p1a ^ in.data[1];
+	out.data[10] = p258f ^ p6d ^ in.data[12];
+	out.data[ 4] = p258f ^ p7c ^ in.data[6];
 
-	const uint8_t p16bc = in.data[1] ^ in.data[6] ^ in.data[11] ^ in.data[12];
-	const uint8_t p29 = in.data[2] ^ in.data[9];
-	const uint8_t p38 = in.data[3] ^ in.data[8];
-	const uint8_t p4f = in.data[4] ^ in.data[15];
-	const uint8_t p5e = in.data[5] ^ in.data[14];
-	out.data[12] = p16bc ^ p29 ^ in.data[7];
-	out.data[ 7] = p16bc ^ p38 ^ in.data[13];
-	out.data[ 2] = p16bc ^ p4f ^ in.data[10];
-	out.data[ 9] = p16bc ^ p5e ^ in.data[0];
+	const uint8_t p16bc = in.data[4] ^ in.data[9] ^ in.data[14] ^ in.data[3];
+	const uint8_t p29 = in.data[8] ^ in.data[6];
+	const uint8_t p38 = in.data[12] ^ in.data[2];
+	const uint8_t p4f = in.data[1] ^ in.data[15];
+	const uint8_t p5e = in.data[5] ^ in.data[11];
+	out.data[ 3] = p16bc ^ p29 ^ in.data[13];
+	out.data[13] = p16bc ^ p38 ^ in.data[7];
+	out.data[ 8] = p16bc ^ p4f ^ in.data[10];
+	out.data[ 6] = p16bc ^ p5e ^ in.data[0];
 
-	const uint8_t p07ad = in.data[0] ^ in.data[7] ^ in.data[10] ^ in.data[13];
-	out.data[ 6] = p07ad ^ p29 ^ in.data[12];
-	out.data[13] = p07ad ^ p38 ^ in.data[6];
-	out.data[ 8] = p07ad ^ p4f ^ in.data[1];
-	out.data[ 3] = p07ad ^ p5e ^ in.data[11];
+	const uint8_t p07ad = in.data[0] ^ in.data[13] ^ in.data[10] ^ in.data[7];
+	out.data[ 9] = p07ad ^ p29 ^ in.data[3];
+	out.data[ 7] = p07ad ^ p38 ^ in.data[9];
+	out.data[ 2] = p07ad ^ p4f ^ in.data[4];
+	out.data[12] = p07ad ^ p5e ^ in.data[14];
 }
 
 void drew::ARIA::fo(AlignedData &out, const AlignedData &in,
@@ -157,7 +177,7 @@ int drew::ARIA::Encrypt128(uint8_t *out, const uint8_t *in,
 {
 	AlignedData buf0, buf1;
 
-	memcpy(buf1.data, in, sizeof(buf1));
+	Permute(buf1.data, in);
 
 	fo(buf0, buf1, sk[ 0]);
 	fe(buf1, buf0, sk[ 1]);
@@ -173,7 +193,7 @@ int drew::ARIA::Encrypt128(uint8_t *out, const uint8_t *in,
 	sl2(buf1, buf0, sk[11]);
 	XorAligned(buf0.data, buf1.data, sk[12].data, 16);
 
-	memcpy(out, buf0.data, sizeof(buf0));
+	Permute(out, buf0.data);
 
 	return 0;
 }
@@ -183,7 +203,7 @@ int drew::ARIA::Encrypt192(uint8_t *out, const uint8_t *in,
 {
 	AlignedData buf0, buf1;
 
-	memcpy(buf1.data, in, sizeof(buf1));
+	Permute(buf1.data, in);
 
 	fo(buf0, buf1, sk[ 0]);
 	fe(buf1, buf0, sk[ 1]);
@@ -201,7 +221,7 @@ int drew::ARIA::Encrypt192(uint8_t *out, const uint8_t *in,
 	sl2(buf1, buf0, sk[13]);
 	XorAligned(buf0.data, buf1.data, sk[14].data, 16);
 
-	memcpy(out, buf0.data, sizeof(buf0));
+	Permute(out, buf0.data);
 
 	return 0;
 }
@@ -211,7 +231,7 @@ int drew::ARIA::Encrypt256(uint8_t *out, const uint8_t *in,
 {
 	AlignedData buf0, buf1;
 
-	memcpy(buf1.data, in, sizeof(buf1));
+	Permute(buf1.data, in);
 
 	fo(buf0, buf1, sk[ 0]);
 	fe(buf1, buf0, sk[ 1]);
@@ -231,7 +251,7 @@ int drew::ARIA::Encrypt256(uint8_t *out, const uint8_t *in,
 	sl2(buf1, buf0, sk[15]);
 	XorAligned(buf0.data, buf1.data, sk[16].data, 16);
 
-	memcpy(out, buf0.data, sizeof(buf0));
+	Permute(out, buf0.data);
 
 	return 0;
 }

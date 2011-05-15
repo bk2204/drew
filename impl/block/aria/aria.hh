@@ -20,6 +20,7 @@ class ARIA : public BlockCipher<32>
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
 	protected:
 		typedef AlignedBlock<uint8_t, 16> AlignedData;
+		void Permute(uint8_t *out, const uint8_t *in) const;
 		inline void sl1(AlignedData &, const AlignedData &,
 				const AlignedData &) const;
 		inline void sl2(AlignedData &, const AlignedData &,
