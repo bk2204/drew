@@ -42,6 +42,7 @@ CFG_ARIA128		= m
 # Modes.
 CFG_CFB			= m
 CFG_OFB			= m
+CFG_CBC			= m
 
 # MACs.
 CFG_HMAC		= m
