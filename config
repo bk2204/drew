@@ -43,6 +43,7 @@ CFG_ARIA128		= m
 CFG_CFB			= m
 CFG_OFB			= m
 CFG_CBC			= m
+CFG_CTR			= m
 
 # MACs.
 CFG_HMAC		= m
