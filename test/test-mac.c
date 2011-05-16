@@ -16,6 +16,8 @@
 
 #include <drew/plugin.h>
 #include <drew/mac.h>
+#include <drew/hash.h>
+#include <drew/block.h>
 
 int test_get_type(void)
 {
@@ -25,6 +27,11 @@ int test_get_type(void)
 const char *test_get_default_algo(drew_loader_t *ldr, const char *name)
 {
 	return "MD5";
+}
+
+const char *test_get_default_block_algo(drew_loader_t *ldr, const char *name)
+{
+	return "AES128";
 }
 
 int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
@@ -38,21 +45,64 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 #define STUBS_API 1
 #include "stubs.c"
 
+struct generic {
+	void *ctx;
+	const void *functbl;
+	void *priv;
+};
+
+static int make_new_ctx(const drew_loader_t *ldr, const char *name, void *ctx,
+		int type)
+{
+	int id = -1, res = 0;
+	struct generic *g = ctx;
+
+	if ((id = res = drew_loader_lookup_by_name(ldr, name, 0, -1)) < 0)
+		return res;
+
+	if (drew_loader_get_type(ldr, id) != type)
+		return -DREW_ERR_INVALID;
+
+	if ((res = drew_loader_get_functbl(ldr, id, &g->functbl)) < 0)
+		return res;
+
+	return 0;
+}
+
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		const void *tbl, int chunk, int nchunks)
 {
-	int i, keysz = 32, resultsz = 512;
+	int i, keysz = 32, resultsz = 512, res = 0;
 	uint8_t *buf, *key, *result;
 	struct timespec cstart, cend;
 	drew_mac_t ctx;
-	drew_param_t param;
+	drew_param_t param, bparam;
+	drew_hash_t hash;
+	drew_block_t block;
+	const char *balgo = NULL;
 
 	if (!algo)
 		algo = test_get_default_algo(ldr, name);
 
+	if (!balgo)
+		balgo = test_get_default_block_algo(ldr, name);
+
+	if ((res = make_new_ctx(ldr, algo, &hash, DREW_TYPE_HASH)) < 0)
+		return res;
+
+	if ((res = make_new_ctx(ldr, balgo, &block, DREW_TYPE_BLOCK)) < 0)
+		return res;
+
 	param.name = "digest";
-	param.next = NULL;
-	param.param.string = algo;
+	param.next = &bparam;
+	param.param.value = &hash;
+
+	bparam.name = "cipher";
+	bparam.next = NULL;
+	bparam.param.value = &block;
+
+	hash.functbl->init(&hash, 0, ldr, NULL);
+	block.functbl->init(&block, 0, ldr, NULL);
 
 	buf = calloc(chunk, 1);
 	if (!buf)
@@ -80,6 +130,9 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	free(buf);
 	free(key);
 	free(result);
+
+	hash.functbl->fini(&hash, 0);
+	block.functbl->fini(&block, 0);
 
 	print_speed_info(chunk, nchunks, &cstart, &cend);
 	
