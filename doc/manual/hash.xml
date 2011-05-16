@@ -13,7 +13,7 @@
 		main object is the <type>drew_hash_t</type>.
 	</para>
 	<!--{{{ drew_hash_t -->
-	<classsynopsis language="C++">
+	<classsynopsis language="C">
 		<ooclass>
 			<classname>drew_hash_t</classname>
 		</ooclass>
