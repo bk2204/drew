@@ -11,24 +11,14 @@ TODO
 * Consider visibility = hidden.
 * Consider adding maintenance tests for all block ciphers.
 * Add SAFER-SK.
-* Add Serpent.
-* Add RC2.
-* Add CAST6.
 * Add SKIPJACK.
 * Add CTR mode.
-* Add CBC mode.
 * Add OpenPGP CFB mode.
 * Add CFB and OFB info functions.
-* Allow modes to expand text (final function).
 * Update license and description statements.
-* Add MACs.
-* Add Public Key algorithms.
 * Add HAVAL.
 * Add modifier for number of hash rounds, where applicable.
-* Add stream ciphers.
 * Add compression functionality.
-* Add PRNGs.
-* Add arc4random.
 * Add Java Cryptography Interface.
 * Add SSL 3.0.
 * Add TLS 1.0.
