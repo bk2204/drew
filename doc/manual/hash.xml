@@ -12,6 +12,7 @@
 		The drew hash interface is designed to be simple and easy to use.  The
 		main object is the <type>drew_hash_t</type>.
 	</para>
+	<!--{{{ drew_hash_t -->
 	<classsynopsis language="C++">
 		<ooclass>
 			<classname>drew_hash_t</classname>
@@ -26,7 +27,7 @@
 		<fieldsynopsis>
 			<type>void *</type><varname>priv</varname>
 		</fieldsynopsis>
-	</classsynopsis>
+	</classsynopsis><!--}}}-->
 	<para>
 		As with other interfaces, the <varname>ctx</varname> holds the actual
 		context of the underlying implementation; this could be in C or C++.  It
@@ -69,13 +70,15 @@
 		It is not required that an implementation return an error when functions
 		are called in an incorrect order.
 	</para>
+	<!--{{{ info-->
 	<funcsynopsis language="C">
 		<funcprototype>
 			<funcdef>int <function>info</function></funcdef>
 			<paramdef>int <parameter>op</parameter></paramdef>
 			<paramdef>void *<parameter>p</parameter></paramdef>
 		</funcprototype>
-	</funcsynopsis>
+	</funcsynopsis><!--}}}-->
+	<!--{{{ init-->
 	<funcsynopsis language="C">
 		<funcprototype>
 			<funcdef>int <function>init</function></funcdef>
@@ -105,7 +108,8 @@
 		however; if no loader context is available, simply pass
 		<constant>NULL</constant>.  If it is non-<constant>NULL</constant>,
 		<parameter>param</parameter> should be a linked list of parameters.
-	</para>
+	</para><!--}}}-->
+	<!--{{{ clone-->
 	<funcsynopsis language="C">
 		<funcprototype>
 			<funcdef>int <function>clone</function></funcdef>
@@ -124,7 +128,8 @@
 		identical state from <parameter>ctx</parameter>.
 		The <parameter>flags</parameter> parameter has the same meaning as for
 		<function>init</function>.
-	</para>
+	</para><!--}}}-->
+	<!--{{{ reset-->
 	<funcsynopsis language="C">
 		<funcprototype>
 			<funcdef>int <function>reset</function></funcdef>
@@ -138,7 +143,8 @@
 		result is as if the <function>fini</function> function were called,
 		followed by a call to the <function>init</function> function with the
 		same parameters as used in the original call.
-	</para>
+	</para><!--}}}-->
+	<!--{{{ fini-->
 	<funcsynopsis language="C">
 		<funcprototype>
 			<funcdef>int <function>fini</function></funcdef>
@@ -157,7 +163,8 @@
 		<constant>DREW_HASH_FIXED</constant>, the <varname>ctx</varname> field
 		of the context is unmodified; otherwise, it is set to
 		<constant>NULL</constant>.
-	</para>
+	</para><!--}}}-->
+	<!--{{{ update-->
 	<funcsynopsis language="C">
 		<funcprototype>
 			<funcdef>int <function>update</function></funcdef>
@@ -173,7 +180,8 @@
 		<constant>UNALIGNED</constant> state.  The underlying implementation may
 		choose to buffer the data if needed, but if so, it will copy the data to
 		internal storage.
-	</para>
+	</para><!--}}}-->
+	<!--{{{ updatefast-->
 	<funcsynopsis language="C">
 		<funcprototype>
 			<funcdef>int <function>updatefast</function></funcdef>
@@ -195,7 +203,8 @@
 		benefits and the corresponding restrictions,
 		<function>updatefast</function> is functionally equivalent to
 		<function>update</function>.
-	</para>
+	</para><!--}}}-->
+	<!--{{{ pad-->
 	<funcsynopsis language="C">
 		<funcprototype>
 			<funcdef>int <function>pad</function></funcdef>
@@ -214,7 +223,8 @@
 		This function can be called in the <constant>ALIGNED</constant> or
 		<constant>UNALIGNED</constant> state and upon successful completion,
 		leaves the hash context in the <constant>PADDED</constant> state.
-	</para>
+	</para><!--}}}-->
+	<!--{{{ final-->
 	<funcsynopsis language="C">
 		<funcprototype>
 			<funcdef>int <function>final</function></funcdef>
@@ -233,13 +243,14 @@
 		otherwise, the appropriate padding is performed and the state must be
 		<constant>ALIGNED</constant> or <constant>UNALIGNED</constant>.  Upon
 		successful completion, the state will be <constant>FINISHED</constant>.
-	</para>
+	</para><!--}}}-->
+	<!--{{{ test-->
 	<funcsynopsis language="C">
 		<funcprototype>
 			<funcdef>int <function>test</function></funcdef>
 			<paramdef>void *<parameter>p</parameter></paramdef>
 			<paramdef>const drew_loader_t *<parameter>ldr</parameter></paramdef>
 		</funcprototype>
-	</funcsynopsis>
+	</funcsynopsis><!--}}}-->
 </article>
 <!-- vim: set ft=docbkxml: -->
