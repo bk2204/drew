@@ -7,6 +7,9 @@
 #include <drew/stream.h>
 #include <drew/mac.h>
 
+#include <drew-tls/drew-tls.h>
+#include <drew-tls/session.h>
+
 typedef enum {
 	connection_end_server,
 	connection_end_client
