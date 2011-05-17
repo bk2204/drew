@@ -21,7 +21,13 @@ struct drew_tls_session_s {
 	int enc_type;
 	const drew_loader_t *ldr;
 	drew_prng_t *prng;
-	drew_mac_t *mac;
+	uint8_t hash_size;
+	drew_mac_t *inmac;
+	drew_mode_t *inmode;
+	uint64_t inseqnum;
+	drew_mac_t *outmac;
+	drew_mode_t *outmode;
+	uint64_t outseqnum;
 	drew_tls_priority_t prio;
 	drew_tls_session_id_t session_id;
 	drew_tls_protocol_version_t protover;

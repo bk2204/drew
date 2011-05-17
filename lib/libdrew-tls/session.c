@@ -209,19 +209,52 @@ int drew_tls_session_get_transport(drew_tls_session_t sess,
 static int encrypt_block(drew_tls_session_t sess, uint8_t **outbuf,
 		uint16_t *outlen, const uint8_t *inbuf, uint16_t inlen)
 {
-	int res = 0;
-	drew_mac_t *mac = sess->mac;
-	drew_block_t *block;
-	drew_mode_t *mode;
+	drew_mac_t macimpl, *mac = &macimpl;
+	drew_mode_t *mode = sess->outmode;
 
-	return -DREW_ERR_NOT_IMPL;
+	// We always pad to a multiple of 256 to foil traffic analysis.  Also, this
+	// guarantees that our data is a multiple of 16, so we can use the more
+	// efficient encryption routines.
+	uint16_t datalen = (inlen + sess->hash_size + 1);
+	uint16_t totallen = (datalen + 0xff) & ~0xff;
+	uint8_t padval = totallen - datalen;
+	uint8_t *buf;
+	uint8_t *encbuf;
+	uint64_t beseqnum = be_u64(sess->outseqnum);
+
+	if (posix_memalign((void **)&buf, 16, totallen))
+		return -ENOMEM;
+
+	if (posix_memalign((void **)&encbuf, 16, totallen))
+		return -ENOMEM;
+
+	memcpy(buf, inbuf, inlen);
+
+	sess->outmac->functbl->clone(mac, sess->outmac, 0);
+	mac->functbl->reset(mac);
+	mac->functbl->update(mac, (const uint8_t *)&beseqnum, sizeof(beseqnum));
+	mac->functbl->update(mac, inbuf, inlen);
+	mac->functbl->final(mac, buf+inlen, 0);
+	mac->functbl->fini(mac, 0);
+
+	memset(buf+datalen-1, padval, padval+1);
+
+	mode->functbl->encryptfast(mode, encbuf, buf, totallen);
+
+	memset(buf, 0, totallen);
+
+	*outbuf = encbuf;
+	*outlen = totallen;
+	sess->outseqnum++;
+
+	return 0;
 }
 
 static int encrypt_stream(drew_tls_session_t sess, uint8_t **outbuf,
 		uint16_t *outlen, const uint8_t *inbuf, uint16_t inlen)
 {
 	int res = 0;
-	drew_mac_t *mac = sess->mac;
+	drew_mac_t *mac = sess->outmac;
 
 	return -DREW_ERR_NOT_IMPL;
 }
