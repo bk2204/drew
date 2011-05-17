@@ -15,7 +15,8 @@ struct hmac {
 	const drew_loader_t *ldr;
 	drew_hash_t outside;
 	drew_hash_t inside;
-	drew_hash_t keyhash;
+	uint8_t *keybuf;
+	size_t keybufsz;
 	size_t blksz;
 	size_t digestsz;
 	const drew_param_t *param;
@@ -29,32 +30,25 @@ static int hmac_info(int op, void *p)
 static int hmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param)
 {
-	const char *algo = NULL;
+	drew_hash_t *algo = NULL;
 	const drew_param_t *oparam = param;
 
 	for (; param; param = param->next)
 		if (!strcmp(param->name, "digest")) {
-			algo = param->param.string;
+			algo = param->param.value;
 		}
 
 	if (!algo)
 		return -EINVAL;
 
-	int id = drew_loader_lookup_by_name(ldr, algo, 0, -1);
-	if (id < 0)
-		return -ENOENT;
-	if (drew_loader_get_type(ldr, id) != DREW_TYPE_HASH)
-		return -EINVAL;
-	const void *tbl = NULL;
-	if (drew_loader_get_functbl(ldr, id, &tbl) < 0)
-		return -EINVAL;
-
 	struct hmac *p = malloc(sizeof(*p));
 	memset(p, 0, sizeof(*p));
 	p->ldr = ldr;
-	p->keyhash.functbl = p->outside.functbl = p->inside.functbl = tbl;
-	p->blksz = p->keyhash.functbl->info(DREW_HASH_BLKSIZE, NULL);
-	p->digestsz = p->keyhash.functbl->info(DREW_HASH_SIZE, NULL);
+	p->outside.functbl = p->inside.functbl = algo->functbl;
+	p->blksz = p->outside.functbl->info(DREW_HASH_BLKSIZE, NULL);
+	p->digestsz = p->outside.functbl->info(DREW_HASH_SIZE, NULL);
+	p->keybuf = malloc(p->blksz);
+	p->keybufsz = 0;
 	p->param = oparam;
 
 	if (flags & DREW_MAC_FIXED) {
@@ -85,7 +79,6 @@ static int hmac_fini(drew_mac_t *ctx, int flags)
 	struct hmac *h = ctx->ctx;
 	h->outside.functbl->fini(&h->outside, 0);
 	h->inside.functbl->fini(&h->inside, 0);
-	h->keyhash.functbl->fini(&h->keyhash, 0);
 	memset(h, 0, sizeof(*h));
 
 	if (!(flags & DREW_MAC_FIXED))
@@ -99,16 +92,19 @@ static int hmac_setkey(drew_mac_t *ctxt, const uint8_t *data, size_t len)
 	uint8_t *outpad;
 	uint8_t *inpad;
 	size_t i;
-	uint8_t *keybuf = NULL;
-	const uint8_t *k = data;
+	const uint8_t *k = ctx->keybuf;
+	drew_hash_t keyhash;
 
 	if (len > ctx->blksz) {
-		keybuf = calloc(ctx->digestsz, 1);
-		ctx->keyhash.functbl->init(&ctx->keyhash, 0, ctx->ldr, ctx->param);
-		ctx->keyhash.functbl->update(&ctx->keyhash, data, len);
-		ctx->keyhash.functbl->final(&ctx->keyhash, keybuf, 0);
-		k = keybuf;
-		len = ctx->digestsz;
+		keyhash.functbl = ctx->inside.functbl;
+		keyhash.functbl->init(&keyhash, 0, ctx->ldr, ctx->param);
+		keyhash.functbl->update(&keyhash, data, len);
+		keyhash.functbl->final(&keyhash, ctx->keybuf, 0);
+		ctx->keybufsz = len = ctx->digestsz;
+	}
+	else if (data != ctx->keybuf) {
+		memcpy(ctx->keybuf, data, len);
+		ctx->keybufsz = len;
 	}
 
 	size_t min = len < ctx->blksz ? len : ctx->blksz;
@@ -127,9 +123,19 @@ static int hmac_setkey(drew_mac_t *ctxt, const uint8_t *data, size_t len)
 
 	free(outpad);
 	free(inpad);
-	free(keybuf);
 
 	return 0;
+}
+
+static int hmac_reset(drew_mac_t *ctx)
+{
+	int res = 0;
+	struct hmac *c = ctx->ctx;
+	c->outside.functbl->reset(&c->outside); 
+	c->inside.functbl->reset(&c->inside);
+	if (c->keybufsz)
+		res = hmac_setkey(ctx, c->keybuf, c->keybufsz);
+	return res;
 }
 
 static int hmac_update(drew_mac_t *ctx, const uint8_t *data, size_t len)
@@ -148,6 +154,8 @@ static int hmac_final(drew_mac_t *ctx, uint8_t *digest, int flags)
 	c->inside.functbl->final(&c->inside, buf, 0);
 	c->outside.functbl->update(&c->outside, buf, c->digestsz);
 	c->outside.functbl->final(&c->outside, digest, 0);
+	c->inside.functbl->reset(&c->inside);
+	c->outside.functbl->reset(&c->outside);
 
 	free(buf);
 
@@ -169,18 +177,28 @@ static int hmac_test_generic(const drew_loader_t *ldr, const char *name,
 	int result = 0;
 	drew_mac_t c;
 	uint8_t buf[128];
+	drew_param_t param;
+	drew_hash_t hash;
+	int id;
+
+	if ((id = drew_loader_lookup_by_name(ldr, name, 0, -1)) < 0)
+		return id;
+	drew_loader_get_functbl(ldr, id, (const void **)&hash.functbl);
+
+	hash.functbl->init(&hash, 0, ldr, NULL);
+
+	param.name = "digest";
+	param.next = NULL;
+	param.param.value = &hash;
 
 	for (size_t i = 0; i < ntests; i++) {
 		const struct test *t = testdata + i;
-		drew_param_t param;
 		int retval;
 
 		memset(buf, 0, sizeof(buf));
 		result <<= 1;
 
-		param.name = "digest";
-		param.next = NULL;
-		param.param.string = name;
+		hash.functbl->reset(&hash);
 		if ((retval = hmac_init(&c, 0, ldr, &param)))
 			return retval;			
 		hmac_setkey(&c, t->key, t->keysz);
@@ -191,6 +209,7 @@ static int hmac_test_generic(const drew_loader_t *ldr, const char *name,
 		result |= !!memcmp(buf, t->output, outputsz);
 		hmac_fini(&c, 0);
 	}
+	hash.functbl->fini(&hash, 0);
 	
 	return result;
 }
@@ -306,8 +325,8 @@ static int hmac_test(void *p, const drew_loader_t *ldr)
 }
 
 static drew_mac_functbl_t hmac_functbl = {
-	hmac_info, hmac_init, hmac_clone, hmac_fini, hmac_setkey, hmac_update,
-	hmac_update, hmac_final, hmac_test
+	hmac_info, hmac_init, hmac_clone, hmac_reset, hmac_fini, hmac_setkey,
+	hmac_update, hmac_update, hmac_final, hmac_test
 };
 
 struct plugin {

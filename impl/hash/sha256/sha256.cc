@@ -6,6 +6,7 @@
 
 #include "sha256.hh"
 #include "testcase.hh"
+#include "util.hh"
 #include "hash-plugin.hh"
 
 extern "C" {
@@ -76,12 +77,6 @@ static int sha224test(void *, const drew_loader_t *)
 }
 }
 
-/* 32-bit rotate-right. */
-static inline uint32_t ROR(uint32_t x, int n)
-{
-	return ((x>>n)|(x<<(32-n)));
-}
-
 static inline uint32_t Ch(uint32_t x, uint32_t y, uint32_t z)
 {
 	return (z^(x&(y^z)));
@@ -92,19 +87,19 @@ static inline uint32_t Maj(uint32_t x, uint32_t y, uint32_t z)
 }
 static inline uint32_t S0(uint32_t x)
 {
-	return ROR(x, 2)^ROR(x, 13)^ROR(x, 22);
+	return RotateRight(x, 2) ^ RotateRight(x, 13) ^ RotateRight(x, 22);
 }
 static inline uint32_t S1(uint32_t x)
 {
-	return ROR(x, 6)^ROR(x, 11)^ROR(x, 25);
+	return RotateRight(x, 6) ^ RotateRight(x, 11) ^ RotateRight(x, 25);
 }
 static inline uint32_t s0(uint32_t x)
 {
-	return ROR(x, 7)^ROR(x, 18)^(x>>3);
+	return RotateRight(x, 7) ^ RotateRight(x, 18) ^ (x >> 3);
 }
 static inline uint32_t s1(uint32_t x)
 {
-	return ROR(x, 17)^ROR(x, 19)^(x>>10);
+	return RotateRight(x, 17) ^ RotateRight(x, 19) ^ (x >> 10);
 }
 
 static const uint32_t k[]={
@@ -137,6 +132,11 @@ static const uint32_t k[]={
 
 drew::SHA256::SHA256()
 {
+	Reset();
+}
+
+void drew::SHA256::Reset()
+{
 	m_hash[0] = 0x6a09e667;
 	m_hash[1] = 0xbb67ae85;
 	m_hash[2] = 0x3c6ef372;
@@ -149,6 +149,11 @@ drew::SHA256::SHA256()
 }
 
 drew::SHA224::SHA224()
+{
+	Reset();
+}
+
+void drew::SHA224::Reset()
 {
 	m_hash[0] = 0xc1059ed8;
 	m_hash[1] = 0x367cd507;

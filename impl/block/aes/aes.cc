@@ -53,114 +53,6 @@ static const int aes256keysz[] = {32};
 
 #define DIM(x) (sizeof(x)/sizeof(x[0]))
 
-#if 0
-static int rd_main_info(int op, void *p, size_t blksz, const int *keysz,
-		size_t nkeysz)
-{
-	switch (op) {
-		case DREW_BLOCK_VERSION:
-			return 2;
-		case DREW_BLOCK_BLKSIZE:
-			return blksz;
-		case DREW_BLOCK_KEYSIZE:
-			for (size_t i = 0; i < nkeysz; i++) {
-				const int *x = reinterpret_cast<int *>(p);
-				if (keysz[i] > *x)
-					return keysz[i];
-			}
-			return 0;
-		case DREW_BLOCK_INTSIZE:
-			return sizeof(drew::AES);
-		default:
-			return -EINVAL;
-	}
-}
-
-static int rd_aes_info(int op, void *p)
-{
-	return rd_main_info(op, p, 16, rd_keysz, DIM(rd_keysz));
-}
-
-static int rd_aes128_info(int op, void *p)
-{
-	return rd_main_info(op, p, 16, rd_aes128_keysz, DIM(rd_aes128_keysz));
-}
-
-static int rd_aes192_info(int op, void *p)
-{
-	return rd_main_info(op, p, 16, rd_aes192_keysz, DIM(rd_aes192_keysz));
-}
-
-static int rd_aes256_info(int op, void *p)
-{
-	return rd_main_info(op, p, 16, rd_aes256_keysz, DIM(rd_aes256_keysz));
-}
-
-static int rd_main_init(void **ctx, int flags, size_t blksz)
-{
-	drew::AES *p = new drew::AES(blksz);
-	if (flags & DREW_BLOCK_INIT_FIXED) {
-		memcpy(*ctx, p, sizeof(*p));
-		delete p;
-	}
-	else
-		*ctx = p;
-	return 0;
-}
-
-static int rd_aes_init(void **ctx, void *, int flags, drew_loader_t *,
-		const drew_param_t *)
-{
-	return rd_main_init(ctx, flags, 16);
-}
-
-static int rd_clone(void **newctx, void *oldctx, int flags)
-{
-	drew::AES *p = new drew::AES(*reinterpret_cast<drew::AES *>(oldctx));
-	if (flags & DREW_BLOCK_CLONE_FIXED) {
-		memcpy(*newctx, p, sizeof(*p));
-		delete p;
-	}
-	else
-		*newctx = p;
-	return 0;
-}
-
-static int rd_setkey(void *ctx, const uint8_t *key, size_t len, int mode)
-{
-	drew::AES *p = reinterpret_cast<drew::AES *>(ctx);
-	p->SetKey(key, len);
-	return 0;
-}
-
-static int rd_encrypt(void *ctx, uint8_t *out, const uint8_t *in)
-{
-	drew::AES *p = reinterpret_cast<drew::AES *>(ctx);
-	p->Encrypt(out, in);
-	return 0;
-}
-
-static int rd_decrypt(void *ctx, uint8_t *out, const uint8_t *in)
-{
-	drew::AES *p = reinterpret_cast<drew::AES *>(ctx);
-	p->Decrypt(out, in);
-	return 0;
-}
-
-static int rd_fini(void **ctx, int flags)
-{
-	drew::AES *p = reinterpret_cast<drew::AES *>(*ctx);
-	if (flags & DREW_BLOCK_FINI_NO_DEALLOC) {
-		p->~AES();
-	}
-	else {
-		delete p;
-		*ctx = NULL;
-	}
-	return 0;
-}
-#endif
-
 static void str2bytes(uint8_t *bytes, const char *s, size_t len = 0)
 {
 	if (!len)
@@ -281,6 +173,8 @@ static int aes256test(void *p, const drew_loader_t *ldr)
 	PLUGIN_DATA_END()
 	PLUGIN_INTERFACE(aes)
 }
+
+const size_t drew::AES::m_nb = (block_size / 4);
 
 #define GETU32(pt) (((uint32_t)(pt)[0] << 24) ^ ((uint32_t)(pt)[1] << 16) ^ ((uint32_t)(pt)[2] <<  8) ^ ((uint32_t)(pt)[3]))
 #define PUTU32(ct, st) { (ct)[0] = (uint8_t)((st) >> 24); (ct)[1] = (uint8_t)((st) >> 16); (ct)[2] = (uint8_t)((st) >>  8); (ct)[3] = (uint8_t)(st); }

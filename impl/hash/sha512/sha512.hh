@@ -21,6 +21,7 @@ class SHA512 : public Hash<uint64_t, 64, 64, 128, BigEndian>,
 	public:
 		SHA512();
 		virtual ~SHA512() {}
+		virtual void Reset();
 		static void Transform(uint64_t *state, const uint8_t *data)
 		{
 			SHA512Transform::Transform(state, data);
@@ -38,6 +39,7 @@ class SHA512t : public SHA512
 	public:
 		SHA512t(size_t);
 		virtual ~SHA512t() {}
+		void Reset();
 		static void Transform(uint64_t *state, const uint8_t *data)
 		{
 			SHA512Transform::Transform(state, data);
@@ -68,6 +70,7 @@ class SHA384 : public Hash<uint64_t, 48, 64, 128, BigEndian>,
 	public:
 		SHA384();
 		virtual ~SHA384() {}
+		void Reset();
 		static void Transform(uint64_t *state, const uint8_t *data)
 		{
 			SHA512Transform::Transform(state, data);

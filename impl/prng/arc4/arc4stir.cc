@@ -166,13 +166,11 @@ drew::ARC4Stir::ARC4Stir()
 
 uint8_t drew::ARC4Stir::GetByte()
 {
-	uint8_t t = InternalGetByte();
-
-	if (!--m_cnt)
+	if (--m_cnt <= 0)
 		Stir();
 
 	m_entropy -= 8;
-	return t;
+	return InternalGetByte();
 }
 
 uint8_t drew::ARC4Stir::InternalGetByte()
@@ -216,17 +214,20 @@ void drew::ARC4Stir::Stir()
 		clock_t ct;
 		pid_t pid;
 		int fd;
+		ssize_t nbytes;
 		uint8_t buf[256];
 	} rnd;
 
 	gettimeofday(&rnd.tv, NULL);
 	rnd.ct = times(&rnd.tms);
 	rnd.pid = getpid();
+	rnd.nbytes = 0;
 	if ((rnd.fd = open(DEVICE, O_RDONLY)) >= 0) {
-		read(rnd.fd, rnd.buf, sizeof(rnd.buf));
+		rnd.nbytes = read(rnd.fd, rnd.buf, sizeof(rnd.buf));
 		close(rnd.fd);
 	}
-	AddRandomData((const uint8_t *)&rnd, sizeof(rnd), 0);
+	AddRandomData((const uint8_t *)&rnd, sizeof(rnd),
+			std::min<ssize_t>(rnd.nbytes, 0) * 8);
 }
 
 // Note that this does not reset the S-box to the initial state.

@@ -15,6 +15,7 @@
 
 #include <time.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -26,6 +27,7 @@
 #define MODE_SPEED			1
 #define MODE_TEST			2
 #define MODE_TEST_INTERNAL	3
+#define MODE_TEST_API		4
 
 #if defined(CLOCK_PROCESS_CPUTIME_ID)
 #define USED_CLOCK CLOCK_PROCESS_CPUTIME_ID
@@ -89,5 +91,8 @@ int test_execute(void *data, const char *name, const void *tbl,
 int process_bytes(ssize_t len, uint8_t **buf, const char *data);
 int test_process_testcase(void *data, int type, const char *item,
 		struct test_external *tep);
+bool is_forbidden_errno(int val);
+int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
+		const void *tbl);
 
 #endif

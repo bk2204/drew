@@ -73,6 +73,7 @@ typedef struct {
 	int (*init)(drew_hash_t *, int, const drew_loader_t *,
 			const drew_param_t *);
 	int (*clone)(drew_hash_t *, const drew_hash_t *, int);
+	int (*reset)(drew_hash_t *);
 	int (*fini)(drew_hash_t *, int);
 	int (*update)(drew_hash_t *, const uint8_t *, size_t);
 	int (*updatefast)(drew_hash_t *, const uint8_t *, size_t);

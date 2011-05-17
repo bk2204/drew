@@ -15,11 +15,11 @@ extern "C" {
 #include <drew/plugin.h>
 #include <drew/stream.h>
 
-#define PLUGIN_FUNCTBL(prefix, info, init, setiv, setkey, encrypt, decrypt, encryptfast, decryptfast, test, fini, clone) \
+#define PLUGIN_FUNCTBL(prefix, info, init, setiv, setkey, encrypt, decrypt, encryptfast, decryptfast, test, fini, clone, reset) \
 \
 static drew_stream_functbl_t prefix ## functbl = { \
-	info, init, clone, fini, setiv, setkey, encrypt, decrypt, encryptfast, \
-	decryptfast, test \
+	info, init, clone, reset, fini, setiv, setkey, encrypt, decrypt, \
+	encryptfast, decryptfast, test \
 };
 
 struct plugin {

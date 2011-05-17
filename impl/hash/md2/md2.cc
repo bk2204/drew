@@ -45,6 +45,11 @@ static int md2test(void *, const drew_loader_t *)
 
 drew::MD2::MD2()
 {
+	Reset();
+}
+
+void drew::MD2::Reset()
+{
 	memset(m_hash, 0, sizeof(m_hash));
 	m_l = 0;
 	Initialize();

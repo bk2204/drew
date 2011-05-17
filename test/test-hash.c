@@ -175,6 +175,185 @@ int test_process_testcase(void *data, int type, const char *item,
 	return TEST_OK;
 }
 
+// The version is not what it's supposed to be.
+#define HASH_BAD_VERSION	(1 <<  0)
+// The hash is using errno values for things other than ENOMEM.
+#define HASH_BAD_ERRNO		(1 <<  1)
+// The hash is using very odd values (non-power-of-two) for the quantum.
+#define HASH_BAD_QUANTUM	(1 <<  2)
+#define HASH_BAD_SIZE		(1 <<  3)
+#define HASH_BAD_BLKSIZE	(1 <<  4)
+#define HASH_BAD_BUFSIZE	(1 <<  5)
+#define HASH_BAD_ENDIAN		(1 <<  6)
+#define HASH_BAD_INTSIZE	(1 <<  7)
+#define HASH_BAD_NULLIFY	(1 <<  8)
+#define HASH_BAD_INIT		(1 <<  9)
+#define HASH_BAD_FUNCTBL	(1 << 10)
+#define HASH_BAD_UPDATEFAST	(1 << 11)
+#define HASH_BAD_CLONE		(1 << 12)
+#define HASH_BAD_UPDATE		(1 << 13)
+// Somehow, the clone was detected.
+#define HASH_BAD_CRACK		(1 << 14)
+#define HASH_BAD_PAD		(1 << 15)
+#define HASH_BAD_FINAL		(1 << 16)
+#define HASH_BAD_FINI		(1 << 17)
+#define HASH_BAD_ERROR		(1 << 18)
+
+int test_api_context(drew_hash_t *ctx, const drew_loader_t *ldr,
+		const drew_param_t *paramp, size_t intsize, size_t hashsize)
+{
+	int flag = ctx->ctx ? DREW_HASH_FIXED : 0;
+	const drew_param_t *param = paramp->name ? paramp : NULL;
+	int retval = 0;
+	uint8_t *buf;
+	const size_t page = 4096;
+	drew_hash_t newc, *newctx = &newc;
+
+	// One page, please.
+	posix_memalign((void **)&buf, 16, page);
+	memset(buf, 0, page);
+
+	if (ctx->functbl->init(ctx, flag, ldr, param)) {
+		retval |= HASH_BAD_INIT;
+		return retval;
+	}
+
+	if (ctx->functbl->updatefast(ctx, buf, page))
+		retval |= HASH_BAD_UPDATEFAST;
+
+	if (ctx->functbl->clone(newctx, ctx, 0) ||
+		newctx->functbl != ctx->functbl || newctx->ctx == ctx->ctx)
+		retval |= HASH_BAD_CLONE;
+
+	if (ctx->functbl->updatefast(ctx, buf, page))
+		retval |= HASH_BAD_UPDATEFAST;
+
+	if (newctx->functbl->update(newctx, buf, page))
+		retval |= HASH_BAD_UPDATE;
+
+	if (ctx->functbl->pad(ctx))
+		retval |= HASH_BAD_PAD;
+
+	if (ctx->functbl->final(ctx, buf, DREW_HASH_NO_PAD))
+		retval |= HASH_BAD_FINAL;
+
+	if (newctx->functbl->final(newctx, buf+hashsize, 0))
+		retval |= HASH_BAD_FINAL;
+
+	if (memcmp(buf, buf+hashsize, hashsize))
+		retval |= HASH_BAD_CRACK;
+
+	if (newctx->functbl->fini(newctx, 0))
+		retval |= HASH_BAD_FINI;
+
+	if (ctx->functbl->fini(ctx, flag))
+		retval |= HASH_BAD_FINI;
+
+	free(buf);
+
+	return retval;
+}
+
+int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
+		const void *tbl)
+{
+	int res = 0, retval = 0, quantum = 1;
+	size_t intsize = 0, hashsize = 0;
+	drew_hash_t c, *ctx = &c;
+	drew_param_t param;
+	void *mem;
+
+	memset(&param, 0, sizeof(param));
+
+	// Make sure our functinos are not NULL.
+	int (*p)() = tbl;
+	for (int i = 0; i < sizeof(*ctx->functbl)/sizeof(p); i++, p++)
+		if (!p) {
+			retval |= HASH_BAD_FUNCTBL;
+			return retval;
+		}
+
+	ctx->functbl = tbl;
+	res = ctx->functbl->info(DREW_HASH_VERSION, NULL);
+	if (is_forbidden_errno(res))
+		retval |= HASH_BAD_ERRNO;
+	if (res != 2)
+		retval |= HASH_BAD_VERSION;
+
+	res = ctx->functbl->info(DREW_HASH_QUANTUM, NULL);
+	if (is_forbidden_errno(res))
+		retval |= HASH_BAD_ERRNO;
+	if (res < 0 || (res & (res-1)))
+		retval |= HASH_BAD_QUANTUM;
+	else
+		quantum = res;
+
+	res = ctx->functbl->info(DREW_HASH_SIZE, NULL);
+	if (is_forbidden_errno(res))
+		retval |= HASH_BAD_ERRNO;
+	if (res == -DREW_ERR_MORE_INFO) {
+		size_t vals[] = {1024, 512, 384, 256, 224, 192, 160, 128, 32, 24, 16};
+		for (int i = 0; i < DIM(vals); i++) {
+			param.name = "digestSize";
+			param.param.number = vals[i] / 8;
+			param.next = NULL;
+			res = ctx->functbl->info(DREW_HASH_SIZE, &param);
+			if (res == param.param.number)
+				break;
+			if (res != -DREW_ERR_MORE_INFO && res != -DREW_ERR_INVALID)
+				break;
+		}
+	}
+	if (res < 0 || res > (1024/8))
+		retval |= HASH_BAD_SIZE;
+	else
+		hashsize = res;
+
+	res = ctx->functbl->info(DREW_HASH_BLKSIZE, NULL);
+	if (is_forbidden_errno(res))
+		retval |= HASH_BAD_ERRNO;
+	if (res < 0 || res > (4096/8))
+		retval |= HASH_BAD_BLKSIZE;
+
+	res = ctx->functbl->info(DREW_HASH_BUFSIZE, NULL);
+	if (is_forbidden_errno(res))
+		retval |= HASH_BAD_ERRNO;
+	if (res < 0 || res > (4096/8) || res % quantum)
+		retval |= HASH_BAD_BUFSIZE;
+
+	res = ctx->functbl->info(DREW_HASH_ENDIAN, NULL);
+	if (is_forbidden_errno(res))
+		retval |= HASH_BAD_ERRNO;
+	if (res != 4321 && res != 1234)
+		retval |= HASH_BAD_ENDIAN;
+
+	res = ctx->functbl->info(DREW_HASH_INTSIZE, NULL);
+	if (is_forbidden_errno(res))
+		retval |= HASH_BAD_ERRNO;
+	if (res < 0 || res >= 1000)
+		retval |= HASH_BAD_INTSIZE;
+	else
+		intsize = res;
+
+	res = ctx->functbl->info(0xdeadbeef, NULL);
+	if (is_forbidden_errno(res))
+		retval |= HASH_BAD_ERRNO;
+	if (res != -DREW_ERR_INVALID)
+		retval |= HASH_BAD_ERROR;
+
+	ctx->ctx = NULL;
+	retval |= test_api_context(ctx, ldr, &param, intsize, hashsize);
+	if (ctx->ctx)
+		retval |= HASH_BAD_NULLIFY;
+	ctx->ctx = mem = malloc(intsize);
+	retval |= test_api_context(ctx, ldr, &param, intsize, hashsize);
+	if (ctx->ctx != mem)
+		retval |= HASH_BAD_NULLIFY;
+	free(mem);
+
+	return retval;
+}
+
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		const void *tbl, int chunk, int nchunks)
 {

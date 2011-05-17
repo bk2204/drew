@@ -14,6 +14,33 @@
 #include "prng-plugin.h"
 #include "util.hh"
 
+template<class T>
+static int make_new(T *ctx, const drew_loader_t *ldr, const drew_param_t *param,
+		const char *paramname, int type, const char *algonames[], size_t nalgos)
+{
+	for (const drew_param_t *p = param; p; p = p->next) {
+		if (!strcmp(p->name, paramname)) {
+			memcpy(ctx, p->param.value, sizeof(*ctx));
+			return 0;
+		}
+	}
+	for (size_t i = 0; i < nalgos; i++) {
+		int id = -1;
+		if ((id = drew_loader_lookup_by_name(ldr, algonames[i], 0, -1)) < 0)
+			continue;
+		if (drew_loader_get_type(ldr, id) != type)
+			continue;
+		const void *functbl;
+		if ((id = drew_loader_get_functbl(ldr, id, &functbl)) < 0)
+			continue;
+		// We need this since we can't assign void * to non-void *.
+		memcpy(&ctx->functbl, &functbl, sizeof(void *));
+		if (ctx->functbl->init(ctx, 0, ldr, param))
+			continue;
+		return 0;
+	}
+	return -DREW_ERR_NONEXISTENT;
+}
 
 extern "C" {
 
@@ -52,14 +79,21 @@ static int sp_hash_info(int op, void *p)
 	}
 }
 
-static int sp_hash_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
-		const drew_param_t *)
+static int sp_hash_init(drew_prng_t *ctx, int flags, const drew_loader_t *ldr,
+		const drew_param_t *param)
 {
 	drew::HashDRBG *p;
+	drew_hash_t hash;
+	const char *names[] = {"SHA-512", "SHA-384", "SHA-256", "SHA-224", "SHA-1"};
+	int res = 0;
+	res = make_new(&hash, ldr, param, "digest", DREW_TYPE_HASH, names,
+			DIM(names));
+	if (res < 0)
+		return res;
 	if (flags & DREW_PRNG_FIXED)
-		p = new (ctx->ctx) drew::HashDRBG;
+		p = new (ctx->ctx) drew::HashDRBG(hash);
 	else
-		p = new drew::HashDRBG;
+		p = new drew::HashDRBG(hash);
 	ctx->ctx = p;
 	ctx->functbl = &sphashfunctbl;
 	return 0;
@@ -126,9 +160,16 @@ static int sp_hash_test(void *, const drew_loader_t *)
 	PLUGIN_INTERFACE()
 }
 
-drew::HashHelper::HashHelper(const drew_hash_t *h) : orighash(h), hash(0)
+drew::HashHelper::HashHelper(const drew_hash_t *h) :
+	orighash(h), hash(new drew_hash_t)
 {
+	hash->ctx = 0;
 	Reset();
+}
+
+drew::HashHelper::~HashHelper()
+{
+	delete hash;
 }
 
 void drew::HashHelper::AddData(const uint8_t *data, size_t len)
@@ -138,15 +179,15 @@ void drew::HashHelper::AddData(const uint8_t *data, size_t len)
 
 void drew::HashHelper::GetDigest(uint8_t *data, size_t len)
 {
-	const size_t blksz = GetBlockSize();
-	if (len == blksz) {
+	const size_t digsz = GetDigestLength();
+	if (len == digsz) {
 		hash->functbl->final(hash, data, 0);
 		return;
 	}
-	uint8_t *buf = new uint8_t[blksz];
+	uint8_t *buf = new uint8_t[digsz];
 	hash->functbl->final(hash, buf, 0);
-	memcpy(data, buf, std::min(blksz, len));
-	memset(buf, 0, blksz);
+	memcpy(data, buf, std::min(digsz, len));
+	memset(buf, 0, digsz);
 	delete[] buf;
 }
 
@@ -170,8 +211,10 @@ size_t drew::HashHelper::GetBlockSize() const
 
 void drew::HashHelper::Reset()
 {
-	if (hash)
+	if (hash->ctx) {
 		hash->functbl->fini(hash, 0);
+		hash->ctx = 0;
+	}
 	orighash->functbl->clone(hash, orighash, 0);
 }
 
@@ -225,8 +268,14 @@ void drew::DRBG::GeneratePersonalizationString(uint8_t *buf, size_t *len)
 	*len = finallen;
 }
 
-drew::HashDRBG::HashDRBG()
+drew::HashDRBG::HashDRBG(const drew_hash_t &h)
 {
+	hash = new drew_hash_t(h);
+}
+
+drew::HashDRBG::~HashDRBG()
+{
+	delete hash;
 }
 
 void drew::HashDRBG::HashDF(const drew_hash_t *h, const uint8_t *in,
@@ -356,7 +405,7 @@ void drew::HashDRBG::HashGen(uint8_t *buf, size_t len)
 	one[seedlen-1] = 0x01;
 	memcpy(data, V, seedlen);
 
-	for (size_t i = 0, j = 0; i < m; i++, j += seedlen) {
+	for (size_t i = 0, j = 0; i < m; i++, j += digestsize) {
 		hh.AddData(data, seedlen);
 		hh.GetDigest(buf+j, std::min(seedlen, len-j));
 		hh.Reset();

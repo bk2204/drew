@@ -1,5 +1,7 @@
 PLUGINS_MODE-${CFG_CFB}	+= cfb
 PLUGINS_MODE-${CFG_OFB}	+= ofb
+PLUGINS_MODE-${CFG_CBC}	+= cbc
+PLUGINS_MODE-${CFG_CTR}	+= ctr
 
 MODE_DIR		:= impl/mode
 MODE_PLUGINS	:= $(patsubst %,${MODE_DIR}/%,$(PLUGINS_MODE-m))

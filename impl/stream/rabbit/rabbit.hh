@@ -37,6 +37,7 @@ class Rabbit
 		Rabbit();
 		Rabbit(size_t drop);
 		~Rabbit() {}
+		void Reset();
 		void SetKey(const uint8_t *key, size_t sz);
 		void SetNonce(const uint8_t *, size_t sz);
 		void Encrypt(uint8_t *out, const uint8_t *in, size_t len);
@@ -44,6 +45,8 @@ class Rabbit
 	protected:
 	private:
 		RabbitKeystream m_ks;
+		uint8_t m_key[16];
+		uint8_t m_nonce[8];
 		uint8_t m_buf[16] ALIGNED_T;
 		size_t m_nbytes;
 };

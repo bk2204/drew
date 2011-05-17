@@ -73,6 +73,7 @@ typedef struct {
 	int (*init)(drew_block_t *, int,
 			const drew_loader_t *, const drew_param_t *);
 	int (*clone)(drew_block_t *, const drew_block_t *, int);
+	int (*reset)(drew_block_t *);
 	int (*fini)(drew_block_t *, int);
 	int (*setkey)(drew_block_t *, const uint8_t *, size_t, int);
 	int (*encrypt)(const drew_block_t *, uint8_t *, const uint8_t *);

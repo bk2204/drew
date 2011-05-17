@@ -20,6 +20,10 @@ namespace drew {
 			static const size_t block_size = BlockSize;
 			typedef AlignedBlock<uint8_t, BlockSize> FastBlock;
 			virtual ~BlockCipher() {}
+			virtual int Reset()
+			{
+				return 0;
+			}
 			virtual int SetKey(const uint8_t *key, size_t len) = 0;
 			virtual int Encrypt(uint8_t *out, const uint8_t *in) const = 0;
 			virtual int Decrypt(uint8_t *out, const uint8_t *in) const = 0;
@@ -111,6 +115,7 @@ static int prefix ## init(drew_block_t *ctx, int flags, \
 		const drew_loader_t *, const drew_param_t *); \
 static int prefix ## clone(drew_block_t *newctx, const drew_block_t *oldctx, \
 		int flags); \
+static int prefix ## reset(drew_block_t *ctx); \
 static int prefix ## setkey(drew_block_t *ctx, const uint8_t *key, size_t len, \
 		int mode); \
 static int prefix ## encrypt(const drew_block_t *ctx, uint8_t *out, \
@@ -122,7 +127,7 @@ static int prefix ## decryptfast(const drew_block_t *ctx, uint8_t *out, const ui
 static int prefix ## fini(drew_block_t *ctx, int flags); \
 static int prefix ## test(void *, const drew_loader_t *); \
  \
-PLUGIN_FUNCTBL(prefix, prefix ## info, prefix ## init, prefix ## setkey, prefix ## encrypt, prefix ## decrypt, prefix ## encryptfast, prefix ## decryptfast, prefix ## test, prefix ## fini, prefix ## clone); \
+PLUGIN_FUNCTBL(prefix, prefix ## info, prefix ## init, prefix ## setkey, prefix ## encrypt, prefix ## decrypt, prefix ## encryptfast, prefix ## decryptfast, prefix ## test, prefix ## fini, prefix ## clone, prefix ## reset); \
  \
 static int prefix ## clone(drew_block_t *newctx, const drew_block_t *oldctx, \
 		int flags) \
@@ -145,6 +150,13 @@ static int prefix ## setkey(drew_block_t *ctx, const uint8_t *key, size_t len, \
 	using namespace drew; \
 	bname *p = reinterpret_cast<bname *>(ctx->ctx); \
 	return p->SetKey(key, len); \
+} \
+ \
+static int prefix ## reset(drew_block_t *ctx) \
+{ \
+	using namespace drew; \
+	bname *p = reinterpret_cast<bname *>(ctx->ctx); \
+	return p->Reset(); \
 } \
  \
 static int prefix ## encrypt(const drew_block_t *ctx, uint8_t *out, const uint8_t *in) \

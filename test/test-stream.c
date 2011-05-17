@@ -20,6 +20,9 @@
 
 #define FILENAME "test/vectors-stream"
 
+#define STUBS_API 1
+#include "stubs.c"
+
 int test_get_type(void)
 {
 	return DREW_TYPE_STREAM;

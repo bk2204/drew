@@ -61,6 +61,7 @@ typedef struct {
 	int (*init)(drew_mode_t *, int, const drew_loader_t *,
 			const drew_param_t *);
 	int (*clone)(drew_mode_t *, const drew_mode_t *, int);
+	int (*reset)(drew_mode_t *);
 	int (*fini)(drew_mode_t *, int);
 	int (*setpad)(drew_mode_t *, const drew_pad_t *);
 	int (*setblock)(drew_mode_t *, const drew_block_t *);

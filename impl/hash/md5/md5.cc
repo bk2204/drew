@@ -44,6 +44,11 @@ static int md5test(void *, const drew_loader_t *)
 
 drew::MD5::MD5()
 {
+	Reset();
+}
+
+void drew::MD5::Reset()
+{
 	m_hash[0] = 0x67452301;
 	m_hash[1] = 0xefcdab89;
 	m_hash[2] = 0x98badcfe;

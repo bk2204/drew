@@ -75,197 +75,6 @@ static const int aes256keysz[] = {32};
 
 #define DIM(x) (sizeof(x)/sizeof(x[0]))
 
-#if 0
-static int rd_main_info(int op, void *p, size_t blksz, const int *keysz,
-		size_t nkeysz)
-{
-	switch (op) {
-		case DREW_BLOCK_VERSION:
-			return 2;
-		case DREW_BLOCK_BLKSIZE:
-			return blksz;
-		case DREW_BLOCK_KEYSIZE:
-			for (size_t i = 0; i < nkeysz; i++) {
-				const int *x = reinterpret_cast<int *>(p);
-				if (keysz[i] > *x)
-					return keysz[i];
-			}
-			return 0;
-		case DREW_BLOCK_INTSIZE:
-			// FIXME: set up copies or template for each type.
-			return sizeof(drew::Rijndael);
-		default:
-			return -EINVAL;
-	}
-}
-
-static int rd_info(int op, void *p)
-{
-	return rd_main_info(op, p, 16, rd_keysz, DIM(rd_keysz));
-}
-
-static int rd160_info(int op, void *p)
-{
-	return rd_main_info(op, p, 20, rd_keysz, DIM(rd_keysz));
-}
-
-static int rd192_info(int op, void *p)
-{
-	return rd_main_info(op, p, 24, rd_keysz, DIM(rd_keysz));
-}
-
-static int rd224_info(int op, void *p)
-{
-	return rd_main_info(op, p, 28, rd_keysz, DIM(rd_keysz));
-}
-
-static int rd256_info(int op, void *p)
-{
-	return rd_main_info(op, p, 32, rd_keysz, DIM(rd_keysz));
-}
-
-static int rd_aes128_info(int op, void *p)
-{
-	return rd_main_info(op, p, 16, rd_aes128_keysz, DIM(rd_aes128_keysz));
-}
-
-static int rd_aes192_info(int op, void *p)
-{
-	return rd_main_info(op, p, 16, rd_aes192_keysz, DIM(rd_aes192_keysz));
-}
-
-static int rd_aes256_info(int op, void *p)
-{
-	return rd_main_info(op, p, 16, rd_aes256_keysz, DIM(rd_aes256_keysz));
-}
-
-// FIXME: set up copies or template for each type.
-static int rd_main_init(drew_block_t *ctx, int flags, size_t blksz)
-{
-	drew::Rijndael *p = 0;
-	switch (blksz)
-	{
-		case 16:
-			p = new drew::Rijndael128;
-			break;
-		case 20:
-			p = new drew::Rijndael160;
-			break;
-		case 24:
-			p = new drew::Rijndael192;
-			break;
-		case 28:
-			p = new drew::Rijndael224;
-			break;
-		case 32:
-			p = new drew::Rijndael256;
-			break;
-	}
-	if (flags & DREW_BLOCK_INIT_FIXED) {
-		memcpy(*ctx, p, sizeof(*p));
-		delete p;
-	}
-	else
-		*ctx = p;
-	return 0;
-}
-
-static int rd_aes_init(drew_block_t *ctx, int flags, const drew_loader_t *,
-		const drew_param_t *)
-{
-	return rd_main_init(ctx, flags, 16);
-}
-
-static int rd160_init(drew_block_t *ctx, int flags, const drew_loader_t *,
-		const drew_param_t *)
-{
-	return rd_main_init(ctx, flags, 20);
-}
-
-static int rd192_init(drew_block_t *ctx, int flags, const drew_loader_t *,
-		const drew_param_t *)
-{
-	return rd_main_init(ctx, flags, 24);
-}
-
-static int rd224_init(drew_block_t *ctx, int flags, const drew_loader_t *,
-		const drew_param_t *)
-{
-	return rd_main_init(ctx, flags, 28);
-}
-
-static int rd256_init(drew_block_t *ctx, int flags, const drew_loader_t *,
-		const drew_param_t *)
-{
-	return rd_main_init(ctx, flags, 32);
-}
-
-static int rd_clone(void **newctx, void *oldctx, int flags)
-{
-	// FIXME: set up copies or template for each type.
-	using namespace drew;
-	Rijndael *p = 0, *x = reinterpret_cast<Rijndael *>(oldctx);
-	switch (x->GetBlockSize())
-	{
-		case 16:
-			p = new Rijndael128(*reinterpret_cast<Rijndael128 *>(x));
-			break;
-		case 20:
-			p = new Rijndael160(*reinterpret_cast<Rijndael160 *>(x));
-			break;
-		case 24:
-			p = new Rijndael192(*reinterpret_cast<Rijndael192 *>(x));
-			break;
-		case 28:
-			p = new Rijndael224(*reinterpret_cast<Rijndael224 *>(x));
-			break;
-		case 32:
-			p = new Rijndael256(*reinterpret_cast<Rijndael256 *>(x));
-			break;
-	}
-	if (flags & DREW_BLOCK_CLONE_FIXED) {
-		memcpy(*newctx, p, sizeof(*p));
-		delete p;
-	}
-	else
-		*newctx = p;
-	return 0;
-}
-
-static int rd_setkey(void *ctx, const uint8_t *key, size_t len, int mode)
-{
-	drew::Rijndael *p = reinterpret_cast<drew::Rijndael *>(ctx);
-	p->SetKey(key, len);
-	return 0;
-}
-
-static int rd_encrypt(void *ctx, uint8_t *out, const uint8_t *in)
-{
-	drew::Rijndael *p = reinterpret_cast<drew::Rijndael *>(ctx);
-	p->Encrypt(out, in);
-	return 0;
-}
-
-static int rd_decrypt(void *ctx, uint8_t *out, const uint8_t *in)
-{
-	drew::Rijndael *p = reinterpret_cast<drew::Rijndael *>(ctx);
-	p->Decrypt(out, in);
-	return 0;
-}
-
-static int rd_fini(void **ctx, int flags)
-{
-	drew::Rijndael *p = reinterpret_cast<drew::Rijndael *>(*ctx);
-	// FIXME: set up copies or template for each type.
-	if (!(flags & DREW_BLOCK_FINI_NO_DEALLOC)) {
-		delete p;
-		*ctx = NULL;
-	}
-	return 0;
-}
-#endif
-
-
 static void str2bytes(uint8_t *bytes, const char *s, size_t len = 0)
 {
 	if (!len)
@@ -441,27 +250,6 @@ static int aes256test(void *p, const drew_loader_t *ldr)
 	return rd_test(p, ldr);
 }
 
-#if 0
-	PLUGIN_FUNCTBL(rijndael, rd_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
-	PLUGIN_FUNCTBL(rijndael160, rd160_info, rd160_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
-	PLUGIN_FUNCTBL(rijndael192, rd192_info, rd192_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
-	PLUGIN_FUNCTBL(rijndael224, rd224_info, rd224_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
-	PLUGIN_FUNCTBL(rijndael256, rd256_info, rd256_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
-	PLUGIN_FUNCTBL(aes128, rd_aes128_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
-	PLUGIN_FUNCTBL(aes192, rd_aes192_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
-	PLUGIN_FUNCTBL(aes256, rd_aes256_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
-	PLUGIN_DATA_START()
-	PLUGIN_DATA(rijndael, "Rijndael")
-	PLUGIN_DATA(rijndael160, "Rijndael-160")
-	PLUGIN_DATA(rijndael192, "Rijndael-192")
-	PLUGIN_DATA(rijndael224, "Rijndael-224")
-	PLUGIN_DATA(rijndael256, "Rijndael-256")
-	PLUGIN_DATA(aes128, "AES128")
-	PLUGIN_DATA(aes192, "AES192")
-	PLUGIN_DATA(aes256, "AES256")
-	PLUGIN_DATA_END()
-	PLUGIN_INTERFACE(rijndael)
-#endif
 	PLUGIN_STRUCTURE(rijndael, Rijndael128)
 	PLUGIN_STRUCTURE(rijndael160, Rijndael160)
 	PLUGIN_STRUCTURE(rijndael192, Rijndael192)
@@ -490,6 +278,19 @@ drew::Rijndael::Rijndael()
 }
 
 #define MAXNK 8
+
+template<unsigned N>
+const size_t drew::GenericRijndael<N>::m_nb = N / 32;
+
+template<unsigned N>
+const size_t drew::GenericRijndael<N>::m_bc = N / 4;
+
+template<unsigned N>
+const uint64_t drew::GenericRijndael<N>::m_bcmask =
+	(((uint64_t(1) << (drew::GenericRijndael<N>::m_bc-1))-1)<<1)|1;
+
+template<unsigned N>
+const size_t drew::GenericRijndael<N>::shiftoffset = (drew::GenericRijndael<N>::m_nb-4);
 
 template<unsigned N>
 int drew::GenericRijndael<N>::SetKey(const uint8_t *key, size_t len)
@@ -909,19 +710,6 @@ void drew::GenericRijndael<N>::EncryptBlock(uint8_t *state) const
 	if (q != state)
 		memcpy(state, q, block_size);
 }
-
-#if 0
-void drew::Rijndael::EncryptBlock(uint64_t *state)
-{
-	for (size_t i = 0; i < m_nr-1; i++) {
-		Round(state, m_rk[i], S);
-	}
-
-	KeyAddition(state, m_rk[m_nr-1]);
-	Modify(state, S);
-	KeyAddition(state, m_rk[m_nr]);
-}
-#endif
 
 void drew::Rijndael::DecryptBlock(uint64_t *state) const
 {

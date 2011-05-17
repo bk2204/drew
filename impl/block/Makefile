@@ -14,6 +14,8 @@ PLUGINS_BLOCK-${CFG_TEA}		+= tea/tea
 PLUGINS_BLOCK-${CFG_XTEA}		+= xtea/xtea
 PLUGINS_BLOCK-${CFG_SEED}		+= seed/seed
 PLUGINS_BLOCK-${CFG_IDEA}		+= idea/idea
+PLUGINS_BLOCK-${CFG_ARIA128}	+= aria/aria128
+PLUGINS_BLOCK-${CFG_ARIABYTE}	+= aria/ariabyte
 
 ${BLOCK_DIR}/cast/cast5.so: ${BLOCK_DIR}/cast/sboxes.o
 ${BLOCK_DIR}/cast/cast6.so: ${BLOCK_DIR}/cast/sboxes.o

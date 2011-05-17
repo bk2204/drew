@@ -16,6 +16,7 @@ static int rc4_test(void *, const drew_loader_t *);
 static int rc4_info(int op, void *p);
 static int rc4_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
+static int rc4_reset(drew_stream_t *ctx);
 static int rc4_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
 		int flags);
 static int rc4_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len);
@@ -25,7 +26,7 @@ static int rc4_encrypt(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
 static int rc4_fini(drew_stream_t *ctx, int flags);
 
-PLUGIN_FUNCTBL(rc4, rc4_info, rc4_init, rc4_setiv, rc4_setkey, rc4_encrypt, rc4_encrypt, rc4_encrypt, rc4_encrypt, rc4_test, rc4_fini, rc4_clone);
+PLUGIN_FUNCTBL(rc4, rc4_info, rc4_init, rc4_setiv, rc4_setkey, rc4_encrypt, rc4_encrypt, rc4_encrypt, rc4_encrypt, rc4_test, rc4_fini, rc4_clone, rc4_reset);
 
 static int rc4_maintenance_test(void)
 {
@@ -134,6 +135,13 @@ static int rc4_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len)
 	return -EINVAL;
 }
 
+static int rc4_reset(drew_stream_t *ctx)
+{
+	drew::RC4 *p = reinterpret_cast<drew::RC4 *>(ctx->ctx);
+	p->Reset();
+	return 0;
+}
+
 static int rc4_setkey(drew_stream_t *ctx, const uint8_t *key, size_t len,
 		int mode)
 {
@@ -177,53 +185,30 @@ drew::RC4::RC4(size_t drop)
 {
 }
 
-void drew::RC4::SetKey(const uint8_t *key, size_t sz)
+void drew::RC4::Reset()
 {
 	m_ks.Reset();
-	m_ks.SetKey(key, sz);
+	m_ks.SetKey(m_key, m_sz);
 	for (size_t i = 0; i < m_drop; i++)
 		m_ks.GetValue();
+	m_nbytes = 0;
+	for (size_t i = m_drop & 0xff; i < 256; i++, m_nbytes++)
+		m_buf[i] = m_ks.GetValue();
+}
+
+void drew::RC4::SetKey(const uint8_t *key, size_t sz)
+{
+	memcpy(m_key, key, sz);
+	m_sz = sz;
+	Reset();
 }
 
 void drew::RC4::Encrypt(uint8_t *out, const uint8_t *in, size_t len)
 {
-	for (size_t i = 0; i < len; i++)
-		*out++ = *in++ ^ m_ks.GetValue();
+	CopyAndXor(out, in, len, m_buf, sizeof(m_buf), m_nbytes, m_ks);
 }
 
 void drew::RC4::Decrypt(uint8_t *out, const uint8_t *in, size_t len)
 {
 	return Encrypt(out, in, len);
-}
-
-drew::RC4Keystream::RC4Keystream()
-{
-	Reset();
-}
-
-void drew::RC4Keystream::SetKey(const uint8_t *key, size_t sz)
-{
-	obj_t j = 0;
-	for (size_t i = 0; i < 256; i++) {
-		j += s[i] + key[i % sz];
-		std::swap(s[i], s[uint8_t(j)]);
-	}
-}
-
-void drew::RC4Keystream::Reset()
-{
-	for (size_t i = 0; i < 256; i++)
-		s[i] = i;
-	this->i = 0;
-	this->j = 0;
-}
-
-drew::RC4Keystream::obj_t drew::RC4Keystream::GetValue()
-{
-	i++;
-	obj_t &x = s[uint8_t(i)];
-	j += x;
-	obj_t &y = s[uint8_t(j)];
-	std::swap(x, y);
-	return s[uint8_t(x + y)];
 }

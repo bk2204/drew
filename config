@@ -18,6 +18,10 @@ CFG_TIGER		= m
 # sizes of 128, 192, and 256 bits and a block size of 128 bits.  The rijndael
 # plugin offers all five block sizes and all five key sizes, but runs at about
 # one-third of the speed.  You do not need both.
+#
+# Also, the aria128 and ariabyte plugins both implement ARIA, but the former
+# uses 128-bit quantities which are only available on some platforms.  You do
+# not need both.
 CFG_CAST5		= m
 CFG_CAST6		= m
 CFG_BLOWFISH	= m
@@ -32,10 +36,14 @@ CFG_TEA			= m
 CFG_XTEA		= m
 CFG_SEED		= m
 CFG_IDEA		= No, thanks.  I'm patented.
+CFG_ARIABYTE	= m
+CFG_ARIA128		= m
 
 # Modes.
 CFG_CFB			= m
 CFG_OFB			= m
+CFG_CBC			= m
+CFG_CTR			= m
 
 # MACs.
 CFG_HMAC		= m
