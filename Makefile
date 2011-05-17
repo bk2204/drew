@@ -44,6 +44,7 @@ include lib/libdrew/Makefile
 include $(patsubst %,impl/%/Makefile,$(CATEGORIES))
 include lib/libdrew-impl/Makefile
 include libmd/Makefile
+include doc/manual/Makefile
 
 all: ${PLUG_EXE} ${DREW_SONAME} standard
 
@@ -88,6 +89,8 @@ clean:
 	find -name '*.o' | xargs -r rm
 	find -name '*.so' | xargs -r rm
 	find -name '*.so.*' | xargs -r rm
+	find -name '*.pdf' | xargs -r rm
+	find -name '*.fo' | xargs -r rm
 
 test: .PHONY
 

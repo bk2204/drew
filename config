@@ -61,4 +61,9 @@ CFG_RSAENC		= m
 CFG_RSASIG		= m
 CFG_DSA			= m
 
+## Individual libraries.
 CFG_LIBMD		= y
+
+## Build options.
+# Use the DCT XSLT Stylesheets to build instead of the standard DocBook ones.
+CFG_DCT_XSLT	= n
