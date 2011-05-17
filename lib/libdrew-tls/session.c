@@ -19,6 +19,31 @@ struct generic {
 	void *priv;
 };
 
+static inline uint16_t be_u16(uint16_t x)
+{
+	return htons(x);
+}
+
+static inline uint32_t be_u32(uint32_t x)
+{
+	return htonl(x);
+}
+
+static inline uint64_t be_u64(uint64_t x)
+{
+	if (htonl(0x12345678) == 0x12345678)
+		return x;
+	// Okay, we're little-endian.
+	union {
+		uint64_t r;
+		uint32_t s[2];
+	} u;
+	u.r = x;
+	u.s[0] = htonl(u.s[1]);
+	u.s[1] = htonl(u.s[0]);
+	return u.r;
+}
+
 static int make_primitive(const drew_loader_t *ldr, const char *name,
 		void *ctxp, int type)
 {
