@@ -80,7 +80,7 @@ static int make_mode(const drew_loader_t *ldr, const char *name,
 {
 	int res = 0;
 
-	if ((res = make_primitive(ldr, name, mode, DREW_TYPE_HASH)))
+	if ((res = make_primitive(ldr, name, mode, DREW_TYPE_MODE)))
 		return res;
 	res = mode->functbl->init(mode, 0, ldr, NULL);
 	return res;
