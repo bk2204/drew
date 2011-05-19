@@ -257,7 +257,6 @@ drew::HC256Keystream::HC256Keystream()
 
 void drew::HC256Keystream::Reset()
 {
-	ctr = 0;
 }
 
 uint32_t drew::HC256Keystream::f1(uint32_t x)
@@ -311,25 +310,21 @@ void drew::HC256Keystream::SetNonce(const uint8_t *iv, size_t sz)
 	memcpy(P, w+ 512, 1024*sizeof(*w));
 	memcpy(Q, w+1536, 1024*sizeof(*w));
 
-	uint8_t dummy[4];
-	for (size_t i = 0; i < 4096; i++)
-		FillBuffer(dummy);
-	ctr = 0;
+	uint8_t dummy[8192];
+	FillBuffer(dummy);
+	FillBuffer(dummy);
 }
 
-void drew::HC256Keystream::FillBuffer(uint8_t buf[4])
+void drew::HC256Keystream::FillBuffer(uint8_t buf[8192])
 {
-	size_t j = ctr % 1024;
-	uint32_t s;
-
-	if (!(ctr & 0x400)) {
+	uint32_t tbuf[2048], *t = tbuf;
+	for (size_t j = 0; j < 1024; j++) {
 		P[j] += P[M(j, 10)] + g1(P[M(j, 3)], P[M(j, 1023)]);
-		s = h1(P[M(j, 12)]) ^ P[j];
+		*t++ = h1(P[M(j, 12)]) ^ P[j];
 	}
-	else {
+	for (size_t j = 0; j < 1024; j++) {
 		Q[j] += Q[M(j, 10)] + g2(Q[M(j, 3)], Q[M(j, 1023)]);
-		s = h2(Q[M(j, 12)]) ^ Q[j];
+		*t++ = h2(Q[M(j, 12)]) ^ Q[j];
 	}
-	ctr++;
-	E::Copy(buf, &s, sizeof(s));
+	E::Copy(buf, tbuf, sizeof(tbuf));
 }
