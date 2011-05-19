@@ -199,12 +199,12 @@ drew::RabbitKeystream::RabbitKeystream()
 	Reset();
 }
 
-inline uint64_t drew::RabbitKeystream::square(uint32_t term)
+uint64_t drew::RabbitKeystream::square(uint32_t term) const
 {
 	return uint64_t(term) * term;
 }
 
-inline uint32_t drew::RabbitKeystream::g(uint32_t u, uint32_t v)
+uint32_t drew::RabbitKeystream::g(uint32_t u, uint32_t v) const
 {
 	uint64_t res = square(u+v);
 	return (res >> 32) ^ uint32_t(res);
