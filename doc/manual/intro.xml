@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<preface
+	xmlns="http://docbook.org/ns/docbook"
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:cc="http://creativecommons.org/ns#"
+	xmlns:xi="http://www.w3.org/2001/XInclude"
+	xml:id="intro"
+	version="5.0">
+	<title>An Introduction to libdrew</title>
+	<para>
+		libdrew is, at its most basic level, a plugin loader, and on that level,
+		it is completely generic.  Practically, though, it provides simple yet
+		useful interfaces to a wide variety of cryptographic algorithms through
+		a set of plugins which implement those algorithms.  There are also
+		implementations of protocols being developed that make use of libdrew
+		and these plugins; these implementations can be used as examples of
+		independently useful projects that build on libdrew.
+	</para>
+	<para>
+		The cryptographic algorithms that are implemented are focussed on
+		correctness and performance.  All of the algorithms have an
+		implementation that works correctly on all POSIX-compliant machines on
+		32-bit and 64-bit architectures (including those requiring natural
+		memory alignment, such as SPARC), even if not optimally.  Releases are
+		tested for correctness on x86-64 and UltraSPARC machines in 32-bit and
+		64-bit mode using an extremely thorough testsuite.
+	</para>
+	<para>
+		In general, the implementations are designed for maximum throughput.
+		Because optimizations that make an algorithm faster on one machine may
+		make it slower on another, the standard machine for testing
+		optimizations has a 2.0 GHz Intel Core 2 Duo processor and 3 GiB of RAM.
+		Nevertheless, additional implementations that perform better on say,
+		RISC machines, are welcome and encouraged, as are assembly-optimized
+		routines, as long as there is at least one portable C or C++
+		implementation.
+	</para>
+</preface>
+<!-- vim: set ft=docbkxml: -->

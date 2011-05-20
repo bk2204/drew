@@ -31,6 +31,7 @@ GEN_SUFFIXES	:= .pdf .fo .txml
 
 doc: $(MANUAL_DIR)/drew.pdf
 
+$(MANUAL_DIR)/drew.fo: $(MANUAL_DIR)/intro.xml
 $(MANUAL_DIR)/drew.fo: $(MANUAL_DIR)/hash.xml
 
 .fo.pdf:
