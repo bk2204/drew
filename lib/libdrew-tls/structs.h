@@ -98,10 +98,6 @@ typedef struct {
 } drew_tls_random_t;
 
 typedef struct {
-	uint8_t val[2];
-} drew_tls_cipher_suite_t;
-
-typedef struct {
 	drew_tls_protocol_version_t version;
 	drew_tls_random_t random;
 	drew_tls_session_id_t session_id;
