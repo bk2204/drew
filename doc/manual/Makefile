@@ -23,7 +23,6 @@ MANUAL_DIR	:= doc/manual
 STYLEARGS	:= --param fop1.extensions 1
 STYLEARGS	+= --param free.fonts.only 1
 STYLEARGS	+= --stringparam funcsynopsis.style ansi
-STYLEARGS	+= --stringparam generate.toc "/ nop article nop book nop"
 
 GEN_SUFFIXES	:= .pdf .fo .txml
 
