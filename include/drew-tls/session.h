@@ -1,6 +1,10 @@
 #ifndef DREW_TLS_SESSION_H
 #define DREW_TLS_SESSION_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <drew/plugin.h>
 #include <drew/block.h>
 #include <drew/hash.h>
@@ -40,5 +44,9 @@ struct drew_tls_session_s {
 };
 
 typedef struct drew_tls_session_s *drew_tls_session_t;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
