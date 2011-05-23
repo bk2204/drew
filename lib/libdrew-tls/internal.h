@@ -9,8 +9,8 @@
 } while (0)
 
 #ifdef DREW_TLS_THREAD_SAFE
-#define LOCK(x)		pthread_mutex_lock(&((x)->mutex));
-#define UNLOCK(x)	pthread_mutex_unlock(&((x)->mutex));
+#define LOCK(x)		MutexLock(&((x)->mutex));
+#define UNLOCK(x)
 #else
 #define LOCK(x)
 #define UNLOCK(x)
