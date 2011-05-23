@@ -1,5 +1,7 @@
 #include "internal.h"
 
+#include <utility>
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -7,11 +9,14 @@
 #include <sys/socket.h>
 #include <time.h>
 
+#include <drew/plugin.h>
+
 #include <drew-tls/drew-tls.h>
 #include <drew-tls/priority.h>
 #include <drew-tls/session.h>
 
 #include "structs.h"
+#include "structures.hh"
 
 struct generic {
 	void *ctx;
@@ -19,35 +24,10 @@ struct generic {
 	void *priv;
 };
 
-static inline uint16_t be_u16(uint16_t x)
-{
-	return htons(x);
-}
-
-static inline uint32_t be_u32(uint32_t x)
-{
-	return htonl(x);
-}
-
-static inline uint64_t be_u64(uint64_t x)
-{
-	if (htonl(0x12345678) == 0x12345678)
-		return x;
-	// Okay, we're little-endian.
-	union {
-		uint64_t r;
-		uint32_t s[2];
-	} u;
-	u.r = x;
-	u.s[0] = htonl(u.s[1]);
-	u.s[1] = htonl(u.s[0]);
-	return u.r;
-}
-
 static int make_primitive(const drew_loader_t *ldr, const char *name,
 		void *ctxp, int type)
 {
-	struct generic *ctx = ctxp;
+	struct generic *ctx = (struct generic *)ctxp;
 	int res = 0;
 	int start = 0;
 
@@ -129,7 +109,7 @@ int drew_tls_session_init(drew_tls_session_t *sess, const drew_loader_t *ldr)
 {
 	int res = 0;
 	drew_tls_session_t s = NULL;
-	s = malloc(sizeof(*s));
+	s = (drew_tls_session_t)malloc(sizeof(*s));
 	if (!s)
 		return -ENOMEM;
 
@@ -206,7 +186,7 @@ int drew_tls_session_get_transport(drew_tls_session_t sess,
 #define HANDSHAKE_OVERHEAD 4
 
 // Note that this assumes the use of CBC.  It will have to be adjusted for GCM.
-static int encrypt_block(drew_tls_session_t sess, drew_tls_record_t *rec,
+static int encrypt_block(drew_tls_session_t sess, Record &rec,
 		const uint8_t *inbuf, uint16_t inlen)
 {
 	drew_mac_t macimpl, *mac = &macimpl;
@@ -218,45 +198,38 @@ static int encrypt_block(drew_tls_session_t sess, drew_tls_record_t *rec,
 	uint16_t datalen = (inlen + sess->hash_size + 1);
 	uint16_t totallen = (datalen + 0xff) & ~0xff;
 	uint8_t padval = totallen - datalen;
-	uint8_t *buf;		// Contains the content and MAC.
-	uint8_t *encbuf;	// Contains the encrypted data.
-	uint64_t beseqnum = be_u64(sess->outseqnum);
-	uint16_t beinlen = be_u16(inlen);
+	SerializedBuffer content(totallen);
+	SerializedBuffer encbuf(totallen);
 
-	if (posix_memalign((void **)&buf, 16, totallen))
-		return -ENOMEM;
+	content.Put(inbuf, inlen);
 
-	if (posix_memalign((void **)&encbuf, 16, totallen))
-		return -ENOMEM;
-
-	memcpy(buf, inbuf, inlen);
+	SerializedBuffer macdata(totallen);
+	macdata.Put(sess->outseqnum);
+	macdata.Put(rec.type);
+	rec.version.WriteToBuffer(macdata);
+	macdata.Put(inlen);
+	macdata.Put(inbuf, inlen);
 
 	sess->outmac->functbl->clone(mac, sess->outmac, 0);
 	mac->functbl->reset(mac);
-	mac->functbl->update(mac, (const uint8_t *)&beseqnum, sizeof(beseqnum));
-	mac->functbl->update(mac, (const uint8_t *)&rec->type, 1);
-	mac->functbl->update(mac, &rec->version.major, 1);
-	mac->functbl->update(mac, &rec->version.minor, 1);
-	mac->functbl->update(mac, (const uint8_t *)&beinlen, sizeof(beinlen));
-	mac->functbl->update(mac, inbuf, inlen);
-	mac->functbl->final(mac, buf+inlen, 0);
+	mac->functbl->update(mac, macdata.GetPointer(0), macdata.GetLength());
+	mac->functbl->final(mac, content.GetPointer(inlen), 0);
 	mac->functbl->fini(mac, 0);
 
 	// Pad the data.
-	memset(buf+datalen-1, padval, padval+1);
+	memset(content.GetPointer(datalen-1), padval, padval+1);
 
-	mode->functbl->encryptfast(mode, encbuf, buf, totallen);
+	mode->functbl->encryptfast(mode, encbuf.GetPointer(0),
+			content.GetPointer(0), totallen);
 
-	memset(buf, 0, totallen);
-
-	rec->fragment = encbuf;
-	rec->length = totallen;
+	rec.length = totallen;
+	rec.data = encbuf;
 	sess->outseqnum++;
 
 	return 0;
 }
 
-static int encrypt_stream(drew_tls_session_t sess, drew_tls_record_t *rec,
+static int encrypt_stream(drew_tls_session_t sess, Record &rec,
 		const uint8_t *inbuf, uint16_t inlen)
 {
 	int res = 0;
@@ -265,27 +238,25 @@ static int encrypt_stream(drew_tls_session_t sess, drew_tls_record_t *rec,
 }
 
 // Note that this assumes the use of CBC.  It will have to be adjusted for GCM.
-static int decrypt_block(drew_tls_session_t sess, drew_tls_record_t *rec)
+static int decrypt_block(drew_tls_session_t sess, Record &rec,
+		SerializedBuffer &sbuf)
 {
 	int res = 0;
 	drew_mac_t macimpl, *mac = &macimpl;
 	drew_mode_t *mode = sess->inmode;
-	uint8_t *inbuf = rec->fragment;
-	uint16_t inlen = rec->length;
-	uint16_t beinlen = be_u16(inlen);
-	uint8_t *decbuf;
+	uint8_t *inbuf = rec.data.GetPointer(0);
+	uint16_t inlen = rec.length;
+	SerializedBuffer decbuffer(rec.length);
+	uint8_t *decbuf = decbuffer.GetPointer(0);
 	uint16_t declen, datalen = 0;
-	uint64_t beseqnum = be_u64(sess->inseqnum);
+	uint8_t beseqnum[sizeof(sess->inseqnum)];
 	uint8_t padbyte;
-	uint8_t macbuf[128];
+	SerializedBuffer macbuf(128);
 
 	// This is really easy.  Return early here because it's trivial for the
 	// attacker not to mess this one up.
-	if (rec->length % sess->block_size)
+	if (rec.length % sess->block_size)
 		return -DREW_TLS_ERR_DECRYPTION_FAILED;
-
-	if (!(decbuf = malloc(inlen)))
-		return -ENOMEM;
 
 	mode->functbl->decrypt(mode, decbuf, inbuf, inlen);
 
@@ -300,28 +271,28 @@ static int decrypt_block(drew_tls_session_t sess, drew_tls_record_t *rec)
 	else
 		datalen = declen - sess->hash_size;
 
+	BigEndian::Copy(beseqnum, &sess->inseqnum, sizeof(beseqnum));
+
 	sess->outmac->functbl->clone(mac, sess->outmac, 0);
 	mac->functbl->reset(mac);
-	mac->functbl->update(mac, (const uint8_t *)&beseqnum, sizeof(beseqnum));
-	mac->functbl->update(mac, (const uint8_t *)&rec->type, 1);
-	mac->functbl->update(mac, &rec->version.major, 1);
-	mac->functbl->update(mac, &rec->version.minor, 1);
-	mac->functbl->update(mac, (const uint8_t *)&beinlen, sizeof(beinlen));
+	mac->functbl->update(mac, beseqnum, sizeof(beseqnum));
+	mac->functbl->update(mac, sbuf.GetPointer(0), 5);
 	mac->functbl->update(mac, decbuf, datalen);
-	mac->functbl->final(mac, macbuf, 0);
+	mac->functbl->final(mac, macbuf.GetPointer(0), 0);
 	mac->functbl->fini(mac, 0);
 
-	if (memcmp(macbuf, decbuf+datalen, sess->hash_size))
+	if (memcmp(macbuf.GetPointer(0), decbuf+datalen, sess->hash_size))
 		res = -DREW_TLS_ERR_DECRYPTION_FAILED;
 
-	rec->length = datalen;
-	rec->fragment = decbuf;
+	rec.length = datalen;
+	rec.data = decbuffer;
 	sess->inseqnum++;
 
 	return 0;
 }
 
-static int decrypt_stream(drew_tls_session_t sess, drew_tls_record_t *rec)
+static int decrypt_stream(drew_tls_session_t sess, Record &rec,
+		SerializedBuffer &sbuf)
 {
 	int res = 0;
 
@@ -333,7 +304,7 @@ static int send_record(drew_tls_session_t sess, const uint8_t *buf,
 		size_t len, uint8_t type)
 {
 	int res = 0;
-	drew_tls_record_t rec;
+	Record rec;
 	uint16_t belen;
 
 	// Records cannot be greater than 2^14.
@@ -349,86 +320,80 @@ static int send_record(drew_tls_session_t sess, const uint8_t *buf,
 	rec.type = type;
 	rec.version.major = sess->protover.major;
 	rec.version.minor = sess->protover.minor;
+	rec.data.Reset();
 	
 	switch (sess->enc_type) {
 		case cipher_type_null:
 			rec.length = len;
-			rec.fragment = buf;
+			rec.data.Put(buf, len);
 			break;
 		case cipher_type_stream:
-			RETFAIL(encrypt_stream(sess, &rec, buf, len));
+			RETFAIL(encrypt_stream(sess, rec, buf, len));
 			break;
 		case cipher_type_block:
-			RETFAIL(encrypt_block(sess, &rec, buf, len));
+			RETFAIL(encrypt_block(sess, rec, buf, len));
 			break;
 	}
 
-	belen = be_u16(rec.length);
+	SerializedBuffer output;
+	rec.WriteToBuffer(output);
 
-	if ((res = sess->data_outfunc(sess->data_outp, &rec.type, 1)))
-		return res;
-	if ((res = sess->data_outfunc(sess->data_outp, &rec.version.major, 1)))
-		return res;
-	if ((res = sess->data_outfunc(sess->data_outp, &rec.version.minor, 1)))
-		return res;
-	if ((res = sess->data_outfunc(sess->data_outp, &belen, sizeof(belen))))
-		return res;
-	if ((res = sess->data_outfunc(sess->data_outp, &rec.fragment, rec.length)))
+	if ((res = sess->data_outfunc(sess->data_outp, output.GetPointer(0),
+					output.GetLength())))
 		return res;
 	
 	return res;
 }
 
-static int recv_bytes(drew_tls_session_t sess, uint8_t *buf, size_t len,
-		int flags)
+static int recv_bytes(drew_tls_session_t sess, SerializedBuffer &buf,
+		size_t len, int flags)
 {
 	ssize_t nrecvd = 0;
 	while (nrecvd < len) {
 		ssize_t nbytes;
-		nbytes = sess->data_infunc(sess->data_inp, buf+nrecvd, len-nrecvd);
+		uint8_t buffer[512];
+		nbytes = sess->data_infunc(sess->data_inp, buffer,
+				std::min(len-nrecvd, sizeof(buffer)));
 		if (nbytes < 0)
 			return -errno;
+		buf.Put(buffer, nbytes);
 		nrecvd += nbytes;
 	}
 	return 0;
 }
 
 // This function must be externally locked.
-static int recv_record(drew_tls_session_t sess, drew_tls_record_t *rec)
+static int recv_record(drew_tls_session_t sess, Record &rec)
 {
 	int res = 0;
-	uint8_t header[1 + 2 + 2];
-	uint8_t *recvd_data;
-	ssize_t nrecvd = 0;
+	SerializedBuffer buf;
 
-	if ((res = recv_bytes(sess, header, sizeof(header), 0)))
+	if ((res = recv_bytes(sess, buf, 1 + 2 + 2, 0)))
 		return res;
 
-	rec->type = header[0];
-	rec->version.major = header[1];
-	rec->version.minor = header[2];
-	memcpy(&rec->length, header+3, 2);
-	rec->length = be_u16(rec->length);
+	// Fill in the early fields, including the length.
+	buf.ResetPosition();
+	if ((res = rec.ReadFromBuffer(buf)))
+		return -DREW_ERR_BUG;
 
-	if (rec->length > ((1 << 14) + 2048))
+	if (rec.length > ((1 << 14) + 2048))
 		return -DREW_TLS_ERR_RECORD_OVERFLOW;
 
-	if (!(recvd_data = rec->fragment = malloc(rec->length)))
-		return -ENOMEM;
-
-	if (!(res = recv_bytes(sess, rec->fragment, rec->length, 0)))
+	if (!(res = recv_bytes(sess, buf, rec.length, 0)))
 		return res;
+
+	buf.ResetPosition();
+	// Now fill in all the fields.
+	if ((res = rec.ReadFromBuffer(buf)))
+		return -DREW_ERR_BUG;
+	buf.ResetPosition();
 	
 	switch (sess->enc_type) {
-		case cipher_type_null:
-			break;
 		case cipher_type_stream:
-			res = decrypt_stream(sess, &rec);
-			free(recvd_data);
-			break;
+			return decrypt_stream(sess, rec, buf);
 		case cipher_type_block:
-			res = decrypt_block(sess, &rec);
-			free(recvd_data);
+			return decrypt_block(sess, rec, buf);
+		case cipher_type_null:
 			break;
 	}
 
@@ -475,7 +440,7 @@ static int handshake_send_client_hello(drew_tls_session_t sess)
 		sizeof(ch.random) + 2 + (nsuites * 2) + 2 +
 		sizeof(sess->session_id.length) + sess->session_id.length;
 
-	if (!(obuf = buf = malloc(nbytes)))
+	if (!(obuf = buf = (uint8_t *)malloc(nbytes)))
 		URETFAIL(sess, -ENOMEM);
 
 	uint8_t ncomps = 1, comp = 0;
@@ -505,23 +470,28 @@ static int handshake_send_server_hello(drew_tls_session_t sess)
 	return -DREW_ERR_NOT_IMPL;
 }
 
-static int recv_handshake(drew_tls_session_t sess, uint8_t **buf,
-		size_t *len, uint8_t *type)
+static int recv_handshake(drew_tls_session_t sess, SerializedBuffer &buf,
+		uint32_t *length, uint8_t *type)
 {
 	int res = 0;
-	drew_tls_record_t rec;
-	uint8_t *data = rec.fragment;
-	uint32_t length;
+	Record rec;
 
-	res = recv_record(sess, &rec);
+	res = recv_record(sess, rec);
 
 	if (rec.length < 4)
 		return -DREW_TLS_ERR_ILLEGAL_PARAMETER;
 
-	*buf = rec.fragment;
-	*type = data[0];
-	BRD32(data, length);
-	*len = length;
+	// length is really only 24 bits in length, but we can't just load a
+	// three-byte quantity.  The type octet precedes it, so we do some fancy
+	// footwork to get both. 
+	buf = rec.data;
+	buf.ResetPosition();
+	buf.Get(*length);
+	buf.ResetPosition();
+	buf.Get(*type);
+	buf.ResetPosition();
+
+	*length &= 0xffffff;
 
 	return res;
 }
@@ -536,6 +506,11 @@ static int handshake_recv_server_hello(drew_tls_session_t sess)
 
 	UNLOCK(sess);
 
+	return -DREW_ERR_NOT_IMPL;
+}
+
+static int handshake_server(drew_tls_session_t sess)
+{
 	return -DREW_ERR_NOT_IMPL;
 }
 
