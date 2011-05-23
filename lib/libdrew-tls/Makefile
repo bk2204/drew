@@ -4,6 +4,7 @@ DREW_TLS_SYMLINK		:= $(basename $(DREW_TLS_SONAME))
 
 DREW_TLS_OBJS			+= global.o
 DREW_TLS_OBJS			+= session.o
+DREW_TLS_OBJS			+= structures.o
 
 DREW_TLS_DIROBJS		:= $(patsubst %,$(DREW_TLS_DIR)/%,$(DREW_TLS_OBJS))
 
