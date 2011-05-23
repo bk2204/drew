@@ -206,8 +206,8 @@ int drew_tls_session_get_transport(drew_tls_session_t sess,
 #define HANDSHAKE_OVERHEAD 4
 
 // Note that this assumes the use of CBC.  It will have to be adjusted for GCM.
-static int encrypt_block(drew_tls_session_t sess, uint8_t **outbuf,
-		uint16_t *outlen, const uint8_t *inbuf, uint16_t inlen)
+static int encrypt_block(drew_tls_session_t sess, drew_tls_record_t *rec,
+		const uint8_t *inbuf, uint16_t inlen)
 {
 	drew_mac_t macimpl, *mac = &macimpl;
 	drew_mode_t *mode = sess->outmode;
@@ -218,9 +218,10 @@ static int encrypt_block(drew_tls_session_t sess, uint8_t **outbuf,
 	uint16_t datalen = (inlen + sess->hash_size + 1);
 	uint16_t totallen = (datalen + 0xff) & ~0xff;
 	uint8_t padval = totallen - datalen;
-	uint8_t *buf;
-	uint8_t *encbuf;
+	uint8_t *buf;		// Contains the content and MAC.
+	uint8_t *encbuf;	// Contains the encrypted data.
 	uint64_t beseqnum = be_u64(sess->outseqnum);
+	uint16_t beinlen = be_u16(inlen);
 
 	if (posix_memalign((void **)&buf, 16, totallen))
 		return -ENOMEM;
@@ -233,28 +234,96 @@ static int encrypt_block(drew_tls_session_t sess, uint8_t **outbuf,
 	sess->outmac->functbl->clone(mac, sess->outmac, 0);
 	mac->functbl->reset(mac);
 	mac->functbl->update(mac, (const uint8_t *)&beseqnum, sizeof(beseqnum));
+	mac->functbl->update(mac, (const uint8_t *)&rec->type, 1);
+	mac->functbl->update(mac, &rec->version.major, 1);
+	mac->functbl->update(mac, &rec->version.minor, 1);
+	mac->functbl->update(mac, (const uint8_t *)&beinlen, sizeof(beinlen));
 	mac->functbl->update(mac, inbuf, inlen);
 	mac->functbl->final(mac, buf+inlen, 0);
 	mac->functbl->fini(mac, 0);
 
+	// Pad the data.
 	memset(buf+datalen-1, padval, padval+1);
 
 	mode->functbl->encryptfast(mode, encbuf, buf, totallen);
 
 	memset(buf, 0, totallen);
 
-	*outbuf = encbuf;
-	*outlen = totallen;
+	rec->fragment = encbuf;
+	rec->length = totallen;
 	sess->outseqnum++;
 
 	return 0;
 }
 
-static int encrypt_stream(drew_tls_session_t sess, uint8_t **outbuf,
-		uint16_t *outlen, const uint8_t *inbuf, uint16_t inlen)
+static int encrypt_stream(drew_tls_session_t sess, drew_tls_record_t *rec,
+		const uint8_t *inbuf, uint16_t inlen)
 {
 	int res = 0;
-	drew_mac_t *mac = sess->outmac;
+
+	return -DREW_ERR_NOT_IMPL;
+}
+
+// Note that this assumes the use of CBC.  It will have to be adjusted for GCM.
+static int decrypt_block(drew_tls_session_t sess, drew_tls_record_t *rec)
+{
+	int res = 0;
+	drew_mac_t macimpl, *mac = &macimpl;
+	drew_mode_t *mode = sess->inmode;
+	uint8_t *inbuf = rec->fragment;
+	uint16_t inlen = rec->length;
+	uint16_t beinlen = be_u16(inlen);
+	uint8_t *decbuf;
+	uint16_t declen, datalen = 0;
+	uint64_t beseqnum = be_u64(sess->inseqnum);
+	uint8_t padbyte;
+	uint8_t macbuf[128];
+
+	// This is really easy.  Return early here because it's trivial for the
+	// attacker not to mess this one up.
+	if (rec->length % sess->block_size)
+		return -DREW_TLS_ERR_DECRYPTION_FAILED;
+
+	if (!(decbuf = malloc(inlen)))
+		return -ENOMEM;
+
+	mode->functbl->decrypt(mode, decbuf, inbuf, inlen);
+
+	padbyte = decbuf[inlen - 1];
+	declen = inlen - (padbyte + 1);
+	for (size_t i = declen; i < inlen; i++)
+		if (decbuf[i] != padbyte)
+			res = -DREW_TLS_ERR_DECRYPTION_FAILED;
+
+	if (declen < (sess->hash_size + 1))
+		res = -DREW_TLS_ERR_DECRYPTION_FAILED;
+	else
+		datalen = declen - sess->hash_size;
+
+	sess->outmac->functbl->clone(mac, sess->outmac, 0);
+	mac->functbl->reset(mac);
+	mac->functbl->update(mac, (const uint8_t *)&beseqnum, sizeof(beseqnum));
+	mac->functbl->update(mac, (const uint8_t *)&rec->type, 1);
+	mac->functbl->update(mac, &rec->version.major, 1);
+	mac->functbl->update(mac, &rec->version.minor, 1);
+	mac->functbl->update(mac, (const uint8_t *)&beinlen, sizeof(beinlen));
+	mac->functbl->update(mac, decbuf, datalen);
+	mac->functbl->final(mac, macbuf, 0);
+	mac->functbl->fini(mac, 0);
+
+	if (memcmp(macbuf, decbuf+datalen, sess->hash_size))
+		res = -DREW_TLS_ERR_DECRYPTION_FAILED;
+
+	rec->length = datalen;
+	rec->fragment = decbuf;
+	sess->inseqnum++;
+
+	return 0;
+}
+
+static int decrypt_stream(drew_tls_session_t sess, drew_tls_record_t *rec)
+{
+	int res = 0;
 
 	return -DREW_ERR_NOT_IMPL;
 }
@@ -265,6 +334,7 @@ static int send_record(drew_tls_session_t sess, const uint8_t *buf,
 {
 	int res = 0;
 	drew_tls_record_t rec;
+	uint16_t belen;
 
 	// Records cannot be greater than 2^14.
 	if (len > 0x3000) {
@@ -286,13 +356,82 @@ static int send_record(drew_tls_session_t sess, const uint8_t *buf,
 			rec.fragment = buf;
 			break;
 		case cipher_type_stream:
-			RETFAIL(encrypt_stream(sess, &rec.fragment, &rec.length, buf, len));
+			RETFAIL(encrypt_stream(sess, &rec, buf, len));
 			break;
 		case cipher_type_block:
-			RETFAIL(encrypt_block(sess, &rec.fragment, &rec.length, buf, len));
+			RETFAIL(encrypt_block(sess, &rec, buf, len));
 			break;
 	}
+
+	belen = be_u16(rec.length);
+
+	if ((res = sess->data_outfunc(sess->data_outp, &rec.type, 1)))
+		return res;
+	if ((res = sess->data_outfunc(sess->data_outp, &rec.version.major, 1)))
+		return res;
+	if ((res = sess->data_outfunc(sess->data_outp, &rec.version.minor, 1)))
+		return res;
+	if ((res = sess->data_outfunc(sess->data_outp, &belen, sizeof(belen))))
+		return res;
+	if ((res = sess->data_outfunc(sess->data_outp, &rec.fragment, rec.length)))
+		return res;
 	
+	return res;
+}
+
+static int recv_bytes(drew_tls_session_t sess, uint8_t *buf, size_t len,
+		int flags)
+{
+	ssize_t nrecvd = 0;
+	while (nrecvd < len) {
+		ssize_t nbytes;
+		nbytes = sess->data_infunc(sess->data_inp, buf+nrecvd, len-nrecvd);
+		if (nbytes < 0)
+			return -errno;
+		nrecvd += nbytes;
+	}
+	return 0;
+}
+
+// This function must be externally locked.
+static int recv_record(drew_tls_session_t sess, drew_tls_record_t *rec)
+{
+	int res = 0;
+	uint8_t header[1 + 2 + 2];
+	uint8_t *recvd_data;
+	ssize_t nrecvd = 0;
+
+	if ((res = recv_bytes(sess, header, sizeof(header), 0)))
+		return res;
+
+	rec->type = header[0];
+	rec->version.major = header[1];
+	rec->version.minor = header[2];
+	memcpy(&rec->length, header+3, 2);
+	rec->length = be_u16(rec->length);
+
+	if (rec->length > ((1 << 14) + 2048))
+		return -DREW_TLS_ERR_RECORD_OVERFLOW;
+
+	if (!(recvd_data = rec->fragment = malloc(rec->length)))
+		return -ENOMEM;
+
+	if (!(res = recv_bytes(sess, rec->fragment, rec->length, 0)))
+		return res;
+	
+	switch (sess->enc_type) {
+		case cipher_type_null:
+			break;
+		case cipher_type_stream:
+			res = decrypt_stream(sess, &rec);
+			free(recvd_data);
+			break;
+		case cipher_type_block:
+			res = decrypt_block(sess, &rec);
+			free(recvd_data);
+			break;
+	}
+
 	return res;
 }
 
@@ -366,8 +505,37 @@ static int handshake_send_server_hello(drew_tls_session_t sess)
 	return -DREW_ERR_NOT_IMPL;
 }
 
+static int recv_handshake(drew_tls_session_t sess, uint8_t **buf,
+		size_t *len, uint8_t *type)
+{
+	int res = 0;
+	drew_tls_record_t rec;
+	uint8_t *data = rec.fragment;
+	uint32_t length;
+
+	res = recv_record(sess, &rec);
+
+	if (rec.length < 4)
+		return -DREW_TLS_ERR_ILLEGAL_PARAMETER;
+
+	*buf = rec.fragment;
+	*type = data[0];
+	BRD32(data, length);
+	*len = length;
+
+	return res;
+}
+
+
 static int handshake_recv_server_hello(drew_tls_session_t sess)
 {
+	int res = 0;
+	drew_tls_server_hello_t sh;
+
+	LOCK(sess);
+
+	UNLOCK(sess);
+
 	return -DREW_ERR_NOT_IMPL;
 }
 

@@ -21,6 +21,7 @@ struct drew_tls_session_s {
 	int enc_type;
 	const drew_loader_t *ldr;
 	drew_prng_t *prng;
+	uint8_t block_size;
 	uint8_t hash_size;
 	drew_mac_t *inmac;
 	drew_mode_t *inmode;
