@@ -53,14 +53,6 @@ void SerializedBuffer::Put(uint8_t x)
 	Put(&x, 1);
 }
 
-template<class T>
-void SerializedBuffer::Put(T x)
-{
-	uint8_t buf[sizeof(T)];
-	BigEndian::Copy(buf, &x, sizeof(T));
-	Put(buf, sizeof(T));
-}
-
 void SerializedBuffer::Put(const uint8_t *data, size_t datalen)
 {
 	ExtendIfNecessary(datalen);
@@ -77,14 +69,6 @@ void SerializedBuffer::Put(SerializedBuffer &sbuf)
 void SerializedBuffer::Get(uint8_t &x)
 {
 	Get(&x, 1);
-}
-
-template<class T>
-void SerializedBuffer::Get(T &x)
-{
-	uint8_t buf[sizeof(T)];
-	Get(buf, sizeof(T));
-	BigEndian::Copy(&x, buf, sizeof(T));
 }
 
 void SerializedBuffer::Get(uint8_t *data, size_t datalen)

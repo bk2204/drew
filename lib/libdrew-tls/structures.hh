@@ -41,10 +41,20 @@ class SerializedBuffer
 		void Put(const uint8_t *data, size_t datalen);
 		void Put(SerializedBuffer &sbuf);
 		template<class T>
-		void Put(T x);
+		void Put(T x)
+		{
+			uint8_t buf[sizeof(T)];
+			BigEndian::Copy(buf, &x, sizeof(T));
+			Put(buf, sizeof(T));
+		}
 		void Get(uint8_t &x);
 		template<class T>
-		void Get(T &x);
+		void Get(T &x)
+		{
+			uint8_t buf[sizeof(T)];
+			Get(buf, sizeof(T));
+			BigEndian::Copy(&x, buf, sizeof(T));
+		}
 		void Get(uint8_t *data, size_t datalen);
 		void Get(SerializedBuffer &sbuf, size_t datalen);
 		size_t GetLength() const;
