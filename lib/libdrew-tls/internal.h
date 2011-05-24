@@ -13,6 +13,8 @@
 #ifdef DREW_TLS_THREAD_SAFE
 #include <pthread.h>
 #define DREW_TLS_MUTEX_DECL() pthread_mutex_t mutex;
+#define DREW_TLS_MUTEX_INIT(x) pthread_mutex_init(&((x)->mutex), NULL);
+#define DREW_TLS_MUTEX_FINI(x) pthread_mutex_destroy(&((x)->mutex));
 #ifdef __cplusplus
 #define LOCK(x)		MutexLock(&((x)->mutex));
 #define UNLOCK(x)
@@ -22,6 +24,8 @@
 #endif
 #else
 #define DREW_TLS_MUTEX_DECL()
+#define DREW_TLS_MUTEX_INIT(x)
+#define DREW_TLS_MUTEX_FINI(x)
 #define LOCK(x)
 #define UNLOCK(x)
 #endif
