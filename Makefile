@@ -17,6 +17,16 @@ RM				?= rm
 ifdef PROF
 CLIKEFLAGS		+= -pg
 endif
+ifeq ($(CFG_THREAD_SAFE),y)
+CLIKEFLAGS		+= -D_REENTRANT -D_THREAD_SAFE
+endif
+ifeq ($(CFG_FORTIFY),y)
+CLIKEFLAGS		+= -D_FORTIFY_SOURCE=2
+endif
+ifeq ($(CFG_STACK_CHECK),y)
+CLIKEFLAGS		+= -fstack-protector
+endif
+
 CPPFLAGS		+= -Iinclude
 CLIKEFLAGS		+= -Wall -fPIC -O3 -g -pipe -D_POSIX_SOURCE=200112L -D_XOPEN_SOURCE=600
 CLIKEFLAGS		+= -Wunsafe-loop-optimizations -funsafe-loop-optimizations

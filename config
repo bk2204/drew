@@ -70,3 +70,8 @@ CFG_RSASIG		= m
 CFG_DSA			= m
 
 CFG_LIBMD		= y
+
+## Global build configuration.
+CFG_THREAD_SAFE	= y
+CFG_FORTIFY		= n
+CFG_STACK_CHECK	= n
