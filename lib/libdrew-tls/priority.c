@@ -2,6 +2,7 @@
 
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <drew/plugin.h>
 
@@ -197,4 +198,32 @@ int drew_tls_priority_fini(drew_tls_priority_t *prio)
 int drew_tls_priority_set_string(drew_tls_priority_t prio, const char *s)
 {
 	return -DREW_ERR_NOT_IMPL;
+}
+
+int drew_tls_priority_get_cipher_suites(drew_tls_priority_t prio,
+		drew_tls_cipher_suite_t **suites, size_t *nsuites)
+{
+	int res = 0;
+	LOCK(prio);
+
+	// Yes, this is two-pass.
+	size_t n = 0;
+
+	for (size_t i = 0; i < DIM(prio->entries); i++)
+		if (!prio->entries[i].flags)
+			n++;
+
+	drew_tls_cipher_suite_t *buf;
+	if (!(buf = malloc(sizeof(*buf) * n)))
+		URETFAIL(prio, -ENOMEM);
+	
+	for (size_t i = 0, j = 0; i < DIM(prio->entries); i++)
+		if (!prio->entries[i].flags)
+			memcpy(buf[j++].val, prio->entries[i].cs->val, sizeof(buf[j].val));
+
+	*nsuites = n;
+	*suites = buf;
+
+	UNLOCK(prio);
+	return 0;
 }
