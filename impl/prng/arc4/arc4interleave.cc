@@ -18,10 +18,10 @@
  * are intertwined because of the interleaving.
  */
 
-// This is the largest prime less than 2**20.
-#define NBYTES 1048573
-// This is the smallest prime greater than 3072.
-#define NDROP 3079
+// This is the largest prime less than 2**21.
+#define NBYTES 2097143
+// This is the smallest prime greater than 3072 * 2.
+#define NDROP 6151
 // This is a non-blocking random device.  If you don't have one, use /dev/null.
 #define DEVICE "/dev/urandom"
 
@@ -155,8 +155,9 @@ uint8_t drew::ARC4Interleave::GetByte()
 
 uint8_t drew::ARC4Interleave::InternalGetByte()
 {
+	uint8_t b1 = m_ks[m_index & 3]->GetByte();
 	m_index++;
-	return m_ks[m_index & 3]->GetByte();
+	return b1 ^ m_ks[m_index & 3]->GetByte();
 }
 
 int drew::ARC4Interleave::AddRandomData(const uint8_t *buf, size_t len, size_t entropy)
@@ -176,10 +177,10 @@ int drew::ARC4Interleave::AddRandomData(const uint8_t *buf, size_t len, size_t e
 		len -= nbytes;
 	}
 
-	for (size_t i = 0; i < NDROP * 4; i++)
+	for (size_t i = 0; i < NDROP; i++)
 		InternalGetByte();
 
-	m_cnt = NBYTES * 4;
+	m_cnt = NBYTES;
 	m_entropy += entropy;
 	return 0;
 }
