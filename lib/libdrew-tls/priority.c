@@ -149,9 +149,11 @@ static const int sensible_cipher[] = {
 	-4 /* C_ARIA256 */
 };
 
+// We want to sort from most preferable to least preferable, so the comparison
+// function should mark more desirable things as "smaller" and thus return -1.
 #define COMPARE(x, y) do { \
 	int tmp = (x) - (y); \
-	if (tmp) return tmp > 0 ? 1 : -1; \
+	if (tmp) return tmp < 0 ? 1 : -1; \
 } while (0)
 
 static int sensible_compare(const void *ap, const void *bp)
