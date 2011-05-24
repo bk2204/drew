@@ -9,16 +9,20 @@ extern "C" {
 #include <stdint.h>
 #include <sys/types.h>
 
-typedef struct drew_tls_priority_s {
-	int dummy;
-} *drew_tls_priority_t;
+struct drew_tls_priority_s;
+
+typedef struct drew_tls_priority_s *drew_tls_priority_t;
 
 typedef struct {
 	uint8_t val[2];
 } drew_tls_cipher_suite_t;
 
+int drew_tls_priority_init(drew_tls_priority_t *prio);
 int drew_tls_priority_get_cipher_suites(drew_tls_priority_t prio,
 		drew_tls_cipher_suite_t **suites, size_t *nsuites);
+int drew_tls_priority_set_sensible_default(drew_tls_priority_t prio);
+int drew_tls_priority_fini(drew_tls_priority_t *prio);
+int drew_tls_priority_set_string(drew_tls_priority_t prio, const char *s);
 
 #ifdef __cplusplus
 }
