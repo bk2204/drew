@@ -98,6 +98,7 @@ struct entry {
 
 struct drew_tls_priority_s {
 	struct entry entries[DIM(implemented)];
+	DREW_TLS_MUTEX_DECL()
 };
 
 int drew_tls_priority_init(drew_tls_priority_t *prio)
@@ -105,6 +106,8 @@ int drew_tls_priority_init(drew_tls_priority_t *prio)
 	drew_tls_priority_t p;
 	if (!(p = malloc(sizeof(*p))))
 		return -ENOMEM;
+
+	DREW_TLS_MUTEX_INIT(p);
 
 	for (size_t i = 0; i < DIM(implemented); i++) {
 		const struct item *cs = implemented+i;
@@ -171,8 +174,12 @@ static int sensible_compare(const void *ap, const void *bp)
 
 int drew_tls_priority_set_sensible_default(drew_tls_priority_t prio)
 {
+	LOCK(prio);
+
 	qsort(prio->entries, DIM(prio->entries), sizeof(prio->entries[0]),
 			sensible_compare);
+
+	UNLOCK(prio);
 	return 0;
 }
 
@@ -180,6 +187,8 @@ int drew_tls_priority_fini(drew_tls_priority_t *prio)
 {
 	if (!prio)
 		return -DREW_ERR_INVALID;
+
+	DREW_TLS_MUTEX_FINI(*prio);
 
 	free(*prio);
 	return 0;
