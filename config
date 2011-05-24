@@ -57,6 +57,7 @@ CFG_RABBIT		= m
 
 ## PRNGs.
 CFG_ARC4STIR	= m
+CFG_ARC4IL		= m
 CFG_SP80090		= m
 
 ## Bignum implementations.
