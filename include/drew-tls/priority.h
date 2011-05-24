@@ -9,7 +9,7 @@ extern "C" {
 #include <stdint.h>
 #include <sys/types.h>
 
-typedef struct {
+typedef struct drew_tls_priority_s {
 	int dummy;
 } *drew_tls_priority_t;
 
