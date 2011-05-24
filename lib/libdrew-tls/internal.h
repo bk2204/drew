@@ -3,6 +3,8 @@
 
 #define DREW_TLS_IN_BUILD 1
 
+#define DIM(x) (sizeof(x)/sizeof((x)[0]))
+
 #define RETFAIL(x) do { if ((res = (x))) return res; } while (0)
 #define URETFAIL(m, x) do { \
 	if ((res = (x))) { UNLOCK(m); return res; } \
