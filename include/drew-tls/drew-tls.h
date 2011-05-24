@@ -4,13 +4,6 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#ifdef DREW_TLS_THREAD_SAFE
-#include <pthread.h>
-#define DREW_TLS_MUTEX_DECL() pthread_mutex_t mutex;
-#else
-#define DREW_TLS_MUTEX_DECL()
-#endif
-
 #define DREW_TLS_ERR_CLOSE_NOTIFY		0x40000
 #define DREW_TLS_ERR_DECRYPTION_FAILED	0x40015
 #define DREW_TLS_ERR_RECORD_OVERFLOW	0x40016
