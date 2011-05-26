@@ -500,8 +500,44 @@ static int handshake_recv_server_hello(drew_tls_session_t sess)
 {
 	int res = 0;
 	drew_tls_server_hello_t sh;
+	SerializedBuffer data;
+	uint32_t length;
+	uint8_t type;
+	ProtocolVersion pv;
+	size_t minlength = 2 + 32 + 2 + 1 + 1;
+	uint8_t random[32];
+	drew_tls_cipher_suite_t cs;
 
 	LOCK(sess);
+
+	URETFAIL(sess, recv_handshake(sess, data, &length, &type));
+
+	// The session ID can be up to 32 bytes.
+	if (length < minlength || length > (minlength + 32))
+		URETFAIL(sess, -DREW_TLS_ERR_ILLEGAL_PARAMETER);
+
+	pv.ReadFromBuffer(data);
+
+	if (pv.major != 3)
+		URETFAIL(sess, -DREW_TLS_ERR_HANDSHAKE_FAILURE);
+	if (pv.minor != 1)
+		URETFAIL(sess, -DREW_TLS_ERR_HANDSHAKE_FAILURE);
+	sess->protover.major = pv.major;
+	sess->protover.minor = pv.minor;
+
+	data.Get(random, sizeof(random));
+	data.Get(sess->session_id.length);
+
+	if (length != minlength + sess->session_id.length)
+		URETFAIL(sess, -DREW_TLS_ERR_ILLEGAL_PARAMETER);
+
+	data.Get(sess->session_id.sessionid, sess->session_id.length);
+	data.Get(cs.val, sizeof(cs.val));
+	uint8_t compress;
+	data.Get(compress);
+
+	if (compress != 0)
+		URETFAIL(sess, -DREW_TLS_ERR_HANDSHAKE_FAILURE);
 
 	UNLOCK(sess);
 
