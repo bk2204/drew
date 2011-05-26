@@ -17,7 +17,7 @@ extern "C" {
 
 typedef struct {
 	uint8_t length;
-	uint8_t *sessionid;
+	uint8_t sessionid[32];
 } drew_tls_session_id_t;
 
 struct drew_tls_session_s;
