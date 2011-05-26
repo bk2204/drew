@@ -486,10 +486,9 @@ static int recv_handshake(drew_tls_session_t sess, SerializedBuffer &buf,
 	// footwork to get both. 
 	buf = rec.data;
 	buf.ResetPosition();
-	buf.Get(*length);
-	buf.ResetPosition();
 	buf.Get(*type);
 	buf.ResetPosition();
+	buf.Get(*length);
 
 	*length &= 0xffffff;
 
