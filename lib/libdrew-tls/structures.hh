@@ -133,4 +133,25 @@ struct Record
 	}
 };
 
+struct AlertMessage
+{
+	uint8_t level;
+	uint8_t description;
+	AlertMessage() {}
+	AlertMessage(const Record &rec)
+	{
+		SerializedBuffer b = rec.data;
+		b.ResetPosition();
+		b.Get(level);
+		b.Get(description);
+	}
+};
+
+struct HandshakeMessage
+{
+	uint8_t type;
+	uint32_t length;
+	SerializedBuffer data;
+};
+
 #endif
