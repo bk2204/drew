@@ -200,7 +200,7 @@ out:
 		free(p->name);
 		free(p->metadata);
 	}
-	return err;
+	return err ? err : offset;
 }
 
 int drew_loader_new(drew_loader_t **ldrp)
