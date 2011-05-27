@@ -221,7 +221,32 @@ int drew_loader_new(drew_loader_t **ldrp)
 
 int drew_loader_free(drew_loader_t **ldrp)
 {
-	return -DREW_ERR_NOT_IMPL;
+	drew_loader_t *ldr;
+
+	if (!ldrp)
+		return -DREW_ERR_INVALID;
+
+	ldr = *ldrp;
+
+	for (int i = 0; i < ldr->nlibs; i++) {
+		free(ldr->lib[i].name);
+		free(ldr->lib[i].path);
+		close_library(ldr->lib[i].handle);
+	}
+	free(ldr->lib);
+
+	for (int i = 0; i < ldr->nplugins; i++) {
+		if (!(ldr->plugin[i].flags & FLAG_PLUGIN_OK))
+			continue;
+		free(ldr->plugin[i].name);
+		free(ldr->plugin[i].functbl);
+		free(ldr->plugin[i].metadata);
+	}
+	free(ldr->plugin);
+	free(ldr);
+
+	*ldrp = NULL;
+	return 0;
 }
 
 int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
