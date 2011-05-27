@@ -258,8 +258,7 @@ int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
 
 	if ((err = load_library(ldr, plugin, path, &lib)))
 		return err;
-	err = load_library_info(ldr, lib);
-	return err;
+	return load_library_info(ldr, lib);
 }
 
 static inline bool is_valid_id(const drew_loader_t *ldr, int id)
