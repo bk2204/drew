@@ -8,11 +8,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Set if the plugin has been properly loaded.
+#define FLAG_PLUGIN_OK		1
+
 typedef int (*plugin_api_t)(void *, int, int, void *);
 
 typedef void *functbl_t;
 typedef void *handle_t;
-
 
 // There is one of these per drew_plugin_info interface.
 typedef struct {
@@ -63,7 +65,7 @@ static plugin_api_t get_api(handle_t handle)
  * library is NULL, try to load the current executable instead.
  */
 static int load_library(drew_loader_t *ldr, const char *library,
-		const char *path)
+		const char *path, library_t **libp)
 {
 	int err = 0;
 	library_t *p, *lib;
@@ -100,6 +102,7 @@ static int load_library(drew_loader_t *ldr, const char *library,
 		goto out;
 
 	err = 0;
+	*libp = lib;
 out:
 	if (err) {
 		if (lib->handle)
@@ -111,9 +114,90 @@ out:
 	return err;
 }
 
+/* Load all the info from the library, including all plugin-specific
+ * information.
+ */
 static int load_library_info(drew_loader_t *ldr, library_t *lib)
 {
-	return -DREW_ERR_NOT_IMPL;
+	int err = -DREW_ERR_ENUMERATION;
+	int offset = ldr->nplugins;
+	plugin_t *p;
+
+	lib->nplugins = lib->api(ldr, DREW_LOADER_LOOKUP_NAME, 0, NULL);
+	if (lib->nplugins < 0)
+		goto out;
+
+	err = -ENOMEM;
+	p = realloc(ldr->lib, sizeof(*p) * (ldr->nplugins + lib->nplugins));
+	if (!p)
+		goto out;
+	ldr->nplugins += lib->nplugins;
+	ldr->plugins = p;
+
+	p += offset;
+	for (int i = 0; i < lib->nplugins; i++, p++) {
+		int tblsize, namesize, mdsize;
+
+		memset(p, 0, sizeof(*p));
+
+		err = -DREW_ERR_ENUMERATION;
+		p->type = lib->api(ldr, DREW_LOADER_GET_TYPE, i, NULL);
+		if (p->type < 0)
+			goto out;
+
+		tblsize = lib->api(ldr, DREW_LOADER_GET_FUNCTBL_SIZE, i, NULL);
+		if (tblsize <= 0 || tblsize % sizeof(void *))
+			goto out;
+
+		// Includes terminating NUL.
+		namesize = lib->api(ldr, DREW_LOADER_GET_NAME_SIZE, i, NULL);
+		if (namesize <= 0)
+			goto out;
+
+		// Metadata are optional, so don't error out if they're not available.
+		mdsize = lib->api(ldr, DREW_LOADER_GET_NAME_SIZE, i, NULL);
+		if (mdsize < 0)
+			mdsize = 0;
+
+		err = -ENOMEM;
+		p->functbl = malloc(tblsize);
+		if (!p->functbl)
+			goto out;
+
+		p->metadata = malloc(mdsize);
+		if (mdsize && !p->metadata)
+			goto out;
+
+		p->name = malloc(namesize);
+		if (!p->name)
+			goto out;
+
+		err = -DREW_ERR_FUNCTION;
+		if (lib->api(ldr, DREW_LOADER_GET_FUNCTBL, i, p->functbl))
+			goto out;
+
+		err = -DREW_ERR_ENUMERATION;
+		if (lib->api(ldr, DREW_LOADER_GET_NAME, i, p->name))
+			goto out;
+		p->name[namesize-1] = '\0'; // Just in case.
+
+		if (mdsize)
+			if (lib->api(ldr, DREW_LOADER_GET_METADATA, id, p->metadata))
+				goto out;
+		p->nmetadata = mdsize / sizeof(drew_metadata_t);
+
+		p->lib = lib;
+		p->id = offset + i;
+		p->flags = FLAG_PLUGIN_OK;
+	}
+	err = 0;
+out:
+	if (err) {
+		free(p->functbl);
+		free(p->name);
+		free(p->metadata);
+	}
+	return err;
 }
 
 int drew_loader_new(drew_loader_t **ldrp)
@@ -141,7 +225,13 @@ int drew_loader_free(drew_loader_t **ldrp)
 int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
 		const char *path)
 {
-	return -DREW_ERR_NOT_IMPL;
+	int err = 0;
+	library_t *lib;
+
+	if ((err = load_library(ldr, plugin, path, &lib)))
+		return err;
+	err = load_library_info(ldr, lib);
+	return err;
 }
 
 int drew_loader_get_nplugins(const drew_loader_t *ldr, int id)
