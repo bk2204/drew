@@ -4,6 +4,7 @@
 
 #include <dlfcn.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -235,37 +236,100 @@ int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
 	return err;
 }
 
+static inline bool is_valid_id(const drew_loader_t *ldr, int id)
+{
+	if (!ldr)
+		return false;
+	if (id < 0)
+		return false;
+	if (id >= ldr->nplugins)
+		return false;
+	if (!(ldr->plugin[id].flags & FLAG_PLUGIN_OK))
+		return false;
+	return true;
+}
+
+/* This function queries the number of plugins in the library in which the
+ * plugin with ID id is.
+ */
 int drew_loader_get_nplugins(const drew_loader_t *ldr, int id)
 {
-	return -DREW_ERR_NOT_IMPL;
+	if (!ldr)
+		return -DREW_ERR_INVALID;
+	if (!is_valid_id(ldr, id))
+		return -DREW_ERR_INVALID;
+
+	return ldr->plugin[id].lib->nplugins;
 }
 
 int drew_loader_get_type(const drew_loader_t *ldr, int id)
 {
-	return -DREW_ERR_NOT_IMPL;
+	if (!ldr)
+		return -DREW_ERR_INVALID;
+	if (!is_valid_id(ldr, id))
+		return -DREW_ERR_INVALID;
+
+	return ldr->plugin[id].type;
 }
 
 int drew_loader_get_functbl(const drew_loader_t *ldr, int id, const void **tbl)
 {
-	return -DREW_ERR_NOT_IMPL;
+	if (!ldr)
+		return -DREW_ERR_INVALID;
+	if (!is_valid_id(ldr, id))
+		return -DREW_ERR_INVALID;
+
+	if (tbl)
+		*tbl = ldr->plugin[id].functbl;
+	return ldr->plugin[id].functblsize;
 }
 
 int drew_loader_get_algo_name(const drew_loader_t *ldr, int id,
 		const char **namep)
 {
-	return -DREW_ERR_NOT_IMPL;
+	if (!ldr)
+		return -DREW_ERR_INVALID;
+	if (!is_valid_id(ldr, id))
+		return -DREW_ERR_INVALID;
+
+	*namep = ldr->plugin[id].name;
+	return 0;
 }
 
 int drew_loader_lookup_by_name(const drew_loader_t *ldr, const char *name,
 		int start, int end)
 {
-	return -DREW_ERR_NOT_IMPL;
+	if (!ldr)
+		return -DREW_ERR_INVALID;
+	if (end == -1)
+		end = ldr->nplugins;
+
+	for (int i = start; i < end; i++) {
+		if (!is_valid_id(ldr, i))
+			continue;
+		if (!strcmp(ldr->plugin[i].name, name))
+			return i;
+	}
+
+	return -DREW_ERR_NONEXISTENT;
 }
 
 int drew_loader_lookup_by_type(const drew_loader_t *ldr, int type, int start,
 		int end)
 {
-	return -DREW_ERR_NOT_IMPL;
+	if (!ldr)
+		return -DREW_ERR_INVALID;
+	if (end == -1)
+		end = ldr->nplugins;
+
+	for (int i = start; i < end; i++) {
+		if (!is_valid_id(ldr, i))
+			continue;
+		if (ldr->plugin[i].type == type)
+			return i;
+	}
+
+	return -DREW_ERR_NONEXISTENT;
 }
 
 int drew_loader_get_metadata(const drew_loader_t *ldr, int id, int item,
