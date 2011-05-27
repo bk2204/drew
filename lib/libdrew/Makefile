@@ -2,14 +2,9 @@ DREW_DIR		:= lib/libdrew
 DREW_SONAME		:= libdrew.so.0
 DREW_SYMLINK	:= $(basename $(DREW_SONAME))
 
-ifneq ($(CFG_NEW_DREW),y)
-CFG_OLD_DREW				:= y
-endif
+DREW_OBJS		:= $(DREW_DIR)/drew.o
 
-DREW_OBJS-$(CFG_OLD_DREW)	+= $(DREW_DIR)/plugin.o
-DREW_OBJS-$(CFG_NEW_DREW)	+= $(DREW_DIR)/drew.o
-
-${DREW_DIR}/${DREW_SONAME}: $(DREW_OBJS-y)
+${DREW_DIR}/${DREW_SONAME}: $(DREW_OBJS)
 	${CC} ${CFLAGS} ${LIBCFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
 ${DREW_SONAME}: ${DREW_DIR}/${DREW_SONAME}
