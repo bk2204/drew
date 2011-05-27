@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 // Set if the plugin has been properly loaded.
 #define FLAG_PLUGIN_OK		1
@@ -360,8 +361,89 @@ int drew_loader_lookup_by_type(const drew_loader_t *ldr, int type, int start,
 	return -DREW_ERR_NONEXISTENT;
 }
 
+/* This will eventually provide an rdf:seeAlso to an .rdf file with the same
+ * basename as the plugin, and potentially provide some metadata that may
+ * already be available, such as algorithm information and so forth.
+ */
+static int special_metadata(const drew_loader_t *ldr, int id,
+		int item, drew_metadata_t *meta)
+{
+	if (item > 0)
+		return -DREW_ERR_NONEXISTENT;
+
+	const char *path = ldr->plugin[id].lib->path;
+	if (!path)
+		return -DREW_ERR_NONEXISTENT;
+	const char *prefix = "file://";
+	const size_t prefixlen = strlen(prefix);
+	struct stat st;
+	const char *suffix = ".rdf";
+	const size_t suffixlen = strlen(suffix);
+	size_t pathlen = strlen(path);
+	char *rdfpath = malloc(pathlen + suffixlen + 1);
+
+	strncpy(rdfpath, ldr->plugin[id].lib->path, pathlen);
+	strncpy(rdfpath+pathlen, suffix, suffixlen + 1);
+
+	size_t sz = strlen(rdfpath);
+
+	if (!stat(rdfpath, &st)) {
+		if (meta) {
+			meta->version = 0;
+			meta->predicate =
+				strdup("http://www.w3.org/2000/01/rdf-schema#seeAlso");
+			meta->type = DREW_LOADER_MD_URI;
+			meta->object = malloc(strlen(prefix) + strlen(rdfpath) + 1);
+			strncpy(meta->object, prefix, prefixlen);
+			strncpy(meta->object+prefixlen, rdfpath, sz+1);
+		}
+		free(rdfpath);
+		return 0;
+	}
+	free(rdfpath);
+	return -DREW_ERR_NONEXISTENT;
+}
+
 int drew_loader_get_metadata(const drew_loader_t *ldr, int id, int item,
 		drew_metadata_t *meta)
 {
-	return -DREW_ERR_NOT_IMPL;
+	drew_metadata_t md;
+	int retval = 0;
+
+	if (!ldr)
+		return -DREW_ERR_INVALID;
+
+	if (!is_valid_id(ldr, id))
+		return -DREW_ERR_NONEXISTENT;
+
+	if (item == -1) {
+		retval = special_metadata(ldr, id,
+				(item - ldr->plugin[id].nmetadata), NULL);
+		
+		return ldr->plugin[id].nmetadata + (retval == 0);
+	}
+
+	if (item < 0)
+		return -DREW_ERR_INVALID;
+	
+	if (item < ldr->plugin[id].nmetadata) {
+		memcpy(meta, ldr->plugin[id].metadata + item, sizeof(*meta));
+		meta->predicate = strdup(meta->predicate);
+		meta->object = strdup(meta->object);
+		return 0;
+	}
+	else {
+		memset(&md, 0, sizeof(md));
+		retval = special_metadata(ldr, id,
+				(item - ldr->plugin[id].nmetadata), &md);
+		if (retval < 0) {
+			free(md.predicate);
+			free(md.object);
+			return -DREW_ERR_NONEXISTENT;
+		}
+		memcpy(meta, &md, sizeof(*meta));
+		return 0;
+	}
+
+	return -DREW_ERR_NONEXISTENT;
 }
