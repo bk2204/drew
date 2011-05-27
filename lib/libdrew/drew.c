@@ -21,8 +21,6 @@ typedef struct {
 	plugin_api_t api;
 	handle_t handle;
 	int nplugins;
-	int nmetadata;
-	drew_metadata_t *metadata;
 } library_t;
 
 // There is one of these per plugin (that is, item with a functbl).
@@ -32,6 +30,9 @@ typedef struct {
 	functbl_t functbl;
 	int id;
 	int type;
+	int flags;
+	int nmetadata;
+	drew_metadata_t *metadata;
 } plugin_t;
 
 struct drew_loader_s {
