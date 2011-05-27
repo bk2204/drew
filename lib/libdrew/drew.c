@@ -123,14 +123,14 @@ static int load_library_info(drew_loader_t *ldr, library_t *lib)
 {
 	int err = -DREW_ERR_ENUMERATION;
 	int offset = ldr->nplugins;
-	plugin_t *p;
+	plugin_t *p = NULL;
 
-	lib->nplugins = lib->api(ldr, DREW_LOADER_LOOKUP_NAME, 0, NULL);
+	lib->nplugins = lib->api(ldr, DREW_LOADER_GET_NPLUGINS, 0, NULL);
 	if (lib->nplugins < 0)
 		goto out;
 
 	err = -ENOMEM;
-	p = realloc(ldr->lib, sizeof(*p) * (ldr->nplugins + lib->nplugins));
+	p = realloc(ldr->plugin, sizeof(*p) * (ldr->nplugins + lib->nplugins));
 	if (!p)
 		goto out;
 	ldr->nplugins += lib->nplugins;
@@ -157,7 +157,7 @@ static int load_library_info(drew_loader_t *ldr, library_t *lib)
 			goto out;
 
 		// Metadata are optional, so don't error out if they're not available.
-		mdsize = lib->api(ldr, DREW_LOADER_GET_NAME_SIZE, i, NULL);
+		mdsize = lib->api(ldr, DREW_LOADER_GET_METADATA_SIZE, i, NULL);
 		if (mdsize < 0)
 			mdsize = 0;
 
@@ -194,7 +194,7 @@ static int load_library_info(drew_loader_t *ldr, library_t *lib)
 	}
 	err = 0;
 out:
-	if (err) {
+	if (err && p) {
 		free(p->functbl);
 		free(p->name);
 		free(p->metadata);
