@@ -249,13 +249,16 @@ static inline bool is_valid_id(const drew_loader_t *ldr, int id)
 	return true;
 }
 
-/* This function queries the number of plugins in the library in which the
- * plugin with ID id is.
+/* This function queries the number of plugins in the library which contains the
+ * plugin with ID id.  As a special case, if id is -1, return the total number
+ * of plugins loaded.
  */
 int drew_loader_get_nplugins(const drew_loader_t *ldr, int id)
 {
 	if (!ldr)
 		return -DREW_ERR_INVALID;
+	if (id == -1)
+		return ldr->nplugins;
 	if (!is_valid_id(ldr, id))
 		return -DREW_ERR_INVALID;
 
