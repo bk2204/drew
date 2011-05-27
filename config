@@ -65,5 +65,3 @@ CFG_DSA			= m
 CFG_LIBMD		= y
 
 ## Miscellaneous build options.
-# Should we build with the new plugin loader?
-CFG_NEW_DREW	= n
