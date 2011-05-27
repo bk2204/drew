@@ -16,36 +16,8 @@ typedef struct {
 	char *object;
 } drew_metadata_t;
 
-#if defined(DREW_IN_BUILD) && defined(DREW_IN_BUILD_PLUGIN_C)
-typedef struct {
-	int version;
-	int flags;
-	char *name;		/* Name of the plugin. */
-	char *aname;	/* Algorithm name. */
-	char *path;
-	void *handle;
-	drew_metadata_t *metadata;
-	int nmeta;
-	int id;
-	int nplugins;
-	int type;
-	int size;
-	void **functbl;
-} drew_loader_entry_t;
-
-typedef struct {
-	int version;
-	int flags;
-	int nentries;
-	drew_loader_entry_t *entry;
-} drew_loader_t;
-#elif defined(DREW_IN_BUILD)
 struct drew_loader_s;
 typedef struct drew_loader_s drew_loader_t;
-#else
-typedef void drew_loader_entry_t;
-typedef void drew_loader_t;
-#endif
 
 #define DREW_LOADER_LOOKUP_NAME 2
 #define DREW_LOADER_GET_NPLUGINS 3

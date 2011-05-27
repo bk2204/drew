@@ -1,5 +1,4 @@
 #include "internal.h"
-#define DREW_IN_BUILD_DREW_C
 #include <drew/drew.h>
 
 #include <dlfcn.h>
