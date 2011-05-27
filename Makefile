@@ -32,6 +32,7 @@ CLIKEFLAGS		+= -Wall -fPIC -O3 -g -pipe -D_POSIX_SOURCE=200112L -D_XOPEN_SOURCE=
 CLIKEFLAGS		+= -Wunsafe-loop-optimizations -funsafe-loop-optimizations
 CLIKEFLAGS		+= -fmodulo-sched -fmodulo-sched-allow-regmoves
 CLIKEFLAGS		+= -fsched-pressure
+CLIKEFLAGS		+= -floop-interchange -floop-block
 CLIKEFLAGS		+= ${CFLAGS-y}
 CXXFLAGS		:= ${CLIKEFLAGS}
 CFLAGS			:= ${CLIKEFLAGS}
