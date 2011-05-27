@@ -365,4 +365,3 @@ int drew_loader_get_metadata(const drew_loader_t *ldr, int id, int item,
 {
 	return -DREW_ERR_NOT_IMPL;
 }
-
