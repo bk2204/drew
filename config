@@ -69,6 +69,7 @@ CFG_RSAENC		= m
 CFG_RSASIG		= m
 CFG_DSA			= m
 
+## Additional libraries using libdrew.
 CFG_LIBMD		= y
 
 ## Global build configuration.
