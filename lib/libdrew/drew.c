@@ -30,6 +30,7 @@ typedef struct {
 	char *name;
 	library_t *lib;
 	functbl_t functbl;
+	int functblsize;
 	int id;
 	int type;
 	int flags;
@@ -136,7 +137,7 @@ static int load_library_info(drew_loader_t *ldr, library_t *lib)
 
 	p += offset;
 	for (int i = 0; i < lib->nplugins; i++, p++) {
-		int tblsize, namesize, mdsize;
+		int namesize, mdsize;
 
 		memset(p, 0, sizeof(*p));
 
@@ -145,8 +146,8 @@ static int load_library_info(drew_loader_t *ldr, library_t *lib)
 		if (p->type < 0)
 			goto out;
 
-		tblsize = lib->api(ldr, DREW_LOADER_GET_FUNCTBL_SIZE, i, NULL);
-		if (tblsize <= 0 || tblsize % sizeof(void *))
+		p->functblsize = lib->api(ldr, DREW_LOADER_GET_FUNCTBL_SIZE, i, NULL);
+		if (p->functblsize <= 0 || p->functblsize % sizeof(void *))
 			goto out;
 
 		// Includes terminating NUL.
@@ -160,7 +161,7 @@ static int load_library_info(drew_loader_t *ldr, library_t *lib)
 			mdsize = 0;
 
 		err = -ENOMEM;
-		p->functbl = malloc(tblsize);
+		p->functbl = malloc(p->functblsize);
 		if (!p->functbl)
 			goto out;
 
