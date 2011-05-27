@@ -132,7 +132,7 @@ static int load_library_info(drew_loader_t *ldr, library_t *lib)
 	if (!p)
 		goto out;
 	ldr->nplugins += lib->nplugins;
-	ldr->plugins = p;
+	ldr->plugin = p;
 
 	p += offset;
 	for (int i = 0; i < lib->nplugins; i++, p++) {
