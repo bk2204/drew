@@ -183,7 +183,7 @@ static int load_library_info(drew_loader_t *ldr, library_t *lib)
 		p->name[namesize-1] = '\0'; // Just in case.
 
 		if (mdsize)
-			if (lib->api(ldr, DREW_LOADER_GET_METADATA, id, p->metadata))
+			if (lib->api(ldr, DREW_LOADER_GET_METADATA, i, p->metadata))
 				goto out;
 		p->nmetadata = mdsize / sizeof(drew_metadata_t);
 
