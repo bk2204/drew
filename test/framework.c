@@ -214,7 +214,7 @@ int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
 	tes.ids = NULL;
 
 	if (!filename)
-		return 0;
+		return -DREW_ERR_NOT_IMPL;
 
 	if (!(fp = fopen(filename, "r")))
 		return errno;
