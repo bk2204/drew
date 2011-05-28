@@ -264,7 +264,7 @@ void drew::DRBG::GeneratePersonalizationString(uint8_t *buf, size_t *len)
 #ifdef CLOCK_THREAD_CPUTIME_ID
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &data.tt);
 #endif
-	memcpy(&buf, &data, finallen);
+	memcpy(buf, &data, finallen);
 	*len = finallen;
 }
 
