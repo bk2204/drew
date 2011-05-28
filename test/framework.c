@@ -214,10 +214,10 @@ int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
 	tes.ids = NULL;
 
 	if (!filename)
-		return -DREW_ERR_NOT_IMPL;
+		return print_test_results(-DREW_ERR_NOT_IMPL, NULL);
 
 	if (!(fp = fopen(filename, "r")))
-		return errno;
+		return print_test_results(-errno, NULL);
 
 	while (fgets(buf, sizeof(buf), fp)) {
 		char *p = buf, *tok;
