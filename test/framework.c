@@ -267,6 +267,26 @@ out:
 	return tes.results;
 }
 
+int usage(const char *argv0, int retval)
+{
+	FILE *fp = retval ? stderr : stdout;
+	fprintf(fp, "usage:\n%s [-hspti] [options]\n", argv0);
+	fprintf(fp,
+			"\t-h\t: print this help message\n"
+			"\t-s\t: perform a speed test (default)\n"
+			"\t-p\t: perform a test for compliance to the API\n"
+			"\t-t\t: perform a test using a test vector file\n"
+			"\t-i\t: perform a test using code in the plugin\n\n");
+	fprintf(fp,
+			"\t-f\t: treat unimplemented tests as errors\n"
+			"\t-a algo\t: specify a secondary algorithm\n"
+			"\t-c size\t: process data in chunks of size bytes\n"
+			"\t-n num\t: process num chunks\n"
+			"\t-o algo\t: only use algorithm algo\n"
+			"\t-r file\t: use file for test vectors\n");
+	return retval;
+}
+
 int main(int argc, char **argv)
 {
 	int error = 0;
@@ -286,8 +306,13 @@ int main(int argc, char **argv)
 
 	drew_loader_new(&ldr);
 
-	while ((opt = getopt(argc, argv, "stipfa:c:n:o:r:")) != -1) {
+	while ((opt = getopt(argc, argv, "hstipfa:c:n:o:r:")) != -1) {
 		switch (opt) {
+			case '?':
+			case ':':
+				return usage(argv[0], 2);
+			case 'h':
+				return usage(argv[0], 0);
 			case 's':
 				mode = MODE_SPEED;
 				break;
