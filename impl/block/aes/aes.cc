@@ -176,8 +176,10 @@ static int aes256test(void *p, const drew_loader_t *ldr)
 
 const size_t drew::AES::m_nb = (block_size / 4);
 
-#define GETU32(pt) (((uint32_t)(pt)[0] << 24) ^ ((uint32_t)(pt)[1] << 16) ^ ((uint32_t)(pt)[2] <<  8) ^ ((uint32_t)(pt)[3]))
-#define PUTU32(ct, st) { (ct)[0] = (uint8_t)((st) >> 24); (ct)[1] = (uint8_t)((st) >> 16); (ct)[2] = (uint8_t)((st) >>  8); (ct)[3] = (uint8_t)(st); }
+typedef drew::AES::endian_t E;
+
+#define GETU32(pt) E::Convert<uint32_t>(pt)
+#define PUTU32(ct, st) E::Convert<uint32_t>(ct, st)
 
 drew::AES::AES()
 {
