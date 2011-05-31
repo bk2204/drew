@@ -106,29 +106,9 @@ inline void CopyAndXor(uint8_t *out, const uint8_t *in, size_t len,
 template<class T>
 inline void XorAligned(T *outp, const T *inp, const T *xorp, size_t len)
 {
-	struct AlignedData {
-		uint8_t data[16] ALIGNED_T;
-	};
-
-	len /= 16;
-
-	AlignedData *out = reinterpret_cast<AlignedData *>(outp);
-	const AlignedData *in = reinterpret_cast<const AlignedData *>(inp);
-	const AlignedData *x = reinterpret_cast<const AlignedData *>(xorp);
-	for (size_t i = 0; i < len; i++, out++, in++, x++) {
-#ifdef VECTOR_T
-		typedef int vector_t __attribute__ ((vector_size (16)));
-		vector_t buf, xbuf;
-		memcpy(&buf, in->data, 16);
-		memcpy(&xbuf, x->data, 16);
-		buf ^= xbuf;
-		memcpy(out->data, &buf, 16);
-#else
-		for (size_t j = 0; j < 16; j++) {
-			out->data[j] = in->data[j] ^ x->data[j];
-		}
-#endif
-	}
+	return xor_aligned(reinterpret_cast<uint8_t *>(outp),
+			reinterpret_cast<const uint8_t *>(inp),
+			reinterpret_cast<const uint8_t *>(xorp), len);
 }
 
 // This is like CopyAndXor, but we're always working with bufsz-sized chunks.
