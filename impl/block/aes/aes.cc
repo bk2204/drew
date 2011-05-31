@@ -210,10 +210,10 @@ void drew::AES::SetKeyEncrypt(const uint8_t *key, size_t len)
 		for (;;) {
 			temp  = rk[3];
 			rk[4] = rk[0] ^
-				(Te4[(temp >> 16) & 0xff] & 0xff000000) ^
-				(Te4[(temp >>  8) & 0xff] & 0x00ff0000) ^
-				(Te4[(temp      ) & 0xff] & 0x0000ff00) ^
-				(Te4[(temp >> 24)       ] & 0x000000ff) ^
+				(Te4[E::GetByte(temp, 2)] & 0xff000000) ^
+				(Te4[E::GetByte(temp, 1)] & 0x00ff0000) ^
+				(Te4[E::GetByte(temp, 0)] & 0x0000ff00) ^
+				(Te4[E::GetByte(temp, 3)] & 0x000000ff) ^
 				rcon[i];
 			rk[5] = rk[1] ^ rk[4];
 			rk[6] = rk[2] ^ rk[5];
@@ -230,10 +230,10 @@ void drew::AES::SetKeyEncrypt(const uint8_t *key, size_t len)
 		for (;;) {
 			temp = rk[ 5];
 			rk[ 6] = rk[ 0] ^
-				(Te4[(temp >> 16) & 0xff] & 0xff000000) ^
-				(Te4[(temp >>  8) & 0xff] & 0x00ff0000) ^
-				(Te4[(temp      ) & 0xff] & 0x0000ff00) ^
-				(Te4[(temp >> 24)       ] & 0x000000ff) ^
+				(Te4[E::GetByte(temp, 2)] & 0xff000000) ^
+				(Te4[E::GetByte(temp, 1)] & 0x00ff0000) ^
+				(Te4[E::GetByte(temp, 0)] & 0x0000ff00) ^
+				(Te4[E::GetByte(temp, 3)] & 0x000000ff) ^
 				rcon[i];
 			rk[ 7] = rk[ 1] ^ rk[ 6];
 			rk[ 8] = rk[ 2] ^ rk[ 7];
@@ -252,10 +252,10 @@ void drew::AES::SetKeyEncrypt(const uint8_t *key, size_t len)
         for (;;) {
         	temp = rk[ 7];
         	rk[ 8] = rk[ 0] ^
-        		(Te4[(temp >> 16) & 0xff] & 0xff000000) ^
-        		(Te4[(temp >>  8) & 0xff] & 0x00ff0000) ^
-        		(Te4[(temp      ) & 0xff] & 0x0000ff00) ^
-        		(Te4[(temp >> 24)       ] & 0x000000ff) ^
+        		(Te4[E::GetByte(temp, 2)] & 0xff000000) ^
+        		(Te4[E::GetByte(temp, 1)] & 0x00ff0000) ^
+        		(Te4[E::GetByte(temp, 0)] & 0x0000ff00) ^
+        		(Te4[E::GetByte(temp, 3)] & 0x000000ff) ^
         		rcon[i];
         	rk[ 9] = rk[ 1] ^ rk[ 8];
         	rk[10] = rk[ 2] ^ rk[ 9];
@@ -265,10 +265,10 @@ void drew::AES::SetKeyEncrypt(const uint8_t *key, size_t len)
 			}
         	temp = rk[11];
         	rk[12] = rk[ 4] ^
-        		(Te4[(temp >> 24)       ] & 0xff000000) ^
-        		(Te4[(temp >> 16) & 0xff] & 0x00ff0000) ^
-        		(Te4[(temp >>  8) & 0xff] & 0x0000ff00) ^
-        		(Te4[(temp      ) & 0xff] & 0x000000ff);
+        		(Te4[E::GetByte(temp, 3)] & 0xff000000) ^
+        		(Te4[E::GetByte(temp, 2)] & 0x00ff0000) ^
+        		(Te4[E::GetByte(temp, 1)] & 0x0000ff00) ^
+        		(Te4[E::GetByte(temp, 0)] & 0x000000ff);
         	rk[13] = rk[ 5] ^ rk[12];
         	rk[14] = rk[ 6] ^ rk[13];
         	rk[15] = rk[ 7] ^ rk[14];
@@ -295,25 +295,25 @@ void drew::AES::SetKeyDecrypt(void)
 	for (size_t i = 1; i < m_nr; i++) {
 		rkd += 4;
 		rkd[0] =
-			Td0[Te4[(rkd[0] >> 24)       ] & 0xff] ^
-			Td1[Te4[(rkd[0] >> 16) & 0xff] & 0xff] ^
-			Td2[Te4[(rkd[0] >>  8) & 0xff] & 0xff] ^
-			Td3[Te4[(rkd[0]      ) & 0xff] & 0xff];
+			Td0[uint8_t(Te4[E::GetByte(rkd[0], 3)])] ^
+			Td1[uint8_t(Te4[E::GetByte(rkd[0], 2)])] ^
+			Td2[uint8_t(Te4[E::GetByte(rkd[0], 1)])] ^
+			Td3[uint8_t(Te4[E::GetByte(rkd[0], 0)])];
 		rkd[1] =
-			Td0[Te4[(rkd[1] >> 24)       ] & 0xff] ^
-			Td1[Te4[(rkd[1] >> 16) & 0xff] & 0xff] ^
-			Td2[Te4[(rkd[1] >>  8) & 0xff] & 0xff] ^
-			Td3[Te4[(rkd[1]      ) & 0xff] & 0xff];
+			Td0[uint8_t(Te4[E::GetByte(rkd[1], 3)])] ^
+			Td1[uint8_t(Te4[E::GetByte(rkd[1], 2)])] ^
+			Td2[uint8_t(Te4[E::GetByte(rkd[1], 1)])] ^
+			Td3[uint8_t(Te4[E::GetByte(rkd[1], 0)])];
 		rkd[2] =
-			Td0[Te4[(rkd[2] >> 24)       ] & 0xff] ^
-			Td1[Te4[(rkd[2] >> 16) & 0xff] & 0xff] ^
-			Td2[Te4[(rkd[2] >>  8) & 0xff] & 0xff] ^
-			Td3[Te4[(rkd[2]      ) & 0xff] & 0xff];
+			Td0[uint8_t(Te4[E::GetByte(rkd[2], 3)])] ^
+			Td1[uint8_t(Te4[E::GetByte(rkd[2], 2)])] ^
+			Td2[uint8_t(Te4[E::GetByte(rkd[2], 1)])] ^
+			Td3[uint8_t(Te4[E::GetByte(rkd[2], 0)])];
 		rkd[3] =
-			Td0[Te4[(rkd[3] >> 24)       ] & 0xff] ^
-			Td1[Te4[(rkd[3] >> 16) & 0xff] & 0xff] ^
-			Td2[Te4[(rkd[3] >>  8) & 0xff] & 0xff] ^
-			Td3[Te4[(rkd[3]      ) & 0xff] & 0xff];
+			Td0[uint8_t(Te4[E::GetByte(rkd[3], 3)])] ^
+			Td1[uint8_t(Te4[E::GetByte(rkd[3], 2)])] ^
+			Td2[uint8_t(Te4[E::GetByte(rkd[3], 1)])] ^
+			Td3[uint8_t(Te4[E::GetByte(rkd[3], 0)])];
 	}
 }
 
