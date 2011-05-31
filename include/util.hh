@@ -218,6 +218,18 @@ class BigEndian : public Endian
 			else
 				return Copy(buf, p, len);
 		}
+		template<class T>
+		inline static T Convert(const uint8_t *p)
+		{
+			T x;
+			Copy(&x, p, sizeof(x));
+			return x;
+		}
+		template<class T>
+		inline static void Convert(uint8_t *buf, T p)
+		{
+			Copy(&buf, &p, sizeof(p));
+		}
 		inline static int GetEndianness()
 		{
 			return 4321;
@@ -283,6 +295,18 @@ class LittleEndian : public Endian
 				return reinterpret_cast<const T *>(p);
 			else
 				return Copy(buf, p, len);
+		}
+		template<class T>
+		inline static T Convert(const uint8_t *p)
+		{
+			T x;
+			Copy(&x, p, sizeof(x));
+			return x;
+		}
+		template<class T>
+		inline static void Convert(uint8_t *buf, T p)
+		{
+			Copy(&buf, &p, sizeof(p));
 		}
 		inline static int GetEndianness()
 		{
