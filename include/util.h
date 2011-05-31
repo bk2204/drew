@@ -27,6 +27,7 @@
  * generate equivalent non-vector code.
  */
 #define VECTOR_T
+#define BRANCH_PREDICTION
 #endif
 
 #define STATIC_ASSERT(e) ((void)sizeof(char[1 - 2*!(e)]))
@@ -57,5 +58,13 @@ inline void xor_aligned(uint8_t *outp, const uint8_t *inp, const uint8_t *xorp, 
 #endif
 	}
 }
+
+#ifdef BRANCH_PREDICTION
+#define likely(x)	__builtin_expect(!!(x), 1)
+#define unlikely(x)	__builtin_expect(!!(x), 0)
+#else
+#define likely(x) (x)
+#define unlikely(x) (x)
+#endif
 
 #endif
