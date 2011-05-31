@@ -150,17 +150,6 @@ static int aes256test(void *p, const drew_loader_t *ldr)
 	return rd_test(p, ldr);
 }
 
-	//PLUGIN_FUNCTBL(rijndael, rd_aes_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
-	//PLUGIN_FUNCTBL(aes128, rd_aes128_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
-	//PLUGIN_FUNCTBL(aes192, rd_aes192_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
-	//PLUGIN_FUNCTBL(aes256, rd_aes256_info, rd_aes_init, rd_setkey, rd_encrypt, rd_decrypt, rd_test, rd_fini, rd_clone);
-	//PLUGIN_DATA_START()
-	//PLUGIN_DATA(rijndael, "Rijndael")
-	//PLUGIN_DATA(aes128, "AES128")
-	//PLUGIN_DATA(aes192, "AES192")
-	//PLUGIN_DATA(aes256, "AES256")
-	//PLUGIN_DATA_END()
-	//PLUGIN_INTERFACE(aes)
 	PLUGIN_STRUCTURE(rijndael, AES)
 	PLUGIN_STRUCTURE(aes128, AES)
 	PLUGIN_STRUCTURE(aes192, AES)
