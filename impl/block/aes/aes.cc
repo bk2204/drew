@@ -178,9 +178,6 @@ const size_t drew::AES::m_nb = (block_size / 4);
 
 typedef drew::AES::endian_t E;
 
-#define GETU32(pt) E::Convert<uint32_t>(pt)
-#define PUTU32(ct, st) E::Convert<uint32_t>(ct, st)
-
 drew::AES::AES()
 {
 }
@@ -202,10 +199,10 @@ void drew::AES::SetKeyEncrypt(const uint8_t *key, size_t len)
 
 	uint32_t *rk = m_rk;
 
-	rk[0] = GETU32(key     );
-	rk[1] = GETU32(key +  4);
-	rk[2] = GETU32(key +  8);
-	rk[3] = GETU32(key + 12);
+	rk[0] = E::Convert<uint32_t>(key     );
+	rk[1] = E::Convert<uint32_t>(key +  4);
+	rk[2] = E::Convert<uint32_t>(key +  8);
+	rk[3] = E::Convert<uint32_t>(key + 12);
 	if (len == 16) {
 		for (;;) {
 			temp  = rk[3];
@@ -224,8 +221,8 @@ void drew::AES::SetKeyEncrypt(const uint8_t *key, size_t len)
 			rk += 4;
 		}
 	}
-	rk[4] = GETU32(key + 16);
-	rk[5] = GETU32(key + 20);
+	rk[4] = E::Convert<uint32_t>(key + 16);
+	rk[5] = E::Convert<uint32_t>(key + 20);
 	if (len == 24) {
 		for (;;) {
 			temp = rk[ 5];
@@ -246,8 +243,8 @@ void drew::AES::SetKeyEncrypt(const uint8_t *key, size_t len)
 			rk += 6;
 		}
 	}
-	rk[6] = GETU32(key + 24);
-	rk[7] = GETU32(key + 28);
+	rk[6] = E::Convert<uint32_t>(key + 24);
+	rk[7] = E::Convert<uint32_t>(key + 28);
 	if (len == 32) {
         for (;;) {
         	temp = rk[ 7];
@@ -327,10 +324,10 @@ int drew::AES::Encrypt(uint8_t *out, const uint8_t *in) const
 	 * map byte array block to cipher state
 	 * and add initial round key:
 	 */
-	s0 = GETU32(in     ) ^ rk[0];
-	s1 = GETU32(in +  4) ^ rk[1];
-	s2 = GETU32(in +  8) ^ rk[2];
-	s3 = GETU32(in + 12) ^ rk[3];
+	s0 = E::Convert<uint32_t>(in     ) ^ rk[0];
+	s1 = E::Convert<uint32_t>(in +  4) ^ rk[1];
+	s2 = E::Convert<uint32_t>(in +  8) ^ rk[2];
+	s3 = E::Convert<uint32_t>(in + 12) ^ rk[3];
     /*
 	 * Nr - 1 full rounds:
 	 */
@@ -401,28 +398,28 @@ int drew::AES::Encrypt(uint8_t *out, const uint8_t *in) const
 		(Te4[E::GetByte(t2, 1)] & 0x0000ff00) ^
 		(Te4[E::GetByte(t3, 0)] & 0x000000ff) ^
 		rk[0];
-	PUTU32(out     , s0);
+	E::Convert(out     , s0);
 	s1 =
 		(Te4[E::GetByte(t1, 3)] & 0xff000000) ^
 		(Te4[E::GetByte(t2, 2)] & 0x00ff0000) ^
 		(Te4[E::GetByte(t3, 1)] & 0x0000ff00) ^
 		(Te4[E::GetByte(t0, 0)] & 0x000000ff) ^
 		rk[1];
-	PUTU32(out +  4, s1);
+	E::Convert(out +  4, s1);
 	s2 =
 		(Te4[E::GetByte(t2, 3)] & 0xff000000) ^
 		(Te4[E::GetByte(t3, 2)] & 0x00ff0000) ^
 		(Te4[E::GetByte(t0, 1)] & 0x0000ff00) ^
 		(Te4[E::GetByte(t1, 0)] & 0x000000ff) ^
 		rk[2];
-	PUTU32(out +  8, s2);
+	E::Convert(out +  8, s2);
 	s3 =
 		(Te4[E::GetByte(t3, 3)] & 0xff000000) ^
 		(Te4[E::GetByte(t0, 2)] & 0x00ff0000) ^
 		(Te4[E::GetByte(t1, 1)] & 0x0000ff00) ^
 		(Te4[E::GetByte(t2, 0)] & 0x000000ff) ^
 		rk[3];
-	PUTU32(out + 12, s3);
+	E::Convert(out + 12, s3);
 	return 0;
 }
 
@@ -436,10 +433,10 @@ int drew::AES::Decrypt(uint8_t *out, const uint8_t *in) const
 	 * map byte array block to cipher state
 	 * and add initial round key:
 	 */
-    s0 = GETU32(in     ) ^ rk[0];
-    s1 = GETU32(in +  4) ^ rk[1];
-    s2 = GETU32(in +  8) ^ rk[2];
-    s3 = GETU32(in + 12) ^ rk[3];
+    s0 = E::Convert<uint32_t>(in     ) ^ rk[0];
+    s1 = E::Convert<uint32_t>(in +  4) ^ rk[1];
+    s2 = E::Convert<uint32_t>(in +  8) ^ rk[2];
+    s3 = E::Convert<uint32_t>(in + 12) ^ rk[3];
     /*
      * m_nr - 1 full rounds:
      */
@@ -510,28 +507,28 @@ int drew::AES::Decrypt(uint8_t *out, const uint8_t *in) const
    		(Td4[E::GetByte(t2, 1)] & 0x0000ff00) ^
    		(Td4[E::GetByte(t1, 0)] & 0x000000ff) ^
    		rk[0];
-	PUTU32(out     , s0);
+	E::Convert(out     , s0);
    	s1 =
    		(Td4[E::GetByte(t1, 3)] & 0xff000000) ^
    		(Td4[E::GetByte(t0, 2)] & 0x00ff0000) ^
    		(Td4[E::GetByte(t3, 1)] & 0x0000ff00) ^
    		(Td4[E::GetByte(t2, 0)] & 0x000000ff) ^
    		rk[1];
-	PUTU32(out +  4, s1);
+	E::Convert(out +  4, s1);
    	s2 =
    		(Td4[E::GetByte(t2, 3)] & 0xff000000) ^
    		(Td4[E::GetByte(t1, 2)] & 0x00ff0000) ^
    		(Td4[E::GetByte(t0, 1)] & 0x0000ff00) ^
    		(Td4[E::GetByte(t3, 0)] & 0x000000ff) ^
    		rk[2];
-	PUTU32(out +  8, s2);
+	E::Convert(out +  8, s2);
    	s3 =
    		(Td4[E::GetByte(t3, 3)] & 0xff000000) ^
    		(Td4[E::GetByte(t2, 2)] & 0x00ff0000) ^
    		(Td4[E::GetByte(t1, 1)] & 0x0000ff00) ^
    		(Td4[E::GetByte(t0, 0)] & 0x000000ff) ^
    		rk[3];
-	PUTU32(out + 12, s3);
+	E::Convert(out + 12, s3);
 
 	return 0;
 }
