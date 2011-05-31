@@ -2,6 +2,7 @@
 #define ENDIAN_HH
 
 #include <algorithm>
+#include <arpa/inet.h>
 #include "util.h"
 
 template<class T, size_t N>
@@ -315,6 +316,34 @@ class LittleEndian : public Endian
 	protected:
 	private:
 };
+
+template<>
+inline uint32_t BigEndian::Convert(const uint8_t *p)
+{
+	uint32_t x;
+	memcpy(&x, p, sizeof(x));
+	return htonl(x);
+}
+template<>
+inline uint16_t BigEndian::Convert(const uint8_t *p)
+{
+	uint16_t x;
+	memcpy(&x, p, sizeof(x));
+	return htons(x);
+}
+
+template<>
+inline void BigEndian::Convert(uint8_t *buf, uint32_t p)
+{
+	uint32_t x = ntohl(p);
+	memcpy(buf, &x, sizeof(x));
+}
+template<>
+inline void BigEndian::Convert(uint8_t *buf, uint16_t p)
+{
+	uint16_t x = ntohs(p);
+	memcpy(buf, &x, sizeof(x));
+}
 
 #if BYTE_ORDER == BIG_ENDIAN
 typedef BigEndian NativeEndian;
