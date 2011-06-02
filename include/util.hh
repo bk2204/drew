@@ -166,7 +166,10 @@ class Endian
 		template<class T>
 		inline static void ByteSwap(T &x)
 		{
-			__builtin_trap();
+			T p = 0;
+			for (size_t i = 0; i < sizeof(T); i++)
+				p |= ((x >> (i * 8)) & 0xff) << ((sizeof(T)-i-1) * 8);
+			x = p;
 		}
 #endif
 };
