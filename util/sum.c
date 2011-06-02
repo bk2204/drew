@@ -17,7 +17,7 @@
 #error "CHUNK_SIZE is not a multiple of ALGO_BLOCK_SIZE!"
 #endif
 
-#if MAX_DIGEST_BITS > (8 * ALGO_DIGEST_SIZE)
+#if MAX_DIGEST_BITS < (8 * ALGO_DIGEST_SIZE)
 #error "MAX_DIGEST_BITS is too small!"
 #endif
 
