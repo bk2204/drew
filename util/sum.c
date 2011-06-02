@@ -50,7 +50,7 @@ int process(uint8_t *val, const char *name, int mode, drew_hash_t *hash)
 		return -1;
 	}
 
-	while ((nread = fread(buf, 1, CHUNK_SIZE, fp)) == ALGO_BLOCK_SIZE)
+	while ((nread = fread(buf, 1, CHUNK_SIZE, fp)) == CHUNK_SIZE)
 		hash->functbl->updatefast(hash, buf, CHUNK_SIZE);
 
 	if (nread < CHUNK_SIZE) {
