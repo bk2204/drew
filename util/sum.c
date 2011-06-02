@@ -9,6 +9,14 @@
 
 #define MAX_DIGEST_BITS 512
 
+#ifndef CHUNK_SIZE
+#define CHUNK_SIZE 8192
+#endif
+
+#if CHUNK_SIZE % ALGO_BLOCK_SIZE
+#error "CHUNK_SIZE is not a multiple of ALGO_BLOCK_SIZE!"
+#endif
+
 #if MAX_DIGEST_BITS > (8 * ALGO_DIGEST_SIZE)
 #error "MAX_DIGEST_BITS is too small!"
 #endif
@@ -32,7 +40,7 @@ int process(uint8_t *val, const char *name, int mode, drew_hash_t *hash)
 {
 	FILE *fp = NULL;
 	const char *modestr[] = {"r", "rb"};
-	uint8_t buf[ALGO_BLOCK_SIZE];
+	uint8_t buf[CHUNK_SIZE];
 	size_t nread = 0;
 
 	hash->functbl->reset(hash);
@@ -42,10 +50,10 @@ int process(uint8_t *val, const char *name, int mode, drew_hash_t *hash)
 		return -1;
 	}
 
-	while ((nread = fread(buf, 1, ALGO_BLOCK_SIZE, fp)) == ALGO_BLOCK_SIZE)
-		hash->functbl->updatefast(hash, buf, ALGO_BLOCK_SIZE);
+	while ((nread = fread(buf, 1, CHUNK_SIZE, fp)) == ALGO_BLOCK_SIZE)
+		hash->functbl->updatefast(hash, buf, CHUNK_SIZE);
 
-	if (nread < ALGO_BLOCK_SIZE) {
+	if (nread < CHUNK_SIZE) {
 		hash->functbl->update(hash, buf, nread);
 		if (ferror(fp)) {
 			perror("error reading file");
