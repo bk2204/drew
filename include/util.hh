@@ -3,6 +3,9 @@
 
 #include <algorithm>
 #include <arpa/inet.h>
+#ifdef __GLIBC__
+#include <byteswap.h>
+#endif
 #include "util.h"
 
 template<class T, size_t N>
@@ -159,7 +162,34 @@ class Endian
 		{
 			return GetByte(p[n/sizeof(T)], (n & (sizeof(T)-1)));
 		}
+#ifdef __GLIBC__
+		template<class T>
+		inline static void ByteSwap(T &x)
+		{
+			__builtin_trap();
+		}
+#endif
 };
+
+#ifdef __GLIBC__
+template<>
+inline void Endian::ByteSwap(uint16_t &x)
+{
+	x = bswap_16(x);
+}
+
+template<>
+inline void Endian::ByteSwap(uint32_t &x)
+{
+	x = bswap_32(x);
+}
+
+template<>
+inline void Endian::ByteSwap(uint64_t &x)
+{
+	x = bswap_64(x);
+}
+#endif
 
 class BigEndian : public Endian
 {
@@ -167,12 +197,36 @@ class BigEndian : public Endian
 		template<class T>
 		inline static uint8_t *Copy(uint8_t *dest, const T *src, size_t len)
 		{
-			return Copy(dest, src, len, sizeof(T));
+#if BYTE_ORDER == BIG_ENDIAN
+			memcpy(dest, src, len);
+			return dest;
+#else
+			return CopyByConvert(dest, src, len);
+#endif
 		}
 		template<class T>
 		inline static T *Copy(T *dest, const uint8_t *src, size_t len)
 		{
-			return Copy(dest, src, len, sizeof(T));
+#if BYTE_ORDER == BIG_ENDIAN
+			memcpy(dest, src, len);
+			return dest;
+#else
+			return CopyByConvert(dest, src, len);
+#endif
+		}
+		template<class T>
+		inline static uint8_t *CopyByConvert(uint8_t *dest, const T *src, size_t len)
+		{
+			for (size_t i = 0, j = 0; j < len; i++, j += sizeof(T))
+				Convert(dest+j, src[i]);
+			return dest;
+		}
+		template<class T>
+		inline static T *CopyByConvert(T *dest, const uint8_t *src, size_t len)
+		{
+			for (size_t i = 0, j = 0; j < len; i++, j += sizeof(T))
+				dest[i] = Convert<T>(src+j);
+			return dest;
 		}
 		template<class T>
 		inline static uint8_t *Copy(uint8_t *dest, const T *src, size_t len,
@@ -223,13 +277,27 @@ class BigEndian : public Endian
 		inline static T Convert(const uint8_t *p)
 		{
 			T x;
-			Copy(&x, p, sizeof(x));
+#if BYTE_ORDER == BIG_ENDIAN
+			memcpy(&x, p, sizeof(x));
+#elif defined(__GLIBC__)
+			memcpy(&x, p, sizeof(x));
+			ByteSwap(x);
+#else
+			Copy(&x, p, sizeof(x), sizeof(x));
+#endif
 			return x;
 		}
 		template<class T>
 		inline static void Convert(uint8_t *buf, T p)
 		{
-			Copy(&buf, &p, sizeof(p));
+#if BYTE_ORDER == BIG_ENDIAN
+			memcpy(buf, &p, sizeof(p));
+#elif defined(__GLIBC__)
+			ByteSwap(p);
+			memcpy(buf, &p, sizeof(p));
+#else
+			Copy(buf, &p, sizeof(p), sizeof(p));
+#endif
 		}
 		inline static int GetEndianness()
 		{
@@ -245,12 +313,36 @@ class LittleEndian : public Endian
 		template<class T>
 		inline static uint8_t *Copy(uint8_t *dest, const T *src, size_t len)
 		{
-			return Copy(dest, src, len, sizeof(T));
+#if BYTE_ORDER == LITTLE_ENDIAN
+			memcpy(dest, src, len);
+			return dest;
+#else
+			return CopyByConvert(dest, src, len);
+#endif
 		}
 		template<class T>
 		inline static T *Copy(T *dest, const uint8_t *src, size_t len)
 		{
-			return Copy(dest, src, len, sizeof(T));
+#if BYTE_ORDER == LITTLE_ENDIAN
+			memcpy(dest, src, len);
+			return dest;
+#else
+			return CopyByConvert(dest, src, len);
+#endif
+		}
+		template<class T>
+		inline static void CopyByConvert(uint8_t *dest, const T *src, size_t len)
+		{
+			for (size_t i = 0, j = 0; j < len; i++, j += sizeof(T))
+				Convert(dest+j, src[i]);
+			return dest;
+		}
+		template<class T>
+		inline static void CopyByConvert(T *dest, const uint8_t *src, size_t len)
+		{
+			for (size_t i = 0, j = 0; j < len; i++, j += sizeof(T))
+				dest[i] = Convert<T>(src+j);
+			return dest;
 		}
 		template<class T>
 		inline static uint8_t *Copy(uint8_t *dest, const T *src, size_t len,
@@ -301,13 +393,27 @@ class LittleEndian : public Endian
 		inline static T Convert(const uint8_t *p)
 		{
 			T x;
-			Copy(&x, p, sizeof(x));
+#if BYTE_ORDER == LITTLE_ENDIAN
+			memcpy(&x, p, sizeof(x));
+#elif defined(__GLIBC__)
+			memcpy(&x, p, sizeof(x));
+			ByteSwap(x);
+#else
+			Copy(&x, p, sizeof(x), sizeof(x));
+#endif
 			return x;
 		}
 		template<class T>
 		inline static void Convert(uint8_t *buf, T p)
 		{
-			Copy(&buf, &p, sizeof(p));
+#if BYTE_ORDER == LITTLE_ENDIAN
+			memcpy(buf, &p, sizeof(p));
+#elif defined(__GLIBC__)
+			ByteSwap(p);
+			memcpy(buf, &p, sizeof(p));
+#else
+			Copy(buf, &p, sizeof(p), sizeof(p));
+#endif
 		}
 		inline static int GetEndianness()
 		{
