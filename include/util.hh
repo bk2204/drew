@@ -3,7 +3,18 @@
 
 #include <algorithm>
 #include <arpa/inet.h>
+#ifdef __GLIBC__
+#include <byteswap.h>
+#endif
 #include "util.h"
+
+#define DREW_BIG_ENDIAN		4321
+#define DREW_LITTLE_ENDIAN	1234
+#if BYTE_ORDER == BIG_ENDIAN
+#define DREW_BYTE_ORDER		DREW_BIG_ENDIAN
+#else
+#define DREW_BYTE_ORDER		DREW_LITTLE_ENDIAN
+#endif
 
 template<class T, size_t N>
 struct AlignedBlock
@@ -47,10 +58,10 @@ inline bool IsSufficientlyAligned(const void *p)
 
 inline int GetSystemEndianness()
 {
-#if BYTE_ORDER == BIG_ENDIAN
-	return 4321;
+#if DREW_BYTE_ORDER == DREW_BIG_ENDIAN
+	return DREW_BIG_ENDIAN;
 #else
-	return 1234;
+	return DREW_LITTLE_ENDIAN;
 #endif
 }
 
@@ -132,7 +143,7 @@ inline void CopyAndXorAligned(uint8_t *outp, const uint8_t *inp, size_t len,
 	}
 }
 
-class Endian
+class EndianBase
 {
 	public:
 		inline static void CopyBackwards(uint8_t *dest, const uint8_t *src,
@@ -159,42 +170,82 @@ class Endian
 		{
 			return GetByte(p[n/sizeof(T)], (n & (sizeof(T)-1)));
 		}
+#ifdef __GLIBC__
+		template<class T>
+		inline static void ByteSwap(T &x)
+		{
+			T p = 0;
+			for (size_t i = 0; i < sizeof(T); i++)
+				p |= ((x >> (i * 8)) & 0xff) << ((sizeof(T)-i-1) * 8);
+			x = p;
+		}
+#endif
 };
 
-class BigEndian : public Endian
+// A class to handle converting between endianness in as pleasant a fashion as
+// possible.
+template<unsigned Endianness>
+class Endian : public EndianBase
 {
 	public:
+		// Copy len bytes from src to dest in T-sized chunks.  len is assumed to
+		// be a multiple of sizeof(T).
 		template<class T>
 		inline static uint8_t *Copy(uint8_t *dest, const T *src, size_t len)
 		{
-			return Copy(dest, src, len, sizeof(T));
+			if (DREW_BYTE_ORDER == Endianness) {
+				memcpy(dest, src, len);
+				return dest;
+			}
+			else
+				return CopyByConvert(dest, src, len);
 		}
 		template<class T>
 		inline static T *Copy(T *dest, const uint8_t *src, size_t len)
 		{
-			return Copy(dest, src, len, sizeof(T));
+			if (DREW_BYTE_ORDER == Endianness) {
+				memcpy(dest, src, len);
+				return dest;
+			}
+			else
+				return CopyByConvert(dest, src, len);
 		}
+		// Same contract as Copy.  Internal implementation function.
+		template<class T>
+		inline static uint8_t *CopyByConvert(uint8_t *dest, const T *src, size_t len)
+		{
+			for (size_t i = 0, j = 0; j < len; i++, j += sizeof(T))
+				Convert(dest+j, src[i]);
+			return dest;
+		}
+		template<class T>
+		inline static T *CopyByConvert(T *dest, const uint8_t *src, size_t len)
+		{
+			for (size_t i = 0, j = 0; j < len; i++, j += sizeof(T))
+				dest[i] = Convert<T>(src+j);
+			return dest;
+		}
+		// Copy len bytes from src to dest in sz-sized chunks.  No assumptions
+		// are made about len with regard to sizeof(T) or sz.
 		template<class T>
 		inline static uint8_t *Copy(uint8_t *dest, const T *src, size_t len,
 				const size_t sz)
 		{
-#if BYTE_ORDER == BIG_ENDIAN
-			memcpy(dest, src, len);
-#else
-			CopyBackwards(dest, reinterpret_cast<const uint8_t *>(src), len,
-					sz);
-#endif
+			if (DREW_BYTE_ORDER == Endianness)
+				memcpy(dest, src, len);
+			else
+				CopyBackwards(dest, reinterpret_cast<const uint8_t *>(src), len,
+						sz);
 			return dest;
 		}
 		template<class T>
 		inline static T *Copy(T *dest, const uint8_t *src, size_t len,
 				const size_t sz)
 		{
-#if BYTE_ORDER == BIG_ENDIAN
-			memcpy(dest, src, len);
-#else
-			CopyBackwards(reinterpret_cast<uint8_t *>(dest), src, len, sz);
-#endif
+			if (DREW_BYTE_ORDER == Endianness)
+				memcpy(dest, src, len);
+			else
+				CopyBackwards(reinterpret_cast<uint8_t *>(dest), src, len, sz);
 			return dest;
 		}
 		inline static uint8_t *Copy(uint8_t *dest, const uint8_t *src,
@@ -209,6 +260,8 @@ class BigEndian : public Endian
 			memcpy(dest, src, len);
 			return dest;
 		}
+		// Return a pointer to the existing buffer if possible; otherwise call
+		// the three-argument form of Copy.
 		template<class T>
 		inline static const T *CopyIfNeeded(T *buf, const uint8_t *p,
 				size_t len)
@@ -219,102 +272,92 @@ class BigEndian : public Endian
 			else
 				return Copy(buf, p, len);
 		}
+		// Build a T out of bytes and return it.
 		template<class T>
 		inline static T Convert(const uint8_t *p)
 		{
 			T x;
-			Copy(&x, p, sizeof(x));
+			if (DREW_BYTE_ORDER == Endianness)
+				memcpy(&x, p, sizeof(x));
+			else {
+#if defined(__GLIBC__)
+				memcpy(&x, p, sizeof(x));
+				ByteSwap(x);
+#else
+				Copy(&x, p, sizeof(x), sizeof(x));
+#endif
+			}
 			return x;
 		}
+		// Store a T into a byte buffer.
 		template<class T>
 		inline static void Convert(uint8_t *buf, T p)
 		{
-			Copy(&buf, &p, sizeof(p));
+			if (DREW_BYTE_ORDER == Endianness)
+				memcpy(buf, &p, sizeof(p));
+			else {
+#if defined(__GLIBC__)
+				ByteSwap(p);
+				memcpy(buf, &p, sizeof(p));
+#else
+				Copy(buf, &p, sizeof(p), sizeof(p));
+#endif
+			}
 		}
+		// Return a constant representing the endianness.
 		inline static int GetEndianness()
 		{
-			return 4321;
+			return Endianness;
 		}
-	protected:
-	private:
 };
 
-class LittleEndian : public Endian
+#ifdef __GLIBC__
+template<>
+inline void EndianBase::ByteSwap(uint16_t &x)
+{
+	x = bswap_16(x);
+}
+
+template<>
+inline void EndianBase::ByteSwap(uint32_t &x)
+{
+	x = bswap_32(x);
+}
+
+template<>
+inline void EndianBase::ByteSwap(uint64_t &x)
+{
+	x = bswap_64(x);
+}
+#endif
+
+class LittleEndian : public Endian<DREW_LITTLE_ENDIAN>
+{
+};
+
+class BigEndian : public Endian<DREW_BIG_ENDIAN>
 {
 	public:
 		template<class T>
-		inline static uint8_t *Copy(uint8_t *dest, const T *src, size_t len)
-		{
-			return Copy(dest, src, len, sizeof(T));
-		}
-		template<class T>
-		inline static T *Copy(T *dest, const uint8_t *src, size_t len)
-		{
-			return Copy(dest, src, len, sizeof(T));
-		}
-		template<class T>
-		inline static uint8_t *Copy(uint8_t *dest, const T *src, size_t len,
-				const size_t sz)
-		{
-#if BYTE_ORDER == LITTLE_ENDIAN
-			memcpy(dest, src, len);
-#else
-			CopyBackwards(dest, reinterpret_cast<const uint8_t *>(src), len,
-					sz);
-#endif
-			return dest;
-		}
-		template<class T>
-		inline static T *Copy(T *dest, const uint8_t *src, size_t len,
-				const size_t sz)
-		{
-#if BYTE_ORDER == LITTLE_ENDIAN
-			memcpy(dest, src, len);
-#else
-			CopyBackwards(reinterpret_cast<uint8_t *>(dest), src, len, sz);
-#endif
-			return dest;
-		}
-		inline static uint8_t *Copy(uint8_t *dest, const uint8_t *src,
-				size_t len, const size_t sz)
-		{
-			memcpy(dest, src, len);
-			return dest;
-		}
-		inline static uint8_t *Copy(uint8_t *dest, const uint8_t *src,
-				size_t len)
-		{
-			memcpy(dest, src, len);
-			return dest;
-		}
-		template<class T>
-		inline static const T *CopyIfNeeded(T *buf, const uint8_t *p,
-				size_t len)
-		{
-			if (GetEndianness() == GetSystemEndianness() && 
-					IsSufficientlyAligned<T>(p))
-				return reinterpret_cast<const T *>(p);
-			else
-				return Copy(buf, p, len);
-		}
-		template<class T>
 		inline static T Convert(const uint8_t *p)
 		{
-			T x;
-			Copy(&x, p, sizeof(x));
-			return x;
+			return Endian<DREW_BIG_ENDIAN>::Convert<T>(p);
 		}
 		template<class T>
 		inline static void Convert(uint8_t *buf, T p)
 		{
-			Copy(&buf, &p, sizeof(p));
+			return Endian<DREW_BIG_ENDIAN>::Convert<T>(buf, p);
 		}
+};
+
+// For algorithms which are completely byte-order agnostic.
+class NonEndian : public EndianBase
+{
+	public:
 		inline static int GetEndianness()
 		{
-			return 1234;
+			return 0;
 		}
-	protected:
-	private:
 };
 
 template<>
