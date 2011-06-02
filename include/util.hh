@@ -182,10 +182,14 @@ class EndianBase
 #endif
 };
 
+// A class to handle converting between endianness in as pleasant a fashion as
+// possible.
 template<unsigned Endianness>
 class Endian : public EndianBase
 {
 	public:
+		// Copy len bytes from src to dest in T-sized chunks.  len is assumed to
+		// be a multiple of sizeof(T).
 		template<class T>
 		inline static uint8_t *Copy(uint8_t *dest, const T *src, size_t len)
 		{
@@ -206,6 +210,7 @@ class Endian : public EndianBase
 			else
 				return CopyByConvert(dest, src, len);
 		}
+		// Same contract as Copy.  Internal implementation function.
 		template<class T>
 		inline static uint8_t *CopyByConvert(uint8_t *dest, const T *src, size_t len)
 		{
@@ -220,6 +225,8 @@ class Endian : public EndianBase
 				dest[i] = Convert<T>(src+j);
 			return dest;
 		}
+		// Copy len bytes from src to dest in sz-sized chunks.  No assumptions
+		// are made about len with regard to sizeof(T) or sz.
 		template<class T>
 		inline static uint8_t *Copy(uint8_t *dest, const T *src, size_t len,
 				const size_t sz)
@@ -253,6 +260,8 @@ class Endian : public EndianBase
 			memcpy(dest, src, len);
 			return dest;
 		}
+		// Return a pointer to the existing buffer if possible; otherwise call
+		// the three-argument form of Copy.
 		template<class T>
 		inline static const T *CopyIfNeeded(T *buf, const uint8_t *p,
 				size_t len)
@@ -263,6 +272,7 @@ class Endian : public EndianBase
 			else
 				return Copy(buf, p, len);
 		}
+		// Build a T out of bytes and return it.
 		template<class T>
 		inline static T Convert(const uint8_t *p)
 		{
@@ -279,6 +289,7 @@ class Endian : public EndianBase
 			}
 			return x;
 		}
+		// Store a T into a byte buffer.
 		template<class T>
 		inline static void Convert(uint8_t *buf, T p)
 		{
@@ -293,6 +304,7 @@ class Endian : public EndianBase
 #endif
 			}
 		}
+		// Return a constant representing the endianness.
 		inline static int GetEndianness()
 		{
 			return Endianness;
