@@ -1,4 +1,4 @@
-#include "arc4stir.hh"
+#include "arc4interleave.hh"
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -11,38 +11,17 @@
 #include <algorithm>
 #include <utility>
 
-/* This algorithm contains several differences from the standard RC4 keystream
- * generator.  First, the sbox is initialized with a different permutation of
- * the bytes 0x00-0xff, which is taken from RC2.  This helps avoid problems that
- * might occur due to the default permutation's being in order.
- *
- * Also, when data is stirred into the generator, bytes from the generator are
- * xored into the data that is used as the seed.  While this does not increase
- * entropy, it ensures that the state of the generator progresses rapidly.  The
- * generator is stirred approximately every 2**20 bytes, which is slightly more
- * conservative than the OpenBSD arc4random mechanism.
- *
- * The stirring method (key schedule in RC4) is more thorough than in standard
- * RC4.  The bytes of the seed are mixed in 256 times each and the total number
- * of iterations is 65536, which is significantly larger than the standard 256.
- * The high byte of the iteration count is also mixed in.  Whether this is
- * helpful is unknown.  The starting value of j during the mixing process is
- * again output from the generator, to avoid bias attacks.  After stirring,
- * approximately 3072 bytes (the maximum recommended by the Mironov paper) are
- * dropped, even though this should not be necessary due to the more thorough
- * mixing and more conservative design.
- *
- * A final countermeasure to bias attacks is not resetting i and j whenever the
- * algorithm is stirred.  Because the Mantin-Shamir attack relies on the
- * generator output starting with i and j at zero, it is foiled.  By the time
- * that i and j are used to generate any user-visible keystream material, they
- * are already far from their original values.
+/* This is essentially the same algorithm as in the arc4stir module, except that
+ * four keystream generators are used, each one having a different initial
+ * permutations.  Each keystream generator outputs a byte in turn.  The major
+ * difference is that when stirring in random data, the states of the generators
+ * are intertwined because of the interleaving.
  */
 
-// This is the largest prime less than 2**20.
-#define NBYTES 1048573
-// This is the smallest prime greater than 3072.
-#define NDROP 3079
+// This is the largest prime less than 2**21.
+#define NBYTES 2097143
+// This is the smallest prime greater than 3072 * 2.
+#define NDROP 6151
 // This is a non-blocking random device.  If you don't have one, use /dev/null.
 #define DEVICE "/dev/urandom"
 
@@ -61,7 +40,7 @@ static int a4s_entropy(const drew_prng_t *ctx);
 static int a4s_fini(drew_prng_t *ctx, int flags);
 static int a4s_test(void *, const drew_loader_t *);
 
-PLUGIN_FUNCTBL(arc4stir, a4s_info, a4s_init, a4s_clone, a4s_fini, a4s_seed, a4s_bytes, a4s_entropy, a4s_test);
+PLUGIN_FUNCTBL(arc4interleave, a4s_info, a4s_init, a4s_clone, a4s_fini, a4s_seed, a4s_bytes, a4s_entropy, a4s_test);
 
 static int a4s_info(int op, void *p)
 {
@@ -75,7 +54,7 @@ static int a4s_info(int op, void *p)
 		case DREW_PRNG_MUST_SEED:
 			return 0;
 		case DREW_PRNG_INTSIZE:
-			return sizeof(drew::ARC4Stir);
+			return sizeof(drew::ARC4Interleave);
 		case DREW_PRNG_BLOCKING:
 			return 0;
 		default:
@@ -86,25 +65,25 @@ static int a4s_info(int op, void *p)
 static int a4s_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *)
 {
-	drew::ARC4Stir *p;
+	drew::ARC4Interleave *p;
 	if (flags & DREW_PRNG_FIXED)
-		p = new (ctx->ctx) drew::ARC4Stir;
+		p = new (ctx->ctx) drew::ARC4Interleave;
 	else
-		p = new drew::ARC4Stir;
+		p = new drew::ARC4Interleave;
 	ctx->ctx = p;
-	ctx->functbl = &arc4stirfunctbl;
+	ctx->functbl = &arc4interleavefunctbl;
 	return 0;
 }
 
 static int a4s_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags)
 {
 	using namespace drew;
-	ARC4Stir *p;
-	const ARC4Stir *q = reinterpret_cast<const ARC4Stir *>(oldctx->ctx);
+	ARC4Interleave *p;
+	const ARC4Interleave *q = reinterpret_cast<const ARC4Interleave *>(oldctx->ctx);
 	if (flags & DREW_PRNG_FIXED)
-		p = new (newctx->ctx) ARC4Stir(*q);
+		p = new (newctx->ctx) ARC4Interleave(*q);
 	else
-		p = new ARC4Stir(*q);
+		p = new ARC4Interleave(*q);
 	newctx->ctx = p;
 	newctx->functbl = oldctx->functbl;
 	return 0;
@@ -113,30 +92,30 @@ static int a4s_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags)
 static int a4s_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
 		size_t entropy)
 {
-	drew::ARC4Stir *p = reinterpret_cast<drew::ARC4Stir *>(ctx->ctx);
+	drew::ARC4Interleave *p = reinterpret_cast<drew::ARC4Interleave *>(ctx->ctx);
 	p->AddRandomData(key, len, entropy);
 	return 0;
 }
 
 static int a4s_bytes(drew_prng_t *ctx, uint8_t *out, size_t len)
 {
-	drew::ARC4Stir *p = reinterpret_cast<drew::ARC4Stir *>(ctx->ctx);
+	drew::ARC4Interleave *p = reinterpret_cast<drew::ARC4Interleave *>(ctx->ctx);
 	p->GetBytes(out, len);
 	return 0;
 }
 
 static int a4s_entropy(const drew_prng_t *ctx)
 {
-	const drew::ARC4Stir *p =
-		reinterpret_cast<const drew::ARC4Stir *>(ctx->ctx);
+	const drew::ARC4Interleave *p =
+		reinterpret_cast<const drew::ARC4Interleave *>(ctx->ctx);
 	return p->GetEntropyAvailable();
 }
 
 static int a4s_fini(drew_prng_t *ctx, int flags)
 {
-	drew::ARC4Stir *p = reinterpret_cast<drew::ARC4Stir *>(ctx->ctx);
+	drew::ARC4Interleave *p = reinterpret_cast<drew::ARC4Interleave *>(ctx->ctx);
 	if (flags & DREW_PRNG_FIXED)
-		p->~ARC4Stir();
+		p->~ARC4Interleave();
 	else {
 		delete p;
 		ctx->ctx = NULL;
@@ -152,17 +131,20 @@ static int a4s_test(void *, const drew_loader_t *)
 }
 
 	PLUGIN_DATA_START()
-	PLUGIN_DATA(arc4stir, "ARC4Stir")
+	PLUGIN_DATA(arc4interleave, "ARC4Interleave")
 	PLUGIN_DATA_END()
 	PLUGIN_INTERFACE()
 }
 
-drew::ARC4Stir::ARC4Stir() : m_ks(new drew::KeystreamGenerator(0))
+drew::ARC4Interleave::ARC4Interleave()
 {
+	for (int i = 0; i < 4; i++)
+		m_ks[i] = new KeystreamGenerator(i);
+	m_index = 0;
 	m_cnt = 0;
 }
 
-uint8_t drew::ARC4Stir::GetByte()
+uint8_t drew::ARC4Interleave::GetByte()
 {
 	if (--m_cnt <= 0)
 		Stir();
@@ -171,21 +153,26 @@ uint8_t drew::ARC4Stir::GetByte()
 	return InternalGetByte();
 }
 
-uint8_t drew::ARC4Stir::InternalGetByte()
+uint8_t drew::ARC4Interleave::InternalGetByte()
 {
-	return m_ks->GetByte();
+	uint8_t b1 = m_ks[m_index & 3]->GetByte();
+	m_index++;
+	return b1 ^ m_ks[m_index & 3]->GetByte();
 }
 
-int drew::ARC4Stir::AddRandomData(const uint8_t *buf, size_t len, size_t entropy)
+int drew::ARC4Interleave::AddRandomData(const uint8_t *buf, size_t len, size_t entropy)
 {
-	uint8_t tmp[256];
+	uint8_t tmp[1024];
 	const uint8_t *data = buf;
 	
 	while (len) {
 		const size_t nbytes = std::min(len, sizeof(tmp));
 		for (size_t i = 0; i < sizeof(tmp); i++)
 			tmp[i] = InternalGetByte() ^ data[i % nbytes];
-		Stir(tmp);
+		m_ks[0]->Stir(tmp +   0, InternalGetByte());
+		m_ks[1]->Stir(tmp + 256, InternalGetByte());
+		m_ks[2]->Stir(tmp + 512, InternalGetByte());
+		m_ks[3]->Stir(tmp + 768, InternalGetByte());
 		data += nbytes;
 		len -= nbytes;
 	}
@@ -198,7 +185,7 @@ int drew::ARC4Stir::AddRandomData(const uint8_t *buf, size_t len, size_t entropy
 	return 0;
 }
 
-void drew::ARC4Stir::Stir()
+void drew::ARC4Interleave::Stir()
 {
 	// Part of this is based on the OpenBSD arc4random PRNG.
 	struct randdata {
@@ -208,7 +195,7 @@ void drew::ARC4Stir::Stir()
 		pid_t pid;
 		int fd;
 		ssize_t nbytes;
-		uint8_t buf[256];
+		uint8_t buf[1024];
 	} rnd;
 
 	gettimeofday(&rnd.tv, NULL);
@@ -221,12 +208,6 @@ void drew::ARC4Stir::Stir()
 	}
 	AddRandomData((const uint8_t *)&rnd, sizeof(rnd),
 			std::min<ssize_t>(rnd.nbytes, 0) * 8);
-}
-
-// Note that this does not reset the S-box to the initial state.
-void drew::ARC4Stir::Stir(const uint8_t *k)
-{
-	m_ks->Stir(k, InternalGetByte());
 }
 
 #include "keystream.cc"

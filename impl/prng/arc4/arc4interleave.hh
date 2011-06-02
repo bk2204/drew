@@ -1,5 +1,5 @@
-#ifndef ARC4STIR_HH
-#define ARC4STIR_HH
+#ifndef ARC4INTERLEAVE_HH
+#define ARC4INTERLEAVE_HH
 
 #include <sys/types.h>
 
@@ -8,21 +8,22 @@
 
 namespace drew {
 
-class ARC4Stir : public BytePRNG
+class ARC4Interleave : public BytePRNG
 {
 	public:
-		ARC4Stir();
-		virtual ~ARC4Stir() {
-			delete m_ks;
+		ARC4Interleave();
+		virtual ~ARC4Interleave() {
+			for (int i = 0; i < 4; i++)
+				delete m_ks[i];
 		}
 		uint8_t GetByte();
 		int AddRandomData(const uint8_t *buf, size_t len, size_t entropy);
 	protected:
-		void Stir();
 		uint8_t InternalGetByte();
-		void Stir(const uint8_t *);
+		void Stir();
 		ssize_t m_cnt;
-		KeystreamGenerator *m_ks;
+		int m_index;
+		KeystreamGenerator *m_ks[4];
 	private:
 };
 

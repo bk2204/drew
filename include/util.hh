@@ -2,6 +2,7 @@
 #define ENDIAN_HH
 
 #include <algorithm>
+#include <arpa/inet.h>
 #include "util.h"
 
 template<class T, size_t N>
@@ -106,29 +107,9 @@ inline void CopyAndXor(uint8_t *out, const uint8_t *in, size_t len,
 template<class T>
 inline void XorAligned(T *outp, const T *inp, const T *xorp, size_t len)
 {
-	struct AlignedData {
-		uint8_t data[16] ALIGNED_T;
-	};
-
-	len /= 16;
-
-	AlignedData *out = reinterpret_cast<AlignedData *>(outp);
-	const AlignedData *in = reinterpret_cast<const AlignedData *>(inp);
-	const AlignedData *x = reinterpret_cast<const AlignedData *>(xorp);
-	for (size_t i = 0; i < len; i++, out++, in++, x++) {
-#ifdef VECTOR_T
-		typedef int vector_t __attribute__ ((vector_size (16)));
-		vector_t buf, xbuf;
-		memcpy(&buf, in->data, 16);
-		memcpy(&xbuf, x->data, 16);
-		buf ^= xbuf;
-		memcpy(out->data, &buf, 16);
-#else
-		for (size_t j = 0; j < 16; j++) {
-			out->data[j] = in->data[j] ^ x->data[j];
-		}
-#endif
-	}
+	return xor_aligned(reinterpret_cast<uint8_t *>(outp),
+			reinterpret_cast<const uint8_t *>(inp),
+			reinterpret_cast<const uint8_t *>(xorp), len);
 }
 
 // This is like CopyAndXor, but we're always working with bufsz-sized chunks.
@@ -238,6 +219,18 @@ class BigEndian : public Endian
 			else
 				return Copy(buf, p, len);
 		}
+		template<class T>
+		inline static T Convert(const uint8_t *p)
+		{
+			T x;
+			Copy(&x, p, sizeof(x));
+			return x;
+		}
+		template<class T>
+		inline static void Convert(uint8_t *buf, T p)
+		{
+			Copy(&buf, &p, sizeof(p));
+		}
 		inline static int GetEndianness()
 		{
 			return 4321;
@@ -304,6 +297,18 @@ class LittleEndian : public Endian
 			else
 				return Copy(buf, p, len);
 		}
+		template<class T>
+		inline static T Convert(const uint8_t *p)
+		{
+			T x;
+			Copy(&x, p, sizeof(x));
+			return x;
+		}
+		template<class T>
+		inline static void Convert(uint8_t *buf, T p)
+		{
+			Copy(&buf, &p, sizeof(p));
+		}
 		inline static int GetEndianness()
 		{
 			return 1234;
@@ -311,6 +316,34 @@ class LittleEndian : public Endian
 	protected:
 	private:
 };
+
+template<>
+inline uint32_t BigEndian::Convert(const uint8_t *p)
+{
+	uint32_t x;
+	memcpy(&x, p, sizeof(x));
+	return htonl(x);
+}
+template<>
+inline uint16_t BigEndian::Convert(const uint8_t *p)
+{
+	uint16_t x;
+	memcpy(&x, p, sizeof(x));
+	return htons(x);
+}
+
+template<>
+inline void BigEndian::Convert(uint8_t *buf, uint32_t p)
+{
+	uint32_t x = ntohl(p);
+	memcpy(buf, &x, sizeof(x));
+}
+template<>
+inline void BigEndian::Convert(uint8_t *buf, uint16_t p)
+{
+	uint16_t x = ntohs(p);
+	memcpy(buf, &x, sizeof(x));
+}
 
 #if BYTE_ORDER == BIG_ENDIAN
 typedef BigEndian NativeEndian;

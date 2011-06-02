@@ -1,4 +1,5 @@
 PLUGINS_PRNG-${CFG_ARC4STIR}		+= arc4/arc4stir
+PLUGINS_PRNG-${CFG_ARC4IL}			+= arc4/arc4interleave
 PLUGINS_PRNG-${CFG_SP80090}			+= sp800-90/sp800-90
 
 PRNG_DIR		:= impl/prng

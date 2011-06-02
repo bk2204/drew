@@ -21,10 +21,9 @@ class RabbitKeystream
 		void FillBuffer(uint8_t val[16]);
 	protected:
 	private:
-		void CounterUpdate();
-		uint64_t square(uint32_t term);
-		uint32_t g(uint32_t u, uint32_t v);
-		void NextState();
+		inline uint64_t square(uint32_t term) const;
+		inline uint32_t g(uint32_t u, uint32_t v) const;
+		inline void Iterate();
 		uint32_t x[8] ALIGNED_T;
 		uint32_t c[8] ALIGNED_T;
 		bool b;

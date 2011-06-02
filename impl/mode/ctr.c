@@ -33,6 +33,8 @@ static int ctr_setblock(drew_mode_t *ctx, const drew_block_t *algoctx);
 static int ctr_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len);
 static int ctr_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
+static int ctr_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len);
 static int ctr_fini(drew_mode_t *ctx, int flags);
 static int ctr_test(void *p, const drew_loader_t *ldr);
 static int ctr_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags);
@@ -46,6 +48,12 @@ static const drew_mode_functbl_t ctr_functbl = {
 	ctr_info, ctr_init, ctr_clone, ctr_reset, ctr_fini, ctr_setpad,
 	ctr_setblock, ctr_setiv, ctr_encrypt, ctr_encrypt, ctr_encrypt, ctr_encrypt,
 	ctr_setdata, ctr_encryptfinal, ctr_decryptfinal, ctr_test
+};
+
+static const drew_mode_functbl_t ctr_functbl_aligned = {
+	ctr_info, ctr_init, ctr_clone, ctr_reset, ctr_fini, ctr_setpad,
+	ctr_setblock, ctr_setiv, ctr_encrypt, ctr_encrypt, ctr_encryptfast,
+	ctr_encryptfast, ctr_setdata, ctr_encryptfinal, ctr_decryptfinal, ctr_test
 };
 
 static int ctr_info(int op, void *p)
@@ -110,6 +118,8 @@ static int ctr_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 
 	c->algo = algoctx;
 	c->blksize = c->algo->functbl->info(DREW_BLOCK_BLKSIZE, NULL);
+	if (c->blksize == FAST_ALIGNMENT)
+		ctx->functbl = &ctr_functbl_aligned;
 
 	return 0;
 }
@@ -174,6 +184,21 @@ static int ctr_encrypt(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 		for (size_t i = 0; i < len; i++)
 			out[i] = c->buf[i] ^ in[i];
 		c->boff = len;
+	}
+
+	return 0;
+}
+
+static int ctr_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len)
+{
+	struct ctr *c = ctx->ctx;
+
+	for (size_t i = 0; i < len; i += FAST_ALIGNMENT, out += FAST_ALIGNMENT,
+			in += FAST_ALIGNMENT) {
+		c->algo->functbl->encrypt(c->algo, c->buf, c->ctr);
+		increment_counter(c->ctr, c->blksize);
+		xor_aligned(out, c->buf, in, FAST_ALIGNMENT);
 	}
 
 	return 0;
