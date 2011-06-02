@@ -341,6 +341,11 @@ class BigEndian : public Endian<DREW_BIG_ENDIAN>
 // For algorithms which are completely byte-order agnostic.
 class NonEndian : public EndianBase
 {
+	public:
+		inline static int GetEndianness()
+		{
+			return 0;
+		}
 };
 
 template<>
