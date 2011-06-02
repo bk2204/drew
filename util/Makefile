@@ -1,4 +1,4 @@
-SUMS			:= sha512 md5
+SUMS			:= md5 sha1 sha224 sha256 sha384 sha512
 
 UTILS			+= $(patsubst %,%sum,$(SUMS))
 
