@@ -338,6 +338,11 @@ class BigEndian : public Endian<DREW_BIG_ENDIAN>
 		}
 };
 
+// For algorithms which are completely byte-order agnostic.
+class NonEndian : public EndianBase
+{
+};
+
 template<>
 inline uint32_t BigEndian::Convert(const uint8_t *p)
 {
