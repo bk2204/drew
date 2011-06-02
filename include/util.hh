@@ -58,10 +58,10 @@ inline bool IsSufficientlyAligned(const void *p)
 
 inline int GetSystemEndianness()
 {
-#if BYTE_ORDER == BIG_ENDIAN
-	return 4321;
+#if DREW_BYTE_ORDER == DREW_BIG_ENDIAN
+	return DREW_BIG_ENDIAN;
 #else
-	return 1234;
+	return DREW_LITTLE_ENDIAN;
 #endif
 }
 
