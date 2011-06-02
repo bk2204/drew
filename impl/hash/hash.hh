@@ -42,7 +42,7 @@ class Hash
 			const T off = t % BlkSize;
 			uint8_t *buf = m_buf;
 		
-			if ((m_len[0] += len) < t)
+			if (unlikely((m_len[0] += len) < t))
 				m_len[1]++;
 
 			if (off) {
@@ -64,7 +64,7 @@ class Hash
 		{
 			const T t = m_len[0];
 
-			if ((m_len[0] += len) < t)
+			if (unlikely((m_len[0] += len) < t))
 				m_len[1]++;
 
 			len /= BlkSize;
