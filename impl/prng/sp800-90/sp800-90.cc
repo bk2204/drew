@@ -157,7 +157,7 @@ static int sp_hash_test(void *, const drew_loader_t *)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(sphash, "HashDRBG")
 	PLUGIN_DATA_END()
-	PLUGIN_INTERFACE()
+	PLUGIN_INTERFACE(sp800_90)
 }
 
 drew::HashHelper::HashHelper(const drew_hash_t *h) :

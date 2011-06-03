@@ -154,7 +154,7 @@ static int a4s_test(void *, const drew_loader_t *)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(arc4stir, "ARC4Stir")
 	PLUGIN_DATA_END()
-	PLUGIN_INTERFACE()
+	PLUGIN_INTERFACE(arc4stir)
 }
 
 drew::ARC4Stir::ARC4Stir() : m_ks(new drew::KeystreamGenerator(0))

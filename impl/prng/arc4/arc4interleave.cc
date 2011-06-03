@@ -133,7 +133,7 @@ static int a4s_test(void *, const drew_loader_t *)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(arc4interleave, "ARC4Interleave")
 	PLUGIN_DATA_END()
-	PLUGIN_INTERFACE()
+	PLUGIN_INTERFACE(arc4interleave)
 }
 
 drew::ARC4Interleave::ARC4Interleave()

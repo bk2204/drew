@@ -164,7 +164,7 @@ static int salsa20_fini(drew_stream_t *ctx, int flags)
 PLUGIN_DATA_START()
 PLUGIN_DATA(salsa20, "Salsa20")
 PLUGIN_DATA_END()
-PLUGIN_INTERFACE()
+PLUGIN_INTERFACE(salsa20)
 
 }
 

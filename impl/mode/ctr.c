@@ -1,3 +1,5 @@
+#include "internal.h"
+
 #include <errno.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -380,7 +382,7 @@ static struct plugin plugin_data[] = {
 	{ "Counter-BE", &ctr_functbl }
 };
 
-int drew_plugin_info(void *ldr, int op, int id, void *p)
+int DREW_PLUGIN_NAME(ctr)(void *ldr, int op, int id, void *p)
 {
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 

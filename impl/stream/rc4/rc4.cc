@@ -171,7 +171,7 @@ static int rc4_fini(drew_stream_t *ctx, int flags)
 PLUGIN_DATA_START()
 PLUGIN_DATA(rc4, "RC4")
 PLUGIN_DATA_END()
-PLUGIN_INTERFACE()
+PLUGIN_INTERFACE(rc4)
 
 }
 

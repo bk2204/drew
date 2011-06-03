@@ -209,7 +209,7 @@ static int hc256_fini(drew_stream_t *ctx, int flags)
 PLUGIN_DATA_START()
 PLUGIN_DATA(hc256, "HC256")
 PLUGIN_DATA_END()
-PLUGIN_INTERFACE()
+PLUGIN_INTERFACE(hc256)
 
 }
 

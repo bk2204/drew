@@ -1,3 +1,5 @@
+#include "internal.h"
+
 #include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -387,7 +389,7 @@ static struct plugin plugin_data[] = {
 	{ "OFB", &ofb_functbl }
 };
 
-int drew_plugin_info(void *ldr, int op, int id, void *p)
+int DREW_PLUGIN_NAME(ofb)(void *ldr, int op, int id, void *p)
 {
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 
