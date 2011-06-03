@@ -146,15 +146,6 @@ inline void CopyAndXorAligned(uint8_t *outp, const uint8_t *inp, size_t len,
 class EndianBase
 {
 	public:
-		inline static void CopyBackwards(uint8_t *dest, const uint8_t *src,
-				size_t len, const size_t sz)
-		{
-			for (size_t i = 0; i < len; ) {
-				const size_t blk = i;
-				for (size_t j = 0; i < len && j < sz; j++, i++)
-					dest[blk+j] = src[blk+(sz-j-1)];
-			}
-		}
 		template<class T>
 		inline static uint8_t GetByte(T x, size_t n)
 		{
@@ -169,6 +160,16 @@ class EndianBase
 		inline static uint8_t GetArrayByte(const T *p, size_t n)
 		{
 			return GetByte(p[n/sizeof(T)], (n & (sizeof(T)-1)));
+		}
+	protected:
+		inline static void CopyBackwards(uint8_t *dest, const uint8_t *src,
+				size_t len, const size_t sz)
+		{
+			for (size_t i = 0; i < len; ) {
+				const size_t blk = i;
+				for (size_t j = 0; i < len && j < sz; j++, i++)
+					dest[blk+j] = src[blk+(sz-j-1)];
+			}
 		}
 #ifdef __GLIBC__
 		template<class T>
@@ -209,21 +210,6 @@ class Endian : public EndianBase
 			}
 			else
 				return CopyByConvert(dest, src, len);
-		}
-		// Same contract as Copy.  Internal implementation function.
-		template<class T>
-		inline static uint8_t *CopyByConvert(uint8_t *dest, const T *src, size_t len)
-		{
-			for (size_t i = 0, j = 0; j < len; i++, j += sizeof(T))
-				Convert(dest+j, src[i]);
-			return dest;
-		}
-		template<class T>
-		inline static T *CopyByConvert(T *dest, const uint8_t *src, size_t len)
-		{
-			for (size_t i = 0, j = 0; j < len; i++, j += sizeof(T))
-				dest[i] = Convert<T>(src+j);
-			return dest;
 		}
 		// Copy len bytes from src to dest in sz-sized chunks.  No assumptions
 		// are made about len with regard to sizeof(T) or sz.
@@ -308,6 +294,22 @@ class Endian : public EndianBase
 		inline static int GetEndianness()
 		{
 			return Endianness;
+		}
+	protected:
+		// Same contract as Copy.  Internal implementation function.
+		template<class T>
+		inline static uint8_t *CopyByConvert(uint8_t *dest, const T *src, size_t len)
+		{
+			for (size_t i = 0, j = 0; j < len; i++, j += sizeof(T))
+				Convert(dest+j, src[i]);
+			return dest;
+		}
+		template<class T>
+		inline static T *CopyByConvert(T *dest, const uint8_t *src, size_t len)
+		{
+			for (size_t i = 0, j = 0; j < len; i++, j += sizeof(T))
+				dest[i] = Convert<T>(src+j);
+			return dest;
 		}
 };
 
