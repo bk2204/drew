@@ -103,7 +103,7 @@ class Hash
 			if (!nopad)
 				Pad();
 
-			E::Copy(digest, m_hash, Size);
+			E::CopyCarefully(digest, m_hash, Size);
 		}
 		virtual size_t GetDigestSize() const
 		{
