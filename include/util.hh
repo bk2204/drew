@@ -211,8 +211,9 @@ class Endian : public EndianBase
 			else
 				return CopyByConvert(dest, src, len);
 		}
-		// Copy len bytes from src to dest in sz-sized chunks.  No assumptions
-		// are made about len with regard to sizeof(T) or sz.
+		// Copy len bytes from src to dest in sz-sized chunks.  When sz ==
+		// sizeof(T), the three-argument form should be used instead (for
+		// efficiency reasons).
 		template<class T>
 		inline static uint8_t *Copy(uint8_t *dest, const T *src, size_t len,
 				const size_t sz)
