@@ -1,3 +1,5 @@
+#include "internal.h"
+
 #include <errno.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -248,7 +250,7 @@ static struct plugin plugin_data[] = {
 	{ "RSASignature", &rsa_functbl },
 };
 
-int drew_plugin_info(void *ldr, int op, int id, void *p)
+int DREW_PLUGIN_NAME(rsasig)(void *ldr, int op, int id, void *p)
 {
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 
