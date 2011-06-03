@@ -1,5 +1,5 @@
 #define ARIA_BYTEWISE
-#include "aria.cc"
+#include "aria.hh"
 
 extern "C" {
 static int ariatest(void *, const drew_loader_t *)
@@ -12,7 +12,7 @@ static int ariatest(void *, const drew_loader_t *)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(aria, "ARIA")
 	PLUGIN_DATA_END()
-	PLUGIN_INTERFACE(aria)
+	PLUGIN_INTERFACE(ariabyte)
 }
 
 typedef drew::ARIABytewise::endian_t E;
