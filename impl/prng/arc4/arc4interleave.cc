@@ -209,5 +209,3 @@ void drew::ARC4Interleave::Stir()
 	AddRandomData((const uint8_t *)&rnd, sizeof(rnd),
 			std::min<ssize_t>(rnd.nbytes, 0) * 8);
 }
-
-#include "keystream.cc"

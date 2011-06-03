@@ -228,5 +228,3 @@ void drew::ARC4Stir::Stir(const uint8_t *k)
 {
 	m_ks->Stir(k, InternalGetByte());
 }
-
-#include "keystream.cc"

@@ -1,5 +1,10 @@
 #include "keystream.hh"
 
+#include <string.h>
+
+#include <algorithm>
+#include <utility>
+
 drew::KeystreamGenerator::KeystreamGenerator(int index)
 {
 	static const uint8_t *table[4] = {
