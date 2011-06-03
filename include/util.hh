@@ -235,16 +235,27 @@ class Endian : public EndianBase
 				CopyBackwards(reinterpret_cast<uint8_t *>(dest), src, len, sz);
 			return dest;
 		}
-		inline static uint8_t *Copy(uint8_t *dest, const uint8_t *src,
-				size_t len, const size_t sz)
+		// Copy len bytes from src to dest in sz-sized chunks.  No assumptions
+		// are made about len with regard to sizeof(T) or sz.
+		template<class T>
+		inline static uint8_t *CopyCarefully(uint8_t *dest, const T *src, size_t len,
+				const size_t sz = sizeof(T))
 		{
-			memcpy(dest, src, len);
+			if (DREW_BYTE_ORDER == Endianness)
+				memcpy(dest, src, len);
+			else
+				CopyBackwards(dest, reinterpret_cast<const uint8_t *>(src), len,
+						sz);
 			return dest;
 		}
-		inline static uint8_t *Copy(uint8_t *dest, const uint8_t *src,
-				size_t len)
+		template<class T>
+		inline static T *CopyCarefully(T *dest, const uint8_t *src, size_t len,
+				const size_t sz = sizeof(T))
 		{
-			memcpy(dest, src, len);
+			if (DREW_BYTE_ORDER == Endianness)
+				memcpy(dest, src, len);
+			else
+				CopyBackwards(reinterpret_cast<uint8_t *>(dest), src, len, sz);
 			return dest;
 		}
 		// Return a pointer to the existing buffer if possible; otherwise call
@@ -357,6 +368,24 @@ class BigEndian : public Endian<DREW_BIG_ENDIAN>
 class NonEndian : public EndianBase
 {
 	public:
+		inline static uint8_t *CopyCarefully(uint8_t *dest, const uint8_t *src,
+				size_t len, const size_t sz = 1)
+		{
+			memcpy(dest, src, len);
+			return dest;
+		}
+		inline static uint8_t *Copy(uint8_t *dest, const uint8_t *src,
+				size_t len, const size_t sz)
+		{
+			memcpy(dest, src, len);
+			return dest;
+		}
+		inline static uint8_t *Copy(uint8_t *dest, const uint8_t *src,
+				size_t len)
+		{
+			memcpy(dest, src, len);
+			return dest;
+		}
 		inline static int GetEndianness()
 		{
 			return 0;
