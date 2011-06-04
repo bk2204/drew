@@ -1,5 +1,5 @@
 #define ARIA_128
-#include "aria.cc"
+#include "aria.hh"
 
 extern "C" {
 static int ariatest(void *, const drew_loader_t *)
@@ -12,7 +12,7 @@ static int ariatest(void *, const drew_loader_t *)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(aria, "ARIA")
 	PLUGIN_DATA_END()
-	PLUGIN_INTERFACE(aria)
+	PLUGIN_INTERFACE(aria128)
 }
 
 typedef drew::ARIA128::endian_t E;

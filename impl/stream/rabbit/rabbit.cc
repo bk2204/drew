@@ -139,7 +139,7 @@ PLUGIN_FUNCTBL(rabbit, rabbit_info, rabbit_init, rabbit_setiv, rabbit_setkey, ra
 PLUGIN_DATA_START()
 PLUGIN_DATA(rabbit, "Rabbit")
 PLUGIN_DATA_END()
-PLUGIN_INTERFACE()
+PLUGIN_INTERFACE(rabbit)
 
 static int rabbit_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *)

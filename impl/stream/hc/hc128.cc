@@ -204,7 +204,7 @@ static int hc128_fini(drew_stream_t *ctx, int flags)
 PLUGIN_DATA_START()
 PLUGIN_DATA(hc128, "HC128")
 PLUGIN_DATA_END()
-PLUGIN_INTERFACE()
+PLUGIN_INTERFACE(hc128)
 
 }
 

@@ -133,7 +133,7 @@ static int a4s_test(void *, const drew_loader_t *)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(arc4interleave, "ARC4Interleave")
 	PLUGIN_DATA_END()
-	PLUGIN_INTERFACE()
+	PLUGIN_INTERFACE(arc4interleave)
 }
 
 drew::ARC4Interleave::ARC4Interleave()
@@ -209,5 +209,3 @@ void drew::ARC4Interleave::Stir()
 	AddRandomData((const uint8_t *)&rnd, sizeof(rnd),
 			std::min<ssize_t>(rnd.nbytes, 0) * 8);
 }
-
-#include "keystream.cc"

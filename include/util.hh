@@ -146,15 +146,6 @@ inline void CopyAndXorAligned(uint8_t *outp, const uint8_t *inp, size_t len,
 class EndianBase
 {
 	public:
-		inline static void CopyBackwards(uint8_t *dest, const uint8_t *src,
-				size_t len, const size_t sz)
-		{
-			for (size_t i = 0; i < len; ) {
-				const size_t blk = i;
-				for (size_t j = 0; i < len && j < sz; j++, i++)
-					dest[blk+j] = src[blk+(sz-j-1)];
-			}
-		}
 		template<class T>
 		inline static uint8_t GetByte(T x, size_t n)
 		{
@@ -169,6 +160,16 @@ class EndianBase
 		inline static uint8_t GetArrayByte(const T *p, size_t n)
 		{
 			return GetByte(p[n/sizeof(T)], (n & (sizeof(T)-1)));
+		}
+	protected:
+		inline static void CopyBackwards(uint8_t *dest, const uint8_t *src,
+				size_t len, const size_t sz)
+		{
+			for (size_t i = 0; i < len; ) {
+				const size_t blk = i;
+				for (size_t j = 0; i < len && j < sz; j++, i++)
+					dest[blk+j] = src[blk+(sz-j-1)];
+			}
 		}
 #ifdef __GLIBC__
 		template<class T>
@@ -210,23 +211,9 @@ class Endian : public EndianBase
 			else
 				return CopyByConvert(dest, src, len);
 		}
-		// Same contract as Copy.  Internal implementation function.
-		template<class T>
-		inline static uint8_t *CopyByConvert(uint8_t *dest, const T *src, size_t len)
-		{
-			for (size_t i = 0, j = 0; j < len; i++, j += sizeof(T))
-				Convert(dest+j, src[i]);
-			return dest;
-		}
-		template<class T>
-		inline static T *CopyByConvert(T *dest, const uint8_t *src, size_t len)
-		{
-			for (size_t i = 0, j = 0; j < len; i++, j += sizeof(T))
-				dest[i] = Convert<T>(src+j);
-			return dest;
-		}
-		// Copy len bytes from src to dest in sz-sized chunks.  No assumptions
-		// are made about len with regard to sizeof(T) or sz.
+		// Copy len bytes from src to dest in sz-sized chunks.  When sz ==
+		// sizeof(T), the three-argument form should be used instead (for
+		// efficiency reasons).
 		template<class T>
 		inline static uint8_t *Copy(uint8_t *dest, const T *src, size_t len,
 				const size_t sz)
@@ -248,16 +235,27 @@ class Endian : public EndianBase
 				CopyBackwards(reinterpret_cast<uint8_t *>(dest), src, len, sz);
 			return dest;
 		}
-		inline static uint8_t *Copy(uint8_t *dest, const uint8_t *src,
-				size_t len, const size_t sz)
+		// Copy len bytes from src to dest in sz-sized chunks.  No assumptions
+		// are made about len with regard to sizeof(T) or sz.
+		template<class T>
+		inline static uint8_t *CopyCarefully(uint8_t *dest, const T *src, size_t len,
+				const size_t sz = sizeof(T))
 		{
-			memcpy(dest, src, len);
+			if (DREW_BYTE_ORDER == Endianness)
+				memcpy(dest, src, len);
+			else
+				CopyBackwards(dest, reinterpret_cast<const uint8_t *>(src), len,
+						sz);
 			return dest;
 		}
-		inline static uint8_t *Copy(uint8_t *dest, const uint8_t *src,
-				size_t len)
+		template<class T>
+		inline static T *CopyCarefully(T *dest, const uint8_t *src, size_t len,
+				const size_t sz = sizeof(T))
 		{
-			memcpy(dest, src, len);
+			if (DREW_BYTE_ORDER == Endianness)
+				memcpy(dest, src, len);
+			else
+				CopyBackwards(reinterpret_cast<uint8_t *>(dest), src, len, sz);
 			return dest;
 		}
 		// Return a pointer to the existing buffer if possible; otherwise call
@@ -309,6 +307,22 @@ class Endian : public EndianBase
 		{
 			return Endianness;
 		}
+	protected:
+		// Same contract as Copy.  Internal implementation function.
+		template<class T>
+		inline static uint8_t *CopyByConvert(uint8_t *dest, const T *src, size_t len)
+		{
+			for (size_t i = 0, j = 0; j < len; i++, j += sizeof(T))
+				Convert(dest+j, src[i]);
+			return dest;
+		}
+		template<class T>
+		inline static T *CopyByConvert(T *dest, const uint8_t *src, size_t len)
+		{
+			for (size_t i = 0, j = 0; j < len; i++, j += sizeof(T))
+				dest[i] = Convert<T>(src+j);
+			return dest;
+		}
 };
 
 #ifdef __GLIBC__
@@ -354,6 +368,24 @@ class BigEndian : public Endian<DREW_BIG_ENDIAN>
 class NonEndian : public EndianBase
 {
 	public:
+		inline static uint8_t *CopyCarefully(uint8_t *dest, const uint8_t *src,
+				size_t len, const size_t sz = 1)
+		{
+			memcpy(dest, src, len);
+			return dest;
+		}
+		inline static uint8_t *Copy(uint8_t *dest, const uint8_t *src,
+				size_t len, const size_t sz)
+		{
+			memcpy(dest, src, len);
+			return dest;
+		}
+		inline static uint8_t *Copy(uint8_t *dest, const uint8_t *src,
+				size_t len)
+		{
+			memcpy(dest, src, len);
+			return dest;
+		}
 		inline static int GetEndianness()
 		{
 			return 0;
