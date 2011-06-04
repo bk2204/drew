@@ -90,7 +90,7 @@ static inline uint32_t gg(uint32_t x, uint32_t y, uint32_t z)
 }
 static inline uint32_t hh(uint32_t x, uint32_t y, uint32_t z)
 {
-	return ((x&y)|(z&(x|y)))+0x8f1bbcdc;
+	return (x&y)+(z&(x^y))+0x8f1bbcdc;
 }
 static inline uint32_t ii(uint32_t x, uint32_t y, uint32_t z)
 {
