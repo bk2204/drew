@@ -117,7 +117,10 @@ void drew::SHA<Rotate>::Reset()
 #define OP(f, g, a, b, c, d, e) \
 	e+=RotateLeft(a, 5)+f(b, c, d)+g; b=RotateLeft(b, 30);
 #define EXPANSION(i) \
-	(blk[(i)&15]=RotateLeft(blk[((i)+13)&15]^blk[((i)+8)&15]^blk[((i)+2)&15]^blk[(i)&15],Rotate))
+	(Rotate ? \
+	(blk[(i)&15]=RotateLeft(blk[((i)+13)&15]^blk[((i)+8)&15]^blk[((i)+2)&15]^blk[(i)&15],Rotate)) : \
+	(blk[(i)&15]^=blk[((i)+13)&15]^blk[((i)+8)&15]^blk[((i)+2)&15]))
+	
 
 /* This implementation uses a circular buffer to create the expansions of blk.
  * While it appears that this would be slower, it instead is significantly
