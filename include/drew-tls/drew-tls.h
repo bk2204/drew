@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+#define DREW_TLS_ERR_BASE						0x40000
 #define DREW_TLS_ERR_CLOSE_NOTIFY				0x40000
 #define DREW_TLS_ERR_UNEXPECTED_MESSAGE			0x4000a
 #define DREW_TLS_ERR_BAD_RECORD_MAC				0x40014
