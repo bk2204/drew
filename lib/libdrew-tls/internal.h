@@ -5,9 +5,12 @@
 
 #define DIM(x) (sizeof(x)/sizeof((x)[0]))
 
-#define RETFAIL(x) do { if ((res = (x))) return res; } while (0)
+#define RETFAIL(x) do { \
+	int result_code; \
+	if ((result_code = (x))) return result_code; } while (0)
 #define URETFAIL(m, x) do { \
-	if ((res = (x))) { UNLOCK(m); return res; } \
+	int result_code; \
+	if ((result_code = (x))) { UNLOCK(m); return result_code; } \
 } while (0)
 
 #ifdef DREW_TLS_THREAD_SAFE
