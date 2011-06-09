@@ -470,13 +470,10 @@ static int handshake_send_server_hello(drew_tls_session_t sess)
 	return -DREW_ERR_NOT_IMPL;
 }
 
-static int recv_handshake(drew_tls_session_t sess, SerializedBuffer &buf,
-		uint32_t *length, uint8_t *type)
+static int parse_handshake(drew_tls_session_t sess, const Record &rec,
+		SerializedBuffer &buf, uint32_t *length, uint8_t *type)
 {
 	int res = 0;
-	Record rec;
-
-	res = recv_record(sess, rec);
 
 	if (rec.length < 4)
 		return -DREW_TLS_ERR_ILLEGAL_PARAMETER;
@@ -492,56 +489,10 @@ static int recv_handshake(drew_tls_session_t sess, SerializedBuffer &buf,
 
 	*length &= 0xffffff;
 
+	if (rec.length != *length + 4)
+		return -DREW_TLS_ERR_ILLEGAL_PARAMETER;
+
 	return res;
-}
-
-
-static int handshake_recv_server_hello(drew_tls_session_t sess)
-{
-	int res = 0;
-	drew_tls_server_hello_t sh;
-	SerializedBuffer data;
-	uint32_t length;
-	uint8_t type;
-	ProtocolVersion pv;
-	size_t minlength = 2 + 32 + 2 + 1 + 1;
-	uint8_t random[32];
-	drew_tls_cipher_suite_t cs;
-
-	LOCK(sess);
-
-	URETFAIL(sess, recv_handshake(sess, data, &length, &type));
-
-	// The session ID can be up to 32 bytes.
-	if (length < minlength || length > (minlength + 32))
-		URETFAIL(sess, -DREW_TLS_ERR_ILLEGAL_PARAMETER);
-
-	pv.ReadFromBuffer(data);
-
-	if (pv.major != 3)
-		URETFAIL(sess, -DREW_TLS_ERR_HANDSHAKE_FAILURE);
-	if (pv.minor != 1)
-		URETFAIL(sess, -DREW_TLS_ERR_HANDSHAKE_FAILURE);
-	sess->protover.major = pv.major;
-	sess->protover.minor = pv.minor;
-
-	data.Get(random, sizeof(random));
-	data.Get(sess->session_id.length);
-
-	if (length != minlength + sess->session_id.length)
-		URETFAIL(sess, -DREW_TLS_ERR_ILLEGAL_PARAMETER);
-
-	data.Get(sess->session_id.sessionid, sess->session_id.length);
-	data.Get(cs.val, sizeof(cs.val));
-	uint8_t compress;
-	data.Get(compress);
-
-	if (compress != 0)
-		URETFAIL(sess, -DREW_TLS_ERR_HANDSHAKE_FAILURE);
-
-	UNLOCK(sess);
-
-	return -DREW_ERR_NOT_IMPL;
 }
 
 static int handshake_server(drew_tls_session_t sess)
@@ -549,11 +500,229 @@ static int handshake_server(drew_tls_session_t sess)
 	return -DREW_ERR_NOT_IMPL;
 }
 
+#define CLIENT_HANDSHAKE_HELLO_REQUEST		0
+#define CLIENT_HANDSHAKE_NEED_SERVER_HELLO	1
+#define CLIENT_HANDSHAKE_FINISHED			20
+
+#define ALERT_WARNING	1
+#define ALERT_FATAL		2
+
+#define STATE_DESTROYED	1
+
+#define TYPE_CHANGE_CIPHER_SPEC		20
+#define TYPE_ALERT					21
+#define TYPE_HANDSHAKE				22
+#define TYPE_APPLICATION_DATA		23
+
+static int destroy_session(drew_tls_session_t sess)
+{
+	sess->state = STATE_DESTROYED;
+	return 0;
+}
+
+static int send_alert(drew_tls_session_t sess, int alert, int level)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+int client_parse_server_cert(drew_tls_session_t sess,
+	const HandshakeMessage &msg)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+int client_parse_server_keyex(drew_tls_session_t sess,
+	const HandshakeMessage &msg)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+int client_parse_server_certreq(drew_tls_session_t sess,
+	const HandshakeMessage &msg)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+int client_parse_server_hello_done(drew_tls_session_t sess,
+	const HandshakeMessage &msg)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+int client_parse_server_finished(drew_tls_session_t sess,
+	const HandshakeMessage &msg)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+int client_send_client_hello(drew_tls_session_t sess)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+static int client_parse_server_hello(drew_tls_session_t sess,
+		const HandshakeMessage &msg)
+{
+	int res = 0;
+	ProtocolVersion pv;
+	size_t minlength = 2 + 32 + 2 + 1 + 1;
+	uint8_t random[32];
+	drew_tls_cipher_suite_t cs;
+	SerializedBuffer buf(msg.data);
+
+	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_SERVER_HELLO)
+		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+
+	// The session ID can be up to 32 bytes.
+	if (msg.length < minlength || msg.length > (minlength + 32))
+		return -DREW_TLS_ERR_ILLEGAL_PARAMETER;
+
+	pv.ReadFromBuffer(buf);
+
+	if (pv.major != 3)
+		return -DREW_TLS_ERR_HANDSHAKE_FAILURE;
+	if (pv.minor != 1)
+		return -DREW_TLS_ERR_HANDSHAKE_FAILURE;
+	sess->protover.major = pv.major;
+	sess->protover.minor = pv.minor;
+
+	buf.Get(random, sizeof(random));
+	buf.Get(sess->session_id.length);
+
+	if (msg.length != minlength + sess->session_id.length)
+		return -DREW_TLS_ERR_ILLEGAL_PARAMETER;
+
+	buf.Get(sess->session_id.sessionid, sess->session_id.length);
+	buf.Get(cs.val, sizeof(cs.val));
+
+	uint8_t compress;
+	buf.Get(compress);
+
+	if (compress != 0)
+		return -DREW_TLS_ERR_HANDSHAKE_FAILURE;
+
+	return 0;
+}
+
+static int client_handle_handshake(drew_tls_session_t sess, const Record &rec)
+{
+	int res = 0;
+	HandshakeMessage hm;
+
+	RETFAIL(parse_handshake(sess, rec, hm.data, &hm.length, &hm.type));
+
+	switch (hm.type) {
+		case 0:
+			return 0;
+		case 2:
+			return client_parse_server_hello(sess, hm);
+		case 11:
+			return client_parse_server_cert(sess, hm);
+		case 12:
+			return client_parse_server_keyex(sess, hm);
+		case 13:
+			return client_parse_server_certreq(sess, hm);
+		case 14:
+			return client_parse_server_hello_done(sess, hm);
+		case 20:
+			return client_parse_server_finished(sess, hm);
+		case 15:
+		case 16:
+		case 1:
+			// Only messages we should be sending, not the server.
+		default:
+			return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+	}
+
+}
+
+// Return 0 to continue the connection, 1 to close it gracefully, and a negative
+// error value to abort it abnormally.
+static int handle_alert(drew_tls_session_t sess, const Record &rec)
+{
+	AlertMessage msg(rec);
+	int errval = DREW_TLS_ERR_BASE + msg.description;
+	if (errval == DREW_TLS_ERR_CLOSE_NOTIFY) {
+		send_alert(sess, DREW_TLS_ERR_CLOSE_NOTIFY, ALERT_WARNING);
+		destroy_session(sess);
+		return 1;
+	}
+	if (msg.level == ALERT_FATAL) {
+		destroy_session(sess);
+		return -errval;
+	}
+	if (msg.level != ALERT_WARNING) {
+		// Whatever the other side has been smoking, let's not inhale.
+		send_alert(sess, DREW_TLS_ERR_UNEXPECTED_MESSAGE, ALERT_FATAL);
+		destroy_session(sess);
+		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+	}
+	// FIXME: split this out into a function that we can get flags from.
+	switch (errval) {
+		case DREW_TLS_ERR_UNEXPECTED_MESSAGE:
+		case DREW_TLS_ERR_BAD_RECORD_MAC:
+		case DREW_TLS_ERR_DECRYPTION_FAILED:
+		case DREW_TLS_ERR_RECORD_OVERFLOW:
+		case DREW_TLS_ERR_DECOMPRESSION_FAILURE:
+		case DREW_TLS_ERR_HANDSHAKE_FAILURE:
+		case DREW_TLS_ERR_ILLEGAL_PARAMETER:
+		case DREW_TLS_ERR_UNKNOWN_CA:
+		case DREW_TLS_ERR_ACCESS_DENIED:
+		case DREW_TLS_ERR_DECODE_ERROR:
+		case DREW_TLS_ERR_EXPORT_RESTRICTION:
+		case DREW_TLS_ERR_PROTOCOL_VERSION:
+		case DREW_TLS_ERR_INSUFFICIENT_SECURITY:
+		case DREW_TLS_ERR_INTERNAL_ERROR:
+			// Oops.  Some idiot sent a fatal error as a warning.  Abort the
+			// connection.
+			send_alert(sess, DREW_TLS_ERR_UNEXPECTED_MESSAGE, ALERT_FATAL);
+			destroy_session(sess);
+			return -errval;
+	}
+	return 0;
+}
+
 static int handshake_client(drew_tls_session_t sess)
 {
 	int res = 0;
-	RETFAIL(handshake_send_client_hello(sess));
-	RETFAIL(handshake_recv_server_hello(sess));
+
+	LOCK(sess);
+	
+	sess->handshake_state = CLIENT_HANDSHAKE_HELLO_REQUEST;
+
+	URETFAIL(sess, client_send_client_hello(sess));
+
+	while (sess->handshake_state != CLIENT_HANDSHAKE_FINISHED) {
+		Record rec;
+
+		if (sess->state == STATE_DESTROYED)
+			return -DREW_ERR_BUG;
+
+		URETFAIL(sess, recv_record(sess, rec));
+		res = -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+		switch (rec.type) {
+			case TYPE_CHANGE_CIPHER_SPEC:
+				break;
+			case TYPE_ALERT:
+				URETFAIL(sess, handle_alert(sess, rec));
+				break;
+			case TYPE_HANDSHAKE:
+				res = client_handle_handshake(sess, rec);
+				if (!res)
+					break;
+				// Fallthru to send alert and return.
+			case TYPE_APPLICATION_DATA:
+				// Not allowed now.
+			default:
+				// Something else?
+				send_alert(sess, -res, ALERT_FATAL);
+				destroy_session(sess);
+				URETFAIL(sess, res);
+				break;
+		}
+	}
+
+	UNLOCK(sess);
 
 	return -DREW_ERR_NOT_IMPL;
 }

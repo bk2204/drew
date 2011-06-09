@@ -128,6 +128,8 @@ struct drew_tls_session_s {
 	drew_mac_t *outmac;
 	drew_mode_t *outmode;
 	uint64_t outseqnum;
+	int handshake_state;
+	int state;
 	drew_tls_priority_t prio;
 	drew_tls_session_id_t session_id;
 	drew_tls_protocol_version_t protover;
