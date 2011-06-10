@@ -69,6 +69,36 @@ inline T RotateRight(T x, size_t n)
 	return (x >> n) | (x << ((sizeof(T)*8) - n));
 }
 
+#if defined(__GNUC__)
+/* GCC does a crappy job in optimizing non-constant rotates (see PR45216).  As a
+ * consequence, we have to help it out.  Do note, though, that unconditionally
+ * using the instructions hurts performance when n is a constant.
+ */
+#if defined(__i386__) || defined(__x86_64__)
+#define ROTATE(bits, direction, suffix, asmdirection, sh, osh) \
+template<> \
+inline uint ## bits ## _t Rotate ## direction(uint ## bits ##_t x, size_t n) \
+{ \
+	if (__builtin_constant_p(n)) \
+		return (x sh n) | (x osh (bits - n)); \
+	__asm__("ro" #asmdirection #suffix " %%cl, %0" \
+			: "=r"(x) \
+			: "0"(x), "c"(n)); \
+	return x; \
+}
+
+ROTATE(16, Left, w, l, <<, >>)
+ROTATE(32, Left, l, l, <<, >>)
+ROTATE(16, Right, w, r, >>, <<)
+ROTATE(32, Right, l, r, >>, <<)
+#if defined(__x86_64__)
+ROTATE(64, Left, q, l, <<, >>)
+ROTATE(64, Right, q, r, >>, <<)
+#endif
+#endif
+#undef ROTATE
+#endif
+
 // This function copies data from in to out, xoring each byte with the contents
 // of mbuf, starting bufrem bytes from the end.  If mbuf runs out of data,
 // obj.FillBuffer() is called to add more data.  On return, bufrem contains the
