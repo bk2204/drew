@@ -2,10 +2,6 @@
 #define ENDIAN_HH
 
 #include <algorithm>
-#include <arpa/inet.h>
-#ifdef __GLIBC__
-#include <byteswap.h>
-#endif
 #include "util.h"
 
 #define DREW_BIG_ENDIAN		4321
@@ -58,11 +54,7 @@ inline bool IsSufficientlyAligned(const void *p)
 
 inline int GetSystemEndianness()
 {
-#if DREW_BYTE_ORDER == DREW_BIG_ENDIAN
-	return DREW_BIG_ENDIAN;
-#else
-	return DREW_LITTLE_ENDIAN;
-#endif
+	return DREW_BYTE_ORDER;
 }
 
 template<class T>
@@ -171,7 +163,8 @@ class EndianBase
 					dest[blk+j] = src[blk+(sz-j-1)];
 			}
 		}
-#ifdef __GLIBC__
+#if defined(FEATURE_BYTESWAP)
+		// Fallback only.
 		template<class T>
 		inline static void ByteSwap(T &x)
 		{
@@ -278,7 +271,7 @@ class Endian : public EndianBase
 			if (DREW_BYTE_ORDER == Endianness)
 				memcpy(&x, p, sizeof(x));
 			else {
-#if defined(__GLIBC__)
+#if defined(FEATURE_BYTESWAP)
 				memcpy(&x, p, sizeof(x));
 				ByteSwap(x);
 #else
@@ -294,7 +287,7 @@ class Endian : public EndianBase
 			if (DREW_BYTE_ORDER == Endianness)
 				memcpy(buf, &p, sizeof(p));
 			else {
-#if defined(__GLIBC__)
+#if defined(FEATURE_BYTESWAP)
 				ByteSwap(p);
 				memcpy(buf, &p, sizeof(p));
 #else
@@ -325,23 +318,44 @@ class Endian : public EndianBase
 		}
 };
 
-#ifdef __GLIBC__
+#ifdef FEATURE_BYTESWAP
 template<>
 inline void EndianBase::ByteSwap(uint16_t &x)
 {
-	x = bswap_16(x);
+	x = 
+#if defined(FEATURE_BYTESWAP_GNU)
+		bswap_16(x);
+#elif defined(FEATURE_BYTESWAP_BSD)
+		bswap16(x);
+#elif defined(FEATURE_BYTESWAP_OPENBSD)
+		swap16(x);
+#endif
 }
 
 template<>
 inline void EndianBase::ByteSwap(uint32_t &x)
 {
-	x = bswap_32(x);
+	x = 
+#if defined(FEATURE_BYTESWAP_GNU)
+		bswap_32(x);
+#elif defined(FEATURE_BYTESWAP_BSD)
+		bswap32(x);
+#elif defined(FEATURE_BYTESWAP_OPENBSD)
+		swap32(x);
+#endif
 }
 
 template<>
 inline void EndianBase::ByteSwap(uint64_t &x)
 {
-	x = bswap_64(x);
+	x = 
+#if defined(FEATURE_BYTESWAP_GNU)
+		bswap_64(x);
+#elif defined(FEATURE_BYTESWAP_BSD)
+		bswap64(x);
+#elif defined(FEATURE_BYTESWAP_OPENBSD)
+		swap64(x);
+#endif
 }
 #endif
 
