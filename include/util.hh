@@ -120,9 +120,7 @@ template<class T>
 inline void CopyAndXorAligned(uint8_t *outp, const uint8_t *inp, size_t len,
 		uint8_t *mbufp, const size_t bufsz, T &obj)
 {
-	struct AlignedData {
-		uint8_t data[16] ALIGNED_T;
-	};
+	typedef AlignedBlock<uint8_t, 16> AlignedData;
 
 	AlignedData *mbuf = reinterpret_cast<AlignedData *>(mbufp);
 	for (size_t i = 0; i < len; i += bufsz) {
