@@ -52,6 +52,7 @@ all:
 
 include lib/libdrew/Makefile
 include lib/libmd/Makefile
+include lib/libdrew-util/Makefile
 include $(patsubst %,impl/%/Makefile,$(CATEGORIES))
 include lib/libdrew-impl/Makefile
 include test/Makefile
@@ -73,6 +74,7 @@ all: $(DREW_SONAME) standard
 depend: $(DEPFILES)
 
 standard: $(DREW_SONAME) $(MD_SONAME) symlinks plugins
+standard: $(DREW_UTIL_SONAME)
 standard: $(TEST_BINARIES) $(UTILITIES)
 
 symlinks: $(DREW_LSYMLINK) $(DREW_IMPL_LSYMLINK)
