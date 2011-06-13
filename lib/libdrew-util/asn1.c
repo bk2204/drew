@@ -56,7 +56,7 @@ int drew_util_asn1_parse_value(drew_util_asn1_t asn, const uint8_t *data,
 		return -DREW_ERR_MORE_INFO;
 
 	// identifier
-	enc->class = *data >> 6;
+	enc->tagclass = *data >> 6;
 	enc->constructed = *data & 0x20;
 	if ((*data & 0x1f) != 0x1f)
 		enc->tag = *data & 0x1f;
