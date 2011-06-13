@@ -22,6 +22,11 @@ typedef struct {
 #define DREW_UTIL_ASN1_ENC_CER		2
 #define DREW_UTIL_ASN1_ENC_BER		3
 
+#define DREW_UTIL_ASN1_TC_UNIVERSAL		0
+#define DREW_UTIL_ASN1_TC_APPLICATION	1
+#define DREW_UTIL_ASN1_TC_CONTEXT		2
+#define DREW_UTIL_ASN1_TC_PRIVATE		3
+
 /* If set, when parsing data into a drew_util_asn1_value_t, the parser should
  * allocate memory and copy the data into a separate block of memory instead of
  * simply pointing to the existing buffer.
