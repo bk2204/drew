@@ -18,9 +18,14 @@ typedef struct {
 } drew_util_asn1_value_t;
 
 
-#define DREW_UTIL_ASN1_ENC_DER		1
-#define DREW_UTIL_ASN1_ENC_CER		2
-#define DREW_UTIL_ASN1_ENC_BER		3
+#define DREW_UTIL_ASN1_ENC_BER			1
+#define DREW_UTIL_ASN1_ENC_CER			2
+#define DREW_UTIL_ASN1_ENC_DER			3
+
+/* A bit mask for CER and DER, which have restrictions on permissible BER
+ * encodings.
+ */
+#define DREW_UTIL_ASN1_ENC_RESTRICTED	2
 
 #define DREW_UTIL_ASN1_TC_UNIVERSAL		0
 #define DREW_UTIL_ASN1_TC_APPLICATION	1
