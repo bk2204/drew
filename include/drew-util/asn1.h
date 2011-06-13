@@ -10,7 +10,7 @@ struct drew_util_asn1_s;
 typedef struct drew_util_asn1_s *drew_util_asn1_t;
 
 typedef struct {
-	uint8_t class;
+	uint8_t tagclass;
 	bool constructed;
 	size_t tag;
 	size_t length;
