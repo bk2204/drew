@@ -13,8 +13,6 @@
 
 extern "C" {
 
-#define DIM(x) (sizeof(x)/sizeof(x[0]))
-
 static const int teakeysz[] =
 {
 	16

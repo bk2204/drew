@@ -44,8 +44,6 @@ static int make_new(T *ctx, const drew_loader_t *ldr, const drew_param_t *param,
 
 extern "C" {
 
-#define DIM(x) (sizeof(x)/sizeof(x[0]))
-
 static int sp_hash_info(int op, void *p);
 static int sp_hash_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);

@@ -114,8 +114,6 @@ static int hc256_test(void *, const drew_loader_t *)
 	return res;
 }
 
-#define DIM(x) (sizeof(x)/sizeof(x[0]))
-
 static const int hc256_keysz[] = {32};
 
 static int hc256_info(int op, void *p)

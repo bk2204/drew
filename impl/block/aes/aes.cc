@@ -51,8 +51,6 @@ static const int aes128keysz[] = {16};
 static const int aes192keysz[] = {24};
 static const int aes256keysz[] = {32};
 
-#define DIM(x) (sizeof(x)/sizeof(x[0]))
-
 static void str2bytes(uint8_t *bytes, const char *s, size_t len = 0)
 {
 	if (!len)

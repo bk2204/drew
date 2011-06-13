@@ -12,7 +12,6 @@
 #include <drew/bignum.h>
 #include <drew/plugin.h>
 
-#define DIM(x) (sizeof(x)/sizeof((x)[0]))
 // "Bare" MP and MPConstant, "Bare" DIGit and DIGitConstant.
 #define BMP(x) (&(((struct bignum *)(x))->mp))
 #define BMPC(x) ((mp_int *)(&(((const struct bignum *)(x))->mp)))
@@ -23,6 +22,7 @@
 #define MPC(x) BMPC((x)->ctx)
 #define DIG(x) BDIG((x)->ctx)
 #define DIGC(x) BDIGC((x)->ctx)
+#undef RETFAIL
 #define RETFAIL(x) do { int failret = (x); \
 	if (failret != MP_OKAY) return fixup_return(failret); } while (0)
 #define COPY(to, from) do { \
