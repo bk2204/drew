@@ -17,6 +17,10 @@ typedef struct {
 	const uint8_t *data;
 } drew_util_asn1_value_t;
 
+typedef struct {
+	size_t *values;
+	size_t length;
+} drew_util_asn1_oid_t;
 
 #define DREW_UTIL_ASN1_ENC_BER			1
 #define DREW_UTIL_ASN1_ENC_CER			2
