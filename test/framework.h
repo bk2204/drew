@@ -37,14 +37,16 @@
 #define USED_CLOCK CLOCK_REALTIME
 #endif
 
-#define TEST_OK				0
-#define TEST_FAILURE		1
+#define TEST_CODE(x)		(x & ~0xff)
+
+#define TEST_OK				(0 << 8)
+#define TEST_FAILURE		(1 << 8)
 #define TEST_FAILED 		TEST_FAILURE
-#define TEST_EXECUTE		2
-#define TEST_CORRUPT		3
-#define TEST_NOT_FOR_US		4
-#define TEST_NOT_IMPL		5
-#define TEST_INTERNAL_ERR	6
+#define TEST_EXECUTE		(2 << 8)
+#define TEST_CORRUPT		(3 << 8)
+#define TEST_NOT_FOR_US		(4 << 8)
+#define TEST_NOT_IMPL		(5 << 8)
+#define TEST_INTERNAL_ERR	(6 << 8)
 
 #define TEST_RESET_PARTIAL	1
 #define TEST_RESET_FREE		2

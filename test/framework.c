@@ -178,7 +178,7 @@ static int rol31(int x)
 static int execute_test_external(int ret, struct test_external *tep)
 {
 	ret = test_execute(tep->data, tep->name, tep->tbl, tep);
-	switch (ret) {
+	switch (TEST_CODE(ret)) {
 		case TEST_FAILED:
 			add_id(tep, test_get_id(tep->data));
 			// fallthru
@@ -233,14 +233,14 @@ int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
 		while ((tok = strtok_r(p, " ", &saveptr))) {
 			p = NULL;
 			ret = test_process_testcase(tes.data, tok[0], tok+1, &tes);
-			if (ret == TEST_EXECUTE) {
+			if (TEST_CODE(ret) == TEST_EXECUTE) {
 				ret = execute_test_external(ret, &tes);
-				if (ret == TEST_CORRUPT)
+				if (TEST_CODE(ret) == TEST_CORRUPT)
 					goto out;
 				test_reset_data(tes.data, TEST_RESET_PARTIAL);
 				ret = test_process_testcase(tes.data, tok[0], tok+1, &tes);
 			}
-			if (ret == TEST_CORRUPT)
+			if (TEST_CODE(ret) == TEST_CORRUPT)
 				goto out;
 		}
 	}
@@ -252,7 +252,7 @@ out:
 	test_reset_data(tes.data, TEST_RESET_FULL);
 	free(tes.data);
 	fclose(fp);
-	if (ret == TEST_CORRUPT) {
+	if (TEST_CODE(ret) == TEST_CORRUPT) {
 		printf("corrupt test at line %zu\n", lineno);
 		tes.results = -DREW_ERR_INVALID;
 	}
