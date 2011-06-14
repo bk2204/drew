@@ -110,12 +110,12 @@ int test_execute(void *data, const char *name, const void *tbl,
 	// If the test isn't for us or is corrupt, we succeed since it isn't
 	// relevant for our case.
 	if (!tc->algo)
-		return TEST_CORRUPT;
+		return TEST_CORRUPT | 1;
 	if (strcmp(name, tc->algo))
 		return TEST_NOT_FOR_US;
 	size_t len = tc->blksize;
 	if (!tc->pt || !tc->ct)
-		return TEST_CORRUPT;
+		return TEST_CORRUPT | 2;
 	uint8_t *buf = malloc(len);
 
 	drew_block_t ctx;
@@ -125,7 +125,7 @@ int test_execute(void *data, const char *name, const void *tbl,
 	ctx.functbl->encrypt(&ctx, buf, tc->pt);
 	ctx.functbl->fini(&ctx, 0);
 	if (memcmp(buf, tc->ct, len)) {
-		result = TEST_FAILED;
+		result = TEST_FAILED | 'e';
 		goto out;
 	}
 
@@ -134,7 +134,7 @@ int test_execute(void *data, const char *name, const void *tbl,
 	ctx.functbl->decrypt(&ctx, buf, tc->ct);
 	ctx.functbl->fini(&ctx, 0);
 	if (memcmp(buf, tc->pt, len))
-		result = TEST_FAILED;
+		result = TEST_FAILED | 'd';
 
 out:
 	free(buf);
@@ -181,25 +181,25 @@ int test_process_testcase(void *data, int type, const char *item,
 			break;
 		case 'K':
 			if (sscanf(item, "%zu", &tc->klen) != 1)
-				return TEST_CORRUPT;
+				return TEST_CORRUPT | 'K';
 			break;
 		case 'k':
 			if (!tc->klen)
-				return TEST_CORRUPT;
+				return TEST_CORRUPT | 3;
 			if (process_bytes(tc->klen, &tc->key, item))
-				return TEST_CORRUPT;
+				return TEST_CORRUPT | 'k';
 			break;
 		case 'p':
 			if (!tc->blksize)
 				tc->blksize = strlen(item) / 2;
 			if (process_bytes(tc->blksize, &tc->pt, item))
-				return TEST_CORRUPT;
+				return TEST_CORRUPT | 'p';
 			break;
 		case 'c':
 			if (!tc->blksize)
 				tc->blksize = strlen(item) / 2;
 			if (process_bytes(tc->blksize, &tc->ct, item))
-				return TEST_CORRUPT;
+				return TEST_CORRUPT | 'c';
 			break;
 	}
 
