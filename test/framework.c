@@ -253,7 +253,7 @@ out:
 	free(tes.data);
 	fclose(fp);
 	if (TEST_CODE(ret) == TEST_CORRUPT) {
-		printf("corrupt test at line %zu\n", lineno);
+		printf("corrupt test (type %#02x) at line %zu\n", ret & 0xff, lineno);
 		tes.results = -DREW_ERR_INVALID;
 	}
 	else {
