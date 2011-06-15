@@ -63,9 +63,11 @@
 struct test_external {
 	char **ids;
 	size_t nids;
-	void *data;
+	void **data;
+	size_t ndata;
 	int results;
 	size_t ntests;
+	size_t lineno;
 	const char *name;
 	const void *tbl;
 	const drew_loader_t *ldr;
@@ -85,6 +87,7 @@ int print_test_results(int result, char **ids);
 void framework_teardown(void *data);
 void *framework_setup(void);
 void test_reset_data(void *p, int flags);
+void *test_clone_data(void *p, int flags);
 void *test_create_data();
 const char *test_get_filename();
 char *test_get_id(void *data);

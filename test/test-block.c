@@ -89,6 +89,24 @@ void test_reset_data(void *p, int flags)
 		memset(p, 0, sizeof(struct testcase));
 }
 
+void *test_clone_data(void *tc, int flags)
+{
+	struct testcase *q = test_create_data();
+	struct testcase *p = tc;
+
+	q->id = NULL;
+	q->algo = strdup(p->algo);
+	q->klen = p->klen;
+	q->blksize = p->blksize;
+	q->key = malloc(q->klen);
+	memcpy(q->key, p->key, q->klen);
+	q->pt = malloc(q->blksize);
+	memcpy(q->pt, p->pt, q->blksize);
+	q->ct = malloc(q->blksize);
+	memcpy(q->ct, p->ct, q->blksize);
+	return q;
+}
+
 void *test_create_data()
 {
 	void *p = malloc(sizeof(struct testcase));
