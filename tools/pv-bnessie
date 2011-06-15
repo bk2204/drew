@@ -4,6 +4,7 @@
 $want = 0;
 $cnt = -1;
 $keysz = 0;
+$blksz = 0;
 
 while (<>) {
 	if (/Primitive Name:\s+(\w+)/) {
@@ -13,6 +14,9 @@ while (<>) {
 		$keysz = int($1)/8;
 		printf "T%04x K%d\n", 0, $keysz;
 	}
+	elsif (/Block size:\s+(\d+)\s+bits/) {
+		$blksz = int($1)/8;
+	}
 	elsif (/key=([0-9A-Fa-f]+)/) {
 		$cnt++;
 		my $sz = length($1)/2;
@@ -20,10 +24,14 @@ while (<>) {
 		printf "T%04x k%s%s", $cnt, lc($1), $want ? "" : "\n";
 	}
 	elsif (/plain=([0-9A-Fa-f]+)/) {
-		printf "T%04x p%s\n", $cnt, lc($1);
+		my $sz = length($1)/2;
+		$want = 1 if ($sz == ($blksz / 2));
+		printf "T%04x p%s%s", $cnt, lc($1), $want ? "" : "\n";
 	}
 	elsif (/cipher=([0-9A-Fa-f]+)/) {
-		printf "T%04x c%s\n", $cnt, lc($1);
+		my $sz = length($1)/2;
+		$want = 1 if ($sz == ($blksz / 2));
+		printf "T%04x c%s%s", $cnt, lc($1), $want ? "" : "\n";
 	}
 	elsif ($want && /([0-9A-Fa-f]+)/) {
 		$want = 0;
