@@ -1,23 +1,32 @@
 #!/usr/bin/perl -w
 # This reads the Nessie test vector information for block ciphers.
 
+$want = 0;
 $cnt = -1;
+$keysz = 0;
 
 while (<>) {
 	if (/Primitive Name:\s+(\w+)/) {
 		printf "T%04x a%s\n", 0, $1;
 	}
 	elsif (/Key size:\s+(\d+)\s+bits/) {
-		printf "T%04x K%d\n", 0, int($1)/8;
+		$keysz = int($1)/8;
+		printf "T%04x K%d\n", 0, $keysz;
 	}
 	elsif (/key=([0-9A-Fa-f]+)/) {
 		$cnt++;
-		printf "T%04x k%s\n", $cnt, lc($1);
+		my $sz = length($1)/2;
+		$want = 1 if ($sz == ($keysz / 2));
+		printf "T%04x k%s%s", $cnt, lc($1), $want ? "" : "\n";
 	}
 	elsif (/plain=([0-9A-Fa-f]+)/) {
 		printf "T%04x p%s\n", $cnt, lc($1);
 	}
 	elsif (/cipher=([0-9A-Fa-f]+)/) {
 		printf "T%04x c%s\n", $cnt, lc($1);
+	}
+	elsif ($want && /([0-9A-Fa-f]+)/) {
+		$want = 0;
+		print "$1\n";
 	}
 }
