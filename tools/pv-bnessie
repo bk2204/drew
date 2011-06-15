@@ -27,6 +27,6 @@ while (<>) {
 	}
 	elsif ($want && /([0-9A-Fa-f]+)/) {
 		$want = 0;
-		print "$1\n";
+		printf "%s\n", lc($1);
 	}
 }
