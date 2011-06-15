@@ -6,6 +6,7 @@ $cnt = -1;
 $keysz = 0;
 $macsz = 24;
 $bytesread = 0;
+$needed = 0;
 $ignore = 0;
 
 while (<>) {
@@ -38,16 +39,21 @@ while (<>) {
 	}
 	elsif (/key=([0-9A-Fa-f]+)/ && !$ignore) {
 		$bytesread = length($1)/2;
-		$want = 1 if ($keysz != $bytesread);
+		$needed = $keysz;
+		$want = ($needed != $bytesread);
 		printf "T%04x k%s%s", $cnt, lc($1), $want ? "" : "\n";
 		next;
 	}
 	elsif (/MAC=([0-9A-Fa-f]+)/ && !$ignore) {
-		printf "T%04x c%s\n", $cnt, lc($1);
+		$bytesread = length($1)/2;
+		$needed = $macsz;
+		$want = ($needed != $bytesread);
+		printf "T%04x c%s%s", $cnt, lc($1), $want ? "" : "\n";
+		next;
 	}
 	elsif ($want && /([0-9A-Fa-f]+)/) {
 		$bytesread += length($1)/2;
-		$want = ($keysz != $bytesread);
+		$want = ($needed != $bytesread);
 		printf "%s%s", lc($1), $want ? "" : "\n";
 		next;
 	}
