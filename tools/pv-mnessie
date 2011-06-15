@@ -1,0 +1,56 @@
+#!/usr/bin/perl -w
+# This reads the Nessie test vector information for MACs.
+
+$want = 0;
+$cnt = -1;
+$keysz = 0;
+$macsz = 24;
+$bytesread = 0;
+$ignore = 0;
+
+while (<>) {
+	chomp;
+	if (/Primitive Name:\s+(\w+)/) {
+		printf "T%04x a%s\n", 0, $1;
+	}
+	elsif (/Key size:\s+(\d+)\s+bits/) {
+		$keysz = int($1)/8;
+		printf "T%04x K%d\n", 0, $keysz;
+	}
+	elsif (/MAC size:\s+(\d+)\s+bits/) {
+		$macsz = int($1)/8;
+	}
+	elsif (/message="([^.]*)"/) {
+		$cnt++;
+		$ignore = 0;
+		my $hex = join("", map { sprintf "%02x", ord($_)} split //, $1);
+		printf "T%04x p%s\n", $cnt, $hex;
+	}
+	elsif (/message=512-bit string:\s+(\d+)\*00,([01248]{2}),(\d+)\*00/) {
+		$cnt++;
+		$ignore = 0;
+		my $len1 = int($1);
+		my $len2 = int($3);
+		printf "T%04x p%s%s%s\n", $cnt, "00" x $len1, $2, "00" x $len2;
+	}
+	elsif (/message=/) {
+		$ignore = 1;
+	}
+	elsif (/key=([0-9A-Fa-f]+)/ && !$ignore) {
+		$bytesread = length($1)/2;
+		$want = 1 if ($keysz != $bytesread);
+		printf "T%04x k%s%s", $cnt, lc($1), $want ? "" : "\n";
+		next;
+	}
+	elsif (/MAC=([0-9A-Fa-f]+)/ && !$ignore) {
+		printf "T%04x c%s\n", $cnt, lc($1);
+	}
+	elsif ($want && /([0-9A-Fa-f]+)/) {
+		$bytesread += length($1)/2;
+		$want = ($keysz != $bytesread);
+		printf "%s%s", lc($1), $want ? "" : "\n";
+		next;
+	}
+
+	$want = 0;
+}
