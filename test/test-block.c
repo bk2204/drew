@@ -121,22 +121,25 @@ int test_execute(void *data, const char *name, const void *tbl,
 	drew_block_t ctx;
 	ctx.functbl = tbl;
 	ctx.functbl->init(&ctx, 0, tep->ldr, NULL);
-	ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0);
+	if (ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0) == -DREW_ERR_NOT_IMPL) {
+		result = TEST_NOT_FOR_US;
+		goto out;
+	}
 	ctx.functbl->encrypt(&ctx, buf, tc->pt);
-	ctx.functbl->fini(&ctx, 0);
 	if (memcmp(buf, tc->ct, len)) {
 		result = TEST_FAILED | 'e';
 		goto out;
 	}
+	ctx.functbl->fini(&ctx, 0);
 
 	ctx.functbl->init(&ctx, 0, tep->ldr, NULL);
 	ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0);
 	ctx.functbl->decrypt(&ctx, buf, tc->ct);
-	ctx.functbl->fini(&ctx, 0);
 	if (memcmp(buf, tc->pt, len))
 		result = TEST_FAILED | 'd';
 
 out:
+	ctx.functbl->fini(&ctx, 0);
 	free(buf);
 	return result;
 }
