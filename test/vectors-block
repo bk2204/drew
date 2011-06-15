@@ -8807,3 +8807,13 @@ TRC2-01 c30649edf9be7d2c2
 TRC2-01 K16 k88bca90e90875a7f0f79c384627bafb2
 TRC2-01 p0000000000000000
 TRC2-01 c2269552ab0f85ca6
+# These test vectors are from
+# <http://info.isl.ntt.co.jp/crypt/eng/camellia/dl/01espec.pdf>.
+TCamellia-00 aCamellia
+TCamellia-00 K16 k0123456789abcdeffedcba9876543210
+TCamellia-00 p0123456789abcdeffedcba9876543210
+TCamellia-00 c67673138549669730857065648eabe43
+TCamellia-01 K24 k0123456789abcdeffedcba98765432100011223344556677
+TCamellia-01 cb4993401b3e996f84ee5cee7d79b09b9
+TCamellia-02 K32 k0123456789abcdeffedcba987654321000112233445566778899aabbccddeeff
+TCamellia-02 c9acc237dff16d76c20ef7c919e3a7509
