@@ -10,8 +10,6 @@ PLUG_SRC		+= test/plugin-main.c
 PLUG_OBJ		:= ${SRC:.c=.o} ${PLUG_SRC:.c=.o}
 PLUG_EXE		:= test/plugin-main
 
-TEST_BINARIES	:= $(patsubst %,test/test-%,$(CATEGORIES))
-
 RM				?= rm
 
 ifdef PROF
@@ -51,6 +49,7 @@ all:
 include lib/libdrew/Makefile
 include $(patsubst %,impl/%/Makefile,$(CATEGORIES))
 include lib/libdrew-impl/Makefile
+include test/Makefile
 include util/Makefile
 include libmd/Makefile
 
@@ -78,9 +77,6 @@ ${PLUGINS}: %: %.so
 
 $(PLUGINS:=.so): %.so: %.o
 	${CXX} ${LIBCFLAGS} ${CXXFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
-
-test/test-%: test/test-%.o test/framework.o ${DREW_SONAME} ${DREW_IMPL_SONAME}
-	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
 plugins: ${PLUGINS}
 	[ -d plugins ] || mkdir plugins
