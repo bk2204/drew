@@ -87,6 +87,13 @@ int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
 
 	prng.functbl = tbl;
 	prng.functbl->init(&prng, 0, ldr, NULL);
+	// This will trigger the autoseeding, if any.
+	prng.functbl->bytes(&prng, p, NBYTES);
+	// Seed the generator with part of whatever randomness may have been
+	// produced.  We mark it as having no entropy, since we really can't be sure
+	// what it contains.
+	prng.functbl->seed(&prng, p, NBYTES >> 4, 0);
+	// Use this for the tests.
 	prng.functbl->bytes(&prng, p, NBYTES);
 	prng.functbl->fini(&prng, 0);
 
