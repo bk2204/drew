@@ -171,6 +171,17 @@ drew::AES::AES()
 
 int drew::AES::SetKey(const uint8_t *key, size_t len)
 {
+	switch (len) {
+		case 16:
+		case 24:
+		case 32:
+			break;
+		case 20:
+		case 28:
+			return -DREW_ERR_NOT_IMPL;
+		default:
+			return -DREW_ERR_INVALID;
+	}
 	SetKeyEncrypt(key, len);
 	SetKeyDecrypt();
 	return 0;

@@ -2,10 +2,6 @@
 #define ENDIAN_HH
 
 #include <algorithm>
-#include <arpa/inet.h>
-#ifdef __GLIBC__
-#include <byteswap.h>
-#endif
 #include "util.h"
 
 #define DREW_BIG_ENDIAN		4321
@@ -58,11 +54,7 @@ inline bool IsSufficientlyAligned(const void *p)
 
 inline int GetSystemEndianness()
 {
-#if DREW_BYTE_ORDER == DREW_BIG_ENDIAN
-	return DREW_BIG_ENDIAN;
-#else
-	return DREW_LITTLE_ENDIAN;
-#endif
+	return DREW_BYTE_ORDER;
 }
 
 template<class T>
@@ -76,6 +68,36 @@ inline T RotateRight(T x, size_t n)
 {
 	return (x >> n) | (x << ((sizeof(T)*8) - n));
 }
+
+#if defined(__GNUC__)
+/* GCC does a crappy job in optimizing non-constant rotates (see PR45216).  As a
+ * consequence, we have to help it out.  Do note, though, that unconditionally
+ * using the instructions hurts performance when n is a constant.
+ */
+#if defined(__i386__) || defined(__x86_64__)
+#define ROTATE(bits, direction, suffix, asmdirection, sh, osh) \
+template<> \
+inline uint ## bits ## _t Rotate ## direction(uint ## bits ##_t x, size_t n) \
+{ \
+	if (__builtin_constant_p(n)) \
+		return (x sh n) | (x osh (bits - n)); \
+	__asm__("ro" #asmdirection #suffix " %%cl, %0" \
+			: "=r"(x) \
+			: "0"(x), "c"(n)); \
+	return x; \
+}
+
+ROTATE(16, Left, w, l, <<, >>)
+ROTATE(32, Left, l, l, <<, >>)
+ROTATE(16, Right, w, r, >>, <<)
+ROTATE(32, Right, l, r, >>, <<)
+#if defined(__x86_64__)
+ROTATE(64, Left, q, l, <<, >>)
+ROTATE(64, Right, q, r, >>, <<)
+#endif
+#endif
+#undef ROTATE
+#endif
 
 // This function copies data from in to out, xoring each byte with the contents
 // of mbuf, starting bufrem bytes from the end.  If mbuf runs out of data,
@@ -128,9 +150,7 @@ template<class T>
 inline void CopyAndXorAligned(uint8_t *outp, const uint8_t *inp, size_t len,
 		uint8_t *mbufp, const size_t bufsz, T &obj)
 {
-	struct AlignedData {
-		uint8_t data[16] ALIGNED_T;
-	};
+	typedef AlignedBlock<uint8_t, 16> AlignedData;
 
 	AlignedData *mbuf = reinterpret_cast<AlignedData *>(mbufp);
 	for (size_t i = 0; i < len; i += bufsz) {
@@ -171,7 +191,8 @@ class EndianBase
 					dest[blk+j] = src[blk+(sz-j-1)];
 			}
 		}
-#ifdef __GLIBC__
+#if defined(FEATURE_BYTESWAP)
+		// Fallback only.
 		template<class T>
 		inline static void ByteSwap(T &x)
 		{
@@ -278,7 +299,7 @@ class Endian : public EndianBase
 			if (DREW_BYTE_ORDER == Endianness)
 				memcpy(&x, p, sizeof(x));
 			else {
-#if defined(__GLIBC__)
+#if defined(FEATURE_BYTESWAP)
 				memcpy(&x, p, sizeof(x));
 				ByteSwap(x);
 #else
@@ -294,7 +315,7 @@ class Endian : public EndianBase
 			if (DREW_BYTE_ORDER == Endianness)
 				memcpy(buf, &p, sizeof(p));
 			else {
-#if defined(__GLIBC__)
+#if defined(FEATURE_BYTESWAP)
 				ByteSwap(p);
 				memcpy(buf, &p, sizeof(p));
 #else
@@ -325,23 +346,44 @@ class Endian : public EndianBase
 		}
 };
 
-#ifdef __GLIBC__
+#ifdef FEATURE_BYTESWAP
 template<>
 inline void EndianBase::ByteSwap(uint16_t &x)
 {
-	x = bswap_16(x);
+	x = 
+#if defined(FEATURE_BYTESWAP_GNU)
+		bswap_16(x);
+#elif defined(FEATURE_BYTESWAP_BSD)
+		bswap16(x);
+#elif defined(FEATURE_BYTESWAP_OPENBSD)
+		swap16(x);
+#endif
 }
 
 template<>
 inline void EndianBase::ByteSwap(uint32_t &x)
 {
-	x = bswap_32(x);
+	x = 
+#if defined(FEATURE_BYTESWAP_GNU)
+		bswap_32(x);
+#elif defined(FEATURE_BYTESWAP_BSD)
+		bswap32(x);
+#elif defined(FEATURE_BYTESWAP_OPENBSD)
+		swap32(x);
+#endif
 }
 
 template<>
 inline void EndianBase::ByteSwap(uint64_t &x)
 {
-	x = bswap_64(x);
+	x = 
+#if defined(FEATURE_BYTESWAP_GNU)
+		bswap_64(x);
+#elif defined(FEATURE_BYTESWAP_BSD)
+		bswap64(x);
+#elif defined(FEATURE_BYTESWAP_OPENBSD)
+		swap64(x);
+#endif
 }
 #endif
 

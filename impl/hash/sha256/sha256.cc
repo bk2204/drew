@@ -83,7 +83,7 @@ static inline uint32_t Ch(uint32_t x, uint32_t y, uint32_t z)
 }
 static inline uint32_t Maj(uint32_t x, uint32_t y, uint32_t z)
 {
-	return (x&y)^(x&z)^(y&z);
+	return (x&y)|(z&(x^y));
 }
 static inline uint32_t S0(uint32_t x)
 {

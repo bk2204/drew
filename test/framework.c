@@ -175,12 +175,12 @@ static int rol31(int x)
 	return r;
 }
 
-static int execute_test_external(int ret, struct test_external *tep)
+static int execute_test_external(int ret, struct test_external *tep, size_t i)
 {
-	ret = test_execute(tep->data, tep->name, tep->tbl, tep);
-	switch (ret) {
+	ret = test_execute(tep->data[i], tep->name, tep->tbl, tep);
+	switch (TEST_CODE(ret)) {
 		case TEST_FAILED:
-			add_id(tep, test_get_id(tep->data));
+			add_id(tep, test_get_id(tep->data[i]));
 			// fallthru
 		case TEST_OK:
 			tep->results = rol31(tep->results);
@@ -191,33 +191,75 @@ static int execute_test_external(int ret, struct test_external *tep)
 	return ret;
 }
 
+#define NDATA_CHUNK	512
 int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
-		const char *filename)
+		const char *filename, struct test_external *tes)
+{
+	int ret = 0;
+
+	if (tes->results < 0)
+		goto out;
+
+	for (size_t i = 0; i < tes->ndata; i++) {
+		if (!tes->data[i])
+			break;
+		tes->name = name;
+		tes->tbl = tbl;
+		ret = execute_test_external(ret, tes, i);
+		if (TEST_CODE(ret) == TEST_CORRUPT)
+			break;
+	}
+out:
+	if (!tes->ntests)
+		tes->results = -DREW_ERR_NOT_IMPL;
+	if (TEST_CODE(ret) == TEST_CORRUPT || tes->results == -DREW_ERR_INVALID) {
+		printf("corrupt test (type %#02x) at line %zu\n", ret & 0xff, tes->lineno);
+		tes->results = -DREW_ERR_INVALID;
+	}
+	else {
+		if (tes->nids)
+			add_id(tes, NULL);
+		tes->results = print_test_results(tes->results, tes->ids);
+	}
+	for (size_t i = 0; i < tes->nids; i++)
+		free(tes->ids[i]);
+	free(tes->ids);
+	tes->ids = NULL;
+	return tes->results;
+}
+
+int test_external_parse(const drew_loader_t *ldr, const char *filename,
+		struct test_external *tes)
 {
 	char buf[2048];
 	char *saveptr;
 	FILE *fp;
 	int ret = 0;
-	size_t lineno = 0;
-	struct test_external tes;
+	size_t chunkidx = 0;
 
 	if (!filename)
 		filename = test_get_filename();
 
-	tes.results = 0;
-	tes.ntests = 0;
-	tes.name = name;
-	tes.ldr = ldr;
-	tes.tbl = tbl;
-	tes.data = test_create_data();
-	tes.nids = 0;
-	tes.ids = NULL;
+	tes->results = 0;
+	tes->ntests = 0;
+	tes->name = NULL;
+	tes->ldr = ldr;
+	tes->tbl = NULL;
+	tes->lineno = 0;
+	tes->data = malloc(sizeof(*tes->data) * NDATA_CHUNK);
+	tes->ndata = NDATA_CHUNK;
+	tes->nids = 0;
+	tes->ids = NULL;
+
+	memset(tes->data, 0, sizeof(*tes->data) * NDATA_CHUNK);
+	chunkidx = 0;
+	tes->data[0] = test_create_data();
 
 	if (!filename)
-		return print_test_results(-DREW_ERR_NOT_IMPL, NULL);
+		return tes->results = -DREW_ERR_NOT_IMPL;
 
 	if (!(fp = fopen(filename, "r")))
-		return print_test_results(-errno, NULL);
+		return tes->results = -errno;
 
 	while (fgets(buf, sizeof(buf), fp)) {
 		char *p = buf, *tok;
@@ -225,46 +267,43 @@ int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
 
 		if (buf[off-1] != '\n')
 			continue;
-		lineno++;
+		tes->lineno++;
 		buf[off-1] = 0;
 		if (buf[0] == '#')
 			continue;
 
 		while ((tok = strtok_r(p, " ", &saveptr))) {
 			p = NULL;
-			ret = test_process_testcase(tes.data, tok[0], tok+1, &tes);
-			if (ret == TEST_EXECUTE) {
-				ret = execute_test_external(ret, &tes);
-				if (ret == TEST_CORRUPT)
-					goto out;
-				test_reset_data(tes.data, TEST_RESET_PARTIAL);
-				ret = test_process_testcase(tes.data, tok[0], tok+1, &tes);
+			ret = test_process_testcase(tes->data[chunkidx], tok[0], tok+1, tes);
+			if (TEST_CODE(ret) == TEST_EXECUTE) {
+				if ((chunkidx + 1) == tes->ndata) {
+					size_t newsize = tes->ndata + NDATA_CHUNK;
+					void **p = realloc(tes->data, sizeof(*p) * newsize);
+					if (!p) {
+						tes->results = -ENOMEM;
+						goto out;
+					}
+					memset(p + tes->ndata, 0, NDATA_CHUNK * sizeof(*p));
+					tes->data = p;
+					tes->ndata = newsize;
+				}
+				tes->data[chunkidx+1] = test_clone_data(tes->data[chunkidx],
+						TEST_RESET_PARTIAL);
+				chunkidx++;
+				ret = test_process_testcase(tes->data[chunkidx], tok[0], tok+1, tes);
 			}
-			if (ret == TEST_CORRUPT)
+			if (TEST_CODE(ret) == TEST_CORRUPT)
 				goto out;
 		}
 	}
-	ret = execute_test_external(ret, &tes);
+
+	tes->data[chunkidx+1] = NULL;
 
 out:
-	if (!tes.ntests)
-		tes.results = -DREW_ERR_NOT_IMPL;
-	test_reset_data(tes.data, TEST_RESET_FULL);
-	free(tes.data);
 	fclose(fp);
-	if (ret == TEST_CORRUPT) {
-		printf("corrupt test at line %zu\n", lineno);
-		tes.results = -DREW_ERR_INVALID;
-	}
-	else {
-		if (tes.nids)
-			add_id(&tes, NULL);
-		tes.results = print_test_results(tes.results, tes.ids);
-	}
-	for (size_t i = 0; i < tes.nids; i++)
-		free(tes.ids[i]);
-	free(tes.ids);
-	return tes.results;
+	if (TEST_CODE(ret) == TEST_CORRUPT)
+		tes->results = -DREW_ERR_INVALID;
+	return tes->results;
 }
 
 int usage(const char *argv0, int retval)
@@ -303,6 +342,7 @@ int main(int argc, char **argv)
 	const char *only = NULL;
 	const char *resource = NULL; // A filename of testcases.
 	drew_loader_t *ldr = NULL;
+	struct test_external tes;
 
 	drew_loader_new(&ldr);
 
@@ -377,6 +417,10 @@ int main(int argc, char **argv)
 	nplugins = drew_loader_get_nplugins(ldr, -1);
 	type = test_get_type();
 
+	if (mode == MODE_TEST &&
+			(retval = test_external_parse(ldr, resource, &tes)))
+		tes.results = -DREW_ERR_NOT_IMPL;
+
 	for (i = 0; i < nplugins; i++) {
 		const void *functbl;
 		const char *name;
@@ -412,7 +456,7 @@ int main(int argc, char **argv)
 					print_test_results_impl(result, NULL, "speed test");
 				break;
 			case MODE_TEST:
-				result = test_external(ldr, name, functbl, resource);
+				result = test_external(ldr, name, functbl, resource, &tes);
 				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
 					error++;
 				break;

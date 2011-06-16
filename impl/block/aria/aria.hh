@@ -13,7 +13,7 @@
 
 namespace drew {
 
-class ARIA : public BlockCipher<32>
+class ARIA : public BlockCipher<16>
 {
 	public:
 		typedef BigEndian endian_t;

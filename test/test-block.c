@@ -89,6 +89,24 @@ void test_reset_data(void *p, int flags)
 		memset(p, 0, sizeof(struct testcase));
 }
 
+void *test_clone_data(void *tc, int flags)
+{
+	struct testcase *q = test_create_data();
+	struct testcase *p = tc;
+
+	q->id = NULL;
+	q->algo = strdup(p->algo);
+	q->klen = p->klen;
+	q->blksize = p->blksize;
+	q->key = malloc(q->klen);
+	memcpy(q->key, p->key, q->klen);
+	q->pt = malloc(q->blksize);
+	memcpy(q->pt, p->pt, q->blksize);
+	q->ct = malloc(q->blksize);
+	memcpy(q->ct, p->ct, q->blksize);
+	return q;
+}
+
 void *test_create_data()
 {
 	void *p = malloc(sizeof(struct testcase));
@@ -110,33 +128,36 @@ int test_execute(void *data, const char *name, const void *tbl,
 	// If the test isn't for us or is corrupt, we succeed since it isn't
 	// relevant for our case.
 	if (!tc->algo)
-		return TEST_CORRUPT;
+		return TEST_CORRUPT | 1;
 	if (strcmp(name, tc->algo))
 		return TEST_NOT_FOR_US;
 	size_t len = tc->blksize;
 	if (!tc->pt || !tc->ct)
-		return TEST_CORRUPT;
+		return TEST_CORRUPT | 2;
 	uint8_t *buf = malloc(len);
 
 	drew_block_t ctx;
 	ctx.functbl = tbl;
 	ctx.functbl->init(&ctx, 0, tep->ldr, NULL);
-	ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0);
-	ctx.functbl->encrypt(&ctx, buf, tc->pt);
-	ctx.functbl->fini(&ctx, 0);
-	if (memcmp(buf, tc->ct, len)) {
-		result = TEST_FAILED;
+	if (ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0) == -DREW_ERR_NOT_IMPL) {
+		result = TEST_NOT_FOR_US;
 		goto out;
 	}
+	ctx.functbl->encrypt(&ctx, buf, tc->pt);
+	if (memcmp(buf, tc->ct, len)) {
+		result = TEST_FAILED | 'e';
+		goto out;
+	}
+	ctx.functbl->fini(&ctx, 0);
 
 	ctx.functbl->init(&ctx, 0, tep->ldr, NULL);
 	ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0);
 	ctx.functbl->decrypt(&ctx, buf, tc->ct);
-	ctx.functbl->fini(&ctx, 0);
 	if (memcmp(buf, tc->pt, len))
-		result = TEST_FAILED;
+		result = TEST_FAILED | 'd';
 
 out:
+	ctx.functbl->fini(&ctx, 0);
 	free(buf);
 	return result;
 }
@@ -181,25 +202,25 @@ int test_process_testcase(void *data, int type, const char *item,
 			break;
 		case 'K':
 			if (sscanf(item, "%zu", &tc->klen) != 1)
-				return TEST_CORRUPT;
+				return TEST_CORRUPT | 'K';
 			break;
 		case 'k':
 			if (!tc->klen)
-				return TEST_CORRUPT;
+				return TEST_CORRUPT | 3;
 			if (process_bytes(tc->klen, &tc->key, item))
-				return TEST_CORRUPT;
+				return TEST_CORRUPT | 'k';
 			break;
 		case 'p':
 			if (!tc->blksize)
 				tc->blksize = strlen(item) / 2;
 			if (process_bytes(tc->blksize, &tc->pt, item))
-				return TEST_CORRUPT;
+				return TEST_CORRUPT | 'p';
 			break;
 		case 'c':
 			if (!tc->blksize)
 				tc->blksize = strlen(item) / 2;
 			if (process_bytes(tc->blksize, &tc->ct, item))
-				return TEST_CORRUPT;
+				return TEST_CORRUPT | 'c';
 			break;
 	}
 

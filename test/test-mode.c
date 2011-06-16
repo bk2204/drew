@@ -88,6 +88,30 @@ void *test_create_data()
 	return p;
 }
 
+void *test_clone_data(void *tc, int flags)
+{
+	struct testcase *q = test_create_data();
+	struct testcase *p = tc;
+
+	q->id = NULL;
+	q->algo = strdup(p->algo);
+	q->mode = strdup(p->mode);
+	q->klen = p->klen;
+	q->nlen = p->nlen;
+	q->key = malloc(q->klen);
+	memcpy(q->key, p->key, q->klen);
+	q->nonce = malloc(q->nlen);
+	memcpy(q->nonce, p->nonce, q->nlen);
+	q->len = p->len;
+	q->feedbackBits = p->feedbackBits;
+	q->pt = malloc(q->len);
+	memcpy(q->pt, p->pt, q->len);
+	q->ct = malloc(q->len);
+	memcpy(q->ct, p->ct, q->len);
+
+	return q;
+}
+
 char *test_get_id(void *data)
 {
 	struct testcase *tc = data;

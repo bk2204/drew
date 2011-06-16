@@ -12,12 +12,18 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #include <drew/plugin.h>
 #include <drew/mac.h>
 #include <drew/hash.h>
 #include <drew/block.h>
+
+#define FILENAME "test/vectors-mac"
+
+static int make_new_ctx(const drew_loader_t *ldr, const char *name, void *ctx,
+		int type);
 
 int test_get_type(void)
 {
@@ -41,7 +47,175 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 	return print_test_results(functbl->test(NULL, ldr), NULL);
 }
 
-#define STUBS_EXTERNAL 1
+struct testcase {
+	char *id;
+	char *algo;
+	char *mac;
+	size_t klen;
+	uint8_t *key;
+	size_t len;
+	size_t maclen;
+	uint8_t *pt;
+	uint8_t *ct;
+};
+
+const char *test_get_filename()
+{
+	return FILENAME;
+}
+
+void test_reset_data(void *p, int flags)
+{
+	struct testcase *tc = p;
+	if (flags & TEST_RESET_PARTIAL) {
+		free(tc->id);
+		tc->id = NULL;
+	}
+	if (flags & TEST_RESET_FREE) {
+		free(tc->id);
+		free(tc->algo);
+		free(tc->mac);
+		free(tc->key);
+		free(tc->pt);
+		free(tc->ct);
+		memset(p, 0, sizeof(struct testcase));
+	}
+	if (flags & TEST_RESET_ZERO)
+		memset(p, 0, sizeof(struct testcase));
+}
+
+void *test_create_data()
+{
+	void *p = malloc(sizeof(struct testcase));
+	test_reset_data(p, TEST_RESET_ZERO);
+	return p;
+}
+
+void *test_clone_data(void *tc, int flags)
+{
+	struct testcase *q = test_create_data();
+	struct testcase *p = tc;
+
+	q->id = NULL;
+	q->algo = strdup(p->algo);
+	q->mac = strdup(p->mac);
+	q->klen = p->klen;
+	q->key = malloc(q->klen);
+	memcpy(q->key, p->key, q->klen);
+	q->len = p->len;
+	q->pt = malloc(q->len);
+	memcpy(q->pt, p->pt, q->len);
+	q->ct = malloc(q->maclen);
+	memcpy(q->ct, p->ct, q->maclen);
+
+	return q;
+}
+
+char *test_get_id(void *data)
+{
+	struct testcase *tc = data;
+	return strdup(tc->id);
+}
+
+int test_execute(void *data, const char *name, const void *tbl,
+		struct test_external *tep)
+{
+	int res = 0;
+	struct testcase *tc = data;
+	// If the test isn't for us or is corrupt, we succeed since it isn't
+	// relevant for our case.
+	if (!tc->algo)
+		return TEST_CORRUPT;
+	if (!tc->mac)
+		return TEST_CORRUPT;
+	if (strcmp(name, tc->mac))
+		return TEST_NOT_FOR_US;
+	if (!tc->pt || !tc->ct)
+		return TEST_CORRUPT;
+
+	drew_mac_t ctx;
+	drew_param_t param;
+	drew_hash_t hash;
+	drew_block_t block;
+
+	memset(&param, 0, sizeof(param));
+
+	if (!(res = make_new_ctx(tep->ldr, tc->algo, &hash, DREW_TYPE_HASH))) {
+		param.name = "digest";
+		param.next = NULL;
+		param.param.value = &hash;
+		hash.functbl->init(&hash, 0, tep->ldr, NULL);
+	}
+	else if (!(res = make_new_ctx(tep->ldr, tc->algo, &block, DREW_TYPE_BLOCK))) {
+		param.name = "cipher";
+		param.next = NULL;
+		param.param.value = &block;
+		block.functbl->init(&block, 0, tep->ldr, NULL);
+	}
+	else
+		return TEST_NOT_FOR_US;
+
+	uint8_t *buf = malloc(tc->maclen);
+	ctx.functbl = tbl;
+	ctx.functbl->init(&ctx, 0, tep->ldr, &param);
+	ctx.functbl->setkey(&ctx, tc->key, tc->klen);
+	ctx.functbl->update(&ctx, tc->pt, tc->len);
+	ctx.functbl->final(&ctx, buf, 0);
+	ctx.functbl->fini(&ctx, 0);
+	if (memcmp(buf, tc->ct, tc->maclen))
+		res = TEST_FAILED;
+
+	free(buf);
+	return res;
+}
+
+
+int test_process_testcase(void *data, int type, const char *item,
+		struct test_external *tep)
+{
+	struct testcase *tc = data;
+
+	switch (type) {
+		case 'T':
+			if (!tc->id)
+				tc->id = strdup(item);
+			else if (strcmp(tc->id, item))
+				return TEST_EXECUTE;
+			break;
+		case 'a':
+			free(tc->algo);
+			tc->algo = strdup(item);
+			break;
+		case 'm':
+			free(tc->mac);
+			tc->mac = strdup(item);
+			break;
+		case 'K':
+			if (sscanf(item, "%zu", &tc->klen) != 1)
+				return TEST_CORRUPT;
+			break;
+		case 'k':
+			if (!tc->klen)
+				return TEST_CORRUPT;
+			if (process_bytes(tc->klen, &tc->key, item))
+				return TEST_CORRUPT;
+			break;
+		case 'p':
+			tc->len = strlen(item) / 2;
+			if (process_bytes(tc->len, &tc->pt, item))
+				return TEST_CORRUPT;
+			break;
+		case 'c':
+			tc->maclen = strlen(item) / 2;
+			if (process_bytes(tc->maclen, &tc->ct, item))
+				return TEST_CORRUPT;
+			break;
+	}
+
+	return TEST_OK;
+}
+
+
 #define STUBS_API 1
 #include "stubs.c"
 
