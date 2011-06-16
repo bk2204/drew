@@ -10,6 +10,7 @@
 
 #include "framework.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -49,11 +50,50 @@ inline int test_speed_loop(drew_prng_t *ctx, uint8_t *buf,
 	return i;
 }
 
+// From http://graphics.stanford.edu/~seander/bithacks.html
+static const uint8_t popcount[] = {
+#define B2(n) n, n+1, n+1, n+2
+#define B4(n) B2(n), B2(n+1), B2(n+1), B2(n+2)
+#define B6(n) B4(n), B4(n+1), B4(n+1), B4(n+2)
+	B6(0), B6(1), B6(1), B6(2)
+};
+
+// Tests return true if they pass and false otherwise.
+static bool prng_test_monobit(const uint8_t *buf, size_t len)
+{
+	ssize_t nset = 0, total = len * 8, sn;
+	double sobs;
+
+	for (size_t i = 0; i < len; i++)
+		nset += popcount[buf[i]];
+	
+	sn = nset - (total - nset);
+	sobs = fabs(sn) / sqrt(total);
+	return erfc(sobs / sqrt(2)) >= 0.01;
+}
+
+#define NBYTES (12 * 1024 * 1024)
 int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
 		const char *filename, struct test_external *tes)
 {
+	int ret = 0;
+	drew_prng_t prng;
+	uint8_t *p;
+	
+	if (!(p = malloc(NBYTES))) {
+		ret = -ENOMEM;
+		goto out;
+	}
 
-	return print_test_results(-DREW_ERR_NOT_IMPL, NULL);
+	prng.functbl = tbl;
+	prng.functbl->init(&prng, 0, ldr, NULL);
+	prng.functbl->bytes(&prng, p, NBYTES);
+	prng.functbl->fini(&prng, 0);
+
+	ret |= !prng_test_monobit(p, NBYTES);
+out:
+	free(p);
+	return print_test_results(ret, NULL);
 }
 
 int test_external_parse(const drew_loader_t *ldr, const char *filename,
