@@ -368,9 +368,9 @@ inline static void AddArrays(uint8_t *buf, size_t len, const uint8_t *input)
 {
 	bool carry = 0;
 	for (ssize_t i = len - 1; i >= 0; i--) {
-		uint8_t bufb = buf[i], inputb = input[i];
-		buf[i] += input[i] + carry;
-		carry = ((buf[i] < bufb) || (buf[i] < inputb));
+		uint16_t val = buf[i];
+		buf[i] = val += input[i] + carry;
+		carry = (val >> 8);
 	}
 }
 
