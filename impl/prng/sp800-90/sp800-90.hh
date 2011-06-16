@@ -34,6 +34,7 @@ class DRBG : public SeededPRNG, public BlockPRNG
 				size_t entropy);
 	protected:
 		DRBG();
+		virtual void Initialize();
 		virtual void Initialize(const uint8_t *, size_t) = 0;
 		virtual void Reseed(const uint8_t *, size_t) = 0;
 		virtual void Stir();

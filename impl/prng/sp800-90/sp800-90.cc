@@ -227,12 +227,19 @@ void drew::DRBG::Stir()
 	this->Reseed(NULL, 0);
 }
 
+void drew::DRBG::Initialize()
+{
+	AddRandomData(NULL, 0, 0);
+}
+
 int drew::DRBG::AddRandomData(const uint8_t *buf, size_t len, size_t entropy)
 {
 	if (inited)
 		Reseed(buf, len);
-	else
+	else {
+		inited = true;
 		Initialize(buf, len);
+	}
 	return 0;
 }
 
@@ -369,6 +376,9 @@ inline static void AddArrays(uint8_t *buf, size_t len, const uint8_t *input)
 
 void drew::HashDRBG::GetBytes(uint8_t *data, size_t len)
 {
+	if (!inited)
+		this->DRBG::Initialize();
+
 	HashHelper hh(hash);
 	uint8_t b = 0x03;
 	const size_t seedlen = hh.GetSeedLength();
