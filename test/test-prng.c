@@ -49,7 +49,19 @@ inline int test_speed_loop(drew_prng_t *ctx, uint8_t *buf,
 	return i;
 }
 
-#define STUBS_EXTERNAL 1
+int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
+		const char *filename, struct test_external *tes)
+{
+
+	return print_test_results(-DREW_ERR_NOT_IMPL, NULL);
+}
+
+int test_external_parse(const drew_loader_t *ldr, const char *filename,
+		struct test_external *tes)
+{
+	return 0;
+}
+
 #define STUBS_API 1
 #include "stubs.c"
 
