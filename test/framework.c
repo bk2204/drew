@@ -296,6 +296,7 @@ int main(int argc, char **argv)
 		}
 		else
 			printf("%-15s: ", name);
+		fflush(stdout);
 
 		switch (mode) {
 			case MODE_SPEED:
