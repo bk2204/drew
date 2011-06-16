@@ -367,7 +367,7 @@ void drew::HashDRBG::Reseed(const uint8_t *data, size_t len)
 inline static void AddArrays(uint8_t *buf, size_t len, const uint8_t *input)
 {
 	bool carry = 0;
-	for (size_t i = 0; i < len; i++) {
+	for (ssize_t i = len - 1; i >= 0; i--) {
 		uint8_t bufb = buf[i], inputb = input[i];
 		buf[i] += input[i] + carry;
 		carry = ((buf[i] < bufb) || (buf[i] < inputb));
