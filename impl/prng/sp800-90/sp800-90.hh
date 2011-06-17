@@ -5,6 +5,7 @@
 
 #include <drew/block.h>
 #include <drew/hash.h>
+#include <drew/mac.h>
 #include <drew/mode.h>
 
 #include "prng.hh"
@@ -91,6 +92,25 @@ class CounterDRBG : public DRBG
 		drew_block_t *block;
 		drew_mode_t *ctr;
 		size_t outlen, keylen, seedlen;
+};
+
+class HMACDRBG : public DRBG
+{
+	public:
+		HMACDRBG(drew_mac_t *m, size_t outl);
+		virtual ~HMACDRBG();
+		void GetBytes(uint8_t *, size_t);
+	protected:
+		struct Buffer {
+			const uint8_t *data;
+			size_t len;
+		};
+		void Update(const Buffer *b, size_t nbufs);
+		void Initialize(const uint8_t *, size_t);
+		void Reseed(const uint8_t *, size_t);
+		drew_mac_t *hmac;
+		size_t outlen;
+		uint8_t *V;
 };
 
 }

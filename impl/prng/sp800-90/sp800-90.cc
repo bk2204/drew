@@ -18,7 +18,7 @@ template<class T>
 static int make_new(T *ctx, const drew_loader_t *ldr, const drew_param_t *param,
 		const char *paramname, int type, const char *algonames[], size_t nalgos)
 {
-	for (const drew_param_t *p = param; p; p = p->next) {
+	for (const drew_param_t *p = param; p && paramname; p = p->next) {
 		if (!strcmp(p->name, paramname)) {
 			memcpy(ctx, p->param.value, sizeof(*ctx));
 			return 0;
@@ -136,9 +136,22 @@ static int sp_ctr_entropy(const drew_prng_t *ctx);
 static int sp_ctr_fini(drew_prng_t *ctx, int flags);
 static int sp_ctr_test(void *, const drew_loader_t *);
 
+static int sp_hmac_info(int op, void *p);
+static int sp_hmac_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
+		const drew_param_t *);
+static int sp_hmac_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags);
+static int sp_hmac_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
+		size_t entropy);
+static int sp_hmac_bytes(drew_prng_t *ctx, uint8_t *out, size_t len);
+static int sp_hmac_entropy(const drew_prng_t *ctx);
+static int sp_hmac_fini(drew_prng_t *ctx, int flags);
+static int sp_hmac_test(void *, const drew_loader_t *);
+
 PLUGIN_FUNCTBL(sphash, sp_hash_info, sp_hash_init, sp_hash_clone, sp_hash_fini, sp_hash_seed, sp_hash_bytes, sp_hash_entropy, sp_hash_test);
 
 PLUGIN_FUNCTBL(spctr, sp_ctr_info, sp_ctr_init, sp_ctr_clone, sp_ctr_fini, sp_ctr_seed, sp_ctr_bytes, sp_ctr_entropy, sp_ctr_test);
+
+PLUGIN_FUNCTBL(sphmac, sp_hmac_info, sp_hmac_init, sp_hmac_clone, sp_hmac_fini, sp_hmac_seed, sp_hmac_bytes, sp_hmac_entropy, sp_hmac_test);
 
 static int sp_hash_info(int op, void *p)
 {
@@ -282,9 +295,88 @@ static int sp_ctr_test(void *p, const drew_loader_t *ldr)
 	return sp_algo_test<drew::CounterDRBG>(p, ldr);
 }
 
+static int sp_hmac_info(int op, void *p)
+{
+	return sp_algo_info<drew::HMACDRBG>(op, p);
+}
+
+// This has to be at least as large as the digest size.
+#define HMAC_BUFFER_SIZE	512
+static int sp_hmac_init(drew_prng_t *ctx, int flags, const drew_loader_t *ldr,
+		const drew_param_t *param)
+{
+	drew::HMACDRBG *p;
+	drew_mac_t *hmac = new drew_mac_t;
+	drew_hash_t *hash = new drew_hash_t;
+	size_t outlen;
+	drew_param_t p2;
+	const char *names[] = {"SHA-512", "SHA-384", "SHA-256", "SHA-224", "SHA-1"};
+	const char *macs[] = {"HMAC"};
+	int res = 0;
+	res = make_new(hash, ldr, param, "digest", DREW_TYPE_HASH, names,
+			DIM(names));
+	if (res < 0)
+		return res;
+	p2.name = "digest";
+	p2.next = const_cast<drew_param_t *>(param);
+	p2.param.value = hash;
+	res = make_new(hmac, ldr, &p2, NULL, DREW_TYPE_MAC, macs, DIM(macs));
+	if (res < 0)
+		return res;
+	outlen = hash->functbl->info(DREW_HASH_SIZE, 0);
+	if (outlen > HMAC_BUFFER_SIZE)
+		return -DREW_ERR_INVALID;
+	if (flags & DREW_PRNG_FIXED)
+		p = new (ctx->ctx) drew::HMACDRBG(hmac, outlen);
+	else
+		p = new drew::HMACDRBG(hmac, outlen);
+	ctx->ctx = p;
+	ctx->functbl = &spctrfunctbl;
+	return 0;
+}
+
+static int sp_hmac_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags)
+{
+	return sp_algo_clone<drew::HMACDRBG>(newctx, oldctx, flags);
+}
+
+static int sp_hmac_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
+		size_t entropy)
+{
+	return sp_algo_seed<drew::HMACDRBG>(ctx, key, len, entropy);
+}
+
+static int sp_hmac_bytes(drew_prng_t *ctx, uint8_t *out, size_t len)
+{
+	return sp_algo_bytes<drew::HMACDRBG>(ctx, out, len);
+}
+
+static int sp_hmac_entropy(const drew_prng_t *ctx)
+{
+	return sp_algo_entropy<drew::HMACDRBG>(ctx);
+}
+
+static int sp_hmac_fini(drew_prng_t *ctx, int flags)
+{
+	drew::HMACDRBG *p = reinterpret_cast<drew::HMACDRBG *>(ctx->ctx);
+	if (flags & DREW_PRNG_FIXED)
+		p->~HMACDRBG();
+	else {
+		delete p;
+		ctx->ctx = NULL;
+	}
+	return 0;
+}
+
+static int sp_hmac_test(void *p, const drew_loader_t *ldr)
+{
+	return sp_algo_test<drew::HMACDRBG>(p, ldr);
+}
+
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(sphash, "HashDRBG")
 	PLUGIN_DATA(spctr, "CounterDRBG")
+	PLUGIN_DATA(sphmac, "HMACDRBG")
 	PLUGIN_DATA_END()
 	PLUGIN_INTERFACE(sp800_90)
 }
@@ -421,7 +513,7 @@ void drew::HashDRBG::HashDF(const drew_hash_t *h, const uint8_t *in,
 	uint8_t counter = 1;
 	uint32_t outbits = outlen * 8;
 	
-	for (size_t i = 0, off = 0; i < len; i++, off += digestlen) {
+	for (size_t i = 0, off = 0; i < len; i++, off += digestlen, counter++) {
 		hh.AddData(&counter, sizeof(counter));
 		hh.AddData(reinterpret_cast<const uint8_t *>(&outbits),
 				sizeof(outbits));
@@ -702,5 +794,129 @@ void drew::CounterDRBG::GetBytes(uint8_t *data, size_t len)
 	memset(data, 0, len);
 	ctr->functbl->encrypt(ctr, data, data, len);
 	Update(buf);
+	rc++;
+}
+
+drew::HMACDRBG::HMACDRBG(drew_mac_t *m, size_t outl)
+{
+	hmac = m;
+	outlen = outl;
+	V = new uint8_t[outlen];
+}
+
+drew::HMACDRBG::~HMACDRBG()
+{
+	hmac->functbl->fini(hmac, 0);
+	memset(V, 0, outlen);
+	delete[] V;
+	delete hmac;
+}
+
+void drew::HMACDRBG::Update(const Buffer *b, size_t nbufs)
+{
+	size_t totallen = 0;
+	const uint8_t zero = 0x00, one = 0x01;
+	uint8_t buf[HMAC_BUFFER_SIZE];
+
+	hmac->functbl->reset(hmac);
+	hmac->functbl->update(hmac, V, outlen);
+	hmac->functbl->update(hmac, &zero, 1);
+	for (size_t i = 0; i < nbufs; totallen += b[i].len, i++)
+		hmac->functbl->update(hmac, b[i].data, b[i].len);
+	hmac->functbl->final(hmac, buf, 0);
+
+	hmac->functbl->reset(hmac);
+	hmac->functbl->setkey(hmac, buf, outlen);
+	hmac->functbl->update(hmac, V, outlen);
+	hmac->functbl->final(hmac, V, 0);
+
+	if (totallen) {
+		hmac->functbl->reset(hmac);
+		hmac->functbl->update(hmac, V, outlen);
+		hmac->functbl->update(hmac, &one, 1);
+		for (size_t i = 0; i < nbufs; i++)
+			hmac->functbl->update(hmac, b[i].data, b[i].len);
+		hmac->functbl->final(hmac, buf, 0);
+
+		hmac->functbl->reset(hmac);
+		hmac->functbl->setkey(hmac, buf, outlen);
+		hmac->functbl->update(hmac, V, outlen);
+		hmac->functbl->final(hmac, V, 0);
+	}
+	hmac->functbl->reset(hmac);
+
+	memset(buf, 0, sizeof(buf));
+}
+
+// This data passed to this function is treated as a nonce.
+void drew::HMACDRBG::Initialize(const uint8_t *data, size_t len)
+{
+	uint8_t buf[HMAC_BUFFER_SIZE], ps[sizeof(Personalization)];
+	uint8_t zero[HMAC_BUFFER_SIZE];
+	size_t nbytes = sizeof(Personalization);
+	DevURandom du;
+	Buffer b[3];
+
+	du.GetBytes(buf, outlen);
+	GeneratePersonalizationString(ps, &nbytes);
+	b[0].data = buf;
+	b[0].len = outlen;
+	b[1].data = data;
+	b[1].len = len;
+	b[2].data = ps;
+	b[2].len = nbytes;
+
+	memset(zero, 0, outlen);
+	hmac->functbl->reset(hmac);
+	hmac->functbl->setkey(hmac, zero, outlen);
+	memset(V, 1, outlen);
+
+	Update(b, DIM(b));
+
+	rc = 1;
+	memset(buf, 0, sizeof(buf));
+}
+
+void drew::HMACDRBG::Reseed(const uint8_t *data, size_t len)
+{
+	uint8_t buf[HMAC_BUFFER_SIZE];
+	DevURandom du;
+	Buffer b[2];
+
+	du.GetBytes(buf, outlen);
+	b[0].data = buf;
+	b[0].len = outlen;
+	b[1].data = data;
+	b[1].len = len;
+
+	Update(b, DIM(b));
+	rc = 1;
+
+	memset(buf, 0, sizeof(buf));
+}
+
+void drew::HMACDRBG::GetBytes(uint8_t *data, size_t len)
+{
+	Buffer b;
+	if (!inited)
+		this->DRBG::Initialize();
+	else if (rc >= reseed_interval)
+		this->Stir();
+
+	b.data = data;
+	b.len = len;
+	if (len)
+		Update(&b, 1);
+
+	for (size_t i = 0; i < len; i += outlen) {
+		hmac->functbl->reset(hmac);
+		hmac->functbl->update(hmac, V, outlen);
+		hmac->functbl->final(hmac, V, 0);
+		if (i + outlen < len)
+			memcpy(data+i, V, outlen);
+		else
+			memcpy(data+i, V, len-i);
+	}
+	Update(&b, 1);
 	rc++;
 }
