@@ -3,7 +3,9 @@
 
 #include <sys/types.h>
 
+#include <drew/block.h>
 #include <drew/hash.h>
+#include <drew/mode.h>
 
 #include "prng.hh"
 
@@ -34,6 +36,12 @@ class DRBG : public SeededPRNG, public BlockPRNG
 				size_t entropy);
 	protected:
 		DRBG();
+		struct Personalization {
+			pid_t pid, ppid, sid;
+			uid_t uid, euid;
+			gid_t gid, egid;
+			struct timespec rt, mt, pt, tt;
+		};
 		virtual void Initialize();
 		virtual void Initialize(const uint8_t *, size_t) = 0;
 		virtual void Reseed(const uint8_t *, size_t) = 0;
@@ -64,6 +72,27 @@ class HashDRBG : public DRBG
 		const drew_hash_t *hash;
 	private:
 		size_t GetSeedLength() const;
+};
+
+class CounterDRBG : public DRBG
+{
+	public:
+		CounterDRBG(const drew_mode_t &c, const drew_block_t &b, size_t outl,
+				size_t keyl);
+		virtual ~CounterDRBG();
+		void GetBytes(uint8_t *, size_t);
+	protected:
+		static const size_t reseed_interval = 1024;
+		void Update(const uint8_t *);
+		void Initialize(const uint8_t *, size_t);
+		void Reseed(const uint8_t *, size_t);
+		void BlockCipherDF(const drew_block_t *, const uint8_t *, uint32_t,
+				uint8_t *, uint32_t);
+		void BCC(const drew_block_t *, const uint8_t *, size_t, uint8_t *);
+		size_t rc; // reseed_counter.
+		drew_block_t *block;
+		drew_mode_t *ctr;
+		size_t outlen, keylen, seedlen;
 };
 
 }

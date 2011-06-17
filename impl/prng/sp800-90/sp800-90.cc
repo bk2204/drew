@@ -125,7 +125,20 @@ static int sp_hash_entropy(const drew_prng_t *ctx);
 static int sp_hash_fini(drew_prng_t *ctx, int flags);
 static int sp_hash_test(void *, const drew_loader_t *);
 
+static int sp_ctr_info(int op, void *p);
+static int sp_ctr_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
+		const drew_param_t *);
+static int sp_ctr_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags);
+static int sp_ctr_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
+		size_t entropy);
+static int sp_ctr_bytes(drew_prng_t *ctx, uint8_t *out, size_t len);
+static int sp_ctr_entropy(const drew_prng_t *ctx);
+static int sp_ctr_fini(drew_prng_t *ctx, int flags);
+static int sp_ctr_test(void *, const drew_loader_t *);
+
 PLUGIN_FUNCTBL(sphash, sp_hash_info, sp_hash_init, sp_hash_clone, sp_hash_fini, sp_hash_seed, sp_hash_bytes, sp_hash_entropy, sp_hash_test);
+
+PLUGIN_FUNCTBL(spctr, sp_ctr_info, sp_ctr_init, sp_ctr_clone, sp_ctr_fini, sp_ctr_seed, sp_ctr_bytes, sp_ctr_entropy, sp_ctr_test);
 
 static int sp_hash_info(int op, void *p)
 {
@@ -190,8 +203,88 @@ static int sp_hash_test(void *p, const drew_loader_t *ldr)
 	return sp_algo_test<drew::HashDRBG>(p, ldr);
 }
 
+static int sp_ctr_info(int op, void *p)
+{
+	return sp_algo_info<drew::CounterDRBG>(op, p);
+}
+
+// This has to be at least as large as the key size plus the block size.
+#define CTR_BUFFER_SIZE	512
+static int sp_ctr_init(drew_prng_t *ctx, int flags, const drew_loader_t *ldr,
+		const drew_param_t *param)
+{
+	drew::CounterDRBG *p;
+	drew_mode_t ctr;
+	drew_block_t block;
+	size_t outlen, keylen;
+	const char *blocks[] = {"AES256", "AES192", "AES128", "Rijndael", "DESede"};
+	const char *modes[] = {"CTR", "Counter-BE", "Counter-LE"};
+	int res = 0, tmp = 0, totallen;
+	res = make_new(&block, ldr, param, "cipher", DREW_TYPE_BLOCK, blocks,
+			DIM(blocks));
+	if (res < 0)
+		return res;
+	res = make_new(&ctr, ldr, NULL, NULL, DREW_TYPE_MODE, modes,
+			DIM(modes));
+	if (res < 0)
+		return res;
+	ctr.functbl->init(&ctr, 0, ldr, param);
+	block.functbl->init(&block, 0, ldr, param);
+	outlen = block.functbl->info(DREW_BLOCK_BLKSIZE, 0);
+	keylen = block.functbl->info(DREW_BLOCK_KEYSIZE, &tmp);
+	totallen = outlen + keylen;
+	if (totallen > CTR_BUFFER_SIZE || totallen & 0xf)
+		return -DREW_ERR_INVALID;
+	if (flags & DREW_PRNG_FIXED)
+		p = new (ctx->ctx) drew::CounterDRBG(ctr, block, outlen, keylen);
+	else
+		p = new drew::CounterDRBG(ctr, block, outlen, keylen);
+	ctx->ctx = p;
+	ctx->functbl = &spctrfunctbl;
+	return 0;
+}
+
+static int sp_ctr_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags)
+{
+	return sp_algo_clone<drew::CounterDRBG>(newctx, oldctx, flags);
+}
+
+static int sp_ctr_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
+		size_t entropy)
+{
+	return sp_algo_seed<drew::CounterDRBG>(ctx, key, len, entropy);
+}
+
+static int sp_ctr_bytes(drew_prng_t *ctx, uint8_t *out, size_t len)
+{
+	return sp_algo_bytes<drew::CounterDRBG>(ctx, out, len);
+}
+
+static int sp_ctr_entropy(const drew_prng_t *ctx)
+{
+	return sp_algo_entropy<drew::CounterDRBG>(ctx);
+}
+
+static int sp_ctr_fini(drew_prng_t *ctx, int flags)
+{
+	drew::CounterDRBG *p = reinterpret_cast<drew::CounterDRBG *>(ctx->ctx);
+	if (flags & DREW_PRNG_FIXED)
+		p->~CounterDRBG();
+	else {
+		delete p;
+		ctx->ctx = NULL;
+	}
+	return 0;
+}
+
+static int sp_ctr_test(void *p, const drew_loader_t *ldr)
+{
+	return sp_algo_test<drew::CounterDRBG>(p, ldr);
+}
+
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(sphash, "HashDRBG")
+	PLUGIN_DATA(spctr, "CounterDRBG")
 	PLUGIN_DATA_END()
 	PLUGIN_INTERFACE(sp800_90)
 }
@@ -281,12 +374,7 @@ int drew::DRBG::AddRandomData(const uint8_t *buf, size_t len, size_t entropy)
 
 void drew::DRBG::GeneratePersonalizationString(uint8_t *buf, size_t *len)
 {
-	struct {
-		pid_t pid, ppid, sid;
-		uid_t uid, euid;
-		gid_t gid, egid;
-		struct timespec rt, mt, pt, tt;
-	} data;
+	Personalization data;
 	const size_t finallen = std::min(sizeof(data), *len);
 	data.pid = getpid();
 	data.ppid = getppid();
@@ -463,4 +551,165 @@ void drew::HashDRBG::HashGen(uint8_t *buf, size_t len)
 	memset(data, 0, seedlen);
 	delete[] data;
 	delete[] one;
+}
+
+drew::CounterDRBG::CounterDRBG(const drew_mode_t &c, const drew_block_t &b,
+		size_t outl, size_t keyl)
+{
+	ctr = new drew_mode_t(c);
+	block = new drew_block_t(b);
+	ctr->functbl->setblock(ctr, block);
+	outlen = outl;
+	keylen = keyl;
+	seedlen = outlen + keylen;
+}
+
+drew::CounterDRBG::~CounterDRBG()
+{
+	ctr->functbl->fini(ctr, 0);
+	block->functbl->fini(block, 0);
+	delete block;
+	delete ctr;
+}
+
+// Provided needs to be aligned and of size seedlen.
+void drew::CounterDRBG::Update(const uint8_t *provided)
+{
+	uint8_t buf[CTR_BUFFER_SIZE] ALIGNED_T;
+	memset(buf, 0, sizeof(buf));
+
+	ctr->functbl->encryptfast(ctr, buf, buf, seedlen);
+	XorAligned(buf, buf, provided, seedlen);
+	block->functbl->setkey(block, buf, keylen, 0);
+	ctr->functbl->setiv(ctr, buf+keylen, outlen);
+	memset(buf, 0, sizeof(buf));
+}
+
+// This data passed to this function is treated as a nonce.
+void drew::CounterDRBG::Initialize(const uint8_t *data, size_t len)
+{
+	// We choose to deviate from the specification here and allow the seed
+	// material to exceed seedlen bytes.  At least seedlen/2 bytes must be from
+	// DevURandom (or equivalent) and we use the full personalization string.
+	// After that, we use as much of the provided nonce as possible, making up
+	// the rest of it with DevURandom bits.
+	uint8_t buf[CTR_BUFFER_SIZE] ALIGNED_T;
+	uint8_t zero[CTR_BUFFER_SIZE];
+	const size_t half = seedlen / 2;
+	const size_t noncelen = std::min(len, sizeof(buf) - 
+			(half + sizeof(Personalization)));
+	const size_t dulen = sizeof(buf) - noncelen - sizeof(Personalization);
+	size_t nbytes = sizeof(Personalization);
+	DevURandom du;
+
+	du.GetBytes(buf, dulen);
+	memcpy(buf+dulen, data, noncelen);
+	GeneratePersonalizationString(buf+dulen+noncelen, &nbytes);
+
+	BlockCipherDF(block, buf, sizeof(buf), buf, seedlen);
+
+	memset(zero, 0, sizeof(zero));
+	block->functbl->setkey(block, zero, keylen, 0);
+	ctr->functbl->setiv(ctr, zero, outlen);
+	Update(buf);
+	rc = 1;
+	memset(buf, 0, sizeof(buf));
+	// No need to set zero to 0, because it's, uh, already zero.
+}
+
+void drew::CounterDRBG::BlockCipherDF(const drew_block_t *bt, const uint8_t *in,
+		uint32_t l, uint8_t *out, uint32_t n)
+{
+	static const uint8_t K[] = {
+		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+		0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+		0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+		0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
+	};
+	drew_block_t *b = new drew_block_t;
+	size_t off;
+	size_t slen = RoundUpToMultiple(sizeof(l) + sizeof(n) + 1 + l, outlen);
+	size_t biglen = slen + outlen;
+	uint8_t *bigbuf = new uint8_t[biglen];
+	uint8_t *buf = bigbuf + outlen;
+	uint8_t *iv = bigbuf;
+
+	// Copy the data and pad it.
+	memset(bigbuf, 0, biglen);
+	memcpy(buf, &l, 4);
+	memcpy(buf+4, &n, 4);
+	off = 8;
+	memcpy(buf+off, in, l);
+	off += l;
+	buf[off] = 0x80;
+
+	b->functbl = bt->functbl;
+	b->functbl->clone(b, bt, 0);
+	b->functbl->setkey(b, K, keylen, 0);
+
+	size_t templen = RoundUpToMultiple(std::max<size_t>(seedlen, n), outlen);
+	uint8_t *temp = new uint8_t[templen], *tmp = temp;
+	for (uint32_t i = 0; i < DivideAndRoundUp(seedlen, outlen);
+			i++, tmp += outlen) {
+		memcpy(iv, &i, sizeof(i));
+		BCC(b, bigbuf, biglen, tmp);
+	}
+
+	b->functbl->setkey(b, temp, keylen, 0);
+	uint8_t *from = temp + keylen, *to = temp;
+	for (uint32_t i = 0; i < n; i += outlen, from = to, to += outlen)
+		b->functbl->encrypt(b, to, from);
+	memcpy(out, temp, n);
+
+	b->functbl->fini(b, 0);
+	memset(bigbuf, 0, biglen);
+	memset(temp, 0, templen);
+	delete b;
+	delete[] bigbuf;
+	delete[] temp;
+}
+
+void drew::CounterDRBG::BCC(const drew_block_t *b, const uint8_t *data,
+		size_t len, uint8_t *out)
+{
+	memset(out, 0, outlen);
+	const uint8_t *p = data;
+	for (size_t i = 0; i < len / outlen; i++, p += outlen) {
+		XorBuffers(out, out, p, outlen);
+		b->functbl->encrypt(b, out, out);
+	}
+}
+
+void drew::CounterDRBG::Reseed(const uint8_t *data, size_t len)
+{
+	uint8_t buf[CTR_BUFFER_SIZE] ALIGNED_T;
+	DevURandom du;
+	size_t dubytes = std::max(sizeof(buf) / 2, sizeof(buf) - len);
+
+	du.GetBytes(buf, dubytes);
+	memcpy(buf+dubytes, data, sizeof(buf) - dubytes);
+
+	BlockCipherDF(block, buf, sizeof(buf), buf, seedlen);
+	Update(buf);
+	rc = 1;
+
+	memset(buf, 0, sizeof(buf));
+}
+
+void drew::CounterDRBG::GetBytes(uint8_t *data, size_t len)
+{
+	uint8_t buf[CTR_BUFFER_SIZE] ALIGNED_T;
+	if (!inited)
+		this->DRBG::Initialize();
+	else if (rc >= reseed_interval)
+		this->Stir();
+
+	memset(buf, 0, sizeof(buf));
+	memcpy(buf, data, std::min(sizeof(buf), len));
+	Update(buf);
+
+	memset(data, 0, len);
+	ctr->functbl->encrypt(ctr, data, data, len);
+	Update(buf);
+	rc++;
 }
