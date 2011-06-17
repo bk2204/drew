@@ -72,6 +72,32 @@ static bool prng_test_monobit(const uint8_t *buf, size_t len)
 	return erfc(sobs / sqrt(2)) >= 0.01;
 }
 
+static bool prng_test_runs(const uint8_t *buf, size_t len)
+{
+	// Because of the way we load data, we need to use the 0x100 bit.  Since
+	// what we're computing in the inner loop is whether two adjoining bits are
+	// the same and we're starting v at 0 (instead of 1), make the bit for
+	// comparison the opposite of the first actual bit, which is equivalent to
+	// starting v at 1.
+	unsigned buffer = ((unsigned)(~buf[0] & 0x80)) << 1;
+	ssize_t nset = 0, total = len * 8, v = 0;
+	for (size_t i = 0; i < len; i++) {
+		nset += popcount[buf[i]];
+		buffer |= buf[i];
+		for (size_t j = 0; j < 8; j++) {
+			unsigned t = buffer & 0x100;
+			unsigned u = (buffer <<= 1) & 0x100;
+			v += (t != u);
+		}
+	}
+
+	double pi = ((double)nset) / total;
+	double piterms = pi * (1.0 - pi);
+	double num = fabs(v - (2 * total * piterms));
+	double denom = 2.0 * sqrt(2 * total) * piterms;
+	return erfc(num / denom) >= 0.01;
+}
+
 #define NBYTES (12 * 1024 * 1024)
 int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
 		const char *filename, struct test_external *tes)
@@ -98,6 +124,8 @@ int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
 	prng.functbl->fini(&prng, 0);
 
 	ret |= !prng_test_monobit(p, NBYTES);
+	ret <<= 1;
+	ret |= !prng_test_runs(p, NBYTES);
 out:
 	free(p);
 	return print_test_results(ret, NULL);
