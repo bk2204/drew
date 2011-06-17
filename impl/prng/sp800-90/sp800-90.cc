@@ -376,14 +376,16 @@ inline static void AddArrays(uint8_t *buf, size_t len, const uint8_t *input)
 
 void drew::HashDRBG::GetBytes(uint8_t *data, size_t len)
 {
-	if (!inited)
-		this->DRBG::Initialize();
-
 	HashHelper hh(hash);
 	uint8_t b = 0x03;
 	const size_t seedlen = hh.GetSeedLength();
 	const size_t digestlen = hh.GetDigestLength();
-	// FIXME: test rc against the reseed interval.
+
+	if (!inited)
+		this->DRBG::Initialize();
+	else if (rc >= reseed_interval)
+		this->Stir();
+
 	HashGen(data, len);
 
 	hh.AddData(&b, 1);

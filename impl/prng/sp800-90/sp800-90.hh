@@ -50,6 +50,7 @@ class HashDRBG : public DRBG
 		virtual ~HashDRBG();
 		void GetBytes(uint8_t *, size_t);
 	protected:
+		static const size_t reseed_interval = 1024;
 		void Initialize(const uint8_t *, size_t);
 		void Reseed(const uint8_t *, size_t);
 		static void HashDF(const drew_hash_t *, const uint8_t *, size_t,
