@@ -42,6 +42,74 @@ static int make_new(T *ctx, const drew_loader_t *ldr, const drew_param_t *param,
 	return -DREW_ERR_NONEXISTENT;
 }
 
+template<class T>
+static int sp_algo_info(int op, void *p)
+{
+	switch (op) {
+		case DREW_PRNG_VERSION:
+			return 2;
+		case DREW_PRNG_BLKSIZE:
+			return 256;
+		case DREW_PRNG_SEEDABLE:
+			return 1;
+		case DREW_PRNG_MUST_SEED:
+			return 0;
+		case DREW_PRNG_INTSIZE:
+			return sizeof(T);
+		case DREW_PRNG_BLOCKING:
+			return 0;
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
+template<class T>
+static int sp_algo_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags)
+{
+	T *p;
+	const T *q = reinterpret_cast<const T *>(oldctx->ctx);
+	if (flags & DREW_PRNG_FIXED)
+		p = new (newctx->ctx) T(*q);
+	else
+		p = new T(*q);
+	newctx->ctx = p;
+	newctx->functbl = oldctx->functbl;
+	return 0;
+}
+
+template<class T>
+static int sp_algo_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
+		size_t entropy)
+{
+	T *p = reinterpret_cast<T *>(ctx->ctx);
+	p->AddRandomData(key, len, entropy);
+	return 0;
+}
+
+template<class T>
+static int sp_algo_bytes(drew_prng_t *ctx, uint8_t *out, size_t len)
+{
+	T *p = reinterpret_cast<T *>(ctx->ctx);
+	p->GetBytes(out, len);
+	return 0;
+}
+
+template<class T>
+static int sp_algo_entropy(const drew_prng_t *ctx)
+{
+	const T *p =
+		reinterpret_cast<const T *>(ctx->ctx);
+	return p->GetEntropyAvailable();
+}
+
+template<class T>
+static int sp_algo_test(void *, const drew_loader_t *)
+{
+	using namespace drew;
+
+	return -DREW_ERR_NOT_IMPL;
+}
+
 extern "C" {
 
 #define DIM(x) (sizeof(x)/sizeof(x[0]))
@@ -61,22 +129,7 @@ PLUGIN_FUNCTBL(sphash, sp_hash_info, sp_hash_init, sp_hash_clone, sp_hash_fini, 
 
 static int sp_hash_info(int op, void *p)
 {
-	switch (op) {
-		case DREW_PRNG_VERSION:
-			return 2;
-		case DREW_PRNG_BLKSIZE:
-			return 256;
-		case DREW_PRNG_SEEDABLE:
-			return 1;
-		case DREW_PRNG_MUST_SEED:
-			return 0;
-		case DREW_PRNG_INTSIZE:
-			return sizeof(drew::HashDRBG);
-		case DREW_PRNG_BLOCKING:
-			return 0;
-		default:
-			return -EINVAL;
-	}
+	return sp_algo_info<drew::HashDRBG>(op, p);
 }
 
 static int sp_hash_init(drew_prng_t *ctx, int flags, const drew_loader_t *ldr,
@@ -101,38 +154,23 @@ static int sp_hash_init(drew_prng_t *ctx, int flags, const drew_loader_t *ldr,
 
 static int sp_hash_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags)
 {
-	using namespace drew;
-	HashDRBG *p;
-	const HashDRBG *q = reinterpret_cast<const HashDRBG *>(oldctx->ctx);
-	if (flags & DREW_PRNG_FIXED)
-		p = new (newctx->ctx) HashDRBG(*q);
-	else
-		p = new HashDRBG(*q);
-	newctx->ctx = p;
-	newctx->functbl = oldctx->functbl;
-	return 0;
+	return sp_algo_clone<drew::HashDRBG>(newctx, oldctx, flags);
 }
 
 static int sp_hash_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
 		size_t entropy)
 {
-	drew::HashDRBG *p = reinterpret_cast<drew::HashDRBG *>(ctx->ctx);
-	p->AddRandomData(key, len, entropy);
-	return 0;
+	return sp_algo_seed<drew::HashDRBG>(ctx, key, len, entropy);
 }
 
 static int sp_hash_bytes(drew_prng_t *ctx, uint8_t *out, size_t len)
 {
-	drew::HashDRBG *p = reinterpret_cast<drew::HashDRBG *>(ctx->ctx);
-	p->GetBytes(out, len);
-	return 0;
+	return sp_algo_bytes<drew::HashDRBG>(ctx, out, len);
 }
 
 static int sp_hash_entropy(const drew_prng_t *ctx)
 {
-	const drew::HashDRBG *p =
-		reinterpret_cast<const drew::HashDRBG *>(ctx->ctx);
-	return p->GetEntropyAvailable();
+	return sp_algo_entropy<drew::HashDRBG>(ctx);
 }
 
 static int sp_hash_fini(drew_prng_t *ctx, int flags)
@@ -147,11 +185,9 @@ static int sp_hash_fini(drew_prng_t *ctx, int flags)
 	return 0;
 }
 
-static int sp_hash_test(void *, const drew_loader_t *)
+static int sp_hash_test(void *p, const drew_loader_t *ldr)
 {
-	using namespace drew;
-
-	return -DREW_ERR_NOT_IMPL;
+	return sp_algo_test<drew::HashDRBG>(p, ldr);
 }
 
 	PLUGIN_DATA_START()
