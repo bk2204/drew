@@ -58,6 +58,33 @@ inline int GetSystemEndianness()
 }
 
 template<class T>
+inline bool IsPowerOf2(T x)
+{
+	return !(x & (x-1));
+}
+
+template<class T, class U>
+inline T RoundUpToPowerOf2(T x, U pow2)
+{
+	T m1 = pow2 - 1;
+	return (x + m1) & ~m1;
+}
+
+template<class T, class U>
+inline T RoundUpToMultiple(T x, U multiple)
+{
+	T t = x + (multiple - 1);
+	return t - (t % multiple);
+}
+
+template<class T, class U>
+inline T DivideAndRoundUp(T x, U div)
+{
+	T t = x + (div - 1);
+	return t / div;
+}
+
+template<class T>
 inline T RotateLeft(T x, size_t n)
 {
 	return (x << n) | (x >> ((sizeof(T)*8) - n));
