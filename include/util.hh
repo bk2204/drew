@@ -145,6 +145,13 @@ inline void XorAligned(T *outp, const T *inp, const T *xorp, size_t len)
 			reinterpret_cast<const uint8_t *>(xorp), len);
 }
 
+template<class T>
+inline void XorBuffers(T *outp, const T *inp, const T *xorp, size_t len)
+{
+	for (size_t i = 0; i < len / sizeof(T); i++)
+		outp[i] = inp[i] ^ xorp[i];
+}
+
 // This is like CopyAndXor, but we're always working with bufsz-sized chunks.
 template<class T>
 inline void CopyAndXorAligned(uint8_t *outp, const uint8_t *inp, size_t len,
