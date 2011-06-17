@@ -402,6 +402,9 @@ void drew::DRBG::GeneratePersonalizationString(uint8_t *buf, size_t *len)
 drew::HashDRBG::HashDRBG(const drew_hash_t &h)
 {
 	hash = new drew_hash_t(h);
+	HashHelper hh(hash);
+	digestlen = hh.GetDigestLength();
+	seedlen = hh.GetSeedLength();
 }
 
 drew::HashDRBG::~HashDRBG()
@@ -413,29 +416,23 @@ void drew::HashDRBG::HashDF(const drew_hash_t *h, const uint8_t *in,
 		size_t inlen, uint8_t *out, size_t outlen)
 {
 	HashHelper hh(h);
-	const size_t digestsz = hh.GetDigestLength();
-	const size_t len = (outlen + (digestsz - 1)) / digestsz;
-	uint8_t *temp = new uint8_t[len*digestsz];
+	const size_t len = (outlen + (digestlen - 1)) / digestlen;
+	uint8_t *temp = new uint8_t[len*digestlen];
 	uint8_t counter = 1;
 	uint32_t outbits = outlen * 8;
 	
-	for (size_t i = 0, off = 0; i < len; i++, off += digestsz) {
+	for (size_t i = 0, off = 0; i < len; i++, off += digestlen) {
 		hh.AddData(&counter, sizeof(counter));
 		hh.AddData(reinterpret_cast<const uint8_t *>(&outbits),
 				sizeof(outbits));
 		hh.AddData(in, inlen);
-		hh.GetDigest(temp+off, digestsz);
+		hh.GetDigest(temp+off, digestlen);
 		hh.Reset();
 	}
 	// FIXME: don't copy needlessly here.
 	memcpy(out, temp, outlen);
-	memset(temp, 0, len*digestsz);
+	memset(temp, 0, len*digestlen);
 	delete[] temp;
-}
-
-size_t drew::HashDRBG::GetSeedLength() const
-{
-	return HashHelper(hash).GetSeedLength();
 }
 
 // This data passed to this function is treated as a nonce.
@@ -443,7 +440,6 @@ void drew::HashDRBG::Initialize(const uint8_t *data, size_t len)
 {
 	// Arbitrary constants.
 	const size_t buflen = std::max(len + 128, (size_t)1024) + 1;
-	const size_t seedlen = GetSeedLength();
 	uint8_t *buf = new uint8_t[buflen];
 	DevURandom du;
 	du.GetBytes(buf, seedlen);
@@ -465,7 +461,6 @@ void drew::HashDRBG::Initialize(const uint8_t *data, size_t len)
 
 void drew::HashDRBG::Reseed(const uint8_t *data, size_t len)
 {
-	const size_t seedlen = GetSeedLength();
 	const size_t buflen = 1 + sizeof(V) + seedlen + len;
 	uint8_t *buf = new uint8_t[buflen];
 	DevURandom du;
@@ -502,8 +497,6 @@ void drew::HashDRBG::GetBytes(uint8_t *data, size_t len)
 {
 	HashHelper hh(hash);
 	uint8_t b = 0x03;
-	const size_t seedlen = hh.GetSeedLength();
-	const size_t digestlen = hh.GetDigestLength();
 
 	if (!inited)
 		this->DRBG::Initialize();
@@ -531,9 +524,7 @@ void drew::HashDRBG::GetBytes(uint8_t *data, size_t len)
 void drew::HashDRBG::HashGen(uint8_t *buf, size_t len)
 {
 	HashHelper hh(hash);
-	const size_t seedlen = hh.GetSeedLength();
-	const size_t digestsize = hh.GetDigestLength();
-	const size_t m = (len + (digestsize - 1)) / digestsize;
+	const size_t m = (len + (digestlen - 1)) / digestlen;
 	uint8_t *data = new uint8_t[seedlen];
 	uint8_t *one = new uint8_t[seedlen];
 
@@ -541,7 +532,7 @@ void drew::HashDRBG::HashGen(uint8_t *buf, size_t len)
 	one[seedlen-1] = 0x01;
 	memcpy(data, V, seedlen);
 
-	for (size_t i = 0, j = 0; i < m; i++, j += digestsize) {
+	for (size_t i = 0, j = 0; i < m; i++, j += digestlen) {
 		hh.AddData(data, seedlen);
 		hh.GetDigest(buf+j, std::min(seedlen, len-j));
 		hh.Reset();

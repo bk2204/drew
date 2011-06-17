@@ -62,7 +62,7 @@ class HashDRBG : public DRBG
 	protected:
 		void Initialize(const uint8_t *, size_t);
 		void Reseed(const uint8_t *, size_t);
-		static void HashDF(const drew_hash_t *, const uint8_t *, size_t,
+		void HashDF(const drew_hash_t *, const uint8_t *, size_t,
 				uint8_t *, size_t);
 		void HashGen(uint8_t *, size_t);
 		// At least seedlen bits long.  We use 1024 bits just to make sure we
@@ -71,8 +71,7 @@ class HashDRBG : public DRBG
 		uint8_t C[1024/8];
 		size_t rc; // reseed_counter.
 		const drew_hash_t *hash;
-	private:
-		size_t GetSeedLength() const;
+		size_t digestlen, seedlen;
 };
 
 class CounterDRBG : public DRBG
