@@ -42,12 +42,14 @@ class DRBG : public SeededPRNG, public BlockPRNG
 			gid_t gid, egid;
 			struct timespec rt, mt, pt, tt;
 		};
+		static const size_t reseed_interval = 1024;
 		virtual void Initialize();
 		virtual void Initialize(const uint8_t *, size_t) = 0;
 		virtual void Reseed(const uint8_t *, size_t) = 0;
 		virtual void Stir();
 		void GeneratePersonalizationString(uint8_t *buf, size_t *len);
 		bool inited;
+		size_t rc; // reseed_counter.
 
 };
 
@@ -58,7 +60,6 @@ class HashDRBG : public DRBG
 		virtual ~HashDRBG();
 		void GetBytes(uint8_t *, size_t);
 	protected:
-		static const size_t reseed_interval = 1024;
 		void Initialize(const uint8_t *, size_t);
 		void Reseed(const uint8_t *, size_t);
 		static void HashDF(const drew_hash_t *, const uint8_t *, size_t,
@@ -82,14 +83,12 @@ class CounterDRBG : public DRBG
 		virtual ~CounterDRBG();
 		void GetBytes(uint8_t *, size_t);
 	protected:
-		static const size_t reseed_interval = 1024;
 		void Update(const uint8_t *);
 		void Initialize(const uint8_t *, size_t);
 		void Reseed(const uint8_t *, size_t);
 		void BlockCipherDF(const drew_block_t *, const uint8_t *, uint32_t,
 				uint8_t *, uint32_t);
 		void BCC(const drew_block_t *, const uint8_t *, size_t, uint8_t *);
-		size_t rc; // reseed_counter.
 		drew_block_t *block;
 		drew_mode_t *ctr;
 		size_t outlen, keylen, seedlen;
