@@ -41,7 +41,8 @@ inline int test_speed_loop(drew_prng_t *ctx, uint8_t *buf,
 {
 	int i;
 
-	ctx->functbl->init(ctx, 0, ldr, NULL);
+	if ((i = ctx->functbl->init(ctx, 0, ldr, NULL)) < 0)
+		return i;
 	ctx->functbl->seed(ctx, blk, blksz, blksz);
 	for (i = 0; !framework_sigflag && i < nchunks; i++)
 		ctx->functbl->bytes(ctx, buf, chunk);
@@ -170,6 +171,9 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 
 	free(buf);
 	free(blk);
+
+	if (i < 0)
+		return print_test_results(i, NULL);
 
 	print_speed_info(chunk, i, &cstart, &cend);
 	
