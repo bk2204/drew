@@ -94,7 +94,7 @@ inline T TernarySelection(T x, T y, T z)
 template<class T>
 inline T TernaryMajority(T x, T y, T z)
 {
-	return (b & c) | (d & (b ^ c));
+	return (x & y) | (z & (x ^ y));
 }
 
 template<class T>
