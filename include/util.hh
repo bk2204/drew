@@ -84,6 +84,25 @@ inline T DivideAndRoundUp(T x, U div)
 	return t / div;
 }
 
+// This function implements x ? y : z.
+template<class T>
+inline T TernarySelection(T x, T y, T z)
+{
+	return z ^ (x & (y ^ z));
+}
+
+template<class T>
+inline T TernaryMajority(T x, T y, T z)
+{
+	return (b & c) | (d & (b ^ c));
+}
+
+template<class T>
+inline T TernaryParity(T x, T y, T z)
+{
+	return x ^ y ^ z;
+}
+
 template<class T>
 inline T RotateLeft(T x, size_t n)
 {
