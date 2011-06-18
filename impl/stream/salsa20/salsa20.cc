@@ -61,8 +61,6 @@ static int salsa20_test(void *, const drew_loader_t *)
 	return res;
 }
 
-#define DIM(x) (sizeof(x)/sizeof(x[0]))
-
 static const int salsa_keysz[] = {16, 32};
 
 static int salsa20_info(int op, void *p)

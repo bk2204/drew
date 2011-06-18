@@ -99,5 +99,9 @@ int test_process_testcase(void *data, int type, const char *item,
 bool is_forbidden_errno(int val);
 int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
 		const void *tbl);
+int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
+		const char *filename, struct test_external *tes);
+int test_external_parse(const drew_loader_t *ldr, const char *filename,
+		struct test_external *tes);
 
 #endif

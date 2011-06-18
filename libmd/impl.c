@@ -10,6 +10,7 @@
 
 struct plugin_info {
 	const char *name;
+	const char *algo;
 	drew_hash_functbl_t *tbl;
 };
 
@@ -22,13 +23,13 @@ struct plugin_info {
 #define PLUGIN_SHA512 6
 
 static struct plugin_info plugins[] = {
-	{"md4"},
-	{"md5"},
-	{"ripe160"},
-	{"sha1"},
-	{"sha256"},
-	{"sha384"},
-	{"sha512"}
+	{"md4", "MD4"},
+	{"md5", "MD5"},
+	{"ripe160", "RIPEMD-160"},
+	{"sha1", "SHA-1"},
+	{"sha256", "SHA-256"},
+	{"sha384", "SHA-384"},
+	{"sha512", "SHA-512"}
 };
 
 static pthread_mutex_t drew_impl_libmd__mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -51,12 +52,14 @@ static void drew_impl_libmd_init(void)
 		size_t i;
 
 		drew_loader_new(&ldr);
+		drew_loader_load_plugin(ldr, NULL, NULL);
 
 		for (i = 0; i < DIM(plugins); i++) {
 			int id;
 			const void *functbl;
 
-			id = drew_loader_load_plugin(ldr, plugins[i].name, "./plugins");
+			drew_loader_load_plugin(ldr, plugins[i].name, "./plugins");
+			id = drew_loader_lookup_by_name(ldr, plugins[i].algo, 0, -1);
 			drew_loader_get_functbl(ldr, id, &functbl);
 			plugins[i].tbl = (drew_hash_functbl_t *)functbl;
 		}

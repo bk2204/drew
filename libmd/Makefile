@@ -5,7 +5,7 @@ MD_SONAME				:= ${MD_SHOBJ-y}
 
 libmd: ${MD_SONAME}
 
-${MD_SONAME}: ${MD_OBJS} ${DREW_SONAME}
+${MD_SONAME}: ${MD_OBJS} ${DREW_SONAME} ${DREW_IMPL_SONAME}
 	${CC} ${CFLAGS} ${LIBCFLAGS} -Wl,-h${.TARGET} -o ${.TARGET} ${.ALLSRC}
 
 .PHONY: libmd

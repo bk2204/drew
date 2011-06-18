@@ -11,8 +11,6 @@
 #include "block-plugin.h"
 #include "util.hh"
 
-#define DIM(x) (sizeof(x)/sizeof(x[0]))
-
 namespace drew {
 	template<size_t BlockSize>
 	class BlockCipher {

@@ -13,8 +13,6 @@
 
 extern "C" {
 
-#define DIM(x) (sizeof(x)/sizeof(x[0]))
-
 	PLUGIN_STRUCTURE2(rc2, RC2)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(rc2, "RC2")
