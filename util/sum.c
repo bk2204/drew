@@ -83,7 +83,17 @@ int main(int argc, char **argv)
 
 	memset(&hash, 0, sizeof(hash));
 
-	while ((c = getopt(argc, argv, "bct")) != -1) {
+	while ((c = getopt(argc, argv, "bct-:")) != -1) {
+		if (c == '-') {
+			if (!strcmp(optarg, "text"))
+				c = 't';
+			else if (!strcmp(optarg, "binary"))
+				c = 'b';
+			else if (!strcmp(optarg, "check"))
+				c = 'c';
+			else
+				c = '?';
+		}
 		switch (c) {
 			case 'b':
 				mode = MODE_BINARY;
