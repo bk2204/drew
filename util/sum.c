@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,6 +20,10 @@
 
 #if MAX_DIGEST_BITS < (8 * ALGO_DIGEST_SIZE)
 #error "MAX_DIGEST_BITS is too small!"
+#endif
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096
 #endif
 
 #define MODE_TEXT 0
@@ -74,6 +79,56 @@ void print(const uint8_t *buf, const char *name, int mode)
 	printf(" %c%s\n", (mode == MODE_BINARY) ? '*' : ' ', name);
 }
 
+int check(const char *filename, drew_hash_t *hash)
+{
+	int errors = 0;
+	FILE *fp;
+	char buf[(ALGO_DIGEST_SIZE * 2) + 2 + PATH_MAX + 2];
+
+	if (!(fp = fopen(filename, "r"))) {
+		perror("error opening file");
+		return -1;
+	}
+
+	while (fgets(buf, sizeof(buf), fp)) {
+		uint8_t val[ALGO_DIGEST_SIZE], computed[ALGO_DIGEST_SIZE];
+		size_t len = strlen(buf);
+		char *filename;
+		char dummy, type;
+		int mode, cmp;
+		if (buf[len-1] != '\n')
+			continue;
+		buf[len-1] = '\0';
+		for (int i = 0; i < ALGO_DIGEST_SIZE; i++)
+			if (!sscanf(buf+(2*i), "%02hhx", val+i))
+				goto next;
+		if (sscanf(buf+(2*ALGO_DIGEST_SIZE), "%c%c%ms", &dummy, &type, &filename) != 3)
+			continue;
+		if (dummy != ' ')
+			continue;
+		switch (type) {
+			case ' ':
+				mode = MODE_TEXT;
+				break;
+			case '*':
+				mode = MODE_BINARY;
+				break;
+			default:
+				continue;
+		}
+		if (process(computed, filename, mode, hash) < 0)
+			continue;
+		if ((cmp = memcmp(computed, val, sizeof(val))))
+			errors++;
+		printf("%s: %s\n", filename, cmp ?  "FAILED" : "OK");
+next:
+		;
+	}
+
+	fclose(fp);
+	return errors;
+}
+
 int main(int argc, char **argv)
 {
 	int c, mode = MODE_TEXT, id;
@@ -119,7 +174,11 @@ int main(int argc, char **argv)
 	initialize_hash(&hash, ldr, id);
 
 	if (mode == MODE_CHECK) {
-		return 2;
+		const char *p;
+		int errors = 0;
+		while ((p = argv[optind++]))
+			errors += check(p, &hash);
+		retval = !!errors;
 	}
 	else {
 		const char *p;
