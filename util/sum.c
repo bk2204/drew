@@ -60,7 +60,9 @@ int process(uint8_t *val, const char *name, int mode, drew_hash_t *hash)
 
 	hash->functbl->reset(hash);
 
-	if (!(fp = fopen(name, modestr[mode]))) {
+	if (!name)
+		fp = stdin;
+	else if (!(fp = fopen(name, modestr[mode]))) {
 		fprintf(stderr, "%s: error opening file %s with mode %s: %s\n", program,
 				name, modestr[mode], strerror(errno));
 		return -1;
@@ -88,7 +90,7 @@ void print(const uint8_t *buf, const char *name, int mode)
 {
 	for (int i = 0; i < ALGO_DIGEST_SIZE; i++)
 		printf("%02x", buf[i]);
-	printf(" %c%s\n", (mode == MODE_BINARY) ? '*' : ' ', name);
+	printf(" %c%s\n", (mode == MODE_BINARY) ? '*' : ' ', name ? name : "-");
 }
 
 int check(const char *filename, drew_hash_t *hash)
@@ -97,7 +99,9 @@ int check(const char *filename, drew_hash_t *hash)
 	FILE *fp;
 	char buf[(ALGO_DIGEST_SIZE * 2) + 2 + PATH_MAX + 2];
 
-	if (!(fp = fopen(filename, "r"))) {
+	if (!filename) 
+		fp = stdin;
+	else if (!(fp = fopen(filename, "r"))) {
 		fprintf(stderr, "%s: error opening file %s with mode %s: %s\n", program,
 				filename, "r", strerror(errno));
 		return -1;
@@ -194,20 +198,22 @@ int main(int argc, char **argv)
 	}
 
 	if (mode == MODE_CHECK) {
-		const char *p;
-		int errors = 0;
-		while ((p = argv[optind++]))
-			errors += check(p, &hash);
-		retval = !!errors;
+		const char *p = argv[optind];
+		do {
+			if (check(p, &hash))
+				retval = 1;
+		}
+		while (p && (p = argv[++optind]));
 	}
 	else {
-		const char *p;
 		uint8_t val[MAX_DIGEST_BITS / 8];
-		while ((p = argv[optind++])) {
+		const char *p = argv[optind];
+		do {
 			if (process(val, p, mode, &hash))
 				retval = 1;
 			print(val, p, mode);
 		}
+		while (p && (p = argv[++optind]));
 	}
 
 out:
