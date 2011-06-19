@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -30,14 +31,21 @@
 #define MODE_BINARY 1
 #define MODE_CHECK 2
 
+static const char *program = NULL;
+
 int initialize_hash(drew_hash_t *hash, const drew_loader_t *ldr, int id)
 {
 	const void *functbl;
-	if (drew_loader_get_functbl(ldr, id, &functbl) < 0)
+	int res = 0;
+	if ((res = drew_loader_get_functbl(ldr, id, &functbl)) < 0) {
+		fprintf("%s: error loading interface: error %d\n", program, -res);
 		return -1;
+	}
 	hash->functbl = functbl;
-	if (hash->functbl->init(hash, 0, NULL, NULL) < 0)
+	if ((res = hash->functbl->init(hash, 0, NULL, NULL)) < 0) {
+		fprintf("%s: error initializing algorithm: error %d\n", program, -res);
 		return -1;
+	}
 	return 0;
 }
 
@@ -51,7 +59,8 @@ int process(uint8_t *val, const char *name, int mode, drew_hash_t *hash)
 	hash->functbl->reset(hash);
 
 	if (!(fp = fopen(name, modestr[mode]))) {
-		perror("error opening file");
+		fprintf("%s: error opening file %s with mode %s: %s\n", program, name,
+				modestr[mode], strerror(errno));
 		return -1;
 	}
 
@@ -61,7 +70,8 @@ int process(uint8_t *val, const char *name, int mode, drew_hash_t *hash)
 	if (nread < CHUNK_SIZE) {
 		hash->functbl->update(hash, buf, nread);
 		if (ferror(fp)) {
-			perror("error reading file");
+			fprintf("%s: error reading file %s: %s\n", program, name,
+					strerror(errno));
 			fclose(fp);
 			return -1;
 		}
@@ -86,7 +96,8 @@ int check(const char *filename, drew_hash_t *hash)
 	char buf[(ALGO_DIGEST_SIZE * 2) + 2 + PATH_MAX + 2];
 
 	if (!(fp = fopen(filename, "r"))) {
-		perror("error opening file");
+		fprintf("%s: error opening file %s with mode %s: %s\n", program, name,
+				"r", strerror(errno));
 		return -1;
 	}
 
@@ -136,6 +147,8 @@ int main(int argc, char **argv)
 	drew_loader_t *ldr;
 	drew_hash_t hash;
 
+	program = argv[0];
+
 	memset(&hash, 0, sizeof(hash));
 
 	while ((c = getopt(argc, argv, "bct-:")) != -1) {
@@ -168,10 +181,14 @@ int main(int argc, char **argv)
 
 	id = drew_loader_lookup_by_name(ldr, ALGO_NAME, 0, -1);
 	if (id < 0) {
+		fprintf("%s: error looking up algorithm: error %d\n", program, id);
 		retval = 3;
 		goto out;
 	}
-	initialize_hash(&hash, ldr, id);
+	if (initialize_hash(&hash, ldr, id)) {
+		retval = 4;
+		goto out;
+	}
 
 	if (mode == MODE_CHECK) {
 		const char *p;
@@ -184,7 +201,8 @@ int main(int argc, char **argv)
 		const char *p;
 		uint8_t val[MAX_DIGEST_BITS / 8];
 		while ((p = argv[optind++])) {
-			process(val, p, mode, &hash);
+			if (process(val, p, mode, &hash))
+				retval = 1;
 			print(val, p, mode);
 		}
 	}
