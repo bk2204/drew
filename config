@@ -73,6 +73,9 @@ CFG_DSA			= m
 ## Additional libraries using libdrew.
 CFG_LIBMD		= y
 
+## Settings.
+CFG_SEARCH_PATH	= /lib/drew/plugins /usr/lib/drew/plugins /usr/local/lib/drew/plugins
+
 ## Global build configuration.
 CFG_THREAD_SAFE	= y
 CFG_FORTIFY		= n

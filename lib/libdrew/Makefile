@@ -4,6 +4,10 @@ DREW_SYMLINK	:= $(basename $(DREW_SONAME))
 
 DREW_OBJS		:= $(DREW_DIR)/drew.o
 
+DREW_CPPFLAGS	:= -DDREW_SEARCH_PATH='$(shell echo $(CFG_SEARCH_PATH) | perl -pe '$$_=join",",map{"\"$$_\""}split/\s+/;')'
+
+$(DREW_SONAME): CPPFLAGS += $(DREW_CPPFLAGS)
+
 ${DREW_DIR}/${DREW_SONAME}: $(DREW_OBJS)
 	${CC} ${CFLAGS} ${LIBCFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
