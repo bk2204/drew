@@ -38,12 +38,14 @@ int initialize_hash(drew_hash_t *hash, const drew_loader_t *ldr, int id)
 	const void *functbl;
 	int res = 0;
 	if ((res = drew_loader_get_functbl(ldr, id, &functbl)) < 0) {
-		fprintf("%s: error loading interface: error %d\n", program, -res);
+		fprintf(stderr, "%s: error loading interface: error %d\n", program,
+				-res);
 		return -1;
 	}
 	hash->functbl = functbl;
 	if ((res = hash->functbl->init(hash, 0, NULL, NULL)) < 0) {
-		fprintf("%s: error initializing algorithm: error %d\n", program, -res);
+		fprintf(stderr, "%s: error initializing algorithm: error %d\n", program,
+				-res);
 		return -1;
 	}
 	return 0;
@@ -59,8 +61,8 @@ int process(uint8_t *val, const char *name, int mode, drew_hash_t *hash)
 	hash->functbl->reset(hash);
 
 	if (!(fp = fopen(name, modestr[mode]))) {
-		fprintf("%s: error opening file %s with mode %s: %s\n", program, name,
-				modestr[mode], strerror(errno));
+		fprintf(stderr, "%s: error opening file %s with mode %s: %s\n", program,
+				name, modestr[mode], strerror(errno));
 		return -1;
 	}
 
@@ -70,7 +72,7 @@ int process(uint8_t *val, const char *name, int mode, drew_hash_t *hash)
 	if (nread < CHUNK_SIZE) {
 		hash->functbl->update(hash, buf, nread);
 		if (ferror(fp)) {
-			fprintf("%s: error reading file %s: %s\n", program, name,
+			fprintf(stderr, "%s: error reading file %s: %s\n", program, name,
 					strerror(errno));
 			fclose(fp);
 			return -1;
@@ -96,8 +98,8 @@ int check(const char *filename, drew_hash_t *hash)
 	char buf[(ALGO_DIGEST_SIZE * 2) + 2 + PATH_MAX + 2];
 
 	if (!(fp = fopen(filename, "r"))) {
-		fprintf("%s: error opening file %s with mode %s: %s\n", program, name,
-				"r", strerror(errno));
+		fprintf(stderr, "%s: error opening file %s with mode %s: %s\n", program,
+				filename, "r", strerror(errno));
 		return -1;
 	}
 
@@ -181,7 +183,8 @@ int main(int argc, char **argv)
 
 	id = drew_loader_lookup_by_name(ldr, ALGO_NAME, 0, -1);
 	if (id < 0) {
-		fprintf("%s: error looking up algorithm: error %d\n", program, id);
+		fprintf(stderr, "%s: error looking up algorithm: error %d\n", program,
+				id);
 		retval = 3;
 		goto out;
 	}
