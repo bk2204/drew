@@ -307,15 +307,12 @@ static int bn_divpow2(drew_bignum_t *quot, drew_bignum_t *rem,
 
 static int bn_shiftleft(drew_bignum_t *res, const drew_bignum_t *in, size_t n)
 {
-	COPY(res, in);
-	RETFAIL(mp_lshd(MP(res), n));
-	return 0;
+	return bn_mulpow2(res, in, n);
 }
 
 static int bn_shiftright(drew_bignum_t *res, const drew_bignum_t *in, size_t n)
 {
-	COPY(res, in);
-	mp_rshd(MP(res), n);
+	RETFAIL(mp_div_2d(MPC(in), n, MP(res), NULL));
 	return 0;
 }
 
