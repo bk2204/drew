@@ -1,7 +1,9 @@
 BIGNUM_DIR						:= impl/bignum
 
 PLUGINS_BIGNUM-${CFG_TOMMATH}	+= tommath/tommath
+PLUGINS_BIGNUM-${CFG_OPENSSLBN}	+= openssl/openssl-bn
 LIBS_BIGNUM-${CFG_TOMMATH}		+= -ltommath
+LIBS_BIGNUM-${CFG_OPENSSLBN}	+= -lcrypto
 
 BIGNUM_PLUGINS	:= $(patsubst %,${BIGNUM_DIR}/%,$(PLUGINS_BIGNUM-m))
 BIGNUM_MODULES	:= $(patsubst %,${BIGNUM_DIR}/%.o,$(PLUGINS_BIGNUM-y))

@@ -62,6 +62,7 @@ CFG_SP80090		= m
 
 ## Bignum implementations.
 CFG_TOMMATH		= m
+CFG_OPENSSLBN	= No, thanks.
 
 ## Public key encryption.
 CFG_RSAENC		= m
