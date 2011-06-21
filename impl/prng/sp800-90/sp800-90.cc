@@ -765,7 +765,7 @@ void drew::CounterDRBG::Reseed(const uint8_t *data, size_t len)
 {
 	uint8_t buf[CTR_BUFFER_SIZE] ALIGNED_T;
 	DevURandom du;
-	size_t dubytes = std::max(sizeof(buf) / 2, sizeof(buf) - len);
+	size_t dubytes = sizeof(buf) - std::min(len, sizeof(buf) / 2);
 
 	du.GetBytes(buf, dubytes);
 	memcpy(buf+dubytes, data, sizeof(buf) - dubytes);
