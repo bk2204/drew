@@ -244,7 +244,7 @@ static int sp_ctr_init(drew_prng_t *ctx, int flags, const drew_loader_t *ldr,
 	outlen = block.functbl->info(DREW_BLOCK_BLKSIZE, 0);
 	keylen = block.functbl->info(DREW_BLOCK_KEYSIZE, &tmp);
 	totallen = outlen + keylen;
-	if (totallen > CTR_BUFFER_SIZE || totallen & 0xf)
+	if (totallen > CTR_BUFFER_SIZE)
 		return -DREW_ERR_INVALID;
 	if (flags & DREW_PRNG_FIXED)
 		p = new (ctx->ctx) drew::CounterDRBG(ctr, block, outlen, keylen);
@@ -653,14 +653,14 @@ drew::CounterDRBG::~CounterDRBG()
 	delete ctr;
 }
 
-// Provided needs to be aligned and of size seedlen.
+// Provided needs to be of size seedlen.
 void drew::CounterDRBG::Update(const uint8_t *provided)
 {
-	uint8_t buf[CTR_BUFFER_SIZE] ALIGNED_T;
+	uint8_t buf[CTR_BUFFER_SIZE];
 	memset(buf, 0, sizeof(buf));
 
 	ctr->functbl->encryptfast(ctr, buf, buf, seedlen);
-	XorAligned(buf, buf, provided, seedlen);
+	XorBuffers(buf, buf, provided, seedlen);
 	block->functbl->setkey(block, buf, keylen, 0);
 	ctr->functbl->setiv(ctr, buf+keylen, outlen);
 	memset(buf, 0, sizeof(buf));
@@ -674,7 +674,7 @@ void drew::CounterDRBG::Initialize(const uint8_t *data, size_t len)
 	// DevURandom (or equivalent) and we use the full personalization string.
 	// After that, we use as much of the provided nonce as possible, making up
 	// the rest of it with DevURandom bits.
-	uint8_t buf[CTR_BUFFER_SIZE] ALIGNED_T;
+	uint8_t buf[CTR_BUFFER_SIZE];
 	uint8_t zero[CTR_BUFFER_SIZE];
 	const size_t half = seedlen / 2;
 	const size_t noncelen = std::min(len, sizeof(buf) - 
@@ -763,7 +763,7 @@ void drew::CounterDRBG::BCC(const drew_block_t *b, const uint8_t *data,
 
 void drew::CounterDRBG::Reseed(const uint8_t *data, size_t len)
 {
-	uint8_t buf[CTR_BUFFER_SIZE] ALIGNED_T;
+	uint8_t buf[CTR_BUFFER_SIZE];
 	DevURandom du;
 	size_t dubytes = sizeof(buf) - std::min(len, sizeof(buf) / 2);
 
@@ -779,7 +779,7 @@ void drew::CounterDRBG::Reseed(const uint8_t *data, size_t len)
 
 void drew::CounterDRBG::GetBytes(uint8_t *data, size_t len)
 {
-	uint8_t buf[CTR_BUFFER_SIZE] ALIGNED_T;
+	uint8_t buf[CTR_BUFFER_SIZE];
 	if (!inited)
 		this->DRBG::Initialize();
 	else if (rc >= reseed_interval)
