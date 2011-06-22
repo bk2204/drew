@@ -43,6 +43,7 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 struct testcase {
 	char *id;
 	char *algo;
+	int flags; /* 1: don't sign, 2: don't verify. */
 	size_t keysize[256];
 	uint8_t *key[256];
 	size_t insize[256];
@@ -138,7 +139,7 @@ int make_bignum(drew_bignum_t *bn, const uint8_t *data, size_t len,
 int test_execute(void *data, const char *name, const void *tbl,
 		struct test_external *tep)
 {
-	int result = 0;
+	int result = 0, res = 0;
 	struct testcase *tc = data;
 	// If the test isn't for us or is corrupt, we succeed since it isn't
 	// relevant for our case.
@@ -146,6 +147,8 @@ int test_execute(void *data, const char *name, const void *tbl,
 		return TEST_CORRUPT;
 	if (strcmp(name, tc->algo))
 		return TEST_NOT_FOR_US;
+	if (tc->flags < 0 || tc->flags > 2)
+		return TEST_CORRUPT;
 
 	drew_pksig_t ctx;
 	drew_bignum_t bn;
@@ -166,86 +169,93 @@ int test_execute(void *data, const char *name, const void *tbl,
 		char buf[2] = {0, 0};
 		buf[0] = i;
 		if (tc->key[i])
-			ctx.functbl->setval(&ctx, buf, tc->key[i], tc->keysize[i]);
+			if ((res = ctx.functbl->setval(&ctx, buf, tc->key[i], tc->keysize[i])) < 0)
+				return res;
 	}
-	nin = ctx.functbl->info(DREW_PKSIG_SIGN_IN, NULL);
-	nout = ctx.functbl->info(DREW_PKSIG_SIGN_OUT, NULL);
-	for (int i = 0; i < nin; i++) {
-		drew_param_t param;
-		int c;
-		param.param.number = i;
-		if ((result = ctx.functbl->info(DREW_PKSIG_SIGN_IN_INDEX_TO_NAME,
-						&param)))
-			return result;
-		c = param.param.string[0];
-		if ((result = make_bignum(&inbuf[i], tc->in[c], tc->insize[c], tep)))
-			return result;
-	}
-	for (int i = 0; i < nout; i++) {
-		drew_param_t param;
-		int c;
-		param.param.number = i;
-		if ((result = ctx.functbl->info(DREW_PKSIG_SIGN_OUT_INDEX_TO_NAME,
-						&param)))
-			return result;
-		c = param.param.string[0];
-		if ((result = make_bignum(&outbuf[i], tc->out[c], tc->outsize[c], tep)))
-			return result;
-		if ((result = make_bignum(&cmpbuf[i], NULL, 0, tep)))
-			return result;
-	}
-	ctx.functbl->sign(&ctx, cmpbuf, inbuf);
-	for (int i = 0; i < nout; i++)
-		if (outbuf[i].functbl->compare(&outbuf[i], &cmpbuf[i], 0))
-			return TEST_FAILED;
-	nin = ctx.functbl->info(DREW_PKSIG_VERIFY_IN, NULL);
-	nout = ctx.functbl->info(DREW_PKSIG_VERIFY_OUT, NULL);
-	for (int i = 0; i < nin; i++) {
-		drew_param_t param;
-		int c;
-		const uint8_t *p;
-		size_t len;
-		param.param.number = i;
-		if ((result = ctx.functbl->info(DREW_PKSIG_VERIFY_IN_INDEX_TO_NAME,
-						&param)))
-			return result;
-		c = param.param.string[0];
-		if (tc->out[c]) {
-			p = tc->out[c];
-			len = tc->outsize[c];
+	if (!(tc->flags & 1)) {
+		nin = ctx.functbl->info(DREW_PKSIG_SIGN_IN, NULL);
+		nout = ctx.functbl->info(DREW_PKSIG_SIGN_OUT, NULL);
+		for (int i = 0; i < nin; i++) {
+			drew_param_t param;
+			int c;
+			param.param.number = i;
+			if ((result = ctx.functbl->info(DREW_PKSIG_SIGN_IN_INDEX_TO_NAME,
+							&param)))
+				return result;
+			c = param.param.string[0];
+			if ((res = make_bignum(&inbuf[i], tc->in[c], tc->insize[c], tep)))
+				return res;
 		}
-		else {
-			p = tc->in[c];
-			len = tc->insize[c];
+		for (int i = 0; i < nout; i++) {
+			drew_param_t param;
+			int c;
+			param.param.number = i;
+			if ((result = ctx.functbl->info(DREW_PKSIG_SIGN_OUT_INDEX_TO_NAME,
+							&param)))
+				return result;
+			c = param.param.string[0];
+			if ((result = make_bignum(&outbuf[i], tc->out[c], tc->outsize[c], tep)))
+				return result;
+			if ((result = make_bignum(&cmpbuf[i], NULL, 0, tep)))
+				return result;
 		}
-		if ((result = make_bignum(&inbuf[i], p, len, tep)))
-			return result;
+		if ((res = ctx.functbl->sign(&ctx, cmpbuf, inbuf)) < 0)
+			return res;
+		for (int i = 0; i < nout; i++)
+			if (outbuf[i].functbl->compare(&outbuf[i], &cmpbuf[i], 0))
+				return TEST_FAILED;
 	}
-	for (int i = 0; i < nout; i++) {
-		drew_param_t param;
-		int c;
-		const uint8_t *p;
-		size_t len;
-		param.param.number = i;
-		if ((result = ctx.functbl->info(DREW_PKSIG_VERIFY_OUT_INDEX_TO_NAME,
-						&param)))
-			return result;
-		c = param.param.string[0];
-		if (tc->in[c]) {
-			p = tc->in[c];
-			len = tc->insize[c];
+	if (!(tc->flags & 2)) {
+		nin = ctx.functbl->info(DREW_PKSIG_VERIFY_IN, NULL);
+		nout = ctx.functbl->info(DREW_PKSIG_VERIFY_OUT, NULL);
+		for (int i = 0; i < nin; i++) {
+			drew_param_t param;
+			int c;
+			const uint8_t *p;
+			size_t len;
+			param.param.number = i;
+			if ((result = ctx.functbl->info(DREW_PKSIG_VERIFY_IN_INDEX_TO_NAME,
+							&param)))
+				return result;
+			c = param.param.string[0];
+			if (tc->out[c]) {
+				p = tc->out[c];
+				len = tc->outsize[c];
+			}
+			else {
+				p = tc->in[c];
+				len = tc->insize[c];
+			}
+			if ((result = make_bignum(&inbuf[i], p, len, tep)))
+				return result;
 		}
-		else {
-			p = tc->out[c];
-			len = tc->outsize[c];
+		for (int i = 0; i < nout; i++) {
+			drew_param_t param;
+			int c;
+			const uint8_t *p;
+			size_t len;
+			param.param.number = i;
+			if ((result = ctx.functbl->info(DREW_PKSIG_VERIFY_OUT_INDEX_TO_NAME,
+							&param)))
+				return result;
+			c = param.param.string[0];
+			if (tc->in[c]) {
+				p = tc->in[c];
+				len = tc->insize[c];
+			}
+			else {
+				p = tc->out[c];
+				len = tc->outsize[c];
+			}
+			if ((result = make_bignum(&outbuf[i], p, len, tep)))
+				return result;
 		}
-		if ((result = make_bignum(&outbuf[i], p, len, tep)))
-			return result;
+		if ((res = ctx.functbl->verify(&ctx, cmpbuf, inbuf)) < 0)
+			return res;
+		for (int i = 0; i < nout; i++)
+			if (outbuf[i].functbl->compare(&outbuf[i], &cmpbuf[i], 0))
+				return TEST_FAILED;
 	}
-	ctx.functbl->verify(&ctx, cmpbuf, inbuf);
-	for (int i = 0; i < nout; i++)
-		if (outbuf[i].functbl->compare(&outbuf[i], &cmpbuf[i], 0))
-			return TEST_FAILED;
 	ctx.functbl->fini(&ctx, 0);
 
 	free(inbuf);
@@ -271,6 +281,9 @@ int test_process_testcase(void *data, int type, const char *item,
 		case 'a':
 			free(tc->algo);
 			tc->algo = strdup(item);
+			break;
+		case 'f':
+			tc->flags = atoi(item);
 			break;
 		case 'k':
 			if (!name)
