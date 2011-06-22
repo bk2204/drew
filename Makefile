@@ -105,14 +105,14 @@ test-libmd: ${TEST_EXE}
 		grep -v 'bytes in' | diff -u libmd/test-results -
 
 test-scripts: $(TEST_BINARIES) plugins
-	for i in $(CATEGORIES); do \
+	set -e; for i in $(CATEGORIES); do \
 		find plugins -type f | sed -e 's,.*/,,g' | \
 		sort | grep -vE '.rdf$$' | \
 		xargs env LD_LIBRARY_PATH=. test/test-$$i -i; \
 		done
 
 testx-scripts: $(TEST_BINARIES) plugins
-	for i in $(CATEGORIES); do \
+	set -e; for i in $(CATEGORIES); do \
 		find plugins -type f | sed -e 's,.*/,,g' | \
 		sort | grep -vE '.rdf$$' | \
 		xargs env LD_LIBRARY_PATH=. test/test-$$i -t; \
