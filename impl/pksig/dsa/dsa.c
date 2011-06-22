@@ -1,6 +1,7 @@
 #include "internal.h"
 
 #include <errno.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -182,6 +183,8 @@ static int dsa_test(void *ptr, const drew_loader_t *ldr)
 		uint8_t h[20];
 		uint8_t r[20];
 		uint8_t s[20];
+		uint8_t k[20];
+		bool success;
 	} tests[] = {
 		{
 			// x
@@ -217,13 +220,19 @@ static int dsa_test(void *ptr, const drew_loader_t *ldr)
 			{
 				0x68, 0x34, 0xf4, 0x9e, 0xa0, 0x79, 0xdd, 0x8b,
 				0xb8, 0x9c, 0xe0, 0xf9, 0x69, 0x80, 0x39, 0xa7,
-				0x34, 0xce, 0x28, 0x6f,
+				0x34, 0xce, 0x28, 0x6f
 			},
 			{
 				0x14, 0x6e, 0xee, 0x21, 0xb3, 0x75, 0xdf, 0x38,
 				0x12, 0xdd, 0xc7, 0xf7, 0xce, 0x81, 0x90, 0x8e,
-				0x57, 0x1c, 0xbf, 0x8a,
+				0x57, 0x1c, 0xbf, 0x8a
 			},
+			{
+				0xdb, 0x5a, 0xad, 0x14, 0x89, 0xbd, 0x8d, 0x87,
+				0x18, 0xe8, 0xa4, 0x90, 0x24, 0x90, 0xfd, 0x8f,
+				0xd7, 0xcc, 0x04, 0xe6
+			},
+			true
 		}
 	};
 	const void *functbl;
@@ -231,7 +240,7 @@ static int dsa_test(void *ptr, const drew_loader_t *ldr)
 	int res = 0, id;
 	drew_param_t param;
 	const char *bignum = "Bignum";
-	drew_bignum_t bns[4];
+	drew_bignum_t bns[7]; // v, r, s, h, k, computed r, computed s.
 
 	id = drew_loader_lookup_by_name(ldr, bignum, 0, -1);
 	if (id < 0)
@@ -245,7 +254,7 @@ static int dsa_test(void *ptr, const drew_loader_t *ldr)
 	param.name = "bignum";
 	param.param.value = bns;
 
-	for (size_t i = 0; i < 4; i++) {
+	for (size_t i = 0; i < DIM(bns); i++) {
 		bns[i].functbl = functbl;
 		bns[i].functbl->init(&bns[i], 0, ldr, NULL);
 	}
@@ -261,12 +270,19 @@ static int dsa_test(void *ptr, const drew_loader_t *ldr)
 	for (size_t i = 0; i < DIM(tests); i++) {
 		ctx.functbl->setval(&ctx, "x", tests[i].x, DIM(tests[i].x));
 		ctx.functbl->setval(&ctx, "y", tests[i].y, DIM(tests[i].y));
-		bns[0].functbl->setbytes(&bns[0], tests[i].r, DIM(tests[i].r));
-		bns[1].functbl->setbytes(&bns[1], tests[i].s, DIM(tests[i].s));
-		bns[2].functbl->setbytes(&bns[2], tests[i].h, DIM(tests[i].h));
-		ctx.functbl->verify(&ctx, bns+3, bns);
+		bns[1].functbl->setbytes(&bns[1], tests[i].r, DIM(tests[i].r));
+		bns[2].functbl->setbytes(&bns[2], tests[i].s, DIM(tests[i].s));
+		bns[3].functbl->setbytes(&bns[3], tests[i].h, DIM(tests[i].h));
+		ctx.functbl->verify(&ctx, bns, bns+1);
 		res <<= 1;
-		res |= !!bns[3].functbl->compare(&bns[3], &bns[0], 0);
+		res |= (tests[i].success == !!bns[1].functbl->compare(&bns[1], &bns[0], 0));
+		if (tests[i].success) {
+			bns[4].functbl->setbytes(&bns[4], tests[i].k, DIM(tests[i].k));
+			ctx.functbl->sign(&ctx, bns+5, bns+3);
+			res <<= 1;
+			res |= !!bns[1].functbl->compare(&bns[1], &bns[5], 0);
+			res |= !!bns[2].functbl->compare(&bns[2], &bns[6], 0);
+		}
 	}
 
 	for (size_t i = 0; i < 4; i++)
