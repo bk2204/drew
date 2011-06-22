@@ -92,6 +92,17 @@ out:
 	return tes->results;
 }
 
+int test_external_cleanup(struct test_external *tes)
+{
+	for (size_t i = 0; i < tes->ndata; i++)
+		if (tes->data[i]) {
+			test_reset_data(tes->data[i], TEST_RESET_FREE);
+			free(tes->data[i]);
+		}
+	free(tes->data);
+	return 0;
+}
+
 int test_external_parse(const drew_loader_t *ldr, const char *filename,
 		struct test_external *tes)
 {

@@ -326,6 +326,8 @@ int main(int argc, char **argv)
 				break;
 		}
 	}
+	if (mode == MODE_TEST)
+		test_external_cleanup(&tes);
 	drew_loader_free(&ldr);
 
 	if (error && !(error & 0xff))

@@ -103,5 +103,6 @@ int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
 		const char *filename, struct test_external *tes);
 int test_external_parse(const drew_loader_t *ldr, const char *filename,
 		struct test_external *tes);
+int test_external_cleanup(struct test_external *tes);
 
 #endif

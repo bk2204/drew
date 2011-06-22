@@ -138,6 +138,11 @@ int test_external_parse(const drew_loader_t *ldr, const char *filename,
 	return 0;
 }
 
+int test_external_cleanup(struct test_external *tes)
+{
+	return 0;
+}
+
 #define STUBS_API 1
 #include "stubs.c"
 
