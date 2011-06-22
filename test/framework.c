@@ -321,6 +321,7 @@ int main(int argc, char **argv)
 				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
 					error++;
 				print_test_results_impl(result, NULL, "API test");
+				break;
 			default:
 				break;
 		}
