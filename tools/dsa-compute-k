@@ -1,0 +1,25 @@
+#!/usr/bin/perl
+
+use Math::BigInt lib=>'GMP';
+
+$p =
+Math::BigInt->new("0xaa9a0d6116807cf74e0ee63cdc6f38110f873affc6db2d9ad854ae27a384230dd904f8a6ceb11bb2983973c0d819ccf02df04d82cc7926d61be78f5ad92a05b9308aca5a9ecd7461fc1b51da3e9d849fce5075d9c027f1afeb0ab7916df4a7b72b3bb00461f43542313c8b82354f88c542a48bfa73bcc1db4ffed329b2cc5cff");
+$q = Math::BigInt->new("0xf780e706db7e465dd0eeec3f1b929240157f476f");
+$g =
+Math::BigInt->new("0x3b80103191e0b2d6b949e1dbfb621c5c8fb45bb9f9db5a52372728045015b56975b56b3f8b97659600194442d075a8c5c8c1588ee01d848e7b42905edda807209e1395a130cf7fb2630c2bfcf46cc2f8cdc2e0a11eed9189b35d92b2619daff95ac18b0c0e2fd1c8e449e225f812b29815efd1d05d7bc1bf6efaa1766ec2a322");
+$x = Math::BigInt->new("0x0ef58b26a800a7bf0aabe5d795acaff5a8c88be5");
+$y = Math::BigInt->new("0x4029a121f6627127bc8aeb97bfeec2a80b0800ed015a91bcf39869187535e91b5db53ee840056529c1e4ccdbc21e64b813cc3d2c170c6030a0d195645bd3657256647bafc0623944e44f1c5f7c50318182e68966b9a16f46da9e343301db694d8f3b62052b66dae25222c53125a7893416994055a0284393f67c6b2e3bbf0cd4");
+$r = Math::BigInt->new("0x6834f49ea079dd8bb89ce0f9698039a734ce286f");
+$s = Math::BigInt->new("0x146eee21b375df3812ddc7f7ce81908e571cbf8a");
+$z = Math::BigInt->new("0x8d8aa0d59fc27ec84581f29f5374cc26620fc3a2");
+
+$t = $x->copy()->bmuladd($r, $z);
+$u = $t->copy()->bmodinv($q);
+$u->bmul($s);
+$kinv = $u->copy()->bmod($q);
+$k = $kinv->copy()->bmodinv($q);
+$rc = $g->copy()->bmodpow($k, $p);
+$rc->bmod($q);
+print "computed k: ", $k->as_hex(), "\n";
+print "given r:    ", $r->as_hex(), "\n";
+print "computed r: ", $rc->as_hex(), "\n";
