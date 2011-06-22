@@ -329,7 +329,7 @@ static int bn_expmod(drew_bignum_t *res, const drew_bignum_t *g,
 static int bn_invmod(drew_bignum_t *res, const drew_bignum_t *a,
 		const drew_bignum_t *mod)
 {
-	RETFAIL(mp_invmod(MPC(a), MPC(mod), MP(mod)));
+	RETFAIL(mp_invmod(MPC(a), MPC(mod), MP(res)));
 	return 0;
 }
 
