@@ -137,11 +137,22 @@ INSTDIR			:= $(CFG_INSTALL_DIR)
 
 install: all
 	$(INSTALL) -m 755 -d $(INSTDIR)/lib/drew/plugins
+	$(INSTALL) -m 755 -d $(INSTDIR)/include
 	for i in plugins/*; do $(INSTALL) -m 644 $$i $(INSTDIR)/lib/drew/plugins; done
 	$(INSTALL) -m 644 libdrew*.so.* $(INSTDIR)/lib
+	for i in include/*; do \
+		[ -f $$i ] || \
+			($(INSTALL) -m 755 -d $(INSTDIR)/$$i; \
+			$(INSTALL) -m 644 $$i $(INSTDIR)/include);\
+		done
+	$(INSTALL) -m 644 include/drew/* $(INSTDIR)/include/drew
 
 uninstall:
 	$(RM) $(INSTDIR)/lib/libdrew*.so.*
 	for i in plugins/*; do $(RM) $(INSTDIR)/lib/drew/$$i; done
+	for i in include/*; do \
+		[ -f $$i ] || \
+			($(RM) $(INSTDIR)/$$i/*.h; $(RMDIR) $(INSTDIR)/$$i); \
+		done
 	$(RMDIR) $(INSTDIR)/lib/drew/plugins || true
 	$(RMDIR) $(INSTDIR)/lib/drew || true
