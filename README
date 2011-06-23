@@ -45,6 +45,10 @@ aware that on slow machines (such as a 333 MHz UltraSPARC IIi) this may take in
 excess of an hour.  Very rarely (approximately 1% of the time), a PRNG may fail
 a test due to the statistical nature of the test; this is not a problem.
 
+To install the files, make sure the directory to which you want to install is
+correctly specified in the config file and type "make install".  To remove the
+files, type "make uninstall".
+
 Some documentation on the interface is provided; type "make doc" to build it.
 You will need Apache FOP and the DocBook XSL-NS Stylesheets.
 
