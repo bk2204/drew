@@ -23,6 +23,7 @@ class Whirlpool : public Hash<uint64_t, 64, 64, 64, BigEndian>
 		static const uint64_t C0[256], C1[256], C2[256], C3[256];
 		static const uint64_t C4[256], C5[256], C6[256], C7[256];
 		static const uint64_t rc[10];
+		static void Round(uint64_t *res, const uint64_t *in);
 	private:
 };
 

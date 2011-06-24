@@ -600,6 +600,82 @@ void drew::Whirlpool::Reset()
 
 typedef drew::Whirlpool::endian_t E;
 
+inline void drew::Whirlpool::Round(uint64_t res[8], const uint64_t in[8])
+{
+	res[0] =
+		C0[E::GetByte(in[0], 7)] ^
+		C1[E::GetByte(in[7], 6)] ^
+		C2[E::GetByte(in[6], 5)] ^
+		C3[E::GetByte(in[5], 4)] ^
+		C4[E::GetByte(in[4], 3)] ^
+		C5[E::GetByte(in[3], 2)] ^
+		C6[E::GetByte(in[2], 1)] ^
+		C7[E::GetByte(in[1], 0)]; 
+	res[1] =
+		C0[E::GetByte(in[1], 7)] ^
+		C1[E::GetByte(in[0], 6)] ^
+		C2[E::GetByte(in[7], 5)] ^
+		C3[E::GetByte(in[6], 4)] ^
+		C4[E::GetByte(in[5], 3)] ^
+		C5[E::GetByte(in[4], 2)] ^
+		C6[E::GetByte(in[3], 1)] ^
+		C7[E::GetByte(in[2], 0)];
+	res[2] =
+		C0[E::GetByte(in[2], 7)] ^
+		C1[E::GetByte(in[1], 6)] ^
+		C2[E::GetByte(in[0], 5)] ^
+		C3[E::GetByte(in[7], 4)] ^
+		C4[E::GetByte(in[6], 3)] ^
+		C5[E::GetByte(in[5], 2)] ^
+		C6[E::GetByte(in[4], 1)] ^
+		C7[E::GetByte(in[3], 0)];
+	res[3] =
+		C0[E::GetByte(in[3], 7)] ^
+		C1[E::GetByte(in[2], 6)] ^
+		C2[E::GetByte(in[1], 5)] ^
+		C3[E::GetByte(in[0], 4)] ^
+		C4[E::GetByte(in[7], 3)] ^
+		C5[E::GetByte(in[6], 2)] ^
+		C6[E::GetByte(in[5], 1)] ^
+		C7[E::GetByte(in[4], 0)];
+	res[4] =
+		C0[E::GetByte(in[4], 7)] ^
+		C1[E::GetByte(in[3], 6)] ^
+		C2[E::GetByte(in[2], 5)] ^
+		C3[E::GetByte(in[1], 4)] ^
+		C4[E::GetByte(in[0], 3)] ^
+		C5[E::GetByte(in[7], 2)] ^
+		C6[E::GetByte(in[6], 1)] ^
+		C7[E::GetByte(in[5], 0)];
+	res[5] =
+		C0[E::GetByte(in[5], 7)] ^
+		C1[E::GetByte(in[4], 6)] ^
+		C2[E::GetByte(in[3], 5)] ^
+		C3[E::GetByte(in[2], 4)] ^
+		C4[E::GetByte(in[1], 3)] ^
+		C5[E::GetByte(in[0], 2)] ^
+		C6[E::GetByte(in[7], 1)] ^
+		C7[E::GetByte(in[6], 0)];
+	res[6] =
+		C0[E::GetByte(in[6], 7)] ^
+		C1[E::GetByte(in[5], 6)] ^
+		C2[E::GetByte(in[4], 5)] ^
+		C3[E::GetByte(in[3], 4)] ^
+		C4[E::GetByte(in[2], 3)] ^
+		C5[E::GetByte(in[1], 2)] ^
+		C6[E::GetByte(in[0], 1)] ^
+		C7[E::GetByte(in[7], 0)];
+	res[7] =
+		C0[E::GetByte(in[7], 7)] ^
+		C1[E::GetByte(in[6], 6)] ^
+		C2[E::GetByte(in[5], 5)] ^
+		C3[E::GetByte(in[4], 4)] ^
+		C4[E::GetByte(in[3], 3)] ^
+		C5[E::GetByte(in[2], 2)] ^
+		C6[E::GetByte(in[1], 1)] ^
+		C7[E::GetByte(in[0], 0)];
+}
+
 void drew::Whirlpool::Transform(uint64_t *hash, const uint8_t *blk)
 {
 	// This is normally defined automatically by Hash.
@@ -620,162 +696,12 @@ void drew::Whirlpool::Transform(uint64_t *hash, const uint8_t *blk)
     state[7] = block[7] ^ (K[7] = hash[7]);
 
 	for (size_t i = 0; i < 10; i++) {
-		L[0] =
-			C0[E::GetByte(K[0], 7)] ^
-			C1[E::GetByte(K[7], 6)] ^
-			C2[E::GetByte(K[6], 5)] ^
-			C3[E::GetByte(K[5], 4)] ^
-			C4[E::GetByte(K[4], 3)] ^
-			C5[E::GetByte(K[3], 2)] ^
-			C6[E::GetByte(K[2], 1)] ^
-			C7[E::GetByte(K[1], 0)] ^
-			rc[i];
-		L[1] =
-			C0[E::GetByte(K[1], 7)] ^
-			C1[E::GetByte(K[0], 6)] ^
-			C2[E::GetByte(K[7], 5)] ^
-			C3[E::GetByte(K[6], 4)] ^
-			C4[E::GetByte(K[5], 3)] ^
-			C5[E::GetByte(K[4], 2)] ^
-			C6[E::GetByte(K[3], 1)] ^
-			C7[E::GetByte(K[2], 0)];
-		L[2] =
-			C0[E::GetByte(K[2], 7)] ^
-			C1[E::GetByte(K[1], 6)] ^
-			C2[E::GetByte(K[0], 5)] ^
-			C3[E::GetByte(K[7], 4)] ^
-			C4[E::GetByte(K[6], 3)] ^
-			C5[E::GetByte(K[5], 2)] ^
-			C6[E::GetByte(K[4], 1)] ^
-			C7[E::GetByte(K[3], 0)];
-		L[3] =
-			C0[E::GetByte(K[3], 7)] ^
-			C1[E::GetByte(K[2], 6)] ^
-			C2[E::GetByte(K[1], 5)] ^
-			C3[E::GetByte(K[0], 4)] ^
-			C4[E::GetByte(K[7], 3)] ^
-			C5[E::GetByte(K[6], 2)] ^
-			C6[E::GetByte(K[5], 1)] ^
-			C7[E::GetByte(K[4], 0)];
-		L[4] =
-			C0[E::GetByte(K[4], 7)] ^
-			C1[E::GetByte(K[3], 6)] ^
-			C2[E::GetByte(K[2], 5)] ^
-			C3[E::GetByte(K[1], 4)] ^
-			C4[E::GetByte(K[0], 3)] ^
-			C5[E::GetByte(K[7], 2)] ^
-			C6[E::GetByte(K[6], 1)] ^
-			C7[E::GetByte(K[5], 0)];
-		L[5] =
-			C0[E::GetByte(K[5], 7)] ^
-			C1[E::GetByte(K[4], 6)] ^
-			C2[E::GetByte(K[3], 5)] ^
-			C3[E::GetByte(K[2], 4)] ^
-			C4[E::GetByte(K[1], 3)] ^
-			C5[E::GetByte(K[0], 2)] ^
-			C6[E::GetByte(K[7], 1)] ^
-			C7[E::GetByte(K[6], 0)];
-		L[6] =
-			C0[E::GetByte(K[6], 7)] ^
-			C1[E::GetByte(K[5], 6)] ^
-			C2[E::GetByte(K[4], 5)] ^
-			C3[E::GetByte(K[3], 4)] ^
-			C4[E::GetByte(K[2], 3)] ^
-			C5[E::GetByte(K[1], 2)] ^
-			C6[E::GetByte(K[0], 1)] ^
-			C7[E::GetByte(K[7], 0)];
-		L[7] =
-			C0[E::GetByte(K[7], 7)] ^
-			C1[E::GetByte(K[6], 6)] ^
-			C2[E::GetByte(K[5], 5)] ^
-			C3[E::GetByte(K[4], 4)] ^
-			C4[E::GetByte(K[3], 3)] ^
-			C5[E::GetByte(K[2], 2)] ^
-			C6[E::GetByte(K[1], 1)] ^
-			C7[E::GetByte(K[0], 0)];
+		Round(L, K);
+		L[0] ^= rc[i];
 		memcpy(K, L, sizeof(K));
 
-        L[0] =
-            C0[E::GetByte(state[0], 7)] ^
-            C1[E::GetByte(state[7], 6)] ^
-            C2[E::GetByte(state[6], 5)] ^
-            C3[E::GetByte(state[5], 4)] ^
-            C4[E::GetByte(state[4], 3)] ^
-            C5[E::GetByte(state[3], 2)] ^
-            C6[E::GetByte(state[2], 1)] ^
-            C7[E::GetByte(state[1], 0)] ^
-            K[0];
-        L[1] =
-            C0[E::GetByte(state[1], 7)] ^
-            C1[E::GetByte(state[0], 6)] ^
-            C2[E::GetByte(state[7], 5)] ^
-            C3[E::GetByte(state[6], 4)] ^
-            C4[E::GetByte(state[5], 3)] ^
-            C5[E::GetByte(state[4], 2)] ^
-            C6[E::GetByte(state[3], 1)] ^
-            C7[E::GetByte(state[2], 0)] ^
-            K[1];
-        L[2] =
-            C0[E::GetByte(state[2], 7)] ^
-            C1[E::GetByte(state[1], 6)] ^
-            C2[E::GetByte(state[0], 5)] ^
-            C3[E::GetByte(state[7], 4)] ^
-            C4[E::GetByte(state[6], 3)] ^
-            C5[E::GetByte(state[5], 2)] ^
-            C6[E::GetByte(state[4], 1)] ^
-            C7[E::GetByte(state[3], 0)] ^
-            K[2];
-        L[3] =
-            C0[E::GetByte(state[3], 7)] ^
-            C1[E::GetByte(state[2], 6)] ^
-            C2[E::GetByte(state[1], 5)] ^
-            C3[E::GetByte(state[0], 4)] ^
-            C4[E::GetByte(state[7], 3)] ^
-            C5[E::GetByte(state[6], 2)] ^
-            C6[E::GetByte(state[5], 1)] ^
-            C7[E::GetByte(state[4], 0)] ^
-            K[3];
-        L[4] =
-            C0[E::GetByte(state[4], 7)] ^
-            C1[E::GetByte(state[3], 6)] ^
-            C2[E::GetByte(state[2], 5)] ^
-            C3[E::GetByte(state[1], 4)] ^
-            C4[E::GetByte(state[0], 3)] ^
-            C5[E::GetByte(state[7], 2)] ^
-            C6[E::GetByte(state[6], 1)] ^
-            C7[E::GetByte(state[5], 0)] ^
-            K[4];
-        L[5] =
-            C0[E::GetByte(state[5], 7)] ^
-            C1[E::GetByte(state[4], 6)] ^
-            C2[E::GetByte(state[3], 5)] ^
-            C3[E::GetByte(state[2], 4)] ^
-            C4[E::GetByte(state[1], 3)] ^
-            C5[E::GetByte(state[0], 2)] ^
-            C6[E::GetByte(state[7], 1)] ^
-            C7[E::GetByte(state[6], 0)] ^
-            K[5];
-        L[6] =
-            C0[E::GetByte(state[6], 7)] ^
-            C1[E::GetByte(state[5], 6)] ^
-            C2[E::GetByte(state[4], 5)] ^
-            C3[E::GetByte(state[3], 4)] ^
-            C4[E::GetByte(state[2], 3)] ^
-            C5[E::GetByte(state[1], 2)] ^
-            C6[E::GetByte(state[0], 1)] ^
-            C7[E::GetByte(state[7], 0)] ^
-            K[6];
-		L[7] =
-			C0[E::GetByte(state[7], 7)] ^
-			C1[E::GetByte(state[6], 6)] ^
-			C2[E::GetByte(state[5], 5)] ^
-			C3[E::GetByte(state[4], 4)] ^
-			C4[E::GetByte(state[3], 3)] ^
-			C5[E::GetByte(state[2], 2)] ^
-			C6[E::GetByte(state[1], 1)] ^
-			C7[E::GetByte(state[0], 0)] ^
-			K[7];
-		memcpy(state, L, sizeof(state));
+		Round(L, state);
+		XorAligned(state, L, K, sizeof(state));
 	}
     hash[0] ^= state[0] ^ block[0];
     hash[1] ^= state[1] ^ block[1];
