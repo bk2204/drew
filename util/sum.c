@@ -183,6 +183,7 @@ int main(int argc, char **argv)
 
 	drew_loader_new(&ldr);
 	drew_loader_load_plugin(ldr, NULL, NULL);
+	drew_loader_load_plugin(ldr, ALGO_PLUGIN_NAME, NULL);
 	drew_loader_load_plugin(ldr, ALGO_PLUGIN_NAME, "./plugins");
 
 	id = drew_loader_lookup_by_name(ldr, ALGO_NAME, 0, -1);
