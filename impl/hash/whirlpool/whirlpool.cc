@@ -603,77 +603,77 @@ typedef drew::Whirlpool::endian_t E;
 inline void drew::Whirlpool::Round(uint64_t res[8], const uint64_t in[8])
 {
 	res[0] =
-		C0[E::GetByte(in[0], 7)] ^
-		C1[E::GetByte(in[7], 6)] ^
-		C2[E::GetByte(in[6], 5)] ^
-		C3[E::GetByte(in[5], 4)] ^
-		C4[E::GetByte(in[4], 3)] ^
-		C5[E::GetByte(in[3], 2)] ^
-		C6[E::GetByte(in[2], 1)] ^
-		C7[E::GetByte(in[1], 0)]; 
+		C0[E::GetArrayByte(in, 007)] ^
+		C1[E::GetArrayByte(in, 076)] ^
+		C2[E::GetArrayByte(in, 065)] ^
+		C3[E::GetArrayByte(in, 054)] ^
+		C4[E::GetArrayByte(in, 043)] ^
+		C5[E::GetArrayByte(in, 032)] ^
+		C6[E::GetArrayByte(in, 021)] ^
+		C7[E::GetArrayByte(in, 010)]; 
 	res[1] =
-		C0[E::GetByte(in[1], 7)] ^
-		C1[E::GetByte(in[0], 6)] ^
-		C2[E::GetByte(in[7], 5)] ^
-		C3[E::GetByte(in[6], 4)] ^
-		C4[E::GetByte(in[5], 3)] ^
-		C5[E::GetByte(in[4], 2)] ^
-		C6[E::GetByte(in[3], 1)] ^
-		C7[E::GetByte(in[2], 0)];
+		C0[E::GetArrayByte(in, 017)] ^
+		C1[E::GetArrayByte(in, 006)] ^
+		C2[E::GetArrayByte(in, 075)] ^
+		C3[E::GetArrayByte(in, 064)] ^
+		C4[E::GetArrayByte(in, 053)] ^
+		C5[E::GetArrayByte(in, 042)] ^
+		C6[E::GetArrayByte(in, 031)] ^
+		C7[E::GetArrayByte(in, 020)];
 	res[2] =
-		C0[E::GetByte(in[2], 7)] ^
-		C1[E::GetByte(in[1], 6)] ^
-		C2[E::GetByte(in[0], 5)] ^
-		C3[E::GetByte(in[7], 4)] ^
-		C4[E::GetByte(in[6], 3)] ^
-		C5[E::GetByte(in[5], 2)] ^
-		C6[E::GetByte(in[4], 1)] ^
-		C7[E::GetByte(in[3], 0)];
+		C0[E::GetArrayByte(in, 027)] ^
+		C1[E::GetArrayByte(in, 016)] ^
+		C2[E::GetArrayByte(in, 005)] ^
+		C3[E::GetArrayByte(in, 074)] ^
+		C4[E::GetArrayByte(in, 063)] ^
+		C5[E::GetArrayByte(in, 052)] ^
+		C6[E::GetArrayByte(in, 041)] ^
+		C7[E::GetArrayByte(in, 030)];
 	res[3] =
-		C0[E::GetByte(in[3], 7)] ^
-		C1[E::GetByte(in[2], 6)] ^
-		C2[E::GetByte(in[1], 5)] ^
-		C3[E::GetByte(in[0], 4)] ^
-		C4[E::GetByte(in[7], 3)] ^
-		C5[E::GetByte(in[6], 2)] ^
-		C6[E::GetByte(in[5], 1)] ^
-		C7[E::GetByte(in[4], 0)];
+		C0[E::GetArrayByte(in, 037)] ^
+		C1[E::GetArrayByte(in, 026)] ^
+		C2[E::GetArrayByte(in, 015)] ^
+		C3[E::GetArrayByte(in, 004)] ^
+		C4[E::GetArrayByte(in, 073)] ^
+		C5[E::GetArrayByte(in, 062)] ^
+		C6[E::GetArrayByte(in, 051)] ^
+		C7[E::GetArrayByte(in, 040)];
 	res[4] =
-		C0[E::GetByte(in[4], 7)] ^
-		C1[E::GetByte(in[3], 6)] ^
-		C2[E::GetByte(in[2], 5)] ^
-		C3[E::GetByte(in[1], 4)] ^
-		C4[E::GetByte(in[0], 3)] ^
-		C5[E::GetByte(in[7], 2)] ^
-		C6[E::GetByte(in[6], 1)] ^
-		C7[E::GetByte(in[5], 0)];
+		C0[E::GetArrayByte(in, 047)] ^
+		C1[E::GetArrayByte(in, 036)] ^
+		C2[E::GetArrayByte(in, 025)] ^
+		C3[E::GetArrayByte(in, 014)] ^
+		C4[E::GetArrayByte(in, 003)] ^
+		C5[E::GetArrayByte(in, 072)] ^
+		C6[E::GetArrayByte(in, 061)] ^
+		C7[E::GetArrayByte(in, 050)];
 	res[5] =
-		C0[E::GetByte(in[5], 7)] ^
-		C1[E::GetByte(in[4], 6)] ^
-		C2[E::GetByte(in[3], 5)] ^
-		C3[E::GetByte(in[2], 4)] ^
-		C4[E::GetByte(in[1], 3)] ^
-		C5[E::GetByte(in[0], 2)] ^
-		C6[E::GetByte(in[7], 1)] ^
-		C7[E::GetByte(in[6], 0)];
+		C0[E::GetArrayByte(in, 057)] ^
+		C1[E::GetArrayByte(in, 046)] ^
+		C2[E::GetArrayByte(in, 035)] ^
+		C3[E::GetArrayByte(in, 024)] ^
+		C4[E::GetArrayByte(in, 013)] ^
+		C5[E::GetArrayByte(in, 002)] ^
+		C6[E::GetArrayByte(in, 071)] ^
+		C7[E::GetArrayByte(in, 060)];
 	res[6] =
-		C0[E::GetByte(in[6], 7)] ^
-		C1[E::GetByte(in[5], 6)] ^
-		C2[E::GetByte(in[4], 5)] ^
-		C3[E::GetByte(in[3], 4)] ^
-		C4[E::GetByte(in[2], 3)] ^
-		C5[E::GetByte(in[1], 2)] ^
-		C6[E::GetByte(in[0], 1)] ^
-		C7[E::GetByte(in[7], 0)];
+		C0[E::GetArrayByte(in, 067)] ^
+		C1[E::GetArrayByte(in, 056)] ^
+		C2[E::GetArrayByte(in, 045)] ^
+		C3[E::GetArrayByte(in, 034)] ^
+		C4[E::GetArrayByte(in, 023)] ^
+		C5[E::GetArrayByte(in, 012)] ^
+		C6[E::GetArrayByte(in, 001)] ^
+		C7[E::GetArrayByte(in, 070)];
 	res[7] =
-		C0[E::GetByte(in[7], 7)] ^
-		C1[E::GetByte(in[6], 6)] ^
-		C2[E::GetByte(in[5], 5)] ^
-		C3[E::GetByte(in[4], 4)] ^
-		C4[E::GetByte(in[3], 3)] ^
-		C5[E::GetByte(in[2], 2)] ^
-		C6[E::GetByte(in[1], 1)] ^
-		C7[E::GetByte(in[0], 0)];
+		C0[E::GetArrayByte(in, 077)] ^
+		C1[E::GetArrayByte(in, 066)] ^
+		C2[E::GetArrayByte(in, 055)] ^
+		C3[E::GetArrayByte(in, 044)] ^
+		C4[E::GetArrayByte(in, 033)] ^
+		C5[E::GetArrayByte(in, 022)] ^
+		C6[E::GetArrayByte(in, 011)] ^
+		C7[E::GetArrayByte(in, 000)];
 }
 
 void drew::Whirlpool::Transform(uint64_t *hash, const uint8_t *blk)
