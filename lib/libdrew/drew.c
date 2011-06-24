@@ -50,7 +50,12 @@ struct drew_loader_s {
 
 static handle_t open_library(const char *pathname)
 {
+#if defined(__GNUC__) && __GNUC__ >= 4 && __GNUC_MINOR__ >= 5
+	// FIXME: discover why Debian bug #631531 occurs and remove this.
+	return dlopen(pathname, RTLD_NOW|RTLD_LOCAL);
+#else
 	return dlopen(pathname, RTLD_LAZY|RTLD_LOCAL);
+#endif
 }
 
 static void close_library(handle_t handle)
