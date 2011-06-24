@@ -40,4 +40,11 @@ ROTATE(64, Right, q, r, >>, <<)
 #undef ROTATE
 #endif
 
+template<>
+inline uint8_t EndianBase::GetArrayByte(const uint64_t *arr, size_t n)
+{
+	const uint8_t *p = reinterpret_cast<const uint8_t *>(arr);
+	return p[n];
+}
+
 #endif
