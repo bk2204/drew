@@ -12,6 +12,7 @@ CFG_SHA1		= m
 CFG_SHA256		= m
 CFG_SHA512		= m
 CFG_TIGER		= m
+CFG_WHIRLPOOL	= m
 
 ## Block ciphers.
 # Note that the aes plugin implements Rijndael (the AES algorithm) with key
