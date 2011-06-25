@@ -361,19 +361,18 @@ int drew::AES::Encrypt(uint8_t *out, const uint8_t *in) const
 	 */
     r = m_nr >> 1;
     for (;;) {
-		EncryptRound(t, s, rk + 4);
+		EncryptRound(t, s, rk += 4);
 
-        rk += 8;
-        if (--r == 0) {
+        if (--r == 0)
             break;
-        }
 
-		EncryptRound(s, t, rk);
+		EncryptRound(s, t, rk += 4);
     }
     /*
 	 * apply last round and
 	 * map cipher state to byte array block:
 	 */
+	rk += 4;
 	s[0] =
 		(Te4[E::GetByte(t[0], 3)] & 0xff000000) ^
 		(Te4[E::GetByte(t[1], 2)] & 0x00ff0000) ^
@@ -453,19 +452,15 @@ int drew::AES::Decrypt(uint8_t *out, const uint8_t *in) const
      */
     r = m_nr >> 1;
     for (;;) {
-		DecryptRound(t, s, rk + 4);
+		DecryptRound(t, s, rk += 4);
 
-        rk += 8;
-        if (--r == 0) {
+        if (--r == 0)
             break;
-        }
 		
-		DecryptRound(s, t, rk);
+		DecryptRound(s, t, rk += 4);
     }
-    /*
-	 * apply last round and
-	 * map cipher state to byte array block:
-	 */
+
+	rk += 4;
    	s[0] =
    		(Td4[E::GetByte(t[0], 3)] & 0xff000000) ^
    		(Td4[E::GetByte(t[3], 2)] & 0x00ff0000) ^
