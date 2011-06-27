@@ -1,13 +1,13 @@
 DREW
 ====
 
-Drew is a set of libraries providing a C interface to cryptographic primitives
+drew is a set of libraries providing a C interface to cryptographic primitives
 as well as higher-level protocols.  It is designed to have very fast (if not the
 fastest) implementations of these primitives, while still preserving
 portability.  An extremely thorough testsuite ensures that the code correctly
 implements every algorithm.
 
-The license for Drew is spelled out in the document LICENSE, but roughly it is
+The license for drew is spelled out in the document LICENSE, but roughly it is
 all available under the terms of your choice of the Apache License, version 2.0,
 or the GNU General Public License, version 2.0 (possibly with some rare
 exceptions).  This license was chosen to minimize barriers to use.  Patented
@@ -21,7 +21,7 @@ There are plans to include full TLS, ASN.1, and OpenPGP implementations, and
 work on these is ongoing.  Source-level compatibility with existing
 implementations, including OpenSSL, GnuTLS, and GPGME, is also planned.
 
-To build Drew, edit the file config and adjust the options to suit your needs.
+To build drew, edit the file config and adjust the options to suit your needs.
 For algorithms, specify "y" if you want to build the algorithm into the
 implementations library (libdrew-impl) or "m" if you want to build it as a
 plugin.  Other values disable the implementation.  For other functionality,
