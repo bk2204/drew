@@ -30,8 +30,9 @@ GEN_SUFFIXES	:= .pdf .fo .txml
 
 doc: $(MANUAL_DIR)/drew.pdf
 
-$(MANUAL_DIR)/drew.fo: $(MANUAL_DIR)/intro.xml
-$(MANUAL_DIR)/drew.fo: $(MANUAL_DIR)/hash.xml
+DREW_COMPONENTS	:= intro interface basics hash
+
+$(MANUAL_DIR)/drew.fo: $(patsubst %,$(MANUAL_DIR)/%.xml,$(DREW_COMPONENTS))
 
 .fo.pdf:
 	$(FOP) $(FOP_CONFIG) -fo $< -pdf $@

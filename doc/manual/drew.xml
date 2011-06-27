@@ -8,7 +8,7 @@
 	xml:id="drew"
 	version="5.0">
 	<!-- {{{ Bookinfo -->
-	<title>The Interface to libdrew</title>
+	<title>The drew Cryptography Suite</title>
 	<info> 
 		<author><personname><firstname>brian</firstname><othername>m.</othername><surname>carlson</surname></personname></author>
 		<!--{{{ RDF Metadata-->
@@ -56,6 +56,5 @@
 		</rdf:RDF><!--}}}-->
 	</info> <!-- }}} -->
 	<xi:include href="intro.xml" parse="xml" />
-	<xi:include href="basics.xml" parse="xml" />
-	<xi:include href="hash.xml" parse="xml" />
+	<xi:include href="interface.xml" parse="xml" />
 </book>

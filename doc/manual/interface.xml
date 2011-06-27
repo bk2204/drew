@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<part xmlns="http://docbook.org/ns/docbook"
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:cc="http://creativecommons.org/ns#"
+	xmlns:xi="http://www.w3.org/2001/XInclude"
+	xml:lang="en"
+	xml:id="interface"
+	version="5.0">
+	<title>The Interface to libdrew</title>
+	<xi:include href="basics.xml" parse="xml" />
+	<xi:include href="hash.xml" parse="xml" />
+</part>
