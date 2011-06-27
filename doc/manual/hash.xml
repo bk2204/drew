@@ -295,6 +295,18 @@
 			<paramdef>void *<parameter>p</parameter></paramdef>
 			<paramdef>const drew_loader_t *<parameter>ldr</parameter></paramdef>
 		</funcprototype>
-	</funcsynopsis><!--}}}-->
+	</funcsynopsis>
+	<para>
+		This function may be called at any time because it does not require a
+		context parameter.  It performs a series of tests on the implementation
+		and returns 0 on success.  If one or more of the tests fail, the
+		appropriate bits will be set in the return value to indicate which test
+		failed.  Because some tests contain a large number of tests, each bit
+		may not correspond to exactly one test.
+	</para>
+	<para>
+		If the return value is negative, it represents an error code in the
+		standard format.
+	</para><!--}}}-->
 </article>
 <!-- vim: set ft=docbkxml: -->
