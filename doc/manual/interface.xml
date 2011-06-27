@@ -10,4 +10,5 @@
 	<title>The Interface to libdrew</title>
 	<xi:include href="basics.xml" parse="xml" />
 	<xi:include href="hash.xml" parse="xml" />
+	<xi:include href="block.xml" parse="xml" />
 </part>
