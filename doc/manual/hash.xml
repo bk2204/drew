@@ -28,48 +28,6 @@
 			<type>void *</type><varname>priv</varname>
 		</fieldsynopsis>
 	</classsynopsis><!--}}}-->
-	<para>
-		As with other interfaces, the <varname>ctx</varname> holds the actual
-		context of the underlying implementation; this could be in C or C++.  It
-		is opaque to users of libdrew.  The <varname>functbl</varname> field is
-		a list of entry points to the hash implementation in question.  All hash
-		implementations must implement all entry points.  It is guaranteed that
-		two hash contexts that have the same <varname>functbl</varname> pointer
-		share an implementation of the same algorithm.  However, it is possible
-		that an implementation may have several valid values for the
-		<varname>functbl</varname> argument.
-		The <varname>priv</varname> variable is not used and is reserved for the
-		user application.
-	</para>
-	<para>
-		Before a hash context can be used, the <varname>functbl</varname>
-		argument must be initialized to a valid value obtained from
-		<function>drew_loader_get_functbl</function>.  Calling an entry point
-		function may result in the <varname>functbl</varname> value being
-		changed.  Usually, this is to enable the use of a more efficient or
-		optimized implementation when possible.  However, it is guaranteed that
-		the value obtained from the loader will function correctly, even if not
-		optimally.
-	</para>
-	<para>
-		Each of the elements of a <type>drew_hash_functbl_t</type> is a pointer
-		to function returning <type>int</type>.  A successful call to one of
-		these functions will generally return 0.  Sometimes, a successful call
-		may return some data useful to the caller; this data will be a positive
-		integer.  An unsuccessful call will return a negative integer
-		representing an error.  If the absolute value of that error value is
-		less than 65536, it is a system error code and the normal errno routines
-		should be used to manipulate it.  Otherwise, it is a libdrew error code
-		as specified in <filename class="headerfile">drew/plugin.h</filename>.
-	</para>
-	<para>
-		Certain function calls are only permitted in a certain order.  For ease
-		of understanding, the permissible order is modeled using a state
-		machine.  A hash context, once it has had its <varname>functbl</varname>
-		value initialized, is in the <constant>UNINITIALIZED</constant> state.
-		It is not required that an implementation return an error when functions
-		are called in an incorrect order.
-	</para>
 	<!--{{{ info-->
 	<funcsynopsis language="C">
 		<funcprototype>
