@@ -63,7 +63,7 @@
 		of values, such as with the digest size of SHA-512/t.
 	</para>
 	<table>
-		<title>Operations</title>
+		<title>drew Hash Info Operations</title>
 		<tgroup cols="3">
 			<thead>
 				<row>
