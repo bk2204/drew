@@ -56,5 +56,6 @@
 		</rdf:RDF><!--}}}-->
 	</info> <!-- }}} -->
 	<xi:include href="intro.xml" parse="xml" />
+	<xi:include href="basics.xml" parse="xml" />
 	<xi:include href="hash.xml" parse="xml" />
 </book>
