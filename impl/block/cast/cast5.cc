@@ -12,7 +12,7 @@ extern "C" {
 
 static const int cast5keysz[] =
 {
-	16
+	5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
 };
 
 static int cast5_maintenance_test(void)
@@ -41,6 +41,12 @@ static int cast5test(void *, const drew_loader_t *)
 	uint8_t c128[] = {
 		0x23, 0x8b, 0x4f, 0xe5, 0x84, 0x7e, 0x44, 0xb2
 	};
+	uint8_t c80[] = {
+		0xeb, 0x6a, 0x71, 0x1a, 0x2c, 0x02, 0x27, 0x1b
+	};
+	uint8_t c40[] = {
+		0x7a, 0xc8, 0x16, 0xd1, 0x6e, 0x9b, 0x30, 0x2e
+	};
 	uint8_t buf[8];
 
 	CAST5 ctx;
@@ -49,6 +55,22 @@ static int cast5test(void *, const drew_loader_t *)
 	result |= !!memcmp(buf, c128, sizeof(buf));
 	result <<= 1;
 	ctx.Decrypt(buf, c128);
+	result |= !!memcmp(buf, p128, sizeof(buf));
+	result <<= 1;
+
+	ctx.SetKey(k128, 10);
+	ctx.Encrypt(buf, p128);
+	result |= !!memcmp(buf, c80, sizeof(buf));
+	result <<= 1;
+	ctx.Decrypt(buf, c80);
+	result |= !!memcmp(buf, p128, sizeof(buf));
+	result <<= 1;
+
+	ctx.SetKey(k128, 5);
+	ctx.Encrypt(buf, p128);
+	result |= !!memcmp(buf, c40, sizeof(buf));
+	result <<= 1;
+	ctx.Decrypt(buf, c40);
 	result |= !!memcmp(buf, p128, sizeof(buf));
 	result <<= 2;
 
@@ -73,7 +95,14 @@ drew::CAST5::CAST5()
 
 int drew::CAST5::SetKey(const uint8_t *key, size_t sz)
 {
-	ComputeSubkeys(key);
+	// We copy into this buffer because we're going to load this into a buffer
+	// of uint32_ts, but the key size only has to be a multiple of 8 bits.
+	uint8_t buf[128/8];
+	memset(buf, 0, sizeof(buf));
+	memcpy(buf, key, sz);
+	m_longkey = (sz > (80 / 8));
+	ComputeSubkeys(buf);
+	memset(buf, 0, sizeof(buf));
 	return 0;
 }
 
@@ -143,11 +172,12 @@ void drew::CAST5::ComputeSubkeys(const uint8_t *k)
 int drew::CAST5::Encrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t l, r;
+	size_t iters = m_longkey ? 15 : 12;
 
 	endian_t::Copy(&l, in+0, sizeof(l));
 	endian_t::Copy(&r, in+4, sizeof(r));
 
-	for (size_t i = 0; i < 15; i += 3) {
+	for (size_t i = 0; i < iters; i += 3) {
 		l ^= f1(r, m_km[i+0], m_kr[i+0]);
 		std::swap(l, r);
 		l ^= f2(r, m_km[i+1], m_kr[i+1]);
@@ -155,7 +185,10 @@ int drew::CAST5::Encrypt(uint8_t *out, const uint8_t *in) const
 		l ^= f3(r, m_km[i+2], m_kr[i+2]);
 		std::swap(l, r);
 	}
-	l ^= f1(r, m_km[15], m_kr[15]);
+	if (m_longkey)
+		l ^= f1(r, m_km[15], m_kr[15]);
+	else
+		std::swap(l, r);
 
 	endian_t::Copy(out+0, &l, sizeof(l));
 	endian_t::Copy(out+4, &r, sizeof(r));
@@ -166,13 +199,16 @@ int drew::CAST5::Encrypt(uint8_t *out, const uint8_t *in) const
 int drew::CAST5::Decrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t l, r;
+	int initial = m_longkey ? 14 : 11;
 
 	endian_t::Copy(&l, in+0, sizeof(l));
 	endian_t::Copy(&r, in+4, sizeof(r));
 
-	l ^= f1(r, m_km[15], m_kr[15]);
-	std::swap(l, r);
-	for (int i = 14; i > 0; i -= 3) {
+	if (m_longkey) {
+		l ^= f1(r, m_km[15], m_kr[15]);
+		std::swap(l, r);
+	}
+	for (int i = initial; i > 0; i -= 3) {
 		l ^= f3(r, m_km[i-0], m_kr[i-0]);
 		std::swap(l, r);
 		l ^= f2(r, m_km[i-1], m_kr[i-1]);

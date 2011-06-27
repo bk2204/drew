@@ -16,33 +16,8 @@ typedef struct {
 	char *object;
 } drew_metadata_t;
 
-#if defined(DREW_IN_BUILD)
-typedef struct {
-	int version;
-	int flags;
-	char *name;		/* Name of the plugin. */
-	char *aname;	/* Algorithm name. */
-	char *path;
-	void *handle;
-	drew_metadata_t *metadata;
-	int nmeta;
-	int id;
-	int nplugins;
-	int type;
-	int size;
-	void **functbl;
-} drew_loader_entry_t;
-
-typedef struct {
-	int version;
-	int flags;
-	int nentries;
-	drew_loader_entry_t *entry;
-} drew_loader_t;
-#else
-typedef void drew_loader_entry_t;
-typedef void drew_loader_t;
-#endif
+struct drew_loader_s;
+typedef struct drew_loader_s drew_loader_t;
 
 #define DREW_LOADER_LOOKUP_NAME 2
 #define DREW_LOADER_GET_NPLUGINS 3
@@ -102,6 +77,8 @@ int drew_loader_lookup_by_type(const drew_loader_t *ldr, int type, int start,
 		int end);
 int drew_loader_get_metadata(const drew_loader_t *ldr, int id, int item,
 		drew_metadata_t *meta);
+int drew_loader_get_search_path(const drew_loader_t *ldr, int num,
+		const char **p);
 
 #if defined(__cplusplus)
 }

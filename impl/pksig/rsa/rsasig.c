@@ -1,3 +1,5 @@
+#include "internal.h"
+
 #include <errno.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -103,10 +105,6 @@ static int rsa_test(void *ptr, const drew_loader_t *ldr)
 	const char *bignum = "Bignum";
 	drew_bignum_t bns[1];
 
-	param.next = NULL;
-	param.name = "bignum";
-	param.param.string = bignum;
-
 	id = drew_loader_lookup_by_name(ldr, bignum, 0, -1);
 	if (id < 0)
 		return id;
@@ -114,10 +112,14 @@ static int rsa_test(void *ptr, const drew_loader_t *ldr)
 		return -DREW_ERR_INVALID;
 	if ((res = drew_loader_get_functbl(ldr, id, &functbl)) < 0)
 		return res;
-	bns[0].functbl = functbl;
+
+	param.next = NULL;
+	param.name = "bignum";
+	param.param.value = bns;
 
 	res = 0;
 
+	bns[0].functbl = functbl;
 	bns[0].functbl->init(&bns[0], 0, ldr, NULL);
 
 	ctx.functbl = &rsa_functbl;
@@ -248,7 +250,7 @@ static struct plugin plugin_data[] = {
 	{ "RSASignature", &rsa_functbl },
 };
 
-int drew_plugin_info(void *ldr, int op, int id, void *p)
+int DREW_PLUGIN_NAME(rsasig)(void *ldr, int op, int id, void *p)
 {
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 

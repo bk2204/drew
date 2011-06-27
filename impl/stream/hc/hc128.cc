@@ -109,8 +109,6 @@ static int hc128_test(void *, const drew_loader_t *)
 	return res;
 }
 
-#define DIM(x) (sizeof(x)/sizeof(x[0]))
-
 static const int hc128_keysz[] = {16};
 
 static int hc128_info(int op, void *p)
@@ -204,7 +202,7 @@ static int hc128_fini(drew_stream_t *ctx, int flags)
 PLUGIN_DATA_START()
 PLUGIN_DATA(hc128, "HC128")
 PLUGIN_DATA_END()
-PLUGIN_INTERFACE()
+PLUGIN_INTERFACE(hc128)
 
 }
 
@@ -252,7 +250,6 @@ drew::HC128Keystream::HC128Keystream()
 
 void drew::HC128Keystream::Reset()
 {
-	ctr = 0;
 }
 
 uint32_t drew::HC128Keystream::f1(uint32_t x)
@@ -316,19 +313,16 @@ void drew::HC128Keystream::SetNonce(const uint8_t *iv, size_t sz)
 	}
 }
 
-void drew::HC128Keystream::FillBuffer(uint8_t buf[4])
+void drew::HC128Keystream::FillBuffer(uint8_t buf[4096])
 {
-	size_t j = ctr % 512;
-	uint32_t s;
-
-	if (!(ctr & 0x200)) {
+	uint32_t tbuf[1024], *t = tbuf;
+	for (size_t j = 0; j < 512; j++) {
 		P[j] += g1(P[M(j, 3)], P[M(j, 10)], P[M(j, 511)]);
-		s = h1(P[M(j, 12)]) ^ P[j];
+		*t++ = h1(P[M(j, 12)]) ^ P[j];
 	}
-	else {
+	for (size_t j = 0; j < 512; j++) {
 		Q[j] += g2(Q[M(j, 3)], Q[M(j, 10)], Q[M(j, 511)]);
-		s = h2(Q[M(j, 12)]) ^ Q[j];
+		*t++ = h2(Q[M(j, 12)]) ^ Q[j];
 	}
-	ctr++;
-	E::Copy(buf, &s, sizeof(s));
+	E::Copy(buf, tbuf, sizeof(tbuf));
 }

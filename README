@@ -1,0 +1,57 @@
+DREW
+====
+
+Drew is a set of libraries providing a C interface to cryptographic primitives
+as well as higher-level protocols.  It is designed to have very fast (if not the
+fastest) implementations of these primitives, while still preserving
+portability.  An extremely thorough testsuite ensures that the code correctly
+implements every algorithm.
+
+The license for Drew is spelled out in the document LICENSE, but roughly it is
+all available under the terms of your choice of the Apache License, version 2.0,
+or the GNU General Public License, version 2.0 (possibly with some rare
+exceptions).  This license was chosen to minimize barriers to use.  Patented
+algorithms are not included if they cannot be distributed under the GPL.
+
+Releases are available tagged from git.  The repository is stored on github at
+<https://github.com/bk2204/drew> and can be cloned from
+<git://github.com/bk2204/drew.git>.
+
+There are plans to include full TLS, ASN.1, and OpenPGP implementations, and
+work on these is ongoing.  Source-level compatibility with existing
+implementations, including OpenSSL, GnuTLS, and GPGME, is also planned.
+
+To build Drew, edit the file config and adjust the options to suit your needs.
+For algorithms, specify "y" if you want to build the algorithm into the
+implementations library (libdrew-impl) or "m" if you want to build it as a
+plugin.  Other values disable the implementation.  For other functionality,
+specify "y" to enable the feature or any other value to disable it.
+
+Some algorithms, those containing the text "128" in their names, use 128-bit
+arithmetic and will only compile on certain platforms and only with a recent
+GCC.  Since alternatives are provided for machines that do not meet those
+requirements, it is safe to disable them without any loss of functionality.
+
+The only module which has external dependencies is the tommath plugin, which
+depends on the public domain libtommath for its implementation.  Since this is
+currently the only bignum implementation, public key software will not work
+unless you enable it.  Also, both a C and C++ compiler are required.  If not
+using the GNU linker, you may need to instruct your linker specifically to not
+export symbols other than those starting with "drew_".
+
+Once you have edited the config file, type "make" (with or without a -j option)
+to build the code.  Then type "make test" to run a full testsuite.  Please be
+aware that on slow machines (such as a 333 MHz UltraSPARC IIi) this may take in
+excess of an hour.  Very rarely (approximately 1% of the time), a PRNG may fail
+a test due to the statistical nature of the test; this is not a problem.
+
+To install the files, make sure the directory to which you want to install is
+correctly specified in the config file and type "make install".  To remove the
+files, type "make uninstall".
+
+Some documentation on the interface is provided; type "make doc" to build it.
+You will need Apache FOP and the DocBook XSL-NS Stylesheets.
+
+Please report bugs and wishlist requests on the github issue tracker.  Until a
+mailing list is set up, please send email to brian m. carlson at
+<sandals@crustytoothpaste.net>.

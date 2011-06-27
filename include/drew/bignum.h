@@ -68,19 +68,6 @@ typedef struct {
 			const drew_bignum_t *);
 	int (*invmod)(drew_bignum_t *, const drew_bignum_t *,
 			const drew_bignum_t *);
-	// Barrett Reduction.
-	int (*breduceinit)(drew_bignum_t *, const drew_bignum_t *);
-	int (*breduce)(drew_bignum_t *, const drew_bignum_t *,
-			const drew_bignum_t *, const drew_bignum_t *);
-	// Montgomery Reduction.
-	int (*mreduceinit)(drew_bignum_t *, const drew_bignum_t *);
-	int (*mreduce)(drew_bignum_t *, const drew_bignum_t *,
-			const drew_bignum_t *, const drew_bignum_t *);
-	int (*mreduceconst)(drew_bignum_t *, const drew_bignum_t *);
-	// Diminished Radix Reduction.
-	int (*drreduceinit)(drew_bignum_t *, const drew_bignum_t *);
-	int (*drreduce)(drew_bignum_t *, const drew_bignum_t *,
-			const drew_bignum_t *, const drew_bignum_t *);
 	int (*test)(void *, const drew_loader_t *);
 } drew_bignum_functbl2_t;
 

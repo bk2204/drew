@@ -1,3 +1,5 @@
+#include "internal.h"
+
 #include <errno.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -30,35 +32,28 @@ static int hmac_info(int op, void *p)
 static int hmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param)
 {
-	const char *algo = NULL;
+	drew_hash_t *algo = NULL;
 	const drew_param_t *oparam = param;
 
 	for (; param; param = param->next)
 		if (!strcmp(param->name, "digest")) {
-			algo = param->param.string;
+			algo = param->param.value;
 		}
 
 	if (!algo)
 		return -EINVAL;
 
-	int id = drew_loader_lookup_by_name(ldr, algo, 0, -1);
-	if (id < 0)
-		return -ENOENT;
-	if (drew_loader_get_type(ldr, id) != DREW_TYPE_HASH)
-		return -EINVAL;
-	const void *tbl = NULL;
-	if (drew_loader_get_functbl(ldr, id, &tbl) < 0)
-		return -EINVAL;
-
 	struct hmac *p = malloc(sizeof(*p));
 	memset(p, 0, sizeof(*p));
 	p->ldr = ldr;
-	p->outside.functbl = p->inside.functbl = tbl;
+	p->outside.functbl = p->inside.functbl = algo->functbl;
 	p->blksz = p->outside.functbl->info(DREW_HASH_BLKSIZE, NULL);
 	p->digestsz = p->outside.functbl->info(DREW_HASH_SIZE, NULL);
 	p->keybuf = malloc(p->blksz);
 	p->keybufsz = 0;
 	p->param = oparam;
+	p->outside.functbl->init(&p->outside, 0, p->ldr, p->param);
+	p->inside.functbl->init(&p->inside, 0, p->ldr, p->param);
 
 	if (flags & DREW_MAC_FIXED) {
 		memcpy(ctx->ctx, p, sizeof(*p));
@@ -125,8 +120,8 @@ static int hmac_setkey(drew_mac_t *ctxt, const uint8_t *data, size_t len)
 	}
 	memset(outpad+i, 0x5c, ctx->blksz - i);
 	memset(inpad+i, 0x36, ctx->blksz - i);
-	ctx->outside.functbl->init(&ctx->outside, 0, ctx->ldr, ctx->param);
-	ctx->inside.functbl->init(&ctx->inside, 0, ctx->ldr, ctx->param);
+	ctx->outside.functbl->reset(&ctx->outside);
+	ctx->inside.functbl->reset(&ctx->inside);
 	ctx->outside.functbl->update(&ctx->outside, outpad, ctx->blksz);
 	ctx->inside.functbl->update(&ctx->inside, inpad, ctx->blksz);
 
@@ -186,18 +181,28 @@ static int hmac_test_generic(const drew_loader_t *ldr, const char *name,
 	int result = 0;
 	drew_mac_t c;
 	uint8_t buf[128];
+	drew_param_t param;
+	drew_hash_t hash;
+	int id;
+
+	if ((id = drew_loader_lookup_by_name(ldr, name, 0, -1)) < 0)
+		return id;
+	drew_loader_get_functbl(ldr, id, (const void **)&hash.functbl);
+
+	hash.functbl->init(&hash, 0, ldr, NULL);
+
+	param.name = "digest";
+	param.next = NULL;
+	param.param.value = &hash;
 
 	for (size_t i = 0; i < ntests; i++) {
 		const struct test *t = testdata + i;
-		drew_param_t param;
 		int retval;
 
 		memset(buf, 0, sizeof(buf));
 		result <<= 1;
 
-		param.name = "digest";
-		param.next = NULL;
-		param.param.string = name;
+		hash.functbl->reset(&hash);
 		if ((retval = hmac_init(&c, 0, ldr, &param)))
 			return retval;			
 		hmac_setkey(&c, t->key, t->keysz);
@@ -208,6 +213,7 @@ static int hmac_test_generic(const drew_loader_t *ldr, const char *name,
 		result |= !!memcmp(buf, t->output, outputsz);
 		hmac_fini(&c, 0);
 	}
+	hash.functbl->fini(&hash, 0);
 	
 	return result;
 }
@@ -336,7 +342,7 @@ static struct plugin plugin_data[] = {
 	{ "HMAC", &hmac_functbl }
 };
 
-int drew_plugin_info(void *ldr, int op, int id, void *p)
+int DREW_PLUGIN_NAME(hmac)(void *ldr, int op, int id, void *p)
 {
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 

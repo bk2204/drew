@@ -7,7 +7,7 @@
 
 namespace drew {
 
-class MD2 : public Hash<uint8_t, 16, 64, 16, LittleEndian>
+class MD2 : public Hash<uint8_t, 16, 64, 16, NonEndian>
 {
 	public:
 		MD2();

@@ -19,6 +19,11 @@ void *test_create_data()
 	return NULL;
 }
 
+void *test_clone_data(void *p, int flags)
+{
+	return NULL;
+}
+
 int test_execute(void *data, const char *name, const void *tbl,
 		struct test_external *ldr)
 {

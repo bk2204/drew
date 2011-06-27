@@ -13,8 +13,6 @@
 
 extern "C" {
 
-#define DIM(x) (sizeof(x)/sizeof(x[0]))
-
 	PLUGIN_STRUCTURE2(rc2, RC2)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(rc2, "RC2")
@@ -56,66 +54,6 @@ static int rc2init(drew_block_t *ctx, int flags,
 	ctx->functbl = &rc2functbl;
 	return 0;
 }
-
-#if 0
-static int rc2_init(void **ctx, void *, int flags, drew_loader_t *, const drew_param_t *)
-{
-	drew::RC2 *p = new drew::RC2;
-	if (flags & DREW_BLOCK_INIT_FIXED) {
-		memcpy(*ctx, p, sizeof(*p));
-		delete p;
-	}
-	else
-		*ctx = p;
-	return 0;
-}
-
-static int rc2_clone(void **newctx, void *oldctx, int flags)
-{
-	using namespace drew;
-	RC2 *p = new RC2(*reinterpret_cast<RC2 *>(oldctx));
-	if (flags & DREW_BLOCK_CLONE_FIXED) {
-		memcpy(*newctx, p, sizeof(*p));
-		delete p;
-	}
-	else
-		*newctx = p;
-	return 0;
-}
-
-static int rc2_setkey(void *ctx, const uint8_t *key, size_t len, int mode)
-{
-	drew::RC2 *p = reinterpret_cast<drew::RC2 *>(ctx);
-	p->SetKey(key, len);
-	return 0;
-}
-
-static int rc2_encrypt(void *ctx, uint8_t *out, const uint8_t *in)
-{
-	drew::RC2 *p = reinterpret_cast<drew::RC2 *>(ctx);
-	p->Encrypt(out, in);
-	return 0;
-}
-
-static int rc2_decrypt(void *ctx, uint8_t *out, const uint8_t *in)
-{
-	drew::RC2 *p = reinterpret_cast<drew::RC2 *>(ctx);
-	p->Decrypt(out, in);
-	return 0;
-}
-
-static int rc2_fini(void **ctx, int flags)
-{
-	drew::RC2 *p = reinterpret_cast<drew::RC2 *>(*ctx);
-	if (flags & DREW_BLOCK_FINI_NO_DEALLOC)
-		p->~RC2();
-	else {
-		delete p;
-		*ctx = NULL;
-	}
-	return 0;
-}
-#endif
 
 static int rc2test(void *, const drew_loader_t *)
 {

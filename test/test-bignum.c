@@ -34,7 +34,7 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 	return print_test_results(functbl->test(NULL, ldr), NULL);
 }
 
-inline int test_speed_loop(drew_bignum_t *ctx, uint8_t *buf,
+static inline int test_speed_loop(drew_bignum_t *ctx, uint8_t *buf,
 		uint8_t *mod, int chunk, int nchunks)
 {
 	int i;

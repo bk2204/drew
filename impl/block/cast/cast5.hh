@@ -31,6 +31,7 @@ class CAST5 : public CAST, public BlockCipher<8>
 		void ComputeSubkeys(const uint8_t *k);
 		uint32_t m_km[16];
 		uint8_t m_kr[16];
+		bool m_longkey;
 };
 
 }

@@ -53,12 +53,11 @@ static int init(struct rsa *newctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param)
 {
 	const void *functbl;
-	int id = -1, res = 0;
-	const char *bignum = NULL;
+	const drew_bignum_t *bignum = NULL;
 
 	for (const drew_param_t *p = param; p; p = p->next) {
 		if (!strcmp(p->name, "bignum")) {
-			bignum = p->param.string;
+			bignum = p->param.value;
 			break;
 		}
 	}
@@ -66,13 +65,7 @@ static int init(struct rsa *newctx, int flags, const drew_loader_t *ldr,
 	if (!bignum)
 		return -DREW_ERR_MORE_INFO;
 
-	id = drew_loader_lookup_by_name(ldr, bignum, 0, -1);
-	if (id < 0)
-		return id;
-	if (drew_loader_get_type(ldr, id) != DREW_TYPE_BIGNUM)
-		return -DREW_ERR_INVALID;
-	if ((res = drew_loader_get_functbl(ldr, id, &functbl)) < 0)
-		return res;
+	functbl = bignum->functbl;
 
 	memset(newctx, 0, sizeof(*newctx));
 

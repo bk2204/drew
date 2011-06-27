@@ -45,7 +45,7 @@ class HC128
 	private:
 		HC128Keystream m_ks;
 		uint8_t m_iv[16];
-		uint8_t m_buf[4];
+		uint8_t m_buf[4096];
 		size_t m_nbytes;
 };
 

@@ -30,19 +30,19 @@ class Hash
 			memset(m_buf, 0, sizeof(m_buf));
 			memset(m_hash, 0, sizeof(m_hash));
 		}
-		virtual void Initialize()
+		void Initialize()
 		{
 			memset(m_len, 0, sizeof(m_len));
 			memset(m_buf, 0, sizeof(m_buf));
 		}
 		virtual void Reset() = 0;
-		virtual void Update(const uint8_t *data, size_t len)
+		inline void Update(const uint8_t *data, size_t len)
 		{
 			const T t = m_len[0];
 			const T off = t % BlkSize;
 			uint8_t *buf = m_buf;
 		
-			if ((m_len[0] += len) < t)
+			if (unlikely((m_len[0] += len) < t))
 				m_len[1]++;
 
 			if (off) {
@@ -60,11 +60,11 @@ class Hash
 				Transform(data);
 			memcpy(buf, data, len);
 		}
-		virtual void UpdateFast(const uint8_t *data, size_t len)
+		inline void UpdateFast(const uint8_t *data, size_t len)
 		{
 			const T t = m_len[0];
 
-			if ((m_len[0] += len) < t)
+			if (unlikely((m_len[0] += len) < t))
 				m_len[1]++;
 
 			len /= BlkSize;
@@ -103,13 +103,13 @@ class Hash
 			if (!nopad)
 				Pad();
 
-			E::Copy(digest, m_hash, Size);
+			E::CopyCarefully(digest, m_hash, Size);
 		}
 		virtual size_t GetDigestSize() const
 		{
 			return Size;
 		}
-		static void Transform(T *, const uint8_t *data);
+		static inline void Transform(T *, const uint8_t *data);
 	protected:
 		virtual void Transform(const uint8_t *data) = 0;
 		T m_len[2];
