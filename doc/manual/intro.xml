@@ -5,6 +5,7 @@
 	xmlns:dc="http://purl.org/dc/elements/1.1/"
 	xmlns:cc="http://creativecommons.org/ns#"
 	xmlns:xi="http://www.w3.org/2001/XInclude"
+	xml:lang="en"
 	xml:id="intro"
 	version="5.0">
 	<title>An Introduction to libdrew</title>
