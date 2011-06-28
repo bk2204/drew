@@ -112,7 +112,7 @@
 			</tbody>
 		</tgroup>
 	</table>
-	<para>
+	<para xml:id="block-keysize">
 		The <constant>DREW_BLOCK_KEYSIZE</constant> operation requires a bit of
 		explanation.  <parameter>p</parameter> should initially be a pointer to
 		an int.  The <function>info</function> function implementation will
@@ -227,18 +227,20 @@
 	<para>
 		This function sets the key for the block cipher. The
 		<parameter>data</parameter> parameter contains key material of
-		<parameter>len</parameter> bytes.  Normally, the
+		<parameter>len</parameter> bytes.It may be called in any state other
+		than <constant>UNINITIALIZED</constant> and upon successful completion
+		leaves the context in the <constant>READY</constant> (if flags is zero),
+		<constant>READY-ENCRYPT</constant>, or
+		<constant>READY-DECRYPT</constant> state. 
+	</para>
+	<para xml:id="block-setkey-flags">
+		Normally, the
 		<parameter>flags</parameter> will be zero
 		(<constant>DREW_BLOCK_MODE_BOTH</constant>).  If operation in only one
 		direction is required, such as for some block cipher modes, either
 		<constant>DREW_BLOCK_MODE_ENCRYPT</constant> (for encryption only) or
 		<constant>DREW_BLOCK_MODE_DECRYPT</constant> (for decryption only) can
-		be used.  It may be called in any state other than
-		<constant>UNINITIALIZED</constant> and
-		upon successful completion leaves the context in the
-		<constant>READY</constant> (if flags is zero),
-		<constant>READY-ENCRYPT</constant>, or
-		<constant>READY-DECRYPT</constant> state. 
+		be used.
 	</para><!--}}}-->
 	<!--{{{ encrypt-->
 	<funcsynopsis language="C">
