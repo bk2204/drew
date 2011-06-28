@@ -30,7 +30,7 @@ GEN_SUFFIXES	:= .pdf .fo .txml
 
 doc: $(MANUAL_DIR)/drew.pdf
 
-DREW_COMPONENTS	:= intro interface basics hash block
+DREW_COMPONENTS	:= intro interface basics hash block stream
 
 $(MANUAL_DIR)/drew.fo: $(patsubst %,$(MANUAL_DIR)/%.xml,$(DREW_COMPONENTS))
 
