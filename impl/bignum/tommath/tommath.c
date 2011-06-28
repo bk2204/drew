@@ -12,7 +12,6 @@
 #include <drew/bignum.h>
 #include <drew/plugin.h>
 
-#define DIM(x) (sizeof(x)/sizeof((x)[0]))
 // "Bare" MP and MPConstant, "Bare" DIGit and DIGitConstant.
 #define BMP(x) (&(((struct bignum *)(x))->mp))
 #define BMPC(x) ((mp_int *)(&(((const struct bignum *)(x))->mp)))
@@ -23,6 +22,7 @@
 #define MPC(x) BMPC((x)->ctx)
 #define DIG(x) BDIG((x)->ctx)
 #define DIGC(x) BDIGC((x)->ctx)
+#undef RETFAIL
 #define RETFAIL(x) do { int failret = (x); \
 	if (failret != MP_OKAY) return fixup_return(failret); } while (0)
 #define COPY(to, from) do { \
@@ -87,16 +87,6 @@ static int bn_expmod(drew_bignum_t *, const drew_bignum_t *,
 		const drew_bignum_t *, const drew_bignum_t *);
 static int bn_invmod(drew_bignum_t *, const drew_bignum_t *,
 		const drew_bignum_t *);
-static int bn_breduceinit(drew_bignum_t *, const drew_bignum_t *);
-static int bn_breduce(drew_bignum_t *, const drew_bignum_t *,
-		const drew_bignum_t *, const drew_bignum_t *);
-static int bn_mreduceinit(drew_bignum_t *, const drew_bignum_t *);
-static int bn_mreduce(drew_bignum_t *, const drew_bignum_t *,
-		const drew_bignum_t *, const drew_bignum_t *);
-static int bn_mreduceconst(drew_bignum_t *, const drew_bignum_t *);
-static int bn_drreduceinit(drew_bignum_t *, const drew_bignum_t *);
-static int bn_drreduce(drew_bignum_t *, const drew_bignum_t *,
-		const drew_bignum_t *, const drew_bignum_t *);
 static int bn_test(void *, const drew_loader_t *);
 
 
@@ -130,13 +120,6 @@ static const drew_bignum_functbl_t bn_functbl = {
 	.expsmall = bn_expsmall,
 	.expmod = bn_expmod,
 	.invmod = bn_invmod,
-	.breduceinit = bn_breduceinit,
-	.breduce = bn_breduce,
-	.mreduceinit = bn_mreduceinit,
-	.mreduce = bn_mreduce,
-	.mreduceconst = bn_mreduceconst,
-	.drreduceinit = bn_drreduceinit,
-	.drreduce = bn_drreduce,
 	.test = bn_test
 };
 
@@ -307,15 +290,12 @@ static int bn_divpow2(drew_bignum_t *quot, drew_bignum_t *rem,
 
 static int bn_shiftleft(drew_bignum_t *res, const drew_bignum_t *in, size_t n)
 {
-	COPY(res, in);
-	RETFAIL(mp_lshd(MP(res), n));
-	return 0;
+	return bn_mulpow2(res, in, n);
 }
 
 static int bn_shiftright(drew_bignum_t *res, const drew_bignum_t *in, size_t n)
 {
-	COPY(res, in);
-	mp_rshd(MP(res), n);
+	RETFAIL(mp_div_2d(MPC(in), n, MP(res), NULL));
 	return 0;
 }
 
@@ -349,55 +329,7 @@ static int bn_expmod(drew_bignum_t *res, const drew_bignum_t *g,
 static int bn_invmod(drew_bignum_t *res, const drew_bignum_t *a,
 		const drew_bignum_t *mod)
 {
-	RETFAIL(mp_invmod(MPC(a), MPC(mod), MP(mod)));
-	return 0;
-}
-
-static int bn_breduceinit(drew_bignum_t *mu, const drew_bignum_t *mod)
-{
-	RETFAIL(mp_reduce_setup(MP(mu), MPC(mod)));
-	return 0;
-}
-
-static int bn_breduce(drew_bignum_t *res, const drew_bignum_t *a,
-		const drew_bignum_t *mod, const drew_bignum_t *mu)
-{
-	COPY(res, a);
-	RETFAIL(mp_reduce(MP(res), MPC(mod), MPC(mu)));
-	return 0;
-}
-
-static int bn_mreduceinit(drew_bignum_t *mp, const drew_bignum_t *a)
-{
-	RETFAIL(mp_montgomery_setup(MPC(a), DIG(mp)));
-	return 0;
-}
-
-static int bn_mreduce(drew_bignum_t *res, const drew_bignum_t *a,
-		const drew_bignum_t *mod, const drew_bignum_t *mp)
-{
-	COPY(res, a);
-	RETFAIL(mp_montgomery_reduce(MP(res), MPC(mod), *DIG(mp)));
-	return 0;
-}
-
-static int bn_mreduceconst(drew_bignum_t *k, const drew_bignum_t *mod)
-{
-	RETFAIL(mp_montgomery_calc_normalization(MP(k), MPC(mod)));
-	return 0;
-}
-
-static int bn_drreduceinit(drew_bignum_t *mp, const drew_bignum_t *mod)
-{
-	RETFAIL(mp_reduce_2k_setup(MPC(mod), DIG(mp)));
-	return 0;
-}
-
-static int bn_drreduce(drew_bignum_t *res, const drew_bignum_t *a,
-		const drew_bignum_t *mod, const drew_bignum_t *mp)
-{
-	COPY(res, a);
-	RETFAIL(mp_reduce_2k(MP(res), MPC(mod), *DIG(mp)));
+	RETFAIL(mp_invmod(MPC(a), MPC(mod), MP(res)));
 	return 0;
 }
 

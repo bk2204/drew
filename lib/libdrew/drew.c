@@ -50,7 +50,12 @@ struct drew_loader_s {
 
 static handle_t open_library(const char *pathname)
 {
+#if defined(__GNUC__) && __GNUC__ >= 4 && __GNUC_MINOR__ >= 5
+	// FIXME: discover why Debian bug #631531 occurs and remove this.
+	return dlopen(pathname, RTLD_NOW|RTLD_LOCAL);
+#else
 	return dlopen(pathname, RTLD_LAZY|RTLD_LOCAL);
+#endif
 }
 
 static void close_library(handle_t handle)
@@ -255,7 +260,17 @@ int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
 	int err = 0;
 	library_t *lib;
 
-	if ((err = load_library(ldr, plugin, path, &lib)))
+	if (plugin && !path) {
+		int npaths = drew_loader_get_search_path(ldr, 0, NULL), i;
+		for (i = 0; i < npaths; i++) {
+			drew_loader_get_search_path(ldr, i, &path);
+			if (!load_library(ldr, plugin, path, &lib))
+				break;
+		}
+		if (i == npaths)
+			return -DREW_ERR_RESOLUTION;
+	}
+	else if ((err = load_library(ldr, plugin, path, &lib)))
 		return err;
 	return load_library_info(ldr, lib);
 }
@@ -357,6 +372,22 @@ int drew_loader_lookup_by_type(const drew_loader_t *ldr, int type, int start,
 	}
 
 	return -DREW_ERR_NONEXISTENT;
+}
+
+int drew_loader_get_search_path(const drew_loader_t *ldr, int num,
+		const char **p)
+{
+	const char *paths[] = {
+		DREW_SEARCH_PATH
+	};
+
+	if (num < 0)
+		return -DREW_ERR_INVALID;
+	if (num > DIM(paths))
+		return -DREW_ERR_NONEXISTENT;
+	if (p)
+		*p = paths[num];
+	return DIM(paths);
 }
 
 /* This will eventually provide an rdf:seeAlso to an .rdf file with the same

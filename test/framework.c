@@ -156,117 +156,6 @@ int process_bytes(ssize_t len, uint8_t **buf, const char *data)
 	return TEST_OK;
 }
 
-static void add_id(struct test_external *tep, char *p)
-{
-	tep->nids++;
-	// FIXME: handle NULL.
-	tep->ids = realloc(tep->ids, tep->nids*sizeof(*tep->ids));
-	tep->ids[tep->nids-1] = p;
-}
-
-// Rotate the bits, except don't allow the result to become negative.
-static int rol31(int x)
-{
-	int r = (x << 1) | (x >> (32-1));
-	if (r & 0x80000000) {
-		r |= 1;
-		r &= ~0x80000000;
-	}
-	return r;
-}
-
-static int execute_test_external(int ret, struct test_external *tep)
-{
-	ret = test_execute(tep->data, tep->name, tep->tbl, tep);
-	switch (ret) {
-		case TEST_FAILED:
-			add_id(tep, test_get_id(tep->data));
-			// fallthru
-		case TEST_OK:
-			tep->results = rol31(tep->results);
-			tep->results |= ret;
-			tep->ntests++;
-			break;
-	}
-	return ret;
-}
-
-int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
-		const char *filename)
-{
-	char buf[2048];
-	char *saveptr;
-	FILE *fp;
-	int ret = 0;
-	size_t lineno = 0;
-	struct test_external tes;
-
-	if (!filename)
-		filename = test_get_filename();
-
-	tes.results = 0;
-	tes.ntests = 0;
-	tes.name = name;
-	tes.ldr = ldr;
-	tes.tbl = tbl;
-	tes.data = test_create_data();
-	tes.nids = 0;
-	tes.ids = NULL;
-
-	if (!filename)
-		return print_test_results(-DREW_ERR_NOT_IMPL, NULL);
-
-	if (!(fp = fopen(filename, "r")))
-		return print_test_results(-errno, NULL);
-
-	while (fgets(buf, sizeof(buf), fp)) {
-		char *p = buf, *tok;
-		size_t off = strlen(buf);
-
-		if (buf[off-1] != '\n')
-			continue;
-		lineno++;
-		buf[off-1] = 0;
-		if (buf[0] == '#')
-			continue;
-
-		while ((tok = strtok_r(p, " ", &saveptr))) {
-			p = NULL;
-			ret = test_process_testcase(tes.data, tok[0], tok+1, &tes);
-			if (ret == TEST_EXECUTE) {
-				ret = execute_test_external(ret, &tes);
-				if (ret == TEST_CORRUPT)
-					goto out;
-				test_reset_data(tes.data, TEST_RESET_PARTIAL);
-				ret = test_process_testcase(tes.data, tok[0], tok+1, &tes);
-			}
-			if (ret == TEST_CORRUPT)
-				goto out;
-		}
-	}
-	ret = execute_test_external(ret, &tes);
-
-out:
-	if (!tes.ntests)
-		tes.results = -DREW_ERR_NOT_IMPL;
-	test_reset_data(tes.data, TEST_RESET_FULL);
-	free(tes.data);
-	fclose(fp);
-	if (ret == TEST_CORRUPT) {
-		printf("corrupt test at line %zu\n", lineno);
-		tes.results = -DREW_ERR_INVALID;
-	}
-	else {
-		if (tes.nids)
-			add_id(&tes, NULL);
-		tes.results = print_test_results(tes.results, tes.ids);
-	}
-	for (size_t i = 0; i < tes.nids; i++)
-		free(tes.ids[i]);
-	free(tes.ids);
-	return tes.results;
-}
-
 int usage(const char *argv0, int retval)
 {
 	FILE *fp = retval ? stderr : stdout;
@@ -303,6 +192,7 @@ int main(int argc, char **argv)
 	const char *only = NULL;
 	const char *resource = NULL; // A filename of testcases.
 	drew_loader_t *ldr = NULL;
+	struct test_external tes;
 
 	drew_loader_new(&ldr);
 
@@ -377,6 +267,10 @@ int main(int argc, char **argv)
 	nplugins = drew_loader_get_nplugins(ldr, -1);
 	type = test_get_type();
 
+	if (mode == MODE_TEST &&
+			(retval = test_external_parse(ldr, resource, &tes)))
+		tes.results = -DREW_ERR_NOT_IMPL;
+
 	for (i = 0; i < nplugins; i++) {
 		const void *functbl;
 		const char *name;
@@ -402,6 +296,7 @@ int main(int argc, char **argv)
 		}
 		else
 			printf("%-15s: ", name);
+		fflush(stdout);
 
 		switch (mode) {
 			case MODE_SPEED:
@@ -412,7 +307,7 @@ int main(int argc, char **argv)
 					print_test_results_impl(result, NULL, "speed test");
 				break;
 			case MODE_TEST:
-				result = test_external(ldr, name, functbl, resource);
+				result = test_external(ldr, name, functbl, resource, &tes);
 				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
 					error++;
 				break;
@@ -426,10 +321,13 @@ int main(int argc, char **argv)
 				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
 					error++;
 				print_test_results_impl(result, NULL, "API test");
+				break;
 			default:
 				break;
 		}
 	}
+	if (mode == MODE_TEST)
+		test_external_cleanup(&tes);
 	drew_loader_free(&ldr);
 
 	if (error && !(error & 0xff))

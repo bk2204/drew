@@ -61,8 +61,6 @@ static int salsa20_test(void *, const drew_loader_t *)
 	return res;
 }
 
-#define DIM(x) (sizeof(x)/sizeof(x[0]))
-
 static const int salsa_keysz[] = {16, 32};
 
 static int salsa20_info(int op, void *p)
@@ -231,39 +229,6 @@ void drew::Salsa20Keystream::SetNonce(const uint8_t *iv, size_t sz)
 	state.buf[ 5] = (keysz == 16) ? 0x3120646e : 0x3320646e;
 	state.buf[10] = (keysz == 16) ? 0x79622d36 : 0x79622d32;
 	state.buf[15] = 0x6b206574;
-}
-
-inline void drew::Salsa20Keystream::DoQuarterRound(uint32_t &a, uint32_t &b,
-		uint32_t &c, uint32_t &d)
-{
-	b ^= RotateLeft(a + d,  7);
-	c ^= RotateLeft(b + a,  9);
-	d ^= RotateLeft(c + b, 13);
-	a ^= RotateLeft(d + c, 18);
-}
-
-
-inline void drew::Salsa20Keystream::DoRowRound(uint32_t *x)
-{
-	DoQuarterRound(x[ 0], x[ 1], x[ 2], x[ 3]);
-	DoQuarterRound(x[ 5], x[ 6], x[ 7], x[ 4]);
-	DoQuarterRound(x[10], x[11], x[ 8], x[ 9]);
-	DoQuarterRound(x[15], x[12], x[13], x[14]);
-}
-
-
-inline void drew::Salsa20Keystream::DoColumnRound(uint32_t *x)
-{
-	DoQuarterRound(x[ 0], x[ 4], x[ 8], x[12]);
-	DoQuarterRound(x[ 5], x[ 9], x[13], x[ 1]);
-	DoQuarterRound(x[10], x[14], x[ 2], x[ 6]);
-	DoQuarterRound(x[15], x[ 3], x[ 7], x[11]);
-}
-
-inline void drew::Salsa20Keystream::DoDoubleRound(uint32_t *x)
-{
-	DoColumnRound(x);
-	DoRowRound(x);
 }
 
 void drew::Salsa20Keystream::Reset()

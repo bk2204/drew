@@ -52,6 +52,8 @@ static int hmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
 	p->keybuf = malloc(p->blksz);
 	p->keybufsz = 0;
 	p->param = oparam;
+	p->outside.functbl->init(&p->outside, 0, p->ldr, p->param);
+	p->inside.functbl->init(&p->inside, 0, p->ldr, p->param);
 
 	if (flags & DREW_MAC_FIXED) {
 		memcpy(ctx->ctx, p, sizeof(*p));
@@ -118,8 +120,8 @@ static int hmac_setkey(drew_mac_t *ctxt, const uint8_t *data, size_t len)
 	}
 	memset(outpad+i, 0x5c, ctx->blksz - i);
 	memset(inpad+i, 0x36, ctx->blksz - i);
-	ctx->outside.functbl->init(&ctx->outside, 0, ctx->ldr, ctx->param);
-	ctx->inside.functbl->init(&ctx->inside, 0, ctx->ldr, ctx->param);
+	ctx->outside.functbl->reset(&ctx->outside);
+	ctx->inside.functbl->reset(&ctx->inside);
 	ctx->outside.functbl->update(&ctx->outside, outpad, ctx->blksz);
 	ctx->inside.functbl->update(&ctx->inside, inpad, ctx->blksz);
 

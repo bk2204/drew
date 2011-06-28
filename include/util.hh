@@ -2,10 +2,6 @@
 #define ENDIAN_HH
 
 #include <algorithm>
-#include <arpa/inet.h>
-#ifdef __GLIBC__
-#include <byteswap.h>
-#endif
 #include "util.h"
 
 #define DREW_BIG_ENDIAN		4321
@@ -58,11 +54,53 @@ inline bool IsSufficientlyAligned(const void *p)
 
 inline int GetSystemEndianness()
 {
-#if DREW_BYTE_ORDER == DREW_BIG_ENDIAN
-	return DREW_BIG_ENDIAN;
-#else
-	return DREW_LITTLE_ENDIAN;
-#endif
+	return DREW_BYTE_ORDER;
+}
+
+template<class T>
+inline bool IsPowerOf2(T x)
+{
+	return !(x & (x-1));
+}
+
+template<class T, class U>
+inline T RoundUpToPowerOf2(T x, U pow2)
+{
+	T m1 = pow2 - 1;
+	return (x + m1) & ~m1;
+}
+
+template<class T, class U>
+inline T RoundUpToMultiple(T x, U multiple)
+{
+	T t = x + (multiple - 1);
+	return t - (t % multiple);
+}
+
+template<class T, class U>
+inline T DivideAndRoundUp(T x, U div)
+{
+	T t = x + (div - 1);
+	return t / div;
+}
+
+// This function implements x ? y : z.
+template<class T>
+inline T TernarySelection(T x, T y, T z)
+{
+	return z ^ (x & (y ^ z));
+}
+
+template<class T>
+inline T TernaryMajority(T x, T y, T z)
+{
+	return (x & y) | (z & (x ^ y));
+}
+
+template<class T>
+inline T TernaryParity(T x, T y, T z)
+{
+	return x ^ y ^ z;
 }
 
 template<class T>
@@ -123,14 +161,19 @@ inline void XorAligned(T *outp, const T *inp, const T *xorp, size_t len)
 			reinterpret_cast<const uint8_t *>(xorp), len);
 }
 
+template<class T>
+inline void XorBuffers(T *outp, const T *inp, const T *xorp, size_t len)
+{
+	for (size_t i = 0; i < len / sizeof(T); i++)
+		outp[i] = inp[i] ^ xorp[i];
+}
+
 // This is like CopyAndXor, but we're always working with bufsz-sized chunks.
 template<class T>
 inline void CopyAndXorAligned(uint8_t *outp, const uint8_t *inp, size_t len,
 		uint8_t *mbufp, const size_t bufsz, T &obj)
 {
-	struct AlignedData {
-		uint8_t data[16] ALIGNED_T;
-	};
+	typedef AlignedBlock<uint8_t, 16> AlignedData;
 
 	AlignedData *mbuf = reinterpret_cast<AlignedData *>(mbufp);
 	for (size_t i = 0; i < len; i += bufsz) {
@@ -171,7 +214,8 @@ class EndianBase
 					dest[blk+j] = src[blk+(sz-j-1)];
 			}
 		}
-#ifdef __GLIBC__
+#if defined(FEATURE_BYTESWAP)
+		// Fallback only.
 		template<class T>
 		inline static void ByteSwap(T &x)
 		{
@@ -278,7 +322,7 @@ class Endian : public EndianBase
 			if (DREW_BYTE_ORDER == Endianness)
 				memcpy(&x, p, sizeof(x));
 			else {
-#if defined(__GLIBC__)
+#if defined(FEATURE_BYTESWAP)
 				memcpy(&x, p, sizeof(x));
 				ByteSwap(x);
 #else
@@ -294,7 +338,7 @@ class Endian : public EndianBase
 			if (DREW_BYTE_ORDER == Endianness)
 				memcpy(buf, &p, sizeof(p));
 			else {
-#if defined(__GLIBC__)
+#if defined(FEATURE_BYTESWAP)
 				ByteSwap(p);
 				memcpy(buf, &p, sizeof(p));
 #else
@@ -325,23 +369,44 @@ class Endian : public EndianBase
 		}
 };
 
-#ifdef __GLIBC__
+#ifdef FEATURE_BYTESWAP
 template<>
 inline void EndianBase::ByteSwap(uint16_t &x)
 {
-	x = bswap_16(x);
+	x = 
+#if defined(FEATURE_BYTESWAP_GNU)
+		bswap_16(x);
+#elif defined(FEATURE_BYTESWAP_BSD)
+		bswap16(x);
+#elif defined(FEATURE_BYTESWAP_OPENBSD)
+		swap16(x);
+#endif
 }
 
 template<>
 inline void EndianBase::ByteSwap(uint32_t &x)
 {
-	x = bswap_32(x);
+	x = 
+#if defined(FEATURE_BYTESWAP_GNU)
+		bswap_32(x);
+#elif defined(FEATURE_BYTESWAP_BSD)
+		bswap32(x);
+#elif defined(FEATURE_BYTESWAP_OPENBSD)
+		swap32(x);
+#endif
 }
 
 template<>
 inline void EndianBase::ByteSwap(uint64_t &x)
 {
-	x = bswap_64(x);
+	x = 
+#if defined(FEATURE_BYTESWAP_GNU)
+		bswap_64(x);
+#elif defined(FEATURE_BYTESWAP_BSD)
+		bswap64(x);
+#elif defined(FEATURE_BYTESWAP_OPENBSD)
+		swap64(x);
+#endif
 }
 #endif
 
@@ -424,6 +489,10 @@ inline void BigEndian::Convert(uint8_t *buf, uint16_t p)
 typedef BigEndian NativeEndian;
 #else
 typedef LittleEndian NativeEndian;
+#endif
+
+#if defined(__i386__) || defined(__x86_64__)
+#include "util-i386.hh"
 #endif
 
 #endif

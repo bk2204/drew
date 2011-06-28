@@ -16,3 +16,7 @@ util/*sum
 plugins/*
 gmon.out
 misc/devel
+*.pdf
+*.ps
+*.txml
+*.fo

@@ -10,9 +10,12 @@ PLUG_SRC		+= test/plugin-main.c
 PLUG_OBJ		:= ${SRC:.c=.o} ${PLUG_SRC:.c=.o}
 PLUG_EXE		:= test/plugin-main
 
-TEST_BINARIES	:= $(patsubst %,test/test-%,$(CATEGORIES))
-
 RM				?= rm
+RMDIR			?= rmdir
+
+INSTALL_PROG	?= install
+INSTALL_OPTS	:= $(shell [ `id -u` -eq 0 ] && printf -- "-o root -g root\n" || printf "\n")
+INSTALL			:= $(INSTALL_PROG) $(INSTALL_OPTS)
 
 ifdef PROF
 CLIKEFLAGS		+= -pg
@@ -52,8 +55,10 @@ include lib/libdrew/Makefile
 include lib/libdrew-util/Makefile
 include $(patsubst %,impl/%/Makefile,$(CATEGORIES))
 include lib/libdrew-impl/Makefile
+include test/Makefile
 include util/Makefile
 include libmd/Makefile
+include doc/manual/Makefile
 
 all: ${PLUG_EXE} ${DREW_SONAME} standard
 
@@ -81,9 +86,6 @@ ${PLUGINS}: %: %.so
 $(PLUGINS:=.so): %.so: %.o
 	${CXX} ${LIBCFLAGS} ${CXXFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
-test/test-%: test/test-%.o test/framework.o ${DREW_SONAME} ${DREW_IMPL_SONAME}
-	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
-
 plugins: ${PLUGINS}
 	[ -d plugins ] || mkdir plugins
 	for i in ${.ALLSRC}; do cp $$i.so plugins/`basename $$i .so`; done
@@ -97,9 +99,12 @@ clean:
 	${RM} -f ${TEST_BINARIES}
 	${RM} -f ${UTILITIES}
 	${RM} -fr ${PLUGINS} plugins/
+	${RM} -r install
 	find -name '*.o' | xargs -r rm
 	find -name '*.so' | xargs -r rm
 	find -name '*.so.*' | xargs -r rm
+	find -name '*.pdf' | xargs -r rm
+	find -name '*.fo' | xargs -r rm
 
 test: .PHONY
 
@@ -111,14 +116,14 @@ test-libmd: ${TEST_EXE}
 		grep -v 'bytes in' | diff -u libmd/test-results -
 
 test-scripts: $(TEST_BINARIES) plugins
-	for i in $(CATEGORIES); do \
+	set -e; for i in $(CATEGORIES); do \
 		find plugins -type f | sed -e 's,.*/,,g' | \
 		sort | grep -vE '.rdf$$' | \
 		xargs env LD_LIBRARY_PATH=. test/test-$$i -i; \
 		done
 
 testx-scripts: $(TEST_BINARIES) plugins
-	for i in $(CATEGORIES); do \
+	set -e; for i in $(CATEGORIES); do \
 		find plugins -type f | sed -e 's,.*/,,g' | \
 		sort | grep -vE '.rdf$$' | \
 		xargs env LD_LIBRARY_PATH=. test/test-$$i -t; \
@@ -130,3 +135,29 @@ speed-scripts: $(TEST_BINARIES) plugins
 		sort | grep -vE '.rdf$$' | \
 		xargs env LD_LIBRARY_PATH=. test/test-$$i -s; \
 		done
+
+install: .PHONY
+
+INSTDIR			:= $(CFG_INSTALL_DIR)
+
+install: all
+	$(INSTALL) -m 755 -d $(INSTDIR)/lib/drew/plugins
+	$(INSTALL) -m 755 -d $(INSTDIR)/include
+	for i in plugins/*; do $(INSTALL) -m 644 $$i $(INSTDIR)/lib/drew/plugins; done
+	$(INSTALL) -m 644 libdrew*.so.* $(INSTDIR)/lib
+	for i in include/*; do \
+		[ -f $$i ] || \
+			($(INSTALL) -m 755 -d $(INSTDIR)/$$i; \
+			$(INSTALL) -m 644 $$i $(INSTDIR)/include);\
+		done
+	$(INSTALL) -m 644 include/drew/* $(INSTDIR)/include/drew
+
+uninstall:
+	$(RM) $(INSTDIR)/lib/libdrew*.so.*
+	for i in plugins/*; do $(RM) $(INSTDIR)/lib/drew/$$i; done
+	for i in include/*; do \
+		[ -f $$i ] || \
+			($(RM) $(INSTDIR)/$$i/*.h; $(RMDIR) $(INSTDIR)/$$i); \
+		done
+	$(RMDIR) $(INSTDIR)/lib/drew/plugins || true
+	$(RMDIR) $(INSTDIR)/lib/drew || true

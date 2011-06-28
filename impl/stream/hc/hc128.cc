@@ -109,8 +109,6 @@ static int hc128_test(void *, const drew_loader_t *)
 	return res;
 }
 
-#define DIM(x) (sizeof(x)/sizeof(x[0]))
-
 static const int hc128_keysz[] = {16};
 
 static int hc128_info(int op, void *p)

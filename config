@@ -12,6 +12,7 @@ CFG_SHA1		= m
 CFG_SHA256		= m
 CFG_SHA512		= m
 CFG_TIGER		= m
+CFG_WHIRLPOOL	= m
 
 ## Block ciphers.
 # Note that the aes plugin implements Rijndael (the AES algorithm) with key
@@ -62,6 +63,7 @@ CFG_SP80090		= m
 
 ## Bignum implementations.
 CFG_TOMMATH		= m
+CFG_OPENSSLBN	= No, thanks.
 
 ## Public key encryption.
 CFG_RSAENC		= m
@@ -72,6 +74,14 @@ CFG_DSA			= m
 
 ## Additional libraries using libdrew.
 CFG_LIBMD		= y
+
+## Build options.
+# Use the DCT XSLT Stylesheets to build instead of the standard DocBook ones.
+CFG_DCT_XSLT	= n
+
+## Settings.
+CFG_SEARCH_PATH	= /lib/drew/plugins /usr/lib/drew/plugins /usr/local/lib/drew/plugins
+CFG_INSTALL_DIR	= ./install
 
 ## Global build configuration.
 CFG_THREAD_SAFE	= y

@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<article
+	xmlns="http://docbook.org/ns/docbook"
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:cc="http://creativecommons.org/ns#"
+	xmlns:xi="http://www.w3.org/2001/XInclude"
+	xml:lang="en"
+	xml:id="hash"
+	version="5.0">
+	<title>The Hash Interface</title>
+	<para>
+		The drew hash interface is designed to be simple and easy to use.  The
+		main object is the <type>drew_hash_t</type>.
+	</para>
+	<!--{{{ drew_hash_t -->
+	<classsynopsis language="C">
+		<ooclass>
+			<classname>drew_hash_t</classname>
+		</ooclass>
+		<fieldsynopsis>
+			<type>void *</type><varname>ctx</varname>
+		</fieldsynopsis>
+		<fieldsynopsis>
+			<modifier>const</modifier>
+			<type>drew_hash_functbl_t *</type><varname>functbl</varname>
+		</fieldsynopsis>
+		<fieldsynopsis>
+			<type>void *</type><varname>priv</varname>
+		</fieldsynopsis>
+	</classsynopsis><!--}}}-->
+	<!--{{{ info-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>info</function></funcdef>
+			<paramdef>int <parameter>op</parameter></paramdef>
+			<paramdef>void *<parameter>p</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function provides information about the algorithm in question.  The
+		type of information depends on the <parameter>op</parameter> parameter.
+	</para>
+	<para>
+		To determine the <acronym>ABI</acronym> version of the plugin, which
+		affects the layout of the function table, which entry points are
+		available, and the arguments and return values of those entry points,
+		use the <constant>DREW_HASH_VERSION</constant> operation with
+		<constant>NULL</constant> as <parameter>p</parameter>; the
+		<acronym>ABI</acronym> version will be returned.  It is guaranteed
+		that regardless of the <acronym>ABI</acronym>, this interface will be
+		present as the first function pointer in the table and that it will be
+		present with this prototype.
+	</para>
+	<para>
+		The following table indicates the valid values for
+		<parameter>op</parameter> and <parameter>p</parameter>, as well as the
+		expected return value.  If <parameter>p</parameter> is specified as
+		taking either <constant>NULL</constant> or a hash context,
+		<constant>NULL</constant> is acceptable unless the function returns
+		<constant>-DREW_ERR_MORE_INFO</constant>, in which case a hash context
+		is required.  This allows the implementation to support a wide variety
+		of values, such as with the digest size of SHA-512/t.
+	</para>
+	<table>
+		<title>drew Hash Info Operations</title>
+		<tgroup cols="3">
+			<thead>
+				<row>
+					<entry><parameter>op</parameter></entry>
+					<entry><parameter>p</parameter></entry>
+					<entry>Return Value</entry>
+				</row>
+			</thead>
+			<tbody>
+				<row>
+					<entry><constant>DREW_HASH_BLKSIZE</constant></entry>
+					<entry><constant>NULL</constant> or a pointer to a hash
+						context from this implementation</entry>
+					<entry>the number of bytes processed by each iteration of
+						this hash</entry>
+				</row>
+				<row>
+					<entry><constant>DREW_HASH_BUFSIZE</constant></entry>
+					<entry><constant>NULL</constant> or a pointer to a hash
+						context from this implementation</entry>
+					<entry>the size of the internal variables in bytes (usually
+						the same value as for
+						<constant>DREW_HASH_SIZE</constant>)</entry>
+				</row>
+				<row>
+					<entry><constant>DREW_HASH_ENDIAN</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry>4321 if the algorithm is big-endian, 1234 if the
+						algorithm is little-endian, and 0 if the algorithm is
+						completely endian-neutral (byte-oriented)</entry>
+				</row>
+				<row>
+					<entry><constant>DREW_HASH_INTSIZE</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry>the size of the implementation context</entry>
+				</row>
+				<row>
+					<entry><constant>DREW_HASH_QUANTUM</constant></entry>
+					<entry><constant>NULL</constant> or a pointer to a hash
+						context from this implementation</entry>
+					<entry>the number of bytes per quantum (4 for hashes using
+						32-bit integers and 8 for those using 64-bit
+						integers)</entry>
+				</row>
+				<row>
+					<entry><constant>DREW_HASH_SIZE</constant></entry>
+					<entry><constant>NULL</constant> or a pointer to a hash
+						context from this implementation</entry>
+					<entry>the digest length of this hash in bytes</entry>
+				</row>
+				<row>
+					<entry><constant>DREW_HASH_VERSION</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry>the current <acronym>ABI</acronym> version (currently
+						2)</entry>
+				</row>
+			</tbody>
+		</tgroup>
+	</table><!--}}}-->
+	<!--{{{ init-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>init</function></funcdef>
+			<paramdef>drew_hash_t *<parameter>ctx</parameter></paramdef>
+			<paramdef>int <parameter>flags</parameter></paramdef>
+			<paramdef>const drew_loader_t *<parameter>ldr</parameter></paramdef>
+			<paramdef>const drew_param_t *<parameter>param</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		To call <function>init</function>, the hash context must be in the
+		<constant>UNINITIALIZED</constant> state.  Upon successful completion,
+		the hash context will be in the <constant>ALIGNED</constant> state.
+		The function initializes the hash context <parameter>ctx</parameter>.
+		If the <parameter>flags</parameter> parameter contains the bit
+		<constant>DREW_HASH_FIXED</constant>, then the <varname>ctx</varname>
+		field of the <parameter>ctx</parameter> parameter is presumed to point
+		to a suitably-aligned allocation of memory of at least the value
+		returned by a call to the <function>info</function> function with
+		<parameter>op</parameter> set to <constant>DREW_HASH_INTSIZE</constant>.
+		Otherwise, memory will be allocated for the implementation context.
+	</para>
+	<para>
+		It is suggested that a valid loader context be passed as
+		<parameter>ldr</parameter>, so that an implementation may create its own
+		libdrew contexts if it needs them internally.  This is optional,
+		however; if no loader context is available, simply pass
+		<constant>NULL</constant>.  If it is non-<constant>NULL</constant>,
+		<parameter>param</parameter> should be a linked list of parameters.
+	</para><!--}}}-->
+	<!--{{{ clone-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>clone</function></funcdef>
+			<paramdef>drew_hash_t *<parameter>newctx</parameter></paramdef>
+			<paramdef>drew_hash_t *<parameter>ctx</parameter></paramdef>
+			<paramdef>int <parameter>flags</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		The <function>clone</function> may be called at any time.  It copies
+		the context specified in <parameter>ctx</parameter> (in any state other
+		than <constant>UNINITIALIZED</constant>) to a
+		new context in <parameter>newctx</parameter> that is currently in the
+		<constant>UNINITIALIZED</constant> state.  After a successful call, the
+		<parameter>newctx</parameter> will acquire a separate but otherwise
+		identical state from <parameter>ctx</parameter>.
+		The <parameter>flags</parameter> parameter has the same meaning as for
+		<function>init</function>.
+	</para><!--}}}-->
+	<!--{{{ reset-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>reset</function></funcdef>
+			<paramdef>drew_hash_t *<parameter>ctx</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		The <function>reset</function> function may be called in any state other
+		than <constant>UNINITIALIZED</constant>; after a successful call, the
+		hash context will be in the <constant>ALIGNED</constant> state.  The
+		result is as if the <function>fini</function> function were called,
+		followed by a call to the <function>init</function> function with the
+		same parameters as used in the original call.
+	</para><!--}}}-->
+	<!--{{{ fini-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>fini</function></funcdef>
+			<paramdef>drew_hash_t *<parameter>ctx</parameter></paramdef>
+			<paramdef>int <parameter>flags</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		The <function>fini</function> takes a context and frees any resources
+		used by it.  The context must be in a state other than
+		<constant>UNINITIALIZED</constant> when <function>fini</function> is
+		called; upon successful completion, the context will be in the
+		<constant>UNINITIALIZED</constant> state.  The
+		<varname>functbl</varname> field of the context is not modified.  If
+		<parameter>flags</parameter> contains the bit
+		<constant>DREW_HASH_FIXED</constant>, the <varname>ctx</varname> field
+		of the context is unmodified; otherwise, it is set to
+		<constant>NULL</constant>.
+	</para><!--}}}-->
+	<!--{{{ update-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>update</function></funcdef>
+			<paramdef>drew_hash_t *<parameter>ctx</parameter></paramdef>
+			<paramdef>const uint8_t *<parameter>data</parameter></paramdef>
+			<paramdef>size_t <parameter>len</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function adds data to the hash.  It may be called in the
+		<constant>ALIGNED</constant> or <constant>UNALIGNED</constant> and upon
+		successful completion leaves the hash context in the
+		<constant>UNALIGNED</constant> state.  The underlying implementation may
+		choose to buffer the data if needed, but if so, it will copy the data to
+		internal storage.
+	</para><!--}}}-->
+	<!--{{{ updatefast-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>updatefast</function></funcdef>
+			<paramdef>drew_hash_t *<parameter>ctx</parameter></paramdef>
+			<paramdef>const uint8_t *<parameter>data</parameter></paramdef>
+			<paramdef>size_t <parameter>len</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function adds data to the hash.  It may be called only in the
+		<constant>ALIGNED</constant> state; successful completion does not
+		change the state.  For efficiency reasons, the
+		<parameter>data</parameter> must be 16-byte aligned.  The length of the
+		data as given by <parameter>len</parameter> must be a multiple of 16 and
+		also a multiple of the block size, which can be determined using the
+		<constant>DREW_HASH_BLKSIZE</constant> operation on the
+		<function>info</function> function.
+		Except for potential performance
+		benefits and the corresponding restrictions,
+		<function>updatefast</function> is functionally equivalent to
+		<function>update</function>.
+	</para><!--}}}-->
+	<!--{{{ pad-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>pad</function></funcdef>
+			<paramdef>drew_hash_t *<parameter>ctx</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function pads the data as required by the hash function.  In
+		general, this function is never needed; the <function>final</function>
+		function will automatically pad the data correctly unless specifically
+		instructed otherwise.
+		Nevertheless, it is provided for compatibility reasons.  
+		Double-padding will produce incorrect results.
+	</para>
+	<para>
+		This function can be called in the <constant>ALIGNED</constant> or
+		<constant>UNALIGNED</constant> state and upon successful completion,
+		leaves the hash context in the <constant>PADDED</constant> state.
+	</para><!--}}}-->
+	<!--{{{ final-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>final</function></funcdef>
+			<paramdef>drew_hash_t *<parameter>ctx</parameter></paramdef>
+			<paramdef>uint8_t *<parameter>buf</parameter></paramdef>
+			<paramdef>int <parameter>flags</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function computes the final digest and stores it in the buffer
+		<parameter>buf</parameter>.  The buffer must be of at least the size
+		returned by the <constant>DREW_HASH_SIZE</constant> operation of the
+		<function>info</function> function.  If the bit
+		<constant>DREW_HASH_NO_PAD</constant> is set in flags, then no padding
+		is performed and the state must be <constant>PADDED</constant>;
+		otherwise, the appropriate padding is performed and the state must be
+		<constant>ALIGNED</constant> or <constant>UNALIGNED</constant>.  Upon
+		successful completion, the state will be <constant>FINISHED</constant>.
+	</para><!--}}}-->
+	<!--{{{ test-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>test</function></funcdef>
+			<paramdef>void *<parameter>p</parameter></paramdef>
+			<paramdef>const drew_loader_t *<parameter>ldr</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function may be called at any time because it does not require a
+		context parameter.  It performs a series of tests on the implementation
+		and returns 0 on success.  If one or more of the tests fail, the
+		appropriate bits will be set in the return value to indicate which test
+		failed.  Because some tests contain a large number of tests, each bit
+		may not correspond to exactly one test.
+	</para>
+	<para>
+		If the return value is negative, it represents an error code in the
+		standard format.
+	</para><!--}}}-->
+</article>
+<!-- vim: set ft=docbkxml: -->

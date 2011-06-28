@@ -77,6 +77,8 @@ int drew_loader_lookup_by_type(const drew_loader_t *ldr, int type, int start,
 		int end);
 int drew_loader_get_metadata(const drew_loader_t *ldr, int id, int item,
 		drew_metadata_t *meta);
+int drew_loader_get_search_path(const drew_loader_t *ldr, int num,
+		const char **p);
 
 #if defined(__cplusplus)
 }
