@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <netinet/in.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -224,6 +225,340 @@ int drew_util_asn1_parse_oid(drew_util_asn1_t asn,
 	
 	oid->length = cnt;
 	return 0;
+}
+
+typedef int (*check_func_t)(int);
+
+static int parse_byte_string(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, int tag, check_func_t func,
+		char **sp, size_t *slen)
+{
+	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, tag));
+
+	const char *p = (const char *)val->data;
+
+	for (size_t i = 0; i < val->length; i++, p++)
+		if (!func(*p))
+			return -EILSEQ;
+
+	char *s = malloc(len + 1);
+	if (!s)
+		return -ENOMEM;
+	// Using memcpy because the string is not NUL-terminated.
+	memcpy(s, val->data, val->length);
+	s[len] = 0;
+	*sp = s;
+	*slen = len;
+	return 0;
+}
+
+static inline int check_numericstring(int c)
+{
+	return (c >= '0' && c <= '9') || c == ' ';
+}
+
+static int parse_numericstring(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, char **sp, size_t *slen)
+{
+	return parse_byte_string(asn, val, 18, check_numericstring, sp, slen);
+}
+
+static inline int check_printablestring(int c)
+{
+	return (c >= '\'' && c <= ')') || (c >= '+' && c <= ':') ||
+		(c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '=' ||
+		c == '?' || c == ' ';
+}
+
+static int parse_printablestring(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, char **sp, size_t *slen)
+{
+	return parse_byte_string(asn, val, 19, check_printablestring, sp, slen);
+}
+
+static int parse_teletexstring(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, char **sp, size_t *slen)
+{
+	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 20));
+	return -DREW_ERR_NOT_IMPL;
+}
+
+static int parse_videotexstring(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, char **sp, size_t *slen)
+{
+	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 21));
+	return -DREW_ERR_NOT_IMPL;
+}
+
+static int parse_ia5string(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, char **sp, size_t *slen)
+{
+	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 22));
+	return -DREW_ERR_NOT_IMPL;
+}
+
+static int parse_graphicstring(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, char **sp, size_t *slen)
+{
+	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 25));
+	return -DREW_ERR_NOT_IMPL;
+}
+
+static int parse_visiblestring(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, char **sp, size_t *slen)
+{
+	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 26));
+	return -DREW_ERR_NOT_IMPL;
+}
+
+static int parse_generalstring(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, char **sp, size_t *slen)
+{
+	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 27));
+	return -DREW_ERR_NOT_IMPL;
+}
+
+static int parse_universalstring(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, wchar_t **sp, size_t *slen)
+{
+	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 28));
+
+	if (sizeof(wchar_t) != 4)
+		return -DREW_ERR_BUG;
+
+	size_t len;
+	uint8_t *p = val->data;
+	wchar_t *wcs;
+
+	// Surrogates are not allowed.
+	len = (val->length / 4);
+	wcs = malloc((len + 1) * sizeof(wchar_t));
+	if (!wcs)
+		return -ENOMEM;
+
+	for (size_t i = 0; i < len; i++, p += 2) {
+		uint32_t t;
+		memcpy(&t, p, 2);
+		t = ntohs(t);
+		if ((t >= 0xd800 && t <= 0xdfff) || t == 0xfffe || t > 0x10ffff) {
+			free(wcs);
+			return -EILSEQ;
+		}
+		wcs[i] = t;
+	}
+
+	wcs[len] = 0;
+	*sp = wcs;
+	*slen = len;
+	return 0;
+}
+
+static int parse_bmpstring(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, wchar_t **sp, size_t *slen)
+{
+	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 30));
+
+	size_t len;
+	uint8_t *p = val->data;
+	wchar_t *wcs;
+
+	// Surrogates are not allowed.
+	len = (val->length / 2);
+	wcs = malloc((len + 1) * sizeof(wchar_t));
+	if (!wcs)
+		return -ENOMEM;
+
+	for (size_t i = 0; i < len; i++, p += 2) {
+		uint16_t t;
+		memcpy(&t, p, 2);
+		t = ntohs(t);
+		if ((t >= 0xd800 && t <= 0xdfff) || t == 0xfffe) {
+			free(wcs);
+			return -EILSEQ;
+		}
+		wcs[i] = t;
+	}
+
+	wcs[len] = 0;
+	*sp = wcs;
+	*slen = len;
+	return 0;
+}
+
+static int parse_utf8string(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, uint8_t **sp, size_t *slen)
+{
+	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 12));
+	const uint8_t *p = data->val;
+	uint8_t prev = 0, *s;
+	wchar_t wc = 0;
+	int state = 0;
+
+	for (size_t i = 0; i < data->length; i++) {
+		if ((*p & 0xf1) == 0xf0) {
+			wc = *p++ & 0x07;
+			state = 3;
+		}
+		else if ((*p & 0xf0) == 0xe0) {
+			wc = *p++ & 0x0f;
+			state = 2;
+		}
+		else if ((*p & 0xe0) == 0xc0) {
+			wc = *p++ & 0x1f;
+			state = 1;
+		}
+		else if ((*p & 0xc0) == 0x80)
+			return -EILSEQ;
+		else if (*p & 0x80)
+			return -EILSEQ;
+		else {
+			wc = *p++;
+			state = 0;
+		}
+		if ((data->length - i) < (state + 1))
+			return -EILSEQ;
+		for (size_t j = 0; j < state; j++, i++, p++) {
+			wc <<= 6;
+			if ((*p & 0xc0) != 0x80)
+				return -EILSEQ;
+			wc |= *p & 0x3f;
+		}
+		if ((wc >= 0xd800 && wc <= 0xdfff) || wc != 0xfffe)
+			return -EILSEQ;
+		if (state > 2 && wc < 0x10000)
+			return -EILSEQ;
+		if (state > 1 && wc < 0x800)
+			return -EILSEQ;
+		if (state > 0 && wc < 0x80)
+			return -EILSEQ;
+	}
+
+	s = malloc(data->length + 1);
+	if (!s)
+		return -ENOMEM;
+	memcpy(s, data->val, data->length);
+	s[data->length] = 0;
+	*sp = s;
+	*slen = data->length;
+	return 0;
+}
+
+static int wchar_to_utf8(uint8_t **sp, size_t *slen, wchar_t *wcs, size_t wlen)
+{
+	size_t len = (wlen * 4) + 1;
+	uint8_t *s, *p;
+
+	if (!(p = s = malloc(len)))
+		return -ENOMEM;
+
+	for (size_t i = 0; i < wlen; i++) {
+		wchar_t c = wcs[i];
+		if (c > 0x10ffff || (c >= 0xd800 && c <= 0xdfff) || c == 0xfffe) {
+			free(s);
+			return -EILSEQ;
+		}
+		if (c < 0x80)
+			*p++ = c;
+		else if (wcs < 0x800) {
+			*p++ = 0xc0 | (c >> 6);
+			*p++ = 0x80 | (c & 0x3f);
+		}
+		else if (wcs < 0x10000) {
+			*p++ = 0xe0 | (c >> 12);
+			*p++ = 0x80 | ((c >> 6) & 0x3f);
+			*p++ = 0x80 | (c & 0x3f);
+		}
+		else {
+			*p++ = 0xf0 | (c >> 18);
+			*p++ = 0x80 | ((c >> 12) & 0x3f);
+			*p++ = 0x80 | ((c >> 6) & 0x3f);
+			*p++ = 0x80 | (c & 0x3f);
+		}
+	}
+	*p = 0;
+	*sp = s;
+	*slen = p - s;
+	free(wcs);
+	return 0;
+}
+
+/* This function parses the string, however it may be encoded internally, into
+ * a valid encoding of UTF-8 (or if the encoding is not valid, returns -EILSEQ).
+ * *sp is malloced and must be freed by the user.  *slen is the string length a
+ * la strlen(); the character at that index has value 0.
+ */
+int drew_util_asn1_parse_string_utf8(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, uint8_t **sp, size_t *slen)
+{
+	int res = 0;
+	wchar_t *wcs;
+	size_t wcsz;
+
+	switch (val->tag) {
+		case 12:
+			return parse_utf8string(asn, val, sp, slen);
+		case 28:
+		case 30:
+			if (val->tag == 28)
+				RETFAIL(parse_universalstring(asn, val, &wcs, &wcsz));
+			else
+				RETFAIL(parse_bmpstring(asn, val, &wcs, &wcsz));
+			return wchar_to_utf8(sp, slen, wcs, wcsz);
+		case 18:
+			return parse_numericstring(asn, val, (char **)sp, splen);
+		case 19:
+			return parse_printablstring(asn, val, (char **)sp, splen);
+		case 20:
+			return parse_teletexstring(asn, val, (char **)sp, splen);
+		case 21:
+			return parse_videotexstring(asn, val, (char **)sp, splen);
+		case 22:
+			return parse_ia5string(asn, val, (char **)sp, splen);
+		case 25:
+			return parse_graphicstring(asn, val, (char **)sp, splen);
+		case 26:
+			return parse_visiblestring(asn, val, (char **)sp, splen);
+		case 27:
+			return parse_generalstring(asn, val, (char **)sp, splen);
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
+/* This function works exactly like the UTF-8 version, except it converts the
+ * text to a native encoding of 32-bit wchar_ts.  If your wchar_t is not 32
+ * bits, your system is broken, and this will not work for you.
+ */
+int drew_util_asn1_parse_string_unicode(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, wchar_t **sp, size_t *slen)
+{
+	if (sizeof(wchar_t) != 4)
+		return -DREW_ERR_BUG;
+	return -DREW_ERR_NOT_IMPL;
+}
+
+int drew_util_asn1_parse_generalizedtime(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, struct tm *t)
+{
+	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 24));
+	return -DREW_ERR_NOT_IMPL;
+}
+
+int drew_util_asn1_parse_utctime(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, struct tm *t)
+{
+	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 23));
+	return -DREW_ERR_NOT_IMPL;
+}
+
+int drew_util_asn1_parse_time(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, struct tm *t)
+{
+	if (val->tag == 23)
+		return drew_util_asn1_parse_utctime(asn, val, t);
+	if (val->tag == 24)
+		return drew_util_asn1_parse_generalizedtime(asn, val, t);
+	return -DREW_ERR_INVALID;
 }
 
 int drew_util_asn1_parse_value(drew_util_asn1_t asn, const uint8_t *data,
