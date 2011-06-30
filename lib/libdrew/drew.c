@@ -135,7 +135,7 @@ static int load_library_info(drew_loader_t *ldr, library_t *lib)
 		goto out;
 
 	err = -ENOMEM;
-	p = realloc(ldr->plugin, sizeof(*p) * (ldr->nplugins + lib->nplugins));
+	p = realloc(ldr->plugin, sizeof(*p) * (ldr->nplugins + lib->nplugins + 1));
 	if (!p)
 		goto out;
 	ldr->nplugins += lib->nplugins;
