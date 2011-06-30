@@ -47,4 +47,43 @@ inline uint8_t EndianBase::GetArrayByte(const uint64_t *arr, size_t n)
 	return p[n];
 }
 
+#if defined(__GNUC__) && defined(__SSSE3__) && defined(VECTOR_T)
+template<>
+template<>
+inline uint8_t *Endian<DREW_BIG_ENDIAN>::Copy<uint32_t>(uint8_t *dest, const uint32_t *src, size_t len)
+{
+	typedef char vector_t __attribute__ ((vector_size (16)));
+	const vector_t perm = {0x03, 0x02, 0x01, 0x00, 0x07, 0x06, 0x05, 0x04, 0x0b, 0x0a, 0x09, 0x08, 0x0f, 0x0e, 0x0d, 0x0c};
+	if (!(len % 16)) {
+		for (size_t i = 0; i < len; i += 16) {
+			vector_t buf;
+			memcpy(&buf, src+(i/4), 16);
+			buf = __builtin_ia32_pshufb128(buf, perm);
+			memcpy(dest+i, &buf, 16);
+		}
+		return dest;
+	}
+	else
+		return CopyByConvert(dest, src, len);
+}
+template<>
+template<>
+inline uint32_t *Endian<DREW_BIG_ENDIAN>::Copy<uint32_t>(uint32_t *dest, const uint8_t *src, size_t len)
+{
+	typedef char vector_t __attribute__ ((vector_size (16)));
+	const vector_t perm = {0x03, 0x02, 0x01, 0x00, 0x07, 0x06, 0x05, 0x04, 0x0b, 0x0a, 0x09, 0x08, 0x0f, 0x0e, 0x0d, 0x0c};
+	if (!(len % 16)) {
+		for (size_t i = 0; i < len; i += 16) {
+			vector_t buf;
+			memcpy(&buf, src+i, 16);
+			buf = __builtin_ia32_pshufb128(buf, perm);
+			memcpy(dest+(i/4), &buf, 16);
+		}
+		return dest;
+	}
+	else
+		return CopyByConvert(dest, src, len);
+}
+#endif
+
 #endif
