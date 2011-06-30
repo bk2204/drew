@@ -87,6 +87,9 @@
  */
 #define VECTOR_T
 #define BRANCH_PREDICTION
+#if defined(__SIZEOF_INT128__) && __SIZEOF_INT128__ == 16
+#define FEATURE_128_BIT_INTEGERS
+#endif
 #endif
 
 #define STATIC_ASSERT(e) ((void)sizeof(char[1 - 2*!(e)]))
