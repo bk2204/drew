@@ -4,8 +4,8 @@
 #include <algorithm>
 #include "util.h"
 
-#define DREW_BIG_ENDIAN		4321
-#define DREW_LITTLE_ENDIAN	1234
+#define DREW_BIG_ENDIAN		4321U
+#define DREW_LITTLE_ENDIAN	1234U
 #if BYTE_ORDER == BIG_ENDIAN
 #define DREW_BYTE_ORDER		DREW_BIG_ENDIAN
 #else
