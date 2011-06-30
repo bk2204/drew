@@ -118,6 +118,32 @@ inline void xor_aligned(uint8_t *outp, const uint8_t *inp, const uint8_t *xorp, 
 	}
 }
 
+inline void xor_aligned2(uint8_t *outp, const uint8_t *xorp, size_t len)
+{
+	struct aligned_data {
+		uint8_t data[16] ALIGNED_T;
+	};
+
+	len /= 16;
+
+	struct aligned_data *out = (struct aligned_data *)outp;
+	const struct aligned_data *x = (struct aligned_data *)xorp;
+	for (size_t i = 0; i < len; i++, out++, x++) {
+#ifdef VECTOR_T
+		typedef int vector_t __attribute__ ((vector_size (16)));
+		vector_t buf, xbuf;
+		memcpy(&buf, out->data, 16);
+		memcpy(&xbuf, x->data, 16);
+		buf ^= xbuf;
+		memcpy(out->data, &buf, 16);
+#else
+		for (size_t j = 0; j < 16; j++) {
+			out->data[j] ^= x->data[j];
+		}
+#endif
+	}
+}
+
 #ifdef BRANCH_PREDICTION
 #define likely(x)	__builtin_expect(!!(x), 1)
 #define unlikely(x)	__builtin_expect(!!(x), 0)

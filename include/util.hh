@@ -168,10 +168,24 @@ inline void XorAligned(T *outp, const T *inp, const T *xorp, size_t len)
 }
 
 template<class T>
+inline void XorAligned(T *outp, const T *xorp, size_t len)
+{
+	return xor_aligned2(reinterpret_cast<uint8_t *>(outp),
+			reinterpret_cast<const uint8_t *>(xorp), len);
+}
+
+template<class T>
 inline void XorBuffers(T *outp, const T *inp, const T *xorp, size_t len)
 {
 	for (size_t i = 0; i < len / sizeof(T); i++)
 		outp[i] = inp[i] ^ xorp[i];
+}
+
+template<class T>
+inline void XorBuffers(T *outp, const T *xorp, size_t len)
+{
+	for (size_t i = 0; i < len / sizeof(T); i++)
+		outp[i] ^= xorp[i];
 }
 
 // This is like CopyAndXor, but we're always working with bufsz-sized chunks.
