@@ -2,19 +2,56 @@
 #include "aria.hh"
 
 extern "C" {
+#if defined(FEATURE_128_BIT_INTEGERS)
+	PLUGIN_STRUCTURE(aria, ARIA128)
+#endif
+	PLUGIN_DATA_START()
+#if defined(FEATURE_128_BIT_INTEGERS)
+	PLUGIN_DATA(aria, "ARIA")
+#endif
+	PLUGIN_DATA_END()
+
+#if defined(FEATURE_128_BIT_INTEGERS)
 static int ariatest(void *, const drew_loader_t *)
 {
 	using namespace drew;
 	return test<ARIA128>(NULL, NULL);
 }
+#endif
 
-	PLUGIN_STRUCTURE(aria, ARIA128)
-	PLUGIN_DATA_START()
-	PLUGIN_DATA(aria, "ARIA")
-	PLUGIN_DATA_END()
-	PLUGIN_INTERFACE(aria128)
+int DREW_PLUGIN_NAME(aria128)(void *ldr, int op, int id, void *p) 
+{ 
+	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]); 
+	if (id < 0 || id >= nplugins) {
+		if (!id && !nplugins && op == DREW_LOADER_GET_NPLUGINS)
+			return 0;
+		else
+			return -DREW_ERR_INVALID;
+	}
+	switch (op) { 
+		case DREW_LOADER_LOOKUP_NAME: 
+			return 0; 
+		case DREW_LOADER_GET_NPLUGINS: 
+			return nplugins; 
+		case DREW_LOADER_GET_TYPE: 
+			return DREW_TYPE_BLOCK; 
+		case DREW_LOADER_GET_FUNCTBL_SIZE: 
+			return sizeof(drew_block_functbl_t); 
+		case DREW_LOADER_GET_FUNCTBL: 
+			memcpy(p, plugin_data[id].functbl, sizeof(drew_block_functbl_t)); 
+			return 0; 
+		case DREW_LOADER_GET_NAME_SIZE: 
+			return strlen(plugin_data[id].name) + 1; 
+		case DREW_LOADER_GET_NAME: 
+			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1); 
+			return 0; 
+		default: 
+			return -DREW_ERR_INVALID; 
+	} 
+}
 }
 
+#if defined(FEATURE_128_BIT_INTEGERS)
 typedef drew::ARIA128::endian_t E;
 
 drew::ARIA128::uint128_t drew::ARIA128::fo128(uint128_t a, uint128_t b) const
@@ -114,3 +151,4 @@ int drew::ARIA128::SetKey(const uint8_t *key, size_t len)
 
 	return 0;
 }
+#endif

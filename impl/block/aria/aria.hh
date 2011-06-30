@@ -132,7 +132,7 @@ class ARIA : public BlockCipher<16>
 
 };
 
-#if defined(ARIA_128)
+#if defined(ARIA_128) && defined(FEATURE_128_BIT_INTEGERS)
 // This will only work on targets where 128-bit quantities exist.
 class ARIA128 : public ARIA
 {
