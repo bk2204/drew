@@ -690,7 +690,7 @@ int drew_util_asn1_parse_time(drew_util_asn1_t asn,
 	return -DREW_ERR_INVALID;
 }
 
-int drew_util_asn1_parse_value(drew_util_asn1_t asn, const uint8_t *data,
+int drew_util_asn1_parse(drew_util_asn1_t asn, const uint8_t *data,
 		size_t len, drew_util_asn1_value_t *enc)
 {
 	size_t off = 1;
