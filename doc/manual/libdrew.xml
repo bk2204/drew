@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<article
+	xmlns="http://docbook.org/ns/docbook"
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:cc="http://creativecommons.org/ns#"
+	xmlns:xi="http://www.w3.org/2001/XInclude"
+	xml:lang="en"
+	xml:id="libdrew"
+	version="5.0">
+	<title>The Plugin Loader Interface</title>
+	<para>
+		All of the functionality of Drew is available through the plugin loader,
+		libdrew.  The plugin loader finds and loads plugins and makes them
+		available for querying and further use.  All the plugin loader
+		interfaces begin with <literal>drew_loader</literal>.
+	</para>
+	<para>
+		Each of the interfaces operates in a similar way.  Each returns an
+		<type>int</type> whose value is zero or positive on success or negative
+		if it fails.  Negative values whose absolute value is less than 65536
+		are system error codes (those that can be used with
+		<varname>errno</varname>); those that are larger are error codes defined
+		by libdrew itself.  Each function (with the exception of the new and
+		free functions) takes as its first argument a possibly const-qualified
+		pointer to <type>drew_loader_t</type>.
+	</para>
+	<para>
+		The <type>drew_loader_t</type> type is opaque and incomplete; only
+		pointers to it can be defined.  Multiple threads may use a loader
+		context if all uses are const.  Otherwise, the context must be protected
+		by a mutex.  This is not a major restriction since only creating or
+		destroying a context or loading a plugin requires a non-const context.
+	</para>
+	<!--{{{ drew_loader_new-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>drew_loader_new</function></funcdef>
+			<paramdef>drew_loader_t **<parameter>ldr</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function creates a new loader context and places it in
+		<literal>*ldr</literal>.
+	</para><!--}}}-->
+	<!--{{{ drew_loader_get_algo_name-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>drew_loader_get_algo_name</function></funcdef>
+			<paramdef>const drew_loader_t *<parameter>ldr</parameter></paramdef>
+			<paramdef>int <parameter>id</parameter></paramdef>
+			<paramdef>const char **<parameter>namep</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function retrieves the name of the plugin with ID
+		<parameter>id</parameter> and places it in <literal>*namep</literal>.
+		The string is internal to the loader and must not be freed; if a copy is
+		needed, <literal>*namep</literal> should be passed to
+		<function>strdup</function>.
+	</para><!--}}}-->
+	<!--{{{ drew_loader_get_functbl-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>drew_loader_get_functbl</function></funcdef>
+			<paramdef>const drew_loader_t *<parameter>ldr</parameter></paramdef>
+			<paramdef>int <parameter>id</parameter></paramdef>
+			<paramdef>const void **<parameter>tbl</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function retrieves the function table of the plugin with ID
+		<parameter>id</parameter> and places it in <literal>*tbl</literal>.  The
+		value should be cast to a function table of the appropriate type (e.g.
+		<type>drew_hash_functbl_t *</type>.
+		The memory occupied by the function table is internal to the loader and
+		must not be freed.
+	</para><!--}}}-->
+	<!--{{{ drew_loader_get_metadata-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>drew_loader_get_metadata</function></funcdef>
+			<paramdef>const drew_loader_t *<parameter>ldr</parameter></paramdef>
+			<paramdef>int <parameter>id</parameter></paramdef>
+			<paramdef>int <parameter>item</parameter></paramdef>
+			<paramdef>drew_metadata_t *<parameter>meta</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+	</para><!--}}}-->
+	<!--{{{ drew_loader_get_nplugins-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>drew_loader_get_nplugins</function></funcdef>
+			<paramdef>const drew_loader_t *<parameter>ldr</parameter></paramdef>
+			<paramdef>int <parameter>id</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function retrieves the number of plugins in the library with
+		containing the plugin with ID <parameter>id</parameter> and returns it.
+		Alternatively, and more usefully, if <parameter>id</parameter> is -1,
+		returns the number of plugins loaded by this loader.
+	</para><!--}}}-->
+	<!--{{{ drew_loader_get_search_path-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>drew_loader_get_nplugins</function></funcdef>
+			<paramdef>const drew_loader_t *<parameter>ldr</parameter></paramdef>
+			<paramdef>int <parameter>num</parameter></paramdef>
+			<paramdef>const char **<parameter>pathp</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function provides access to the paths that the plugin loader uses
+		to find plugins; these have been provided by the configuration used at
+		compile time.  <parameter>num</parameter> is the 0-based index into the
+		list of paths; earlier entries (those with lower indices) are searched
+		first.  If <parameter>pathp</parameter> is not <literal>NULL</literal>,
+		the function places the string in <literal>*pathp</literal>.  The string
+		is internal to the loader and must not be freed.  Unless an error
+		occurs, the function returns the number of paths in the list.
+	</para><!--}}}-->
+	<!--{{{ drew_loader_get_type-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>drew_loader_get_type</function></funcdef>
+			<paramdef>const drew_loader_t *<parameter>ldr</parameter></paramdef>
+			<paramdef>int <parameter>id</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function returns the type code for the plugin with ID
+		<parameter>id</parameter>.  This value can be compared with constants
+		such as <literal>DREW_TYPE_HASH</literal> to determine what type of
+		plugin it is.
+	</para><!--}}}-->
+	<!--{{{ drew_loader_free-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>drew_loader_free</function></funcdef>
+			<paramdef>drew_loader_t **<parameter>ldr</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function frees the loader context in <literal>*ldr</literal> and
+		frees all resources associated with it.  Any libraries that were opened
+		in the process of loading plugins are closed.
+	</para><!--}}}-->
+	<!--{{{ drew_loader_load_plugin-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>drew_loader_load_plugin</function></funcdef>
+			<paramdef>drew_loader_t *<parameter>ldr</parameter></paramdef>
+			<paramdef>const char *<parameter>plugin</parameter></paramdef>
+			<paramdef>const char *<parameter>path</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function loads a plugin.  It can be called three different ways.
+	</para>
+	<para>
+		If the function is called with <parameter>plugin</parameter> and
+		<parameter>path</parameter> both <literal>NULL</literal>, it looks in
+		the current process image (and any globally accessible shared libraries,
+		such as libdrew-impl, if it is linked in).  If neither
+		<parameter>plugin</parameter> nor <parameter>path</parameter> is
+		<literal>NULL</literal>, <parameter>path</parameter> is assumed to be a
+		directory and <parameter>plugin</parameter> is a shared library loaded
+		from that directory.
+	</para>
+	<para>Finally, if <parameter>plugin</parameter> is
+		non-<literal>NULL</literal> but <parameter>path</parameter> is
+		<literal>NULL</literal>, a plugin named <parameter>plugin</parameter> is
+		searched for, in order, in each of the paths accessible from
+		<function>drew_loader_get_search_path</function>.  As soon as a lookup
+		succeeds, the function returns; subsequent paths are not checked.
+	</para><!--}}}-->
+	<!--{{{ drew_loader_lookup_by_name-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>drew_loader_lookup_by_name</function></funcdef>
+			<paramdef>const drew_loader_t *<parameter>ldr</parameter></paramdef>
+			<paramdef>const char *<parameter>name</parameter></paramdef>
+			<paramdef>int <parameter>start</parameter></paramdef>
+			<paramdef>int <parameter>end</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This functions looks for an implementation with name
+		<parameter>name</parameter> within the range of IDs specified by
+		[<parameter>start</parameter>,<parameter>end</parameter>); if one is
+		found, it returns the ID; otherwise, it signals an error.  If
+		<parameter>end</parameter> is -1, it is treated as if it were one more
+		than the largest ID; that is, equivalent to the return value from
+		<function>drew_loader_get_nplugins</function> with
+		<parameter>id</parameter> as -1.
+	</para><!--}}}-->
+	<!--{{{ drew_loader_lookup_by_type-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>drew_loader_lookup_by_type</function></funcdef>
+			<paramdef>const drew_loader_t *<parameter>ldr</parameter></paramdef>
+			<paramdef>int <parameter>type</parameter></paramdef>
+			<paramdef>int <parameter>start</parameter></paramdef>
+			<paramdef>int <parameter>end</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This functions looks for an implementation with type
+		<parameter>type</parameter> within the range of IDs specified by
+		[<parameter>start</parameter>,<parameter>end</parameter>); if one is
+		found, it returns the ID; otherwise, it signals an error.  If
+		<parameter>end</parameter> is -1, it is treated as if it were one more
+		than the largest ID; that is, equivalent to the return value from
+		<function>drew_loader_get_nplugins</function> with
+		<parameter>id</parameter> as -1.
+	</para><!--}}}-->
+</article>
+<!-- vim: set ft=docbkxml: -->
