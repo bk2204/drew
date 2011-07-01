@@ -543,18 +543,133 @@ int drew_util_asn1_parse_string_unicode(drew_util_asn1_t asn,
 	return -DREW_ERR_NOT_IMPL;
 }
 
+static inline int is_valid_time(struct tm *t)
+{
+	int max;
+	int year = t->tm_year + 1900;
+	switch (t->tm_mon) {
+		case 2:
+			max = (year % 4) ? 28 : ((year % 100) ? 29 :
+					((year % 400) ? 28 : 29));
+			break;
+		case 1:
+		case 3:
+		case 5:
+		case 7:
+		case 8:
+		case 10:
+		case 12:
+			max = 31;
+			break;
+		case 4:
+		case 6:
+		case 9:
+		case 11:
+			max = 30;
+			break;
+		default:
+			return 0;
+	}
+	if (t->tm_mday < 1 || t->tm_mday > max)
+		return 0;
+	/* DER does not allow midnight to be represented as hour 24; it must be hour
+	 * 0.
+	 */
+	if (t->tm_hour < 0 || t->tm_hour > 23)
+		return 0;
+	if (t->tm_min < 0 || t->tm_min > 59)
+		return 0;
+	// Allow leap seconds.
+	if (t->tm_sec < 0 || t->tm_sec > 60)
+		return 0;
+	return 1;
+}
+
+static inline int parse_time_int(int *res, const uint8_t *p, int start, int end)
+{
+	for (int i = start; i < end; i++) {
+		if (val->data[i] > '9' || val->data[i] < '0')
+			return -DREW_ERR_INVALID;
+		*res *= 10;
+		*res += val->data[i] - '0';
+	}
+	return 0;
+}
+
+static int parse_time(drew_util_asn1_t asn, const uint8_t *data, size_t len,
+		struct tm *t, int *secoff, int yeardig, bool fracsecs)
+{
+	const int datedig = yeardig + 4;
+	const int timedig = 6;
+	const int reprdig = datedig + timedig;
+
+	/* If the length is too short or if the length can only encode an invalid
+	 * representation (with a terminating decimal point, which is forbidden in
+	 * DER).
+	 */
+	if (len < (reprdig + 1) || len == (reprdig + 1 + 1))
+		return -DREW_ERR_INVALID;
+
+	/* If it's not UTC or if there's a fractional number of seconds ending in a
+	 * trailing zero.
+	 */
+	if ((data[len-1] != 'Z') ||
+			(fracsecs && (len > (reprdig + 2 + 1) && data[len-2] == '0')) ||
+			(!fracsecs && (len != reprdig + 1)))
+		return -DREW_ERR_INVALID;
+
+	// Seconds off of UTC.
+	*secoff = 0;
+
+	memset(t, 0, sizeof(*t));
+	if (parse_time_int(&t->tm_year, val->data, 0, yeardig))
+		return -DREW_ERR_INVALID;
+	if (parse_time_int(&t->tm_mon, val->data, yeardig, yeardig + 2))
+		return -DREW_ERR_INVALID;
+	if (parse_time_int(&t->tm_mday, val->data, yeardig + 2, yeardig + 4))
+		return -DREW_ERR_INVALID;
+	if (parse_time_int(&t->tm_hour, val->data, yeardig + 4, yeardig + 6))
+		return -DREW_ERR_INVALID;
+	if (parse_time_int(&t->tm_min, val->data, yeardig + 6, yeardig + 8))
+		return -DREW_ERR_INVALID;
+	if (parse_time_int(&t->tm_sec, val->data, yeardig + 8, yeardig + 10))
+		return -DREW_ERR_INVALID;
+
+	return 0;
+}
+
 int drew_util_asn1_parse_generalizedtime(drew_util_asn1_t asn,
-		const drew_util_asn1_value_t *val, struct tm *t)
+		const drew_util_asn1_value_t *val, struct tm *t, int *secoff)
 {
 	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 24));
-	return -DREW_ERR_NOT_IMPL;
+
+	if (parse_time(asn, val->data, val->length, t, secoff, 4, true))
+		return -DREW_ERR_INVALID;
+	if (val->data[14] != '.' && val->data[14] != 'Z')
+		return -DREW_ERR_INVALID;
+	for (int i = 15; i < val->length; i++) {
+		if (!(val->data[i] == 'Z' && i == val->length - 1) &&
+				!(val >= '0' && val <= '9'))
+			return -DREW_ERR_INVALID;
+	}
+	t->tm_year -= 1900;
+
+	return is_valid_time(t) ? 0 : -DREW_ERR_INVALID;
 }
 
 int drew_util_asn1_parse_utctime(drew_util_asn1_t asn,
 		const drew_util_asn1_value_t *val, struct tm *t)
 {
 	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 23));
-	return -DREW_ERR_NOT_IMPL;
+
+	if (parse_time(asn, val->data, val->length, t, secoff, 2, true))
+		return -DREW_ERR_INVALID;
+	if (val->data[14] != 'Z')
+		return -DREW_ERR_INVALID;
+	// This interpretation is from RFC 5280.
+	t->tm_year += (t->tm_year >= 50) ? 0 : 100;
+
+	return is_valid_time(t) ? 0 : -DREW_ERR_INVALID;
 }
 
 int drew_util_asn1_parse_time(drew_util_asn1_t asn,
