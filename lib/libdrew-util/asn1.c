@@ -745,3 +745,40 @@ int drew_util_asn1_parse(drew_util_asn1_t asn, const uint8_t *data,
 		enc->data = data + off;
 	return off + enc->length;
 }
+
+int drew_util_asn1_parse_sequence(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, drew_util_asn1_value_t **encp,
+		size_t *nencp)
+{
+	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, true, 10));
+
+	int chunksz = 4; // must be power of 2.
+	size_t nenc = 0, off = 0;
+	drew_util_asn1_value_t *p = NULL, *q;
+	int res = 0;
+
+	while (off < val->length) {
+		if (!(nenc & (chunksz - 1))) {
+			if (!(q = realloc(p, sizeof(*p) * chunksz))) {
+				free(p);
+				return -ENOMEM;
+			}
+			p = q;
+		}
+		res = drew_util_asn1_parse(asn, val->data+off, val->length-off,
+				&p[nenc]);
+		if (res < 0) {
+			if (asn->flags & DREW_UTIL_ASN1_CLONE_DATA)
+				for (size_t i = 0; i < nenc; i++)
+					free((void *)p[i].data);
+			free(p);
+			return res;
+		}
+		off += res;
+		nenc++;
+	}
+	*encp = p;
+	*nencp = nenc;
+
+	return 0;
+}
