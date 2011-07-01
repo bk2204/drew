@@ -1,9 +1,12 @@
+#include "internal.h"
+
 #include <errno.h>
 #include <netinet/in.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include <drew/drew.h>
 #include <drew-util/asn1.h>
@@ -247,14 +250,14 @@ static int parse_byte_string(drew_util_asn1_t asn,
 		if (!func(*p))
 			return -EILSEQ;
 
-	char *s = malloc(len + 1);
+	char *s = malloc(val->length + 1);
 	if (!s)
 		return -ENOMEM;
 	// Using memcpy because the string is not NUL-terminated.
 	memcpy(s, val->data, val->length);
-	s[len] = 0;
+	s[val->length] = 0;
 	*sp = s;
-	*slen = len;
+	*slen = val->length;
 	return 0;
 }
 
@@ -333,7 +336,7 @@ static int parse_universalstring(drew_util_asn1_t asn,
 		return -DREW_ERR_BUG;
 
 	size_t len;
-	uint8_t *p = val->data;
+	const uint8_t *p = val->data;
 	wchar_t *wcs;
 
 	// Surrogates are not allowed.
@@ -365,7 +368,7 @@ static int parse_bmpstring(drew_util_asn1_t asn,
 	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 30));
 
 	size_t len;
-	uint8_t *p = val->data;
+	const uint8_t *p = val->data;
 	wchar_t *wcs;
 
 	// Surrogates are not allowed.
@@ -395,12 +398,12 @@ static int parse_utf8string(drew_util_asn1_t asn,
 		const drew_util_asn1_value_t *val, uint8_t **sp, size_t *slen)
 {
 	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 12));
-	const uint8_t *p = data->val;
-	uint8_t prev = 0, *s;
+	const uint8_t *p = val->data;
+	uint8_t *s;
 	wchar_t wc = 0;
 	int state = 0;
 
-	for (size_t i = 0; i < data->length; i++) {
+	for (size_t i = 0; i < val->length; i++) {
 		if ((*p & 0xf1) == 0xf0) {
 			wc = *p++ & 0x07;
 			state = 3;
@@ -421,7 +424,7 @@ static int parse_utf8string(drew_util_asn1_t asn,
 			wc = *p++;
 			state = 0;
 		}
-		if ((data->length - i) < (state + 1))
+		if ((val->length - i) < (state + 1))
 			return -EILSEQ;
 		for (size_t j = 0; j < state; j++, i++, p++) {
 			wc <<= 6;
@@ -439,13 +442,13 @@ static int parse_utf8string(drew_util_asn1_t asn,
 			return -EILSEQ;
 	}
 
-	s = malloc(data->length + 1);
+	s = malloc(val->length + 1);
 	if (!s)
 		return -ENOMEM;
-	memcpy(s, data->val, data->length);
-	s[data->length] = 0;
+	memcpy(s, val->data, val->length);
+	s[val->length] = 0;
 	*sp = s;
-	*slen = data->length;
+	*slen = val->length;
 	return 0;
 }
 
@@ -465,11 +468,11 @@ static int wchar_to_utf8(uint8_t **sp, size_t *slen, wchar_t *wcs, size_t wlen)
 		}
 		if (c < 0x80)
 			*p++ = c;
-		else if (wcs < 0x800) {
+		else if (c < 0x800) {
 			*p++ = 0xc0 | (c >> 6);
 			*p++ = 0x80 | (c & 0x3f);
 		}
-		else if (wcs < 0x10000) {
+		else if (c < 0x10000) {
 			*p++ = 0xe0 | (c >> 12);
 			*p++ = 0x80 | ((c >> 6) & 0x3f);
 			*p++ = 0x80 | (c & 0x3f);
@@ -496,7 +499,6 @@ static int wchar_to_utf8(uint8_t **sp, size_t *slen, wchar_t *wcs, size_t wlen)
 int drew_util_asn1_parse_string_utf8(drew_util_asn1_t asn,
 		const drew_util_asn1_value_t *val, uint8_t **sp, size_t *slen)
 {
-	int res = 0;
 	wchar_t *wcs;
 	size_t wcsz;
 
@@ -511,21 +513,21 @@ int drew_util_asn1_parse_string_utf8(drew_util_asn1_t asn,
 				RETFAIL(parse_bmpstring(asn, val, &wcs, &wcsz));
 			return wchar_to_utf8(sp, slen, wcs, wcsz);
 		case 18:
-			return parse_numericstring(asn, val, (char **)sp, splen);
+			return parse_numericstring(asn, val, (char **)sp, slen);
 		case 19:
-			return parse_printablstring(asn, val, (char **)sp, splen);
+			return parse_printablestring(asn, val, (char **)sp, slen);
 		case 20:
-			return parse_teletexstring(asn, val, (char **)sp, splen);
+			return parse_teletexstring(asn, val, (char **)sp, slen);
 		case 21:
-			return parse_videotexstring(asn, val, (char **)sp, splen);
+			return parse_videotexstring(asn, val, (char **)sp, slen);
 		case 22:
-			return parse_ia5string(asn, val, (char **)sp, splen);
+			return parse_ia5string(asn, val, (char **)sp, slen);
 		case 25:
-			return parse_graphicstring(asn, val, (char **)sp, splen);
+			return parse_graphicstring(asn, val, (char **)sp, slen);
 		case 26:
-			return parse_visiblestring(asn, val, (char **)sp, splen);
+			return parse_visiblestring(asn, val, (char **)sp, slen);
 		case 27:
-			return parse_generalstring(asn, val, (char **)sp, splen);
+			return parse_generalstring(asn, val, (char **)sp, slen);
 		default:
 			return -DREW_ERR_INVALID;
 	}
@@ -588,10 +590,10 @@ static inline int is_valid_time(struct tm *t)
 static inline int parse_time_int(int *res, const uint8_t *p, int start, int end)
 {
 	for (int i = start; i < end; i++) {
-		if (val->data[i] > '9' || val->data[i] < '0')
+		if (p[i] > '9' || p[i] < '0')
 			return -DREW_ERR_INVALID;
 		*res *= 10;
-		*res += val->data[i] - '0';
+		*res += p[i] - '0';
 	}
 	return 0;
 }
@@ -622,17 +624,17 @@ static int parse_time(drew_util_asn1_t asn, const uint8_t *data, size_t len,
 	*secoff = 0;
 
 	memset(t, 0, sizeof(*t));
-	if (parse_time_int(&t->tm_year, val->data, 0, yeardig))
+	if (parse_time_int(&t->tm_year, data, 0, yeardig))
 		return -DREW_ERR_INVALID;
-	if (parse_time_int(&t->tm_mon, val->data, yeardig, yeardig + 2))
+	if (parse_time_int(&t->tm_mon, data, yeardig, yeardig + 2))
 		return -DREW_ERR_INVALID;
-	if (parse_time_int(&t->tm_mday, val->data, yeardig + 2, yeardig + 4))
+	if (parse_time_int(&t->tm_mday, data, yeardig + 2, yeardig + 4))
 		return -DREW_ERR_INVALID;
-	if (parse_time_int(&t->tm_hour, val->data, yeardig + 4, yeardig + 6))
+	if (parse_time_int(&t->tm_hour, data, yeardig + 4, yeardig + 6))
 		return -DREW_ERR_INVALID;
-	if (parse_time_int(&t->tm_min, val->data, yeardig + 6, yeardig + 8))
+	if (parse_time_int(&t->tm_min, data, yeardig + 6, yeardig + 8))
 		return -DREW_ERR_INVALID;
-	if (parse_time_int(&t->tm_sec, val->data, yeardig + 8, yeardig + 10))
+	if (parse_time_int(&t->tm_sec, data, yeardig + 8, yeardig + 10))
 		return -DREW_ERR_INVALID;
 
 	return 0;
@@ -649,7 +651,7 @@ int drew_util_asn1_parse_generalizedtime(drew_util_asn1_t asn,
 		return -DREW_ERR_INVALID;
 	for (int i = 15; i < val->length; i++) {
 		if (!(val->data[i] == 'Z' && i == val->length - 1) &&
-				!(val >= '0' && val <= '9'))
+				!(val->data[i] >= '0' && val->data[i] <= '9'))
 			return -DREW_ERR_INVALID;
 	}
 	t->tm_year -= 1900;
@@ -658,7 +660,7 @@ int drew_util_asn1_parse_generalizedtime(drew_util_asn1_t asn,
 }
 
 int drew_util_asn1_parse_utctime(drew_util_asn1_t asn,
-		const drew_util_asn1_value_t *val, struct tm *t)
+		const drew_util_asn1_value_t *val, struct tm *t, int *secoff)
 {
 	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 23));
 
@@ -673,12 +675,12 @@ int drew_util_asn1_parse_utctime(drew_util_asn1_t asn,
 }
 
 int drew_util_asn1_parse_time(drew_util_asn1_t asn,
-		const drew_util_asn1_value_t *val, struct tm *t)
+		const drew_util_asn1_value_t *val, struct tm *t, int *secoff)
 {
 	if (val->tag == 23)
-		return drew_util_asn1_parse_utctime(asn, val, t);
+		return drew_util_asn1_parse_utctime(asn, val, t, secoff);
 	if (val->tag == 24)
-		return drew_util_asn1_parse_generalizedtime(asn, val, t);
+		return drew_util_asn1_parse_generalizedtime(asn, val, t, secoff);
 	return -DREW_ERR_INVALID;
 }
 
