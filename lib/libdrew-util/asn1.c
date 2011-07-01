@@ -86,9 +86,12 @@ int drew_util_asn1_parse_boolean(drew_util_asn1_t asn,
 int drew_util_asn1_parse_small_integer(drew_util_asn1_t asn,
 		const drew_util_asn1_value_t *val, ssize_t *i)
 {
+	int res = 0;
 	ssize_t value = 0;
 
-	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 2));
+	res = validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 2);
+	if (res)
+		RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 10));
 
 	if (!val->length || val->length > sizeof(value))
 		return -DREW_ERR_INVALID;
@@ -110,7 +113,10 @@ int drew_util_asn1_parse_small_integer(drew_util_asn1_t asn,
 int drew_util_asn1_parse_large_integer(drew_util_asn1_t asn,
 		const drew_util_asn1_value_t *val, uint8_t *buf, size_t *nbytes)
 {
-	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 2));
+	int res = 0;
+	res = validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 2);
+	if (res)
+		RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 10));
 
 	if (!val->length)
 		return -DREW_ERR_INVALID;
