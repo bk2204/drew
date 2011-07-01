@@ -51,6 +51,12 @@ int drew_util_asn1_set_flags(drew_util_asn1_t asn, int flags)
 static int validate(const drew_util_asn1_value_t *val, int tclass,
 		bool constructed, size_t tag)
 {
+	/* Accept the case where a context-specific tag uses IMPLICIT and is
+	 * therefore equivalent to an already-existing universal tag and don't error
+	 * out.
+	 */
+	if (val->tagclass != tclass && val->tagclass == DREW_UTIL_ASN1_TC_CONTEXT)
+		return 0;
 	if ((val->tagclass != tclass) || (val->constructed != constructed) ||
 			(val->tag != tag))
 		return -DREW_ERR_INVALID;
