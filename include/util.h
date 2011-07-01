@@ -92,6 +92,16 @@
 #endif
 #endif
 
+#if !defined(__STDC_ISO_10646__)
+#if WCHAR_MAX < 0x10ffff
+#if WCHAR_MIN == 0
+#define wchar_t uint32_t
+#else
+#define wchar_t int32_t
+#endif
+#endif
+#endif
+
 #define STATIC_ASSERT(e) ((void)sizeof(char[1 - 2*!(e)]))
 
 inline void xor_aligned(uint8_t *outp, const uint8_t *inp, const uint8_t *xorp, size_t len)
