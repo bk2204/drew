@@ -9,6 +9,7 @@
 #include <time.h>
 
 #include <drew/drew.h>
+#include <drew-util/drew-util.h>
 #include <drew-util/asn1.h>
 
 struct drew_util_asn1_s {
@@ -60,9 +61,12 @@ static int validate(const drew_util_asn1_value_t *val, int tclass,
 	 */
 	if (val->tagclass != tclass && val->tagclass == DREW_UTIL_ASN1_TC_CONTEXT)
 		return 0;
-	if ((val->tagclass != tclass) || (val->constructed != constructed) ||
-			(val->tag != tag))
-		return -DREW_ERR_INVALID;
+	if (val->tagclass != tclass)
+		return -DREW_UTIL_ERR_CLASS_MISMATCH;
+	if (val->constructed != constructed)
+		return -DREW_UTIL_ERR_CONSTRUCTED_MISMATCH;
+	if (val->tag != tag)
+		return -DREW_UTIL_ERR_TAG_MISMATCH;
 	return 0;
 }
 
@@ -94,12 +98,12 @@ int drew_util_asn1_parse_small_integer(drew_util_asn1_t asn,
 		RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 10));
 
 	if (!val->length || val->length > sizeof(value))
-		return -DREW_ERR_INVALID;
+		return -DREW_UTIL_ERR_BAD_INTEGER;
 
 	// Must use the shortest possible encoding.
 	if (val->length > 1 && ((val->data[0] == 0xff && val->data[1] & 0x80) ||
 				(val->data[0] == 0x00 && !(val->data[1] & 0x80))))
-		return -DREW_ERR_INVALID;
+		return -DREW_UTIL_ERR_BAD_INTEGER;
 
 	for (size_t i = 0; i < val->length; i++) {
 		value <<= 8;
@@ -119,12 +123,12 @@ int drew_util_asn1_parse_large_integer(drew_util_asn1_t asn,
 		RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 10));
 
 	if (!val->length)
-		return -DREW_ERR_INVALID;
+		return -DREW_UTIL_ERR_BAD_INTEGER;
 
 	// Must use the shortest possible encoding.
 	if (val->length > 1 && ((val->data[0] == 0xff && val->data[1] & 0x80) ||
 				(val->data[0] == 0x00 && !(val->data[1] & 0x80))))
-		return -DREW_ERR_INVALID;
+		return -DREW_UTIL_ERR_BAD_INTEGER;
 
 	*nbytes = val->length;
 	if (buf)
@@ -535,7 +539,7 @@ int drew_util_asn1_parse_string_utf8(drew_util_asn1_t asn,
 		case 27:
 			return parse_generalstring(asn, val, (char **)sp, slen);
 		default:
-			return -DREW_ERR_INVALID;
+			return -DREW_UTIL_ERR_BAD_STRING;
 	}
 }
 
@@ -616,7 +620,7 @@ static int parse_time(drew_util_asn1_t asn, const uint8_t *data, size_t len,
 	 * DER).
 	 */
 	if (len < (reprdig + 1) || len == (reprdig + 1 + 1))
-		return -DREW_ERR_INVALID;
+		return -DREW_UTIL_ERR_BAD_TIME;
 
 	/* If it's not UTC or if there's a fractional number of seconds ending in a
 	 * trailing zero.
@@ -624,24 +628,24 @@ static int parse_time(drew_util_asn1_t asn, const uint8_t *data, size_t len,
 	if ((data[len-1] != 'Z') ||
 			(fracsecs && (len > (reprdig + 2 + 1) && data[len-2] == '0')) ||
 			(!fracsecs && (len != reprdig + 1)))
-		return -DREW_ERR_INVALID;
+		return -DREW_UTIL_ERR_BAD_TIME;
 
 	// Seconds off of UTC.
 	*secoff = 0;
 
 	memset(t, 0, sizeof(*t));
 	if (parse_time_int(&t->tm_year, data, 0, yeardig))
-		return -DREW_ERR_INVALID;
+		return -DREW_UTIL_ERR_BAD_TIME;
 	if (parse_time_int(&t->tm_mon, data, yeardig, yeardig + 2))
-		return -DREW_ERR_INVALID;
+		return -DREW_UTIL_ERR_BAD_TIME;
 	if (parse_time_int(&t->tm_mday, data, yeardig + 2, yeardig + 4))
-		return -DREW_ERR_INVALID;
+		return -DREW_UTIL_ERR_BAD_TIME;
 	if (parse_time_int(&t->tm_hour, data, yeardig + 4, yeardig + 6))
-		return -DREW_ERR_INVALID;
+		return -DREW_UTIL_ERR_BAD_TIME;
 	if (parse_time_int(&t->tm_min, data, yeardig + 6, yeardig + 8))
-		return -DREW_ERR_INVALID;
+		return -DREW_UTIL_ERR_BAD_TIME;
 	if (parse_time_int(&t->tm_sec, data, yeardig + 8, yeardig + 10))
-		return -DREW_ERR_INVALID;
+		return -DREW_UTIL_ERR_BAD_TIME;
 
 	return 0;
 }
@@ -652,17 +656,17 @@ int drew_util_asn1_parse_generalizedtime(drew_util_asn1_t asn,
 	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 24));
 
 	if (parse_time(asn, val->data, val->length, t, secoff, 4, true))
-		return -DREW_ERR_INVALID;
+		return -DREW_UTIL_ERR_BAD_TIME;
 	if (val->data[14] != '.' && val->data[14] != 'Z')
-		return -DREW_ERR_INVALID;
+		return -DREW_UTIL_ERR_BAD_TIME;
 	for (int i = 15; i < val->length; i++) {
 		if (!(val->data[i] == 'Z' && i == val->length - 1) &&
 				!(val->data[i] >= '0' && val->data[i] <= '9'))
-			return -DREW_ERR_INVALID;
+			return -DREW_UTIL_ERR_BAD_TIME;
 	}
 	t->tm_year -= 1900;
 
-	return is_valid_time(t) ? 0 : -DREW_ERR_INVALID;
+	return is_valid_time(t) ? 0 : -DREW_UTIL_ERR_BAD_TIME;
 }
 
 int drew_util_asn1_parse_utctime(drew_util_asn1_t asn,
@@ -671,13 +675,13 @@ int drew_util_asn1_parse_utctime(drew_util_asn1_t asn,
 	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 23));
 
 	if (parse_time(asn, val->data, val->length, t, secoff, 2, true))
-		return -DREW_ERR_INVALID;
+		return -DREW_UTIL_ERR_BAD_TIME;
 	if (val->data[14] != 'Z')
-		return -DREW_ERR_INVALID;
+		return -DREW_UTIL_ERR_BAD_TIME;
 	// This interpretation is from RFC 5280.
 	t->tm_year += (t->tm_year >= 50) ? 0 : 100;
 
-	return is_valid_time(t) ? 0 : -DREW_ERR_INVALID;
+	return is_valid_time(t) ? 0 : -DREW_UTIL_ERR_BAD_TIME;
 }
 
 int drew_util_asn1_parse_time(drew_util_asn1_t asn,
