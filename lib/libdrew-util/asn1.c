@@ -759,7 +759,7 @@ int drew_util_asn1_parse_sequence(drew_util_asn1_t asn,
 
 	while (off < val->length) {
 		if (!(nenc & (chunksz - 1))) {
-			if (!(q = realloc(p, sizeof(*p) * chunksz))) {
+			if (!(q = realloc(p, sizeof(*p) * (nenc + chunksz)))) {
 				free(p);
 				return -ENOMEM;
 			}
