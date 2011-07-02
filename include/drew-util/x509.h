@@ -23,6 +23,7 @@ typedef struct drew_util_x509_cert_s {
 
 /* Flags for flags[0] in drew_util_x509_cert_t. */
 #define DREW_UTIL_X509_CERT_MISPARSE_VERSION		(1 << 0)
+#define DREW_UTIL_X509_CERT_DEFAULT_VERSION			(1 << 1)
 
 int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 		const uint8_t *data, size_t len, drew_util_x509_cert_t *cert);
