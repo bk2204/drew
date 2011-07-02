@@ -10,6 +10,7 @@ test/test-pkenc
 test/test-pksig
 test/plugin-main
 util/*sum
+util/drew-x509
 *.o
 *.gen
 *.so*
