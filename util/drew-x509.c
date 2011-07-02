@@ -34,6 +34,7 @@ struct oids {
 	{"sha256WithRSAEncryption", 7, {1, 2, 840, 113549, 1, 1, 11}},
 	{"sha384WithRSAEncryption", 7, {1, 2, 840, 113549, 1, 1, 12}},
 	{"sha512WithRSAEncryption", 7, {1, 2, 840, 113549, 1, 1, 13}},
+	{"id-dsa-with-sha1", 6, {1, 2, 840, 10040, 4, 3}},
 	{"id-dsa-with-sha224", 9, {2, 16, 840, 1, 101, 3, 4, 3, 1}},
 	{"id-dsa-with-sha256", 9, {2, 16, 840, 1, 101, 3, 4, 3, 2}},
 	{"ecdsa-with-SHA224", 7, {1, 2, 840, 10045, 4, 3, 1}},
