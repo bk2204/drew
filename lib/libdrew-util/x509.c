@@ -49,6 +49,8 @@ int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 
 	// FIXME: parse the entire certificate.
 	RETFAIL(drew_util_asn1_parse_sequence(asn, &certvals[0], &vals, &nvals));
+	if (vals[0].tagclass == DREW_UTIL_ASN1_TC_UNIVERSAL && vals[0].tag == 2)
+		cert->flags[0] |= DREW_UTIL_X509_CERT_MISPARSE_VERSION;
 	RETFAIL(drew_util_asn1_x509_parse_version(asn, &vals[0], &cert->version));
 
 	RETFAIL(drew_util_asn1_parse_sequence(asn, &certvals[1], &sigvals,
