@@ -16,6 +16,7 @@ static int hc128_test(void *, const drew_loader_t *);
 static int hc128_info(int op, void *p);
 static int hc128_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
+static int hc128_reset(drew_stream_t *ctx);
 static int hc128_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
 		int flags);
 static int hc128_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len);
@@ -25,7 +26,7 @@ static int hc128_encrypt(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
 static int hc128_fini(drew_stream_t *ctx, int flags);
 
-PLUGIN_FUNCTBL(hc128, hc128_info, hc128_init, hc128_setiv, hc128_setkey, hc128_encrypt, hc128_encrypt, hc128_encrypt, hc128_encrypt, hc128_test, hc128_fini, hc128_clone);
+PLUGIN_FUNCTBL(hc128, hc128_info, hc128_init, hc128_setiv, hc128_setkey, hc128_encrypt, hc128_encrypt, hc128_encrypt, hc128_encrypt, hc128_test, hc128_fini, hc128_clone, hc128_reset);
 
 static int hc128_repeated_test(void)
 {
@@ -108,8 +109,6 @@ static int hc128_test(void *, const drew_loader_t *)
 	return res;
 }
 
-#define DIM(x) (sizeof(x)/sizeof(x[0]))
-
 static const int hc128_keysz[] = {16};
 
 static int hc128_info(int op, void *p)
@@ -160,6 +159,13 @@ static int hc128_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
 	return 0;
 }
 
+static int hc128_reset(drew_stream_t *ctx)
+{
+	drew::HC128 *p = reinterpret_cast<drew::HC128 *>(ctx->ctx);
+	p->Reset();
+	return 0;
+}
+
 static int hc128_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len)
 {
 	drew::HC128 *p = reinterpret_cast<drew::HC128 *>(ctx->ctx);
@@ -196,7 +202,7 @@ static int hc128_fini(drew_stream_t *ctx, int flags)
 PLUGIN_DATA_START()
 PLUGIN_DATA(hc128, "HC128")
 PLUGIN_DATA_END()
-PLUGIN_INTERFACE()
+PLUGIN_INTERFACE(hc128)
 
 }
 
@@ -212,8 +218,16 @@ void drew::HC128::SetKey(const uint8_t *key, size_t sz)
 	m_nbytes = 0;
 }
 
+void drew::HC128::Reset()
+{
+	m_ks.Reset();
+	m_ks.SetNonce(m_iv, 16);
+	m_nbytes = 0;
+}
+
 void drew::HC128::SetNonce(const uint8_t *iv, size_t sz)
 {
+	memcpy(m_iv, iv, sz);
 	m_ks.SetNonce(iv, sz);
 }
 
@@ -236,7 +250,6 @@ drew::HC128Keystream::HC128Keystream()
 
 void drew::HC128Keystream::Reset()
 {
-	ctr = 0;
 }
 
 uint32_t drew::HC128Keystream::f1(uint32_t x)
@@ -300,19 +313,16 @@ void drew::HC128Keystream::SetNonce(const uint8_t *iv, size_t sz)
 	}
 }
 
-void drew::HC128Keystream::FillBuffer(uint8_t buf[4])
+void drew::HC128Keystream::FillBuffer(uint8_t buf[4096])
 {
-	size_t j = ctr % 512;
-	uint32_t s;
-
-	if (!(ctr & 0x200)) {
+	uint32_t tbuf[1024], *t = tbuf;
+	for (size_t j = 0; j < 512; j++) {
 		P[j] += g1(P[M(j, 3)], P[M(j, 10)], P[M(j, 511)]);
-		s = h1(P[M(j, 12)]) ^ P[j];
+		*t++ = h1(P[M(j, 12)]) ^ P[j];
 	}
-	else {
+	for (size_t j = 0; j < 512; j++) {
 		Q[j] += g2(Q[M(j, 3)], Q[M(j, 10)], Q[M(j, 511)]);
-		s = h2(Q[M(j, 12)]) ^ Q[j];
+		*t++ = h2(Q[M(j, 12)]) ^ Q[j];
 	}
-	ctr++;
-	E::Copy(buf, &s, sizeof(s));
+	E::Copy(buf, tbuf, sizeof(tbuf));
 }

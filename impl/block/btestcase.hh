@@ -120,6 +120,8 @@ class BlockTestCase
 				algo.Encrypt(b+blksz, b+blksz);
 			}
 
+			// Not strictly needed, but a good test of the interface.
+			algo.Reset();
 			res |= !!memcmp(output, a, blksz * 2);
 			res <<= 1;
 			res |= !!memcmp(output+(blksz*2), b, blksz * 2);

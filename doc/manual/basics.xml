@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<article
+	xmlns="http://docbook.org/ns/docbook"
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:cc="http://creativecommons.org/ns#"
+	xmlns:xi="http://www.w3.org/2001/XInclude"
+	xml:lang="en"
+	xml:id="basics"
+	version="5.0">
+	<title>Basics of the drew Interface</title>
+	<para>
+		The drew interface is designed to be simple and easy to use.  It
+		consists of the drew loading interface (those interfaces starting with
+		the prefix <literal>drew_loader</literal>) and then a set of interfaces
+		for each type of cryptographic primitive.  Each different type of
+		interface has its own form of context, but each one follows a similar
+		form.
+	</para>
+	<classsynopsis language="C">
+		<ooclass>
+			<classname>drew_<replaceable>type</replaceable>_t</classname>
+		</ooclass>
+		<fieldsynopsis>
+			<type>void *</type><varname>ctx</varname>
+		</fieldsynopsis>
+		<fieldsynopsis>
+			<modifier>const</modifier>
+			<type>drew_<replaceable>type</replaceable>_functbl_t *</type><varname>functbl</varname>
+		</fieldsynopsis>
+		<fieldsynopsis>
+			<type>void *</type><varname>priv</varname>
+		</fieldsynopsis>
+	</classsynopsis><!--}}}-->
+	<para>
+		In all the interfaces, <varname>ctx</varname> holds the actual context
+		of the underlying implementation; this could be in C or C++.  It is
+		opaque to users of libdrew.  The <varname>functbl</varname> field is a
+		list of entry points to the implementation in question.  All
+		implementations must implement all entry points.  If an entry point is
+		not appropriate for the implementation in question (e.g. the algorithm
+		does not support a nonce), it will return an appropriate error code.  It
+		is guaranteed that two contexts that have the same
+		<varname>functbl</varname> pointer share an implementation of the same
+		algorithm.  However, it is possible that an implementation may have
+		several valid values for the <varname>functbl</varname> argument.
+		The <varname>priv</varname> variable is not used and is reserved for the
+		user application.
+	</para>
+	<para>
+		Before a context can be used, the <varname>functbl</varname>
+		argument must be initialized to a valid value obtained from
+		<function>drew_loader_get_functbl</function>.  Calling an entry point
+		function may result in the <varname>functbl</varname> value being
+		changed.  Usually, this is to enable the use of a more efficient or
+		optimized implementation when possible.  However, it is guaranteed that
+		the value obtained from the loader will function correctly, even if not
+		optimally.
+	</para>
+	<para>
+		Each of the elements of a function table is a pointer
+		to function returning <type>int</type>.  A successful call to one of
+		these functions will generally return 0.  Sometimes, a successful call
+		may return some data useful to the caller; this data will be a positive
+		integer.  An unsuccessful call will return a negative integer
+		representing an error.  If the absolute value of that error value is
+		less than 65536, it is a system error code and the normal errno routines
+		should be used to manipulate it.  Otherwise, it is a libdrew error code
+		as specified in <filename class="headerfile">drew/drew.h</filename>.
+	</para>
+	<para>
+		Certain function calls are only permitted in a certain order.  For ease
+		of understanding, the permissible order is modeled using a state
+		machine.  A context, once it has had its <varname>functbl</varname>
+		value initialized, is in the <constant>UNINITIALIZED</constant> state.
+		It is not required that an implementation return an error when functions
+		are called in an incorrect order or that an implementation behave in any
+		sensible way in such a case.  An implementation may (but should not)
+		crash or otherwise misbehave in such an event.
+	</para>
+	<section>
+		<title>Assumptions about the Runtime Environment</title>
+		<para>
+			While libdrew itself does not use the <type>wchar_t</type> type,
+			some of the libraries that depend on it do.  It is expected that
+			this type is capable of holding the value of any character defined
+			now or hereafter in Unicode.  That means that it must support all
+			character values from 0 to 0x10ffff, inclusive.  If
+			<type>wchar_t</type> is too small (if, for example, it is 16-bit),
+			the library will redefine it internally to be equivalent to either a
+			<type>int32_t</type> or a <type>uint32_t</type>, depending on the
+			signedness of the original <type>wchar_t</type> type; any public
+			interface taking a <type>wchar_t</type> will therefore need to be
+			passed the replacement type instead.
+		</para>
+	</section>
+</article>
+<!-- vim: set ft=docbkxml: -->

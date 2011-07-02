@@ -20,6 +20,9 @@
 
 #define FILENAME "test/vectors-stream"
 
+#define STUBS_API 1
+#include "stubs.c"
+
 int test_get_type(void)
 {
 	return DREW_TYPE_STREAM;
@@ -73,6 +76,28 @@ void test_reset_data(void *p, int flags)
 	}
 	if (flags & TEST_RESET_ZERO)
 		memset(p, 0, sizeof(struct testcase));
+}
+
+void *test_clone_data(void *tc, int flags)
+{
+	struct testcase *q = malloc(sizeof(*q)), *p = tc;
+
+	q->id = NULL;
+	q->algo = strdup(p->algo);
+	q->klen = p->klen;
+	q->key = malloc(q->klen);
+	memcpy(q->key, p->key, q->klen);
+	q->nlen = p->nlen;
+	q->nonce = malloc(q->nlen);
+	memcpy(q->nonce, p->nonce, q->nlen);
+	q->offstart = p->offstart;
+	q->offend = p->offend;
+	q->pt = malloc(q->offend - q->offstart);
+	q->ct = malloc(q->offend - q->offstart);
+	memcpy(q->pt, p->pt, q->offend - q->offstart);
+	memcpy(q->ct, p->ct, q->offend - q->offstart);
+	
+	return q;
 }
 
 void *test_create_data()

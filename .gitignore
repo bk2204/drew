@@ -9,8 +9,14 @@ test/test-bignum
 test/test-pkenc
 test/test-pksig
 test/plugin-main
+util/*sum
 *.o
 *.gen
 *.so*
 plugins/*
 gmon.out
+misc/devel
+*.pdf
+*.ps
+*.txml
+*.fo

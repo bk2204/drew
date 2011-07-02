@@ -16,6 +16,7 @@ static int hc256_test(void *, const drew_loader_t *);
 static int hc256_info(int op, void *p);
 static int hc256_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
+static int hc256_reset(drew_stream_t *ctx);
 static int hc256_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
 		int flags);
 static int hc256_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len);
@@ -25,7 +26,7 @@ static int hc256_encrypt(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
 static int hc256_fini(drew_stream_t *ctx, int flags);
 
-PLUGIN_FUNCTBL(hc256, hc256_info, hc256_init, hc256_setiv, hc256_setkey, hc256_encrypt, hc256_encrypt, hc256_encrypt, hc256_encrypt, hc256_test, hc256_fini, hc256_clone);
+PLUGIN_FUNCTBL(hc256, hc256_info, hc256_init, hc256_setiv, hc256_setkey, hc256_encrypt, hc256_encrypt, hc256_encrypt, hc256_encrypt, hc256_test, hc256_fini, hc256_clone, hc256_reset);
 
 static int hc256_repeated_test(void)
 {
@@ -57,8 +58,7 @@ static int hc256_repeated_test(void)
 	res |= !!memcmp(data, ct, sizeof(data));
 	res <<= 1;
 
-	algo.SetKey(keyiv, sizeof(keyiv));
-	algo.SetNonce(keyiv, sizeof(keyiv));
+	algo.Reset();
 	for (size_t i = 0; i < 65536; i++)
 		algo.Decrypt(data, data, sizeof(data));
 	res |= !!memcmp(data, zero, sizeof(data));
@@ -114,8 +114,6 @@ static int hc256_test(void *, const drew_loader_t *)
 	return res;
 }
 
-#define DIM(x) (sizeof(x)/sizeof(x[0]))
-
 static const int hc256_keysz[] = {32};
 
 static int hc256_info(int op, void *p)
@@ -166,6 +164,13 @@ static int hc256_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
 	return 0;
 }
 
+static int hc256_reset(drew_stream_t *ctx)
+{
+	drew::HC256 *p = reinterpret_cast<drew::HC256 *>(ctx->ctx);
+	p->Reset();
+	return 0;
+}
+
 static int hc256_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len)
 {
 	drew::HC256 *p = reinterpret_cast<drew::HC256 *>(ctx->ctx);
@@ -202,7 +207,7 @@ static int hc256_fini(drew_stream_t *ctx, int flags)
 PLUGIN_DATA_START()
 PLUGIN_DATA(hc256, "HC256")
 PLUGIN_DATA_END()
-PLUGIN_INTERFACE()
+PLUGIN_INTERFACE(hc256)
 
 }
 
@@ -218,8 +223,16 @@ void drew::HC256::SetKey(const uint8_t *key, size_t sz)
 	m_nbytes = 0;
 }
 
+void drew::HC256::Reset()
+{
+	m_ks.Reset();
+	m_ks.SetNonce(m_iv, 32);
+	m_nbytes = 0;
+}
+
 void drew::HC256::SetNonce(const uint8_t *iv, size_t sz)
 {
+	memcpy(m_iv, iv, sz);
 	m_ks.SetNonce(iv, sz);
 }
 
@@ -242,7 +255,6 @@ drew::HC256Keystream::HC256Keystream()
 
 void drew::HC256Keystream::Reset()
 {
-	ctr = 0;
 }
 
 uint32_t drew::HC256Keystream::f1(uint32_t x)
@@ -296,25 +308,21 @@ void drew::HC256Keystream::SetNonce(const uint8_t *iv, size_t sz)
 	memcpy(P, w+ 512, 1024*sizeof(*w));
 	memcpy(Q, w+1536, 1024*sizeof(*w));
 
-	uint8_t dummy[4];
-	for (size_t i = 0; i < 4096; i++)
-		FillBuffer(dummy);
-	ctr = 0;
+	uint8_t dummy[8192];
+	FillBuffer(dummy);
+	FillBuffer(dummy);
 }
 
-void drew::HC256Keystream::FillBuffer(uint8_t buf[4])
+void drew::HC256Keystream::FillBuffer(uint8_t buf[8192])
 {
-	size_t j = ctr % 1024;
-	uint32_t s;
-
-	if (!(ctr & 0x400)) {
+	uint32_t tbuf[2048], *t = tbuf;
+	for (size_t j = 0; j < 1024; j++) {
 		P[j] += P[M(j, 10)] + g1(P[M(j, 3)], P[M(j, 1023)]);
-		s = h1(P[M(j, 12)]) ^ P[j];
+		*t++ = h1(P[M(j, 12)]) ^ P[j];
 	}
-	else {
+	for (size_t j = 0; j < 1024; j++) {
 		Q[j] += Q[M(j, 10)] + g2(Q[M(j, 3)], Q[M(j, 1023)]);
-		s = h2(Q[M(j, 12)]) ^ Q[j];
+		*t++ = h2(Q[M(j, 12)]) ^ Q[j];
 	}
-	ctr++;
-	E::Copy(buf, &s, sizeof(s));
+	E::Copy(buf, tbuf, sizeof(tbuf));
 }

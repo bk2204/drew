@@ -6,6 +6,7 @@ PLUGINS_HASH-${CFG_SHA1}	+= sha1/sha1
 PLUGINS_HASH-${CFG_SHA256}	+= sha256/sha256
 PLUGINS_HASH-${CFG_SHA512}	+= sha512/sha512
 PLUGINS_HASH-${CFG_TIGER}	+= tiger/tiger
+PLUGINS_HASH-${CFG_WHIRLPOOL}	+= whirlpool/whirlpool
 
 HASH_DIR		:= impl/hash
 HASH_PLUGINS	:= $(patsubst %,${HASH_DIR}/%,$(PLUGINS_HASH-m))

@@ -1,5 +1,13 @@
 #!/usr/bin/perl -w
 
+sub generate_data {
+	my ($line) = @_;
+
+	return (undef, undef)
+		unless $line =~ m/^([A-Za-z0-9-()]+)\s*:.*\((\d+\.\d+)\s+MiB\/s\).*$/;
+	return ($1, $2 + 0.0);
+}
+
 if (scalar @ARGV < 2) {
 	print STDERR <<EOM;
 usage: compare-speed old new [factor]
@@ -11,7 +19,7 @@ EOM
 	exit 2;
 }
 
-my $factor = 1.0;
+$factor = 1.0;
 open(OLD, "<$ARGV[0]") or die "cannot open file: $!";
 @oldbuf = <OLD>;
 close(OLD);
@@ -20,22 +28,30 @@ open(NEW, "<$ARGV[1]") or die "cannot open file: $!";
 $factor = $ARGV[2] + 0.0 if (scalar @ARGV >= 3);
 close(NEW);
 
-for ($i = 0; $i < scalar @oldbuf; $i++) {
-	$otag = $x = $oldbuf[$i];
-	$ntag = $y = $newbuf[$i];
-	#chomp $otag;
-	#chomp $ntag;
-	$otag =~ s/^([A-Za-z0-9-()]+)\s*:.*$/$1/;
-	$ntag =~ s/^([A-Za-z0-9-()]+)\s*:.*$/$1/;
-	# skip this line if there's no tag.
-	next if (($otag eq $x) && ($ntag eq $y));
-	die "tag mismatch: '$otag' != '$ntag'" if ($otag ne $ntag);
-	$x =~ s/^.*\((\d+\.\d+)\s+MiB\/s\).*$/$1/;
-	$y =~ s/^.*\((\d+\.\d+)\s+MiB\/s\).*$/$1/;
-	$x += 0.0;
-	$y += 0.0;
-	$y /= $factor;
-	$v = (($y - $x) / $x) * 100.0;
-	chomp $otag;
-	printf "%-16s: change is %7.3f%%\n", $otag, $v;
+@items = ();
+%algos = ();
+
+for my $line (@oldbuf) {
+	my ($tag, $speed) = generate_data($line);
+	next unless defined $tag;
+	push @items, $tag;
+	unless (exists $algos{$tag}) {
+		$algos{$tag} = [];
+	}
+	push @{$algos{$tag}}, $speed;
+}
+
+%counts = map { ($_, 0) } @items;
+for my $line (@newbuf) {
+	my ($tag, $new) = generate_data($line);
+	next unless defined $tag;
+
+	my $cnt = $counts{$tag}++;
+	my $old = $algos{$tag}[$cnt];
+
+	next unless $old;
+
+	$new /= $factor;
+	$v = (($new - $old) / $old) * 100.0;
+	printf "%-16s: change is %7.3f%%\n", $tag, $v;
 }

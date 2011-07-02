@@ -37,6 +37,7 @@ class Rijndael
 		static const uint8_t S[];
 		static const uint32_t Et0[], Et1[], Et2[], Et3[];
 		inline virtual void DecryptBlock(uint64_t *) const;
+		static const uint8_t rcon[];
 	private:
 		inline void Substitution(uint64_t *, const uint8_t *) const;
 		virtual void ShiftRow(uint64_t *, const uint8_t *) const = 0;
@@ -47,7 +48,6 @@ class Rijndael
 		void SetKeyDecrypt(void);
 		static const uint8_t Si[];
 		static const uint8_t shifts0[5][4];
-		static const uint8_t rcon[];
 
 };
 
@@ -63,10 +63,10 @@ class GenericRijndael : public Rijndael, public BlockCipher<BlockSize/8>
 			return Rijndael::Decrypt(out, in);
 		}
 	protected:
-		static const size_t m_nb = BlockSize / 32;
-		static const size_t m_bc = BlockSize / 4;
-		static const uint64_t m_bcmask = (((uint64_t(1) << (m_bc-1))-1)<<1)|1;
-		static const size_t shiftoffset = (m_nb-4);
+		static const size_t m_nb;
+		static const size_t m_bc;
+		static const uint64_t m_bcmask;
+		static const size_t shiftoffset;
 		inline uint64_t shift(uint64_t x, unsigned n) const
 		{
 			return ((x >> n) | (x << (m_bc - n))) & m_bcmask;

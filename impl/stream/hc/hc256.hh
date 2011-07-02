@@ -36,6 +36,7 @@ class HC256
 	public:
 		HC256();
 		~HC256() {}
+		void Reset();
 		void SetNonce(const uint8_t *, size_t sz);
 		void SetKey(const uint8_t *key, size_t sz);
 		void Encrypt(uint8_t *out, const uint8_t *in, size_t len);
@@ -43,7 +44,8 @@ class HC256
 	protected:
 	private:
 		HC256Keystream m_ks;
-		uint8_t m_buf[4];
+		uint8_t m_iv[32];
+		uint8_t m_buf[8192];
 		size_t m_nbytes;
 };
 

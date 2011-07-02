@@ -1,3 +1,5 @@
+#include "internal.h"
+
 #include <errno.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -17,6 +19,7 @@ struct cfb {
 	const drew_block_t *algo;
 	uint8_t *buf;
 	uint8_t *prev;
+	uint8_t *iv;
 	size_t blksize;
 	size_t boff;
 };
@@ -24,6 +27,7 @@ struct cfb {
 static int cfb_info(int op, void *p);
 static int cfb_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param);
+static int cfb_reset(drew_mode_t *ctx);
 static int cfb_setpad(drew_mode_t *ctx, const drew_pad_t *pad);
 static int cfb_setblock(drew_mode_t *ctx, const drew_block_t *algoctx);
 static int cfb_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len);
@@ -41,8 +45,8 @@ static int cfb_decryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 		const uint8_t *in, size_t inlen);
 
 static const drew_mode_functbl_t cfb_functbl = {
-	cfb_info, cfb_init, cfb_clone, cfb_fini, cfb_setpad, cfb_setblock,
-	cfb_setiv, cfb_encrypt, cfb_decrypt, cfb_encrypt, cfb_decrypt,
+	cfb_info, cfb_init, cfb_clone, cfb_reset, cfb_fini, cfb_setpad,
+	cfb_setblock, cfb_setiv, cfb_encrypt, cfb_decrypt, cfb_encrypt, cfb_decrypt,
 	cfb_setdata, cfb_encryptfinal, cfb_decryptfinal, cfb_test
 };
 
@@ -60,6 +64,17 @@ static int cfb_info(int op, void *p)
 		default:
 			return DREW_ERR_INVALID;
 	}
+}
+
+static int cfb_reset(drew_mode_t *ctx)
+{
+	struct cfb *c = ctx->ctx;
+	int res = 0;
+
+	if ((res = cfb_setiv(ctx, c->iv, c->blksize)))
+		return res;
+	c->boff = 0;
+	return 0;
 }
 
 static int cfb_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
@@ -110,6 +125,8 @@ static int cfb_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 		return -ENOMEM;
 	if (!(c->prev = malloc(c->blksize)))
 		return -ENOMEM;
+	if (!(c->iv = malloc(c->blksize)))
+		return -ENOMEM;
 
 	return 0;
 }
@@ -123,6 +140,8 @@ static int cfb_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len)
 
 	memcpy(c->prev, iv, len);
 	memcpy(c->buf, iv, len);
+	if (iv != c->iv)
+		memcpy(c->iv, iv, len);
 	return 0;
 }
 
@@ -445,7 +464,7 @@ static struct plugin plugin_data[] = {
 	{ "CFB", &cfb_functbl }
 };
 
-int drew_plugin_info(void *ldr, int op, int id, void *p)
+int DREW_PLUGIN_NAME(cfb)(void *ldr, int op, int id, void *p)
 {
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 

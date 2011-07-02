@@ -21,6 +21,7 @@ class SHA256 : public Hash<uint32_t, 32, 32, 64, BigEndian>,
 	public:
 		SHA256();
 		virtual ~SHA256() {}
+		void Reset();
 		static void Transform(uint32_t *state, const uint8_t *data)
 		{
 			SHA256Transform::Transform(state, data);
@@ -39,6 +40,7 @@ class SHA224 : public Hash<uint32_t, 28, 32, 64, BigEndian>,
 	public:
 		SHA224();
 		virtual ~SHA224() {}
+		void Reset();
 		static void Transform(uint32_t *state, const uint8_t *data)
 		{
 			SHA256Transform::Transform(state, data);

@@ -18,6 +18,7 @@ static int salsa20_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
 static int salsa20_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
 		int flags);
+static int salsa20_reset(drew_stream_t *ctx);
 static int salsa20_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len);
 static int salsa20_setkey(drew_stream_t *ctx, const uint8_t *key, size_t len,
 		int mode);
@@ -27,7 +28,7 @@ static int salsa20_encryptfast(drew_stream_t *ctx, uint8_t *out,
 		const uint8_t *in, size_t len);
 static int salsa20_fini(drew_stream_t *ctx, int flags);
 
-PLUGIN_FUNCTBL(salsa20, salsa20_info, salsa20_init, salsa20_setiv, salsa20_setkey, salsa20_encrypt, salsa20_encrypt, salsa20_encryptfast, salsa20_encryptfast, salsa20_test, salsa20_fini, salsa20_clone);
+PLUGIN_FUNCTBL(salsa20, salsa20_info, salsa20_init, salsa20_setiv, salsa20_setkey, salsa20_encrypt, salsa20_encrypt, salsa20_encryptfast, salsa20_encryptfast, salsa20_test, salsa20_fini, salsa20_clone, salsa20_reset);
 
 static int salsa20_maintenance_test(void)
 {
@@ -59,8 +60,6 @@ static int salsa20_test(void *, const drew_loader_t *)
 
 	return res;
 }
-
-#define DIM(x) (sizeof(x)/sizeof(x[0]))
 
 static const int salsa_keysz[] = {16, 32};
 
@@ -112,6 +111,13 @@ static int salsa20_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
 	return 0;
 }
 
+static int salsa20_reset(drew_stream_t *ctx)
+{
+	drew::Salsa20 *p = reinterpret_cast<drew::Salsa20 *>(ctx->ctx);
+	p->Reset();
+	return 0;
+}
+
 static int salsa20_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len)
 {
 	drew::Salsa20 *p = reinterpret_cast<drew::Salsa20 *>(ctx->ctx);
@@ -156,7 +162,7 @@ static int salsa20_fini(drew_stream_t *ctx, int flags)
 PLUGIN_DATA_START()
 PLUGIN_DATA(salsa20, "Salsa20")
 PLUGIN_DATA_END()
-PLUGIN_INTERFACE()
+PLUGIN_INTERFACE(salsa20)
 
 }
 
@@ -164,6 +170,11 @@ drew::Salsa20::Salsa20()
 {
 }
 
+void drew::Salsa20::Reset()
+{
+	m_ks.Reset();
+	m_nbytes = 0;
+}
 
 void drew::Salsa20::SetKey(const uint8_t *key, size_t sz)
 {
@@ -218,39 +229,6 @@ void drew::Salsa20Keystream::SetNonce(const uint8_t *iv, size_t sz)
 	state.buf[ 5] = (keysz == 16) ? 0x3120646e : 0x3320646e;
 	state.buf[10] = (keysz == 16) ? 0x79622d36 : 0x79622d32;
 	state.buf[15] = 0x6b206574;
-}
-
-inline void drew::Salsa20Keystream::DoQuarterRound(uint32_t &a, uint32_t &b,
-		uint32_t &c, uint32_t &d)
-{
-	b ^= RotateLeft(a + d,  7);
-	c ^= RotateLeft(b + a,  9);
-	d ^= RotateLeft(c + b, 13);
-	a ^= RotateLeft(d + c, 18);
-}
-
-
-inline void drew::Salsa20Keystream::DoRowRound(uint32_t *x)
-{
-	DoQuarterRound(x[ 0], x[ 1], x[ 2], x[ 3]);
-	DoQuarterRound(x[ 5], x[ 6], x[ 7], x[ 4]);
-	DoQuarterRound(x[10], x[11], x[ 8], x[ 9]);
-	DoQuarterRound(x[15], x[12], x[13], x[14]);
-}
-
-
-inline void drew::Salsa20Keystream::DoColumnRound(uint32_t *x)
-{
-	DoQuarterRound(x[ 0], x[ 4], x[ 8], x[12]);
-	DoQuarterRound(x[ 5], x[ 9], x[13], x[ 1]);
-	DoQuarterRound(x[10], x[14], x[ 2], x[ 6]);
-	DoQuarterRound(x[15], x[ 3], x[ 7], x[11]);
-}
-
-inline void drew::Salsa20Keystream::DoDoubleRound(uint32_t *x)
-{
-	DoColumnRound(x);
-	DoRowRound(x);
 }
 
 void drew::Salsa20Keystream::Reset()

@@ -61,8 +61,10 @@ static int sha512tinfo(int op, void *p)
 			return SHA512t::buffer_size;
 		case DREW_HASH_INTSIZE:
 			return sizeof(SHA512t);
+		case DREW_HASH_ENDIAN:
+			return SHA512t::endian_t::GetEndianness();
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
 
@@ -145,16 +147,6 @@ static int sha512test(void *, const drew_loader_t *)
 	res <<= 1;
 	res |= !HashTestCase<SHA512>("A", 1000).Test("329c52ac62d1fe731151f2b895a00475445ef74f50b979c6f7bb7cae349328c1d4cb4f7261a0ab43f936a24b000651d4a824fcdd577f211aef8f806b16afe8af");
 	res <<= 1;
-	res |= !HashTestCase<SHA512>("U", 1005).Test("59f5e54fe299c6a8764c6b199e44924a37f59e2b56c3ebad939b7289210dc8e4c21b9720165b0f4d4374c90f1bf4fb4a5ace17a1161798015052893a48c3d161");
-	res <<= 1;
-	res |= !HashTestCase<SHA512>(zero, 1, 1000000).Test("ce044bc9fd43269d5bbc946cbebc3bb711341115cc4abdf2edbc3ff2c57ad4b15deb699bda257fea5aef9c6e55fcf4cf9dc25a8c3ce25f2efe90908379bff7ed");
-	res <<= 1;
-	res |= !HashTestCase<SHA512>("Z", 0x20000000).Test("da172279f3ebbda95f6b6e1e5f0ebec682c25d3d93561a1624c2fa9009d64c7e9923f3b46bcaf11d39a531f43297992ba4155c7e827bd0f1e194ae7ed6de4cac");
-	res <<= 1;
-	res |= !HashTestCase<SHA512>(zero, 1, 0x41000000).Test("14b1be901cb43549b4d831e61e5f9df1c791c85b50e85f9d6bc64135804ad43ce8402750edbe4e5c0fc170b99cf78b9f4ecb9c7e02a157911d1bd1832d76784f");
-	res <<= 1;
-	res |= !HashTestCase<SHA512>("B", 0x6000003e).Test("fd05e13eb771f05190bd97d62647157ea8f1f6949a52bb6daaedbad5f578ec59b1b8d6c4a7ecb2feca6892b4dc138771670a0f3bd577eea326aed40ab7dd58b1");
-	res <<= 1;
 	res |= !HashTestCase<SHA512>::MaintenanceTest("2b237afa2664b8f340cdcd819861b477d55ca41b3538a12e961bb3eb5365f1078a88d993cf38ec080fcae5f43024660fb25264befbb79a2b1036e34908ba170c");
 
 	return res;
@@ -199,26 +191,10 @@ static int sha384test(void *, const drew_loader_t *)
 	res <<= 1;
 	res |= !HashTestCase<SHA384>("A", 1000).Test("7df01148677b7f18617eee3a23104f0eed6bb8c90a6046f715c9445ff43c30d69e9e7082de39c3452fd1d3afd9ba0689");
 	res <<= 1;
-	res |= !HashTestCase<SHA384>("U", 1005).Test("1bb8e256da4a0d1e87453528254f223b4cb7e49c4420dbfa766bba4adba44eeca392ff6a9f565bc347158cc970ce44ec");
-	res <<= 1;
-	res |= !HashTestCase<SHA384>(zero, 1, 1000000).Test("8a1979f9049b3fff15ea3a43a4cf84c634fd14acad1c333fecb72c588b68868b66a994386dc0cd1687b9ee2e34983b81");
-	res <<= 1;
-	res |= !HashTestCase<SHA384>("Z", 0x20000000).Test("18aded227cc6b562cc7fb259e8f404549e52914531aa1c5d85167897c779cc4b25d0425fd1590e40bd763ec3f4311c1a");
-	res <<= 1;
-	res |= !HashTestCase<SHA384>(zero, 1, 0x41000000).Test("83ab05ca483abe3faa597ad524d31291ae827c5be2b3efcb6391bfed31ccd937b6135e0378c6c7f598857a7c516f207a");
-	res <<= 1;
-	res |= !HashTestCase<SHA384>("B", 0x6000003e).Test("cf852304f8d80209351b37ce69ca7dcf34972b4edb7817028ec55ab67ad3bc96eecb8241734258a85d2afce65d4571e2");
-	res <<= 1;
 	res |= !HashTestCase<SHA384>::MaintenanceTest("03a953c09e78a5e0de89c9767037c56e86f2ba5575375355ac8607214452dadc710bacf3f50ec40a0de85cba01755b41");
 
 	return res;
 }
-}
-
-/* 32-bit rotate-right. */
-static inline uint64_t ROR(uint64_t x, int n)
-{
-	return ((x>>n)|(x<<(64-n)));
 }
 
 static inline uint64_t Ch(uint64_t x, uint64_t y, uint64_t z)
@@ -231,19 +207,19 @@ static inline uint64_t Maj(uint64_t x, uint64_t y, uint64_t z)
 }
 static inline uint64_t S0(uint64_t x)
 {
-	return ROR(x, 28)^ROR(x, 34)^ROR(x, 39);
+	return RotateRight(x, 28) ^ RotateRight(x, 34) ^ RotateRight(x, 39);
 }
 static inline uint64_t S1(uint64_t x)
 {
-	return ROR(x, 14)^ROR(x, 18)^ROR(x, 41);
+	return RotateRight(x, 14) ^ RotateRight(x, 18) ^ RotateRight(x, 41);
 }
 static inline uint64_t s0(uint64_t x)
 {
-	return ROR(x, 1)^ROR(x, 8)^(x>>7);
+	return RotateRight(x, 1) ^ RotateRight(x, 8) ^ (x >> 7);
 }
 static inline uint64_t s1(uint64_t x)
 {
-	return ROR(x, 19)^ROR(x, 61)^(x>>6);
+	return RotateRight(x, 19) ^ RotateRight(x, 61) ^ (x >> 6);
 }
 
 static const uint64_t k[]={
@@ -291,6 +267,11 @@ static const uint64_t k[]={
 
 drew::SHA512::SHA512()
 {
+	Reset();
+}
+
+void drew::SHA512::Reset()
+{
 	m_hash[0] = 0x6a09e667f3bcc908;
 	m_hash[1] = 0xbb67ae8584caa73b;
 	m_hash[2] = 0x3c6ef372fe94f82b;
@@ -303,6 +284,11 @@ drew::SHA512::SHA512()
 }
 
 drew::SHA512t::SHA512t(size_t t_) : t(t_)
+{
+	Reset();
+}
+
+void drew::SHA512t::Reset()
 {
 	char buf[64];
 
@@ -324,6 +310,11 @@ drew::SHA512t::SHA512t(size_t t_) : t(t_)
 
 drew::SHA384::SHA384()
 {
+	Reset();
+}
+
+void drew::SHA384::Reset()
+{
 	m_hash[0] = 0xcbbb9d5dc1059ed8;
 	m_hash[1] = 0x629a292a367cd507;
 	m_hash[2] = 0x9159015a3070dd17;
@@ -341,7 +332,7 @@ drew::SHA384::SHA384()
 	h+=S0(a)+Maj(a, b, c)
 
 #define ROUND2(a, b, c, d, e, f, g, h, k, i) \
-	blk[i] = s1(blk[i-2]) + blk[i-7] + s0(blk[i-15]) + blk[i-16]; \
+	blk[i] += s1(blk[(i-2)&15]) + blk[(i-7)&15] + s0(blk[(i-15)&15]); \
 	ROUND(a, b, c, d, e, f, g, h, k, blk[i]); \
 
 void drew::SHA512Transform::Transform(uint64_t *state, const uint8_t *block)
@@ -349,7 +340,7 @@ void drew::SHA512Transform::Transform(uint64_t *state, const uint8_t *block)
 	// This is normally defined automatically by Hash.
 	const size_t block_size = 128;
 	const size_t words = block_size / sizeof(uint64_t);
-	uint64_t blk[80];
+	uint64_t blk[words];
 	size_t i;
 	uint64_t a, b, c, d, e, f, g, h;
 
@@ -374,15 +365,23 @@ void drew::SHA512Transform::Transform(uint64_t *state, const uint8_t *block)
 		ROUND(c, d, e, f, g, h, a, b, k[i+6], blk[i+6]);
 		ROUND(b, c, d, e, f, g, h, a, k[i+7], blk[i+7]);
 	}
-	for (i = words; i < 80; i += 8) {
-		ROUND2(a, b, c, d, e, f, g, h, k[i  ], i  );
-		ROUND2(h, a, b, c, d, e, f, g, k[i+1], i+1);
-		ROUND2(g, h, a, b, c, d, e, f, k[i+2], i+2);
-		ROUND2(f, g, h, a, b, c, d, e, k[i+3], i+3);
-		ROUND2(e, f, g, h, a, b, c, d, k[i+4], i+4);
-		ROUND2(d, e, f, g, h, a, b, c, k[i+5], i+5);
-		ROUND2(c, d, e, f, g, h, a, b, k[i+6], i+6);
-		ROUND2(b, c, d, e, f, g, h, a, k[i+7], i+7);
+	for (i = words; i < 80; i += 16) {
+		ROUND2(a, b, c, d, e, f, g, h, k[i   ],  0);
+		ROUND2(h, a, b, c, d, e, f, g, k[i+ 1],  1);
+		ROUND2(g, h, a, b, c, d, e, f, k[i+ 2],  2);
+		ROUND2(f, g, h, a, b, c, d, e, k[i+ 3],  3);
+		ROUND2(e, f, g, h, a, b, c, d, k[i+ 4],  4);
+		ROUND2(d, e, f, g, h, a, b, c, k[i+ 5],  5);
+		ROUND2(c, d, e, f, g, h, a, b, k[i+ 6],  6);
+		ROUND2(b, c, d, e, f, g, h, a, k[i+ 7],  7);
+		ROUND2(a, b, c, d, e, f, g, h, k[i+ 8],  8);
+		ROUND2(h, a, b, c, d, e, f, g, k[i+ 9],  9);
+		ROUND2(g, h, a, b, c, d, e, f, k[i+10], 10);
+		ROUND2(f, g, h, a, b, c, d, e, k[i+11], 11);
+		ROUND2(e, f, g, h, a, b, c, d, k[i+12], 12);
+		ROUND2(d, e, f, g, h, a, b, c, k[i+13], 13);
+		ROUND2(c, d, e, f, g, h, a, b, k[i+14], 14);
+		ROUND2(b, c, d, e, f, g, h, a, k[i+15], 15);
 	}
 
 	state[0] += a;

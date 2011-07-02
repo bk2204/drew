@@ -90,21 +90,21 @@ static inline uint32_t gg(uint32_t x, uint32_t y, uint32_t z)
 }
 static inline uint32_t hh(uint32_t x, uint32_t y, uint32_t z)
 {
-	return ((x&y)|(z&(x|y)))+0x8f1bbcdc;
+	return (x&y)+(z&(x^y))+0x8f1bbcdc;
 }
 static inline uint32_t ii(uint32_t x, uint32_t y, uint32_t z)
 {
 	return (x^y^z)+0xca62c1d6;
 }
 
-/* 32-bit rotate-left. */
-static inline uint32_t ROL(uint32_t x, int n)
+template<int Rotate>
+drew::SHA<Rotate>::SHA()
 {
-	return ((x<<n)|(x>>(32-n)));
+	Reset();
 }
 
 template<int Rotate>
-drew::SHA<Rotate>::SHA()
+void drew::SHA<Rotate>::Reset()
 {
 	m_hash[0] = 0x67452301;
 	m_hash[1] = 0xefcdab89;
@@ -115,9 +115,12 @@ drew::SHA<Rotate>::SHA()
 }
 
 #define OP(f, g, a, b, c, d, e) \
-	e+=ROL(a, 5)+f(b, c, d)+g; b=ROL(b, 30);
+	e+=RotateLeft(a, 5)+f(b, c, d)+g; b=RotateLeft(b, 30);
 #define EXPANSION(i) \
-	(blk[(i)&15]=ROL(blk[((i)+13)&15]^blk[((i)+8)&15]^blk[((i)+2)&15]^blk[(i)&15],Rotate))
+	(Rotate ? \
+	(blk[(i)&15]=RotateLeft(blk[((i)+13)&15]^blk[((i)+8)&15]^blk[((i)+2)&15]^blk[(i)&15],Rotate)) : \
+	(blk[(i)&15]^=blk[((i)+13)&15]^blk[((i)+8)&15]^blk[((i)+2)&15]))
+	
 
 /* This implementation uses a circular buffer to create the expansions of blk.
  * While it appears that this would be slower, it instead is significantly

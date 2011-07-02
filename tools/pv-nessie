@@ -1,0 +1,34 @@
+#!/usr/bin/perl -w
+# This reads parts of the Nessie test vector information, such as for Tiger.
+
+$algo = "Tiger";
+$digestlen = 24;
+$want = 0;
+$cnt = 0;
+
+printf "T%04x a%s C%d\n", 0, $algo, $digestlen;
+while (<>) {
+	if (/message=(\d+) zero bits/) {
+		unless (int($1) % 8) {
+			my $bytes = int($1) / 8;
+			$want = 1;
+			printf "T%04x p00 r%d\n", $cnt, $bytes;
+			next;
+		}
+	}
+	elsif (/message=512-bit string:\s+(\d+)\*00,([01248]{2}),(\d+)\*00/) {
+		my $len1 = int($1);
+		my $len2 = int($3);
+		$want = 1;
+		printf "T%04x p%s%s%s\n", $cnt, "00" x $len1, $2, "00" x $len2;
+		next;
+	}
+	elsif ($want) {
+		if (/hash=([a-fA-F0-9]+)/) {
+			printf "T%04x c%s\n", $cnt, lc($1);
+			$cnt++;
+		}
+	}
+
+	$want = 0;
+}

@@ -1,3 +1,5 @@
+#ifdef STUBS_EXTERNAL
+
 const char *test_get_filename()
 {
 	return NULL;
@@ -17,6 +19,11 @@ void *test_create_data()
 	return NULL;
 }
 
+void *test_clone_data(void *p, int flags)
+{
+	return NULL;
+}
+
 int test_execute(void *data, const char *name, const void *tbl,
 		struct test_external *ldr)
 {
@@ -29,3 +36,14 @@ int test_process_testcase(void *data, int type, const char *item,
 {
 	return TEST_OK;
 }
+#endif
+
+#ifdef STUBS_API
+
+int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
+		const void *tbl)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+#endif

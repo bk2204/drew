@@ -15,6 +15,7 @@
 
 #include <time.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -26,6 +27,7 @@
 #define MODE_SPEED			1
 #define MODE_TEST			2
 #define MODE_TEST_INTERNAL	3
+#define MODE_TEST_API		4
 
 #if defined(CLOCK_PROCESS_CPUTIME_ID)
 #define USED_CLOCK CLOCK_PROCESS_CPUTIME_ID
@@ -35,14 +37,16 @@
 #define USED_CLOCK CLOCK_REALTIME
 #endif
 
-#define TEST_OK				0
-#define TEST_FAILURE		1
+#define TEST_CODE(x)		(x & ~0xff)
+
+#define TEST_OK				(0 << 8)
+#define TEST_FAILURE		(1 << 8)
 #define TEST_FAILED 		TEST_FAILURE
-#define TEST_EXECUTE		2
-#define TEST_CORRUPT		3
-#define TEST_NOT_FOR_US		4
-#define TEST_NOT_IMPL		5
-#define TEST_INTERNAL_ERR	6
+#define TEST_EXECUTE		(2 << 8)
+#define TEST_CORRUPT		(3 << 8)
+#define TEST_NOT_FOR_US		(4 << 8)
+#define TEST_NOT_IMPL		(5 << 8)
+#define TEST_INTERNAL_ERR	(6 << 8)
 
 #define TEST_RESET_PARTIAL	1
 #define TEST_RESET_FREE		2
@@ -59,9 +63,11 @@
 struct test_external {
 	char **ids;
 	size_t nids;
-	void *data;
+	void **data;
+	size_t ndata;
 	int results;
 	size_t ntests;
+	size_t lineno;
 	const char *name;
 	const void *tbl;
 	const drew_loader_t *ldr;
@@ -81,6 +87,7 @@ int print_test_results(int result, char **ids);
 void framework_teardown(void *data);
 void *framework_setup(void);
 void test_reset_data(void *p, int flags);
+void *test_clone_data(void *p, int flags);
 void *test_create_data();
 const char *test_get_filename();
 char *test_get_id(void *data);
@@ -89,5 +96,13 @@ int test_execute(void *data, const char *name, const void *tbl,
 int process_bytes(ssize_t len, uint8_t **buf, const char *data);
 int test_process_testcase(void *data, int type, const char *item,
 		struct test_external *tep);
+bool is_forbidden_errno(int val);
+int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
+		const void *tbl);
+int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
+		const char *filename, struct test_external *tes);
+int test_external_parse(const drew_loader_t *ldr, const char *filename,
+		struct test_external *tes);
+int test_external_cleanup(struct test_external *tes);
 
 #endif
