@@ -16,8 +16,8 @@ typedef struct drew_util_x509_sig_s {
 typedef struct drew_util_x509_cert_s {
 	int version;
 	drew_util_x509_sig_t sig;
-	time_t not_before;
-	time_t not_after;
+	int64_t not_before;
+	int64_t not_after;
 	int flags[8];
 } drew_util_x509_cert_t;
 
