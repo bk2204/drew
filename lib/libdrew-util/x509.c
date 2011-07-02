@@ -35,6 +35,8 @@ int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 	size_t ncertvals, nvals, nsigvals;
 	drew_util_asn1_value_t certificate, *certvals, *sigvals, *vals;
 
+	memset(cert, 0, sizeof(*cert));
+
 	// FIXME: remove memory leaks.
 	res = drew_util_asn1_parse(asn, data, len, &certificate);
 	if (res < 0)
