@@ -24,6 +24,21 @@ typedef struct {
 	size_t length;
 } drew_util_asn1_oid_t;
 
+typedef struct {
+	size_t nbits;
+	uint8_t *data;
+} drew_util_asn1_bitstring_t;
+
+typedef struct {
+	size_t noctets;
+	uint8_t *data;
+} drew_util_asn1_octetstring_t;
+
+typedef struct {
+	size_t length;
+	uint8_t *data;
+} drew_util_asn1_bigint_t;
+
 #define DREW_UTIL_ASN1_ENC_BER			1
 #define DREW_UTIL_ASN1_ENC_CER			2
 #define DREW_UTIL_ASN1_ENC_DER			3
