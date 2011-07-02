@@ -19,6 +19,7 @@ include/buildid.h
 buildid
 build/
 *.d
+util/*sum
 *.o
 *.gen
 *.so*
