@@ -38,8 +38,8 @@ struct oids {
 	{"id-dsa-with-sha256", 9, {2, 16, 840, 1, 101, 3, 4, 3, 2}},
 	{"ecdsa-with-SHA224", 7, {1, 2, 840, 10045, 4, 3, 1}},
 	{"ecdsa-with-SHA256", 7, {1, 2, 840, 10045, 4, 3, 2}},
-	{"ecdsa-with-SHA384", 7, {1, 2, 840, 10045, 4, 3, 1}},
-	{"ecdsa-with-SHA512", 7, {1, 2, 840, 10045, 4, 3, 2}},
+	{"ecdsa-with-SHA384", 7, {1, 2, 840, 10045, 4, 3, 3}},
+	{"ecdsa-with-SHA512", 7, {1, 2, 840, 10045, 4, 3, 4}},
 };
 
 const char *get_signame(const drew_util_asn1_oid_t *oid)
