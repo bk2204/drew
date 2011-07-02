@@ -14,9 +14,10 @@
 	do { \
 		int result_code = 0; \
 		if ((result_code = (expr)) < 0) { \
-			fprintf(stderr, "Failed with error %d (%d with offset)\n", \
+			fprintf(stderr, "Failed with error %d (%d with offset).\n" \
+					"Exiting with code %d.\n", \
 					-result_code, (-result_code) >= 0x10000 ? \
-					(-result_code - 0x10000) : (-result_code)); \
+					(-result_code - 0x10000) : (-result_code), code); \
 			return code; \
 		} \
 	} while (0)
@@ -81,6 +82,13 @@ int main(int argc, char **argv)
 		printf("%zu%s", cert.sig.algo.values[i],
 				(i == cert.sig.algo.length-1) ? "" : ".");
 	printf(" (%s).\n", get_signame(&cert.sig.algo));
+	if (cert.flags[0]) {
+		printf("Certificate has the following peculiarities:\n");
+		if (cert.flags[0] & DREW_UTIL_X509_CERT_MISPARSE_VERSION)
+			printf("\tVersion encoding was a naked integer.\n");
+		if (cert.flags[0] & DREW_UTIL_X509_CERT_DEFAULT_VERSION)
+			printf("\tVersion was omitted.\n");
+	}
 	printf("Bye.\n");
 	FAILCODE(9, drew_util_asn1_fini(&parser));
 }
