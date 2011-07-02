@@ -18,6 +18,7 @@ typedef struct drew_util_x509_cert_s {
 	drew_util_x509_sig_t sig;
 	time_t not_before;
 	time_t not_after;
+	int flags[8];
 } drew_util_x509_cert_t;
 
 int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
