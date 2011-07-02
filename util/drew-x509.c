@@ -70,6 +70,7 @@ int main(int argc, char **argv)
 			MAP_FAILED)
 		return 4;
 
+	printf("Parsing certificate from %s.\n", argv[1]);
 	FAILCODE(5, drew_util_asn1_init(&parser));
 	FAILCODE(6, drew_util_asn1_set_encoding(parser, DREW_UTIL_ASN1_ENC_DER));
 	FAILCODE(7, drew_util_asn1_set_flags(parser, 0));
@@ -78,7 +79,7 @@ int main(int argc, char **argv)
 	for (size_t i = 0; i < cert.sig.algo.length; i++)
 		printf("%zu%s", cert.sig.algo.values[i],
 				(i == cert.sig.algo.length-1) ? "" : ".");
-	printf(" (%s)\n", get_signame(&cert.sig.algo));
+	printf(" (%s).\n", get_signame(&cert.sig.algo));
 	printf("Bye.\n");
 	FAILCODE(9, drew_util_asn1_fini(&parser));
 }
