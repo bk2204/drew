@@ -25,8 +25,7 @@ int drew_util_asn1_x509_parse_version(drew_util_asn1_t asn,
 		return -DREW_ERR_INVALID;
 	else if ((res = drew_util_asn1_parse(asn, val->data, val->length, &tmp)) < 0)
 		return res;
-	res = drew_util_asn1_parse_small_integer(asn, p, &ver);
-	if (res == -DREW_UTIL_ERR_BAD_INTEGER && old && val->length > 1) {
+	if (old && val->length > 1) {
 		/* Version 1 certificates make the version field optional, for some
 		 * idiotic reason.  In this case, we presume it's omitted, knowing that
 		 * things will implode in an orderly fashion later if the certificate is
@@ -34,8 +33,8 @@ int drew_util_asn1_x509_parse_version(drew_util_asn1_t asn,
 		 */
 		ver = 0;
 	}
-	else if (res)
-		return res;
+	else
+		RETFAIL(drew_util_asn1_parse_small_integer(asn, p, &ver));
 	if (ver < 0)
 		return -DREW_ERR_INVALID;
 	*version = ver + 1;
