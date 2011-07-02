@@ -73,13 +73,13 @@ int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 
 	RETFAIL(drew_util_asn1_parse_sequence(asn, &certvals[1], &sigvals,
 				&nsigvals));
-	RETFAIL(drew_util_asn1_parse_oid(asn, sigvals, &cert->sig.algo));
+	RETFAIL(drew_util_asn1_parse_oid(asn, sigvals, &cert->sig.algo.algo));
 
 	if (!(p = malloc(certvals[2].length)))
 		return -ENOMEM;
-	cert->sig.data = p;
+	cert->sig.value.data = p;
 	RETFAIL(drew_util_asn1_parse_bitstring(asn, &certvals[2], p,
-				&cert->sig.nbits));
+				&cert->sig.value.nbits));
 
 	return res;
 }
