@@ -5,12 +5,17 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <drew/param.h>
 #include <drew-util/asn1.h>
 
-typedef struct drew_util_x509_sig_s {
+typedef struct {
 	drew_util_asn1_oid_t algo;
-	uint8_t *data;
-	size_t nbits;
+	drew_param_t *param;
+} drew_util_x509_sig_algo_t;
+
+typedef struct drew_util_x509_sig_s {
+	drew_util_x509_sig_algo_t algo;
+	drew_util_asn1_bitstring_t value;
 } drew_util_x509_sig_t;
 
 typedef struct drew_util_x509_cert_s {
