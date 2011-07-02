@@ -720,9 +720,7 @@ int drew_util_asn1_parse(drew_util_asn1_t asn, const uint8_t *data,
 		return -DREW_ERR_MORE_INFO;
 
 	// length
-	if (data[off] & 0x80)
-		enc->length = data[off++] & 0x7f;
-	else {
+	if (data[off] & 0x80) {
 		size_t lenoflen = data[off++] & 0x7f;
 		enc->length = 0;
 		for (size_t i = 0; i < lenoflen && off < len; i++, off++) {
@@ -730,8 +728,10 @@ int drew_util_asn1_parse(drew_util_asn1_t asn, const uint8_t *data,
 			enc->length |= data[off];
 		}
 	}
+	else
+		enc->length = data[off++] & 0x7f;
 
-	if (off + enc->length >= len)
+	if (off + enc->length > len)
 		return -DREW_ERR_MORE_INFO;
 
 	if (asn->flags & DREW_UTIL_ASN1_CLONE_DATA) {
@@ -750,7 +750,7 @@ int drew_util_asn1_parse_sequence(drew_util_asn1_t asn,
 		const drew_util_asn1_value_t *val, drew_util_asn1_value_t **encp,
 		size_t *nencp)
 {
-	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, true, 10));
+	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, true, 16));
 
 	int chunksz = 4; // must be power of 2.
 	size_t nenc = 0, off = 0;
