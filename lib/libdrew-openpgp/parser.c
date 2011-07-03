@@ -284,6 +284,7 @@ static int parse_pkesk(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 	data += sizeof(p->keyid);
 	p->pkalgo = *data++;
 
+	memset(p->mpi, 0, sizeof(p->mpi));
 	size_t nmpis = get_nmpis_encryption(p->pkalgo);
 	// FIXME: Decide what to do it nmpis is zero (invalid).
 	int res = load_mpis(p->mpi, nmpis, data,
@@ -315,6 +316,7 @@ static int parse_sigv3(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 	memcpy(p->left, data, sizeof(p->left));
 	data += sizeof(p->left);
 
+	memset(p->mpi, 0, sizeof(p->mpi));
 	size_t nmpis = get_nmpis_signature(p->pkalgo);
 	// FIXME: Decide what to do it nmpis is zero (invalid).
 	int res = load_mpis(p->mpi, nmpis, data,
@@ -507,6 +509,7 @@ static int parse_pubkeyv3(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 	p->valid_days = GET_UINT16();
 	p->pkalgo = *data++;
 
+	memset(p->mpi, 0, sizeof(p->mpi));
 	size_t nmpis = get_nmpis_pubkey(p->pkalgo);
 	// FIXME: Decide what to do it nmpis is zero (invalid).
 	res = load_mpis(p->mpi, nmpis, data,
@@ -529,6 +532,7 @@ static int parse_pubkeyv4(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 	p->ctime = GET_UINT32();
 	p->pkalgo = *data++;
 
+	memset(p->mpi, 0, sizeof(p->mpi));
 	size_t nmpis = get_nmpis_pubkey(p->pkalgo);
 	// FIXME: Decide what to do it nmpis is zero (invalid).
 	res = load_mpis(p->mpi, nmpis, data,
