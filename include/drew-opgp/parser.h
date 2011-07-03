@@ -69,9 +69,11 @@ typedef struct {
 	uint8_t mdalgo;
 	uint16_t hashedlen;
 	size_t nhashed;
+	uint8_t *hasheddata;
 	drew_opgp_subpacket_t *hashed;
 	uint16_t unhashedlen;
 	size_t nunhashed;
+	uint8_t *unhasheddata;
 	drew_opgp_subpacket_t *unhashed;
 	uint8_t left[2]; // This is the left 16 bits of the hash value.
 	drew_opgp_mpi_t mpi[DREW_OPGP_MAX_MPIS_SIGN];

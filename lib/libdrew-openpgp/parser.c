@@ -396,6 +396,9 @@ static int parse_sigv4(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 	p->hashedlen = GET_UINT16();
 
 	DECLARE_NEED(p->hashedlen);
+	if (!(p->hasheddata = malloc(p->hashedlen)))
+		return -ENOMEM;
+	memcpy(p->hasheddata, data, p->hashedlen);
 	res = load_subpackets(&p->hashed, &p->nhashed, data, p->hashedlen);
 	if (res < 0)
 		return res;
@@ -404,6 +407,9 @@ static int parse_sigv4(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 	p->unhashedlen = GET_UINT16();
 
 	DECLARE_NEED(p->unhashedlen);
+	if (!(p->unhasheddata = malloc(p->unhashedlen)))
+		return -ENOMEM;
+	memcpy(p->unhasheddata, data, p->unhashedlen);
 	res = load_subpackets(&p->unhashed, &p->nunhashed, data, p->unhashedlen);
 	if (res < 0)
 		return res;
