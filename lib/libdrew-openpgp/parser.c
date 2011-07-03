@@ -78,7 +78,7 @@ static inline uint32_t get_uint32(const uint8_t **datap)
 #define RETFAIL(x) do { int res = (x); if (res < 0) return res; } while(0)
 // Declare a need for at least x more bytes.  Return if they're not available.
 #define DECLARE_NEED(x) \
-	do { if ((data+(x)-origdata) >= datalen) return -DREW_ERR_MORE_DATA; } \
+	do { if ((data+(x)-origdata) > datalen) return -DREW_ERR_MORE_DATA; } \
 	while(0)
 #define GET_UINT16() get_uint16(&data)
 #define GET_UINT32() get_uint32(&data)
@@ -361,13 +361,14 @@ static int load_subpackets(drew_opgp_subpacket_t **sparr, size_t *nsp,
 			sp[i].lenoflen = 4;
 			sp[i].len = GET_UINT32();
 		}
-		if (!sp[i].len)
+		if (sp[i].len < 2)
 			return -DREW_OPGP_ERR_INVALID;
+		sp[i].len -= 1;
 		DECLARE_NEED(sp[i].len);
 		uint8_t typebyte = *data++;
 		sp[i].type = typebyte & 0x7f;
 		sp[i].critical = typebyte & 0x80;
-		sp[i].data = malloc(sp[i].len - 1);
+		sp[i].data = malloc(sp[i].len);
 		memcpy(sp[i].data, data, sp[i].len);
 		data += sp[i].len;
 		// FIXME: split into data chunks.
@@ -404,7 +405,7 @@ static int parse_sigv4(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 	res = load_subpackets(&p->unhashed, &p->nunhashed, data, p->unhashedlen);
 	if (res < 0)
 		return res;
-	data += p->hashedlen;
+	data += p->unhashedlen;
 
 	memcpy(p->left, data, sizeof(p->left));
 	data += sizeof(p->left);
@@ -818,13 +819,13 @@ static int (*const func[64])(drew_opgp_parser_t, drew_opgp_packet_t *,
 	parse_privkey,
 	parse_pubkey,
 	parse_privkey,
-	parse_pubkey,
 	parse_compressed,
 	parse_sedata,
 	parse_marker,
 	parse_literal,
 	parse_trust,
 	parse_uid,
+	parse_pubkey,
 	NULL,
 	NULL,
 	NULL,
