@@ -18,9 +18,11 @@
 // containing lots of data 
 typedef off_t drew_opgp_len_t;
 
-typedef struct {
+struct drew_opgp_parser_s {
 	int flags;
-} drew_opgp_parser_t;
+};
+
+typedef struct drew_opgp_parser_s *drew_opgp_parser_t;
 
 typedef struct {
 	uint16_t len;
@@ -176,9 +178,9 @@ typedef struct {
 #define DREW_OPGP_F0_RFC2440			(1 << 1)
 #define DREW_OPGP_F0_RFC2440_BIS0		(1 << 2)
 
-int drew_opgp_parser_parse_packet_header(drew_opgp_parser_t *parser,
+int drew_opgp_parser_parse_packet_header(drew_opgp_parser_t parser,
 		drew_opgp_packet_t *pkt, const uint8_t *data, size_t datalen);
-int drew_opgp_parser_parse_packet_contents(drew_opgp_parser_t *parser,
+int drew_opgp_parser_parse_packet_contents(drew_opgp_parser_t parser,
 		drew_opgp_packet_t *pkt, const uint8_t *data, size_t datalen);
 
 #endif

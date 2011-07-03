@@ -20,7 +20,7 @@ int drew_opgp_parser_free(drew_opgp_parser_t *p)
 	return 0;
 }
 
-int drew_opgp_parser_parse_packets(drew_opgp_parser_t *p,
+int drew_opgp_parser_parse_packets(drew_opgp_parser_t p,
 		drew_opgp_packet_t *packets, size_t *npackets, const uint8_t *data,
 		size_t datalen, size_t *off)
 {
@@ -62,7 +62,7 @@ static inline uint32_t get_uint32(const uint8_t **datap)
 #define GET_UINT16() get_uint16(&data)
 #define GET_UINT32() get_uint32(&data)
 
-int drew_opgp_parser_parse_packet(drew_opgp_parser_t *parser,
+int drew_opgp_parser_parse_packet(drew_opgp_parser_t parser,
 		drew_opgp_packet_t *pkt, const uint8_t *data, size_t datalen)
 {
 	int res = 0;
@@ -83,7 +83,7 @@ int drew_opgp_parser_parse_packet(drew_opgp_parser_t *parser,
 	return cnt;
 }
 
-int drew_opgp_parser_parse_packet_header(drew_opgp_parser_t *parser,
+int drew_opgp_parser_parse_packet_header(drew_opgp_parser_t parser,
 		drew_opgp_packet_t *pkt, const uint8_t *data, size_t datalen)
 {
 	const uint8_t *origdata = data;
@@ -249,7 +249,7 @@ static inline int load_mpis(drew_opgp_mpi_t *mpis, size_t max,
 	return data-origdata;
 }
 
-static int parse_pkesk(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_pkesk(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	const uint8_t *origdata = data;
@@ -272,7 +272,7 @@ static int parse_pkesk(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 	return data-origdata;
 }
 
-static int parse_sigv3(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_sigv3(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	const uint8_t *origdata = data;
@@ -355,7 +355,7 @@ static int load_subpackets(drew_opgp_subpacket_t **sparr, size_t *nsp,
 	return data-origdata;
 }
 
-static int parse_sigv4(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_sigv4(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	const uint8_t *origdata = data;
@@ -397,7 +397,7 @@ static int parse_sigv4(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 	return data-origdata;
 }
 
-static int parse_sig(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_sig(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	uint8_t ver = *data; // Not incrementing intentionally.
@@ -407,7 +407,7 @@ static int parse_sig(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 		return parse_sigv4(parser, pkt, data, datalen);
 }
 
-static int parse_s2k(drew_opgp_parser_t *parser, drew_opgp_s2k_t *s2k,
+static int parse_s2k(drew_opgp_parser_t parser, drew_opgp_s2k_t *s2k,
 		const uint8_t *data, size_t datalen)
 {
 	const uint8_t *origdata = data;
@@ -429,7 +429,7 @@ static int parse_s2k(drew_opgp_parser_t *parser, drew_opgp_s2k_t *s2k,
 	return data-origdata;
 }
 
-static int parse_skesk(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_skesk(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	const uint8_t *origdata = data;
@@ -454,7 +454,7 @@ out:
 	return data-origdata;
 }
 
-static int parse_onepass_sig(drew_opgp_parser_t *parser,
+static int parse_onepass_sig(drew_opgp_parser_t parser,
 		drew_opgp_packet_t *pkt, const uint8_t *data, size_t datalen)
 {
 	const uint8_t *origdata = data;
@@ -471,7 +471,7 @@ static int parse_onepass_sig(drew_opgp_parser_t *parser,
 	return data-origdata;
 }
 
-static int parse_pubkeyv3(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_pubkeyv3(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen, drew_opgp_packet_pubkey_t *pk)
 {
 	const uint8_t *origdata = data;
@@ -494,7 +494,7 @@ static int parse_pubkeyv3(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 	return data-origdata;
 }
 
-static int parse_pubkeyv4(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_pubkeyv4(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen, drew_opgp_packet_pubkey_t *pk)
 {
 	const uint8_t *origdata = data;
@@ -516,7 +516,7 @@ static int parse_pubkeyv4(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 	return data-origdata;
 }
 
-static int parse_pubkey(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_pubkey(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	uint8_t ver = *data; // Not incrementing intentionally.
@@ -526,7 +526,7 @@ static int parse_pubkey(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 		return parse_pubkeyv4(parser, pkt, data, datalen, &pkt->data.pubkey);
 }
 
-static int parse_privkey_impl(drew_opgp_parser_t *parser,
+static int parse_privkey_impl(drew_opgp_parser_t parser,
 		drew_opgp_packet_t *pkt, const uint8_t *data, size_t datalen,
 		size_t dataused)
 {
@@ -565,7 +565,7 @@ static int parse_privkey_impl(drew_opgp_parser_t *parser,
 }
 
 
-static int parse_privkeyv3(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_privkeyv3(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	const uint8_t *origdata = data;
@@ -582,7 +582,7 @@ static int parse_privkeyv3(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 	return parse_privkey_impl(parser, pkt, data, datalen - dataused, dataused);
 }
 
-static int parse_privkeyv4(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_privkeyv4(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	const uint8_t *origdata = data;
@@ -599,7 +599,7 @@ static int parse_privkeyv4(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 	return parse_privkey_impl(parser, pkt, data, datalen - dataused, dataused);
 }
 
-static int parse_privkey(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_privkey(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	uint8_t ver = *data; // Not incrementing intentionally.
@@ -609,7 +609,7 @@ static int parse_privkey(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 		return parse_privkeyv4(parser, pkt, data, datalen);
 }
 
-static int parse_compressed(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_compressed(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	const uint8_t *origdata = data;
@@ -625,7 +625,7 @@ static int parse_compressed(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 	return datalen;
 }
 
-static int parse_sedata(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_sedata(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	const uint8_t *origdata = data;
@@ -642,7 +642,7 @@ static int parse_sedata(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 }
 
 
-static int parse_marker(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_marker(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	drew_opgp_packet_data_t *p = &pkt->data.data;
@@ -659,7 +659,7 @@ static int parse_marker(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 	return 3;
 }
 
-static int parse_literal(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_literal(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	const uint8_t *origdata = data;
@@ -694,7 +694,7 @@ static int parse_literal(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 	return datalen;
 }
 
-static int parse_trust(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_trust(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	drew_opgp_packet_data_t *p = &pkt->data.data;
@@ -709,7 +709,7 @@ static int parse_trust(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 	return datalen;
 }
 
-static int parse_uid(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_uid(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	drew_opgp_packet_data_t *p = &pkt->data.data;
@@ -725,7 +725,7 @@ static int parse_uid(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 }
 
 /* FIXME: actually split this out into images. */
-static int parse_attr(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_attr(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	drew_opgp_packet_data_t *p = &pkt->data.data;
@@ -740,7 +740,7 @@ static int parse_attr(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 	return datalen;
 }
 
-static int parse_seidata(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_seidata(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	drew_opgp_packet_data_t *p = &pkt->data.data;
@@ -755,7 +755,7 @@ static int parse_seidata(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 	return datalen;
 }
 
-static int parse_mdc(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
+static int parse_mdc(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
 	drew_opgp_packet_data_t *p = &pkt->data.data;
@@ -772,7 +772,7 @@ static int parse_mdc(drew_opgp_parser_t *parser, drew_opgp_packet_t *pkt,
 	return datalen;
 }
 
-static int (*const func[64])(drew_opgp_parser_t *, drew_opgp_packet_t *,
+static int (*const func[64])(drew_opgp_parser_t, drew_opgp_packet_t *,
 		const uint8_t *, size_t) = {
 	NULL,
 	parse_pkesk,
@@ -798,7 +798,7 @@ static int (*const func[64])(drew_opgp_parser_t *, drew_opgp_packet_t *,
 	NULL
 };
 
-int drew_opgp_parser_parse_packet_contents(drew_opgp_parser_t *parser,
+int drew_opgp_parser_parse_packet_contents(drew_opgp_parser_t parser,
 		drew_opgp_packet_t *pkt, const uint8_t *data, size_t datalen)
 {
 	if (pkt->type == 0)
