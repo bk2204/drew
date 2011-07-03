@@ -642,9 +642,9 @@ static int parse_compressed(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 	p->algo = *data++;
 	if (!(p->data = malloc(datalen - 1)))
 		return -ENOMEM;
-	p->len = datalen - 1;
-	memcpy(p->data, data, datalen-1);
-	return datalen;
+	p->len = pkt->len - 1;
+	memcpy(p->data, data, p->len);
+	return pkt->len;
 }
 
 static int parse_sedata(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
@@ -658,21 +658,24 @@ static int parse_sedata(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 	p->algo = 0;
 	if (!(p->data = malloc(datalen)))
 		return -ENOMEM;
-	p->len = datalen;
-	memcpy(p->data, data, datalen);
-	return datalen;
+	DECLARE_NEED(pkt->len);
+	p->len = pkt->len;
+	memcpy(p->data, data, pkt->len);
+	return pkt->len;
 }
 
 
 static int parse_marker(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
+	const uint8_t *origdata = data;
 	drew_opgp_packet_data_t *p = &pkt->data.data;
 
 	p->type = 10;
 	p->algo = 0;
 
-	if (datalen != 3)
+	DECLARE_NEED(3);
+	if (pkt->len != 3)
 		return -DREW_ERR_INVALID;
 	if (data[0] != 'P' || data[1] != 'G' || data[2] != 'P')
 		return -DREW_ERR_INVALID;
@@ -709,89 +712,100 @@ static int parse_literal(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 	DECLARE_NEED(4);
 	p->time = GET_UINT32();
 
-	p->len = datalen - (data - origdata);
+	p->len = pkt->len - (data - origdata);
+	DECLARE_NEED(p->len);
 	if (!(p->data = malloc(p->len)))
 		return -ENOMEM;
 	memcpy(p->data, data, p->len);
-	return datalen;
+	return pkt->len;
 }
 
 static int parse_trust(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
+	const uint8_t *origdata = data;
 	drew_opgp_packet_data_t *p = &pkt->data.data;
 
 	p->type = 12;
 	p->algo = 0;
 
-	p->len = datalen;
+	p->len = pkt->len;
+	DECLARE_NEED(p->len);
 	if (!(p->data = malloc(p->len)))
 		return -ENOMEM;
 	memcpy(p->data, data, p->len);
-	return datalen;
+	return pkt->len;
 }
 
 static int parse_uid(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
+	const uint8_t *origdata = data;
 	drew_opgp_packet_data_t *p = &pkt->data.data;
 
 	p->type = 13;
 	p->algo = 0;
 
-	p->len = datalen;
+	p->len = pkt->len;
+	DECLARE_NEED(p->len);
 	if (!(p->data = malloc(p->len)))
 		return -ENOMEM;
 	memcpy(p->data, data, p->len);
-	return datalen;
+	return pkt->len;
 }
 
 /* FIXME: actually split this out into images. */
 static int parse_attr(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
+	const uint8_t *origdata = data;
 	drew_opgp_packet_data_t *p = &pkt->data.data;
 
 	p->type = 17;
 	p->algo = 0;
 
-	p->len = datalen;
+	p->len = pkt->len;
+	DECLARE_NEED(p->len);
 	if (!(p->data = malloc(p->len)))
 		return -ENOMEM;
 	memcpy(p->data, data, p->len);
-	return datalen;
+	return pkt->len;
 }
 
 static int parse_seidata(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
+	const uint8_t *origdata = data;
 	drew_opgp_packet_data_t *p = &pkt->data.data;
 
 	p->type = 18;
 	p->algo = 1;
 
-	p->len = datalen;
+	p->len = pkt->len;
+	DECLARE_NEED(p->len);
 	if (!(p->data = malloc(p->len)))
 		return -ENOMEM;
 	memcpy(p->data, data, p->len);
-	return datalen;
+	return pkt->len;
 }
 
 static int parse_mdc(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 		const uint8_t *data, size_t datalen)
 {
+	const uint8_t *origdata = data;
 	drew_opgp_packet_data_t *p = &pkt->data.data;
 
 	p->type = 19;
 	p->algo = 2;	// SHA-1.
 
-	p->len = datalen;
+	p->len = 20;
+	DECLARE_NEED(p->len);
 	if (p->len != 20)
 		return -DREW_ERR_INVALID;
 	if (!(p->data = malloc(p->len)))
 		return -ENOMEM;
 	memcpy(p->data, data, p->len);
-	return datalen;
+	return pkt->len;
 }
 
 static int (*const func[64])(drew_opgp_parser_t, drew_opgp_packet_t *,
