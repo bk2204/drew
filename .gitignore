@@ -9,6 +9,7 @@ test/test-bignum
 test/test-pkenc
 test/test-pksig
 test/plugin-main
+util/drew-openpgp
 util/*sum
 *.o
 *.gen
