@@ -258,13 +258,14 @@ static inline int load_mpis(drew_opgp_mpi_t *mpis, size_t max,
 	for (int i = 0; i < max; i++) {
 		DECLARE_NEED(2);
 		uint16_t len = GET_UINT16();
+		size_t bytes = (len + 7) / 8;
 		mpis[i].len = len;
-		DECLARE_NEED(len);
-		uint8_t *mpidata = malloc(len);
+		DECLARE_NEED(bytes);
+		uint8_t *mpidata = malloc(bytes);
 		if (!mpidata)
 			return -ENOMEM;
-		memcpy(mpidata, data, len);
-		data += len;
+		memcpy(mpidata, data, bytes);
+		data += bytes;
 		mpis[i].data = mpidata;
 	}
 	return data-origdata;
