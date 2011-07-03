@@ -5,8 +5,7 @@
 #include <drew/plugin.h>
 
 #include <drew-opgp/drew-opgp.h>
-
-#include "parser.h"
+#include <drew-opgp/parser.h>
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 
