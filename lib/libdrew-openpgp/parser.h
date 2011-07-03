@@ -137,6 +137,22 @@ typedef struct {
 	uint8_t *mpidata;
 } drew_opgp_packet_privkey_t;
 
+/* This is used for all types of data *except* literal data packets. */
+typedef struct {
+	uint8_t type;
+	uint8_t algo;
+	uint8_t *data;
+	size_t len;
+} drew_opgp_packet_data_t;
+
+typedef struct {
+	uint8_t type;
+	char *name;
+	uint32_t time;
+	uint8_t *data;
+	size_t len;
+} drew_opgp_packet_literal_data_t;
+
 typedef struct {
 	uint8_t tag;
 	uint8_t ver;
@@ -150,6 +166,8 @@ typedef struct {
 		drew_opgp_packet_onepass_sig_t onepass_sig;
 		drew_opgp_packet_pubkey_t pubkey;
 		drew_opgp_packet_privkey_t privkey;
+		drew_opgp_packet_data_t data;
+		drew_opgp_packet_literal_data_t literal;
 	} data;
 } drew_opgp_packet_t;
 
