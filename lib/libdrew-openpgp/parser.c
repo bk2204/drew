@@ -37,11 +37,13 @@ int drew_opgp_parser_parse_packets(drew_opgp_parser_t p,
 
 	*off = 0;
 
-	for (i = 0; i < *npackets; i++, *off += res) {
+	for (i = 0; i < *npackets && *off != datalen; i++, *off += res) {
 		res = drew_opgp_parser_parse_packet(p, packets+i, data, datalen);
 		if (res < 0)
 			break;
 	}
+	if (res > 0)
+		res = 0;
 	*npackets = i;
 	return res;
 }
