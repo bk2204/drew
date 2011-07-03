@@ -33,7 +33,18 @@ int drew_opgp_parser_parse_packets(drew_opgp_parser_t p,
 		drew_opgp_packet_t *packets, size_t *npackets, const uint8_t *data,
 		size_t datalen, size_t *off)
 {
-	return 0;
+	size_t i;
+	int res = 0;
+
+	*off = 0;
+
+	for (i = 0; i < *npackets; i++, *off += res) {
+		res = drew_opgp_parser_parse_packet(p, packets+i, data, datalen);
+		if (res < 0)
+			break;
+	}
+	*npackets = i;
+	return res;
 }
 
 static inline uint16_t get_uint16(const uint8_t **datap)
