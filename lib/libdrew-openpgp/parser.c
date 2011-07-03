@@ -12,11 +12,20 @@
 
 int drew_opgp_parser_new(drew_opgp_parser_t *p, int mode, const int *flags)
 {
+	drew_opgp_parser_t np;
+
+	if (!(np = malloc(sizeof(*np))))
+		return -ENOMEM;
+	memset(np, 0, sizeof(*np));
+	if (flags)
+		np->flags = *flags;
+	*p = np;
 	return 0;
 }
 
 int drew_opgp_parser_free(drew_opgp_parser_t *p)
 {
+	free(*p);
 	return 0;
 }
 
