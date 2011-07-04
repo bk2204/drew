@@ -8,37 +8,8 @@
 #include <drew/plugin.h>
 
 #include <drew-opgp/drew-opgp.h>
+#include <drew-opgp/key.h>
 #include <drew-opgp/parser.h>
-
-struct drew_opgp_key_s;
-struct drew_opgp_signature_s;
-struct drew_opgp_prefs_s;
-
-typedef struct drew_opgp_signature_s *drew_opgp_signature_t;
-typedef struct drew_opgp_key_s *drew_opgp_key_t;
-typedef struct drew_opgp_prefs_s *drew_opgp_prefs_t;
-
-// Has this signature been checked?
-#define DREW_OPGP_SIGNATURE_CHECKED			(1 << 0)
-// Has this signature been hashed and checked against the left two?
-#define DREW_OPGP_SIGNATURE_HASH_CHECK		(1 << 1)
-// Did the signature validate?
-#define DREW_OPGP_SIGNATURE_VALIDATED		(1 << 2)
-// Has this signature been revoked?
-#define DREW_OPGP_SIGNATURE_REVOKED			(1 << 3)
-// Has this signature expired?
-#define DREW_OPGP_SIGNATURE_EXPIRED			(1 << 4)
-// Is this signature consistent?
-#define DREW_OPGP_SIGNATURE_CONSISTENT		(1 << 5)
-
-// The SHA-256 hash, used as an internal identifier.
-typedef uint8_t drew_opgp_id_t[32];
-// A fingerprint, MD5 or SHA-1.
-typedef uint8_t drew_opgp_fp_t[20];
-// A hash value (could be as large as SHA-512).
-typedef uint8_t drew_opgp_hash_t[64];
-// A key ID.
-typedef uint8_t drew_opgp_keyid_t[8];
 
 struct drew_opgp_signature_s {
 	int flags;
