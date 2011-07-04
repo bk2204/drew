@@ -171,7 +171,7 @@ int drew_opgp_key_can_do(drew_opgp_key_t key, int flags)
 /* Returns the version of the key. */
 int drew_opgp_key_get_version(drew_opgp_key_t key)
 {
-	return -DREW_ERR_NOT_IMPL;
+	return key->pub.ver;
 }
 
 int drew_opgp_key_get_type(drew_opgp_key_t key)
