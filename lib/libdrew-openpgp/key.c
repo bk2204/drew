@@ -41,6 +41,7 @@ typedef struct drew_opgp_key_s ckey_t;
 
 typedef struct {
 	char *s;
+	size_t len;
 	csig_t *theselfsig;
 	csig_t *selfsigs;
 	size_t nselfsigs;
@@ -402,6 +403,7 @@ static int public_load_uid(pubkey_t *pub, const drew_opgp_packet_t *pkt)
 	pub->uids = p;
 	uid = &pub->uids[pub->nuids];
 	memset(uid, 0, sizeof(*uid));
+	uid->len = d->len;
 	if (!(uid->s = malloc(d->len + 1)))
 		return -ENOMEM;
 	memcpy(uid->s, d->data, d->len);
