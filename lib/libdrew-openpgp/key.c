@@ -312,8 +312,8 @@ static int synchronize_pubkey(const drew_loader_t *ldr, pubkey_t *pub,
 		size_t mpilen = (pub->mpi[0].len + 7) / 8;
 		memcpy(pub->keyid, pub->mpi[0].data+mpilen-8, 8);
 		/* The key ID is the bottom 64 bits of the modulus, which is a multiple
-		 * of two odd primes.  Since a multiple of two odd numbers is odd, check
-		 * to see that the key ID has the bottom bit set.
+		 * of two odd primes.  Since the product of two odd numbers is odd,
+		 * check to see that the key ID has the bottom bit set.
 		 */
 		if (!(pub->keyid[7] & 1))
 			return -DREW_OPGP_ERR_CORRUPT_KEYID;
