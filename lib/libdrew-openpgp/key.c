@@ -224,7 +224,7 @@ inline static void hash_u32(drew_hash_t *hash, uint32_t x)
 	hash->functbl->update(hash, (const uint8_t *)&x, 4);
 }
 
-static void hash_key_data(drew_opgp_key_t key, drew_hash_t *hash)
+static void hash_key_data(pubkey_t *pub, drew_hash_t *hash)
 {
 	uint8_t buf[16];
 	uint16_t mpilen[DREW_OPGP_MAX_MPIS];
@@ -233,46 +233,48 @@ static void hash_key_data(drew_opgp_key_t key, drew_hash_t *hash)
 
 	buf[0] = 0x99;
 	hash->functbl->update(hash, buf, 1);
-	for (int i = 0; i < DREW_OPGP_MAX_MPIS && key->pub.mpi[i].data;
+	for (int i = 0; i < DREW_OPGP_MAX_MPIS && pub->mpi[i].data;
 			i++, nmpis++)
-		totallen += mpilen[i] = (key->pub.mpi[i].len + 7) / 8;
+		totallen += mpilen[i] = (pub->mpi[i].len + 7) / 8;
 
 	uint16_t len = 1 + 4 + 1 + (2 * nmpis) + totallen;
-	if (key->pub.ver < 4)
+	if (pub->ver < 4)
 		len += 2;
 	hash_u16(hash, len);
-	hash_u8(hash, key->pub.ver);
-	hash_u32(hash, key->pub.ctime);
-	if (key->pub.ver < 4)
-		hash_u16(hash, (key->pub.etime - key->pub.ctime) / 86400);
-	hash_u8(hash, key->pub.algo);
+	hash_u8(hash, pub->ver);
+	hash_u32(hash, pub->ctime);
+	if (pub->ver < 4)
+		hash_u16(hash, (pub->etime - pub->ctime) / 86400);
+	hash_u8(hash, pub->algo);
 	for (int i = 0; i < nmpis; i++) {
-		hash_u16(hash, key->pub.mpi[i].len);
-		hash->functbl->update(hash, key->pub.mpi[i].data, mpilen[i]);
+		hash_u16(hash, pub->mpi[i].len);
+		hash->functbl->update(hash, pub->mpi[i].data, mpilen[i]);
 	}
 }
 
-static int hash_key(drew_opgp_key_t key, int algoid, drew_opgp_hash_t digest)
+static int hash_key(const drew_loader_t *ldr, pubkey_t *pub, int algoid,
+		drew_opgp_hash_t digest)
 {
 	drew_hash_t hash;
-	RETFAIL(make_hash(key->ldr, &hash, algoid));
+	RETFAIL(make_hash(ldr, &hash, algoid));
 
-	hash_key_data(key, &hash);
+	hash_key_data(pub, &hash);
 	return hash.functbl->final(&hash, digest, 0);
 }
 
-static int make_v3_fingerprint(drew_opgp_key_t key, drew_opgp_hash_t digest)
+static int make_v3_fingerprint(const drew_loader_t *ldr, pubkey_t *pub,
+		drew_opgp_hash_t digest)
 {
 	drew_hash_t hash;
-	RETFAIL(make_hash(key->ldr, &hash, DREW_OPGP_MDALGO_MD5));
+	RETFAIL(make_hash(ldr, &hash, DREW_OPGP_MDALGO_MD5));
 
 	// This is probably a v3 ElGamal key. Not implemented yet.
-	if (key->pub.algo > 4)
+	if (pub->algo > 4)
 		return -DREW_ERR_NOT_IMPL;
 
-	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && key->pub.mpi[i].data; i++)
-		hash.functbl->update(&hash, key->pub.mpi[i].data,
-				(key->pub.mpi[i].len + 7) / 8);
+	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && pub->mpi[i].data; i++)
+		hash.functbl->update(&hash, pub->mpi[i].data,
+				(pub->mpi[i].len + 7) / 8);
 	return hash.functbl->final(&hash, digest, 0);
 }
 
@@ -295,34 +297,49 @@ int drew_opgp_key_get_keyid(drew_opgp_key_t key, drew_opgp_keyid_t keyid)
 	return 0;
 }
 
+static int synchronize_pubkey(const drew_loader_t *ldr, pubkey_t *pub,
+		pubkey_t *main, int flags)
+{
+	RETFAIL(hash_key(ldr, pub, DREW_OPGP_MDALGO_SHA256, pub->id));
+
+	if (pub->ver < 2 || pub->ver > 4)
+		return -DREW_OPGP_ERR_BAD_KEY_FORMAT;
+
+	if (pub->ver < 4) {
+		// v3 subkeys are not allowed.
+		if (main)
+			return -DREW_OPGP_ERR_BAD_KEY_FORMAT;
+		size_t mpilen = (pub->mpi[0].len + 7) / 8;
+		memcpy(pub->keyid, pub->mpi[0].data+mpilen-8, 8);
+		/* The key ID is the bottom 64 bits of the modulus, which is a multiple
+		 * of two odd primes.  Since a multiple of two odd numbers is odd, check
+		 * to see that the key ID has the bottom bit set.
+		 */
+		if (!(pub->keyid[7] & 1))
+			return -DREW_OPGP_ERR_CORRUPT_KEYID;
+		RETFAIL(make_v3_fingerprint(ldr, pub, pub->fp));
+	}
+	else {
+		RETFAIL(hash_key(ldr, pub, DREW_OPGP_MDALGO_SHA1, pub->fp));
+		memcpy(pub->keyid, pub->fp+20-8, 8);
+	}
+	return 0;
+}
+
 /* Check whether all fields are self-consistent. If they are not, make them so.
  * If they cannot be made so, return an error.
  */
 int drew_opgp_key_synchronize(drew_opgp_key_t key, int flags)
 {
-	memset(key->pub.fp, 0, sizeof(key->pub.fp));
-	RETFAIL(hash_key(key, DREW_OPGP_MDALGO_SHA256, key->pub.id));
-
-	if (key->pub.ver < 4) {
-		size_t mpilen = (key->pub.mpi[0].len + 7) / 8;
-		memcpy(key->pub.keyid, key->pub.mpi[0].data+mpilen-8, 8);
-		/* The key ID is the bottom 64 bits of the modulus, which is a multiple
-		 * of two odd primes.  Since a multiple of two odd numbers is odd, check
-		 * to see that the key ID has the bottom bit set.
-		 */
-		if (!(key->pub.keyid[7] & 1))
-			return -DREW_OPGP_ERR_CORRUPT_KEYID;
-		RETFAIL(make_v3_fingerprint(key, key->pub.fp));
-		return 0;
+	RETFAIL(synchronize_pubkey(key->ldr, &key->pub, NULL, flags));
+	if (key->pub.ver < 4 && (key->npubsubs || key->nprivsubs))
+		return -DREW_OPGP_ERR_BAD_KEY_FORMAT;
+	for (size_t i = 0; i < key->npubsubs; i++) {
+		RETFAIL(synchronize_pubkey(key->ldr, &key->pubsubs[i], &key->pub,
+					flags));
 	}
-	else {
-		RETFAIL(hash_key(key, DREW_OPGP_MDALGO_SHA1, key->pub.fp));
-		memcpy(key->pub.keyid, key->pub.fp+20-8, 8);
-		return 0;
-	}
+	return 0;
 	/* TODO:
-	 * generate the internal ID (SHA-256).
-	 * generate the fingerprint (SHA-1 or MD5, as appropriate).
 	 * determine which signatures are self-signatures.
 	 * determine *the* self-signature.
 	 * ensure the main and subkeys are properly connected.
