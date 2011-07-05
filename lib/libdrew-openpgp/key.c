@@ -260,6 +260,21 @@ static int hash_key(drew_opgp_key_t key, int algoid, drew_opgp_hash_t digest)
 	return hash.functbl->final(&hash, digest, 0);
 }
 
+static int make_v3_fingerprint(drew_opgp_key_t key, drew_opgp_hash_t digest)
+{
+	drew_hash_t hash;
+	RETFAIL(make_hash(key->ldr, &hash, DREW_OPGP_MDALGO_MD5));
+
+	// This is probably a v3 ElGamal key. Not implemented yet.
+	if (key->pub.algo > 4)
+		return -DREW_ERR_NOT_IMPL;
+
+	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && key->pub.mpi[i].data; i++)
+		hash.functbl->update(&hash, key->pub.mpi[i].data,
+				(key->pub.mpi[i].len + 7) / 8);
+	return hash.functbl->final(&hash, digest, 0);
+}
+
 int drew_opgp_key_get_fingerprint(drew_opgp_key_t key, drew_opgp_fp_t fp)
 {
 	size_t len = (key->pub.ver < 4) ? 16 : 20;
