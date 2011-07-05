@@ -469,18 +469,20 @@ static int public_load_sig(csig_t *sig, const drew_opgp_packet_sig_t *s)
 				nissuers++;
 			}
 		}
-		for (size_t i = 0; nissuers && i < sig->nunhashed; i++) {
-			drew_opgp_subpacket_t *sp = &sig->unhashed[i];
-			if (sp->type == 16) {
-				if (sp->len != 8)
-					continue;
-				memcpy(sig->keyid, sp->data, 8);
-				nissuers++;
+		if (!nissuers) {
+			for (size_t i = 0; i < sig->nunhashed; i++) {
+				drew_opgp_subpacket_t *sp = &sig->unhashed[i];
+				if (sp->type == 16) {
+					if (sp->len != 8)
+						continue;
+					memcpy(sig->keyid, sp->data, 8);
+					nissuers++;
+				}
 			}
 		}
-		// We should have exactly one ctime and at most one issuer.
-		if (nctimes != 1)
-			sig->ctime = -1;
+		// We should have exactly one ctime and exactly one issuer.
+		if (nctimes != 1 || nissuers != 1)
+			sig->flags |= DREW_OPGP_SIGNATURE_INCOMPLETE;
 	}
 	return 0;
 }
