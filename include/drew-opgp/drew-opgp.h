@@ -12,6 +12,8 @@
 #define DREW_OPGP_ERR_NO_SUCH_ALGO		0x20004
 // A corrupt key ID is present.
 #define DREW_OPGP_ERR_CORRUPT_KEYID		0x20005
+// The format of this key is not understood.
+#define DREW_OPGP_ERR_BAD_KEY_FORMAT	0x20006
 
 // The data is not in compliance with the versions specified.
 #define DREW_OPGP_ERR_WRONG_VERSION		0x20101
