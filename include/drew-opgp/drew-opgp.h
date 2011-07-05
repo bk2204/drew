@@ -10,6 +10,8 @@
 #define DREW_OPGP_ERR_NOT_IMPL			0x20003
 // A given algorithm is needed but has not been loaded.
 #define DREW_OPGP_ERR_NO_SUCH_ALGO		0x20004
+// A corrupt key ID is present.
+#define DREW_OPGP_ERR_CORRUPT_KEYID		0x20005
 
 // The data is not in compliance with the versions specified.
 #define DREW_OPGP_ERR_WRONG_VERSION		0x20101

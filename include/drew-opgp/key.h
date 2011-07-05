@@ -51,6 +51,7 @@ int drew_opgp_key_generate(drew_opgp_key_t key, uint8_t algo, size_t nbits,
 		size_t order, time_t expires);
 int drew_opgp_key_get_fingerprint(drew_opgp_key_t key, drew_opgp_fp_t fp);
 int drew_opgp_key_get_id(drew_opgp_key_t key, drew_opgp_id_t id);
+int drew_opgp_key_get_keyid(drew_opgp_key_t key, drew_opgp_keyid_t keyid);
 int drew_opgp_key_synchronize(drew_opgp_key_t key, int flags);
 int drew_opgp_key_load_public(drew_opgp_key_t key,
 		const drew_opgp_packet_t *pkts, size_t npkts);

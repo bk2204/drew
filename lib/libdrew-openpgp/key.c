@@ -61,6 +61,7 @@ typedef struct drew_opgp_pubkey_s {
 	size_t nuids;
 	csig_t *sigs;
 	size_t nsigs;
+	drew_opgp_keyid_t keyid;
 	drew_opgp_id_t id;
 	drew_opgp_fp_t fp;
 } pubkey_t;
@@ -288,18 +289,35 @@ int drew_opgp_key_get_id(drew_opgp_key_t key, drew_opgp_id_t id)
 	return 0;
 }
 
+int drew_opgp_key_get_keyid(drew_opgp_key_t key, drew_opgp_keyid_t keyid)
+{
+	memcpy(keyid, key->pub.keyid, sizeof(drew_opgp_keyid_t));
+	return 0;
+}
+
 /* Check whether all fields are self-consistent. If they are not, make them so.
  * If they cannot be made so, return an error.
  */
 int drew_opgp_key_synchronize(drew_opgp_key_t key, int flags)
 {
 	memset(key->pub.fp, 0, sizeof(key->pub.fp));
+	RETFAIL(hash_key(key, DREW_OPGP_MDALGO_SHA256, key->pub.id));
+
 	if (key->pub.ver < 4) {
-		return -DREW_ERR_NOT_IMPL;
+		size_t mpilen = (key->pub.mpi[0].len + 7) / 8;
+		memcpy(key->pub.keyid, key->pub.mpi[0].data+mpilen-8, 8);
+		/* The key ID is the bottom 64 bits of the modulus, which is a multiple
+		 * of two odd primes.  Since a multiple of two odd numbers is odd, check
+		 * to see that the key ID has the bottom bit set.
+		 */
+		if (!(key->pub.keyid[7] & 1))
+			return -DREW_OPGP_ERR_CORRUPT_KEYID;
+		RETFAIL(make_v3_fingerprint(key, key->pub.fp));
+		return 0;
 	}
 	else {
 		RETFAIL(hash_key(key, DREW_OPGP_MDALGO_SHA1, key->pub.fp));
-		RETFAIL(hash_key(key, DREW_OPGP_MDALGO_SHA256, key->pub.id));
+		memcpy(key->pub.keyid, key->pub.fp+20-8, 8);
 		return 0;
 	}
 	/* TODO:
