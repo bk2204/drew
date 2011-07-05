@@ -324,6 +324,7 @@ static int synchronize_pubkey(const drew_loader_t *ldr, pubkey_t *pub,
 		RETFAIL(hash_key(ldr, pub, DREW_OPGP_MDALGO_SHA1, pub->fp));
 		memcpy(pub->keyid, pub->fp+20-8, 8);
 	}
+	pub->parent = main;
 	return 0;
 }
 
