@@ -165,7 +165,7 @@ int print_fingerprint(struct file *f, struct util *util)
 		goto out;
 	}
 	drew_opgp_key_new(&key, util->ldr);
-	if ((res = drew_opgp_key_load_public(key, pkts, npkts) < 0)) {
+	if ((res = drew_opgp_key_load_public(key, pkts, npkts)) < 0) {
 		res = print_error(20, res, "failed loading packets");
 		goto out;
 	}
