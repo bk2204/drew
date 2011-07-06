@@ -225,7 +225,51 @@ inline static void hash_u32(drew_hash_t *hash, uint32_t x)
 	hash->functbl->update(hash, (const uint8_t *)&x, 4);
 }
 
-static void hash_key_data(pubkey_t *pub, drew_hash_t *hash)
+static int make_sig_id(const drew_loader_t *ldr, csig_t *sig,
+		drew_opgp_id_t id)
+{
+	drew_hash_t hash;
+	RETFAIL(make_hash(ldr, &hash, DREW_OPGP_MDALGO_SHA256));
+	uint16_t mpilen[DREW_OPGP_MAX_MPIS];
+	size_t nmpis = 0;
+	uint32_t totallen = 0;
+
+	for (int i = 0; i < DREW_OPGP_MAX_MPIS && sig->mpi[i].data;
+			i++, nmpis++)
+		totallen += mpilen[i] = (sig->mpi[i].len + 7) / 8;
+
+	/* By analogy with hashing the key, this is a v3 encoding of a signature
+	 * packet with four-octet length (it might contain more than a two-octet
+	 * length's worth of data).
+	 */
+	hash_u8(&hash, 0x8a);
+	totallen += 1 + 1 + 1 + 1 + 4 + 2 + sig->hashedlen + 2 + sig->unhashedlen +
+		(2 * nmpis);
+	hash_u32(&hash, totallen);
+	hash_u8(&hash, sig->ver);
+	hash_u8(&hash, sig->type);
+	hash_u8(&hash, sig->pkalgo);
+	hash_u8(&hash, sig->mdalgo);
+	hash_u32(&hash, sig->ctime);
+	hash_u16(&hash, sig->hashedlen);
+	hash.functbl->update(&hash, sig->hasheddata, sig->hashedlen);
+	/* We include the unhashed data here because our interest is providing a
+	 * unique ID for this signature and we want to distinguish between
+	 * signatures that have different unhashed data (where the issuer key ID is
+	 * usually placed.
+	 */
+	hash_u16(&hash, sig->unhashedlen);
+	hash.functbl->update(&hash, sig->unhasheddata, sig->unhashedlen);
+	for (size_t i = 0; i < nmpis; i++) {
+		hash_u16(&hash, sig->mpi[i].len);
+		hash.functbl->update(&hash, sig->mpi[i].data, mpilen[i]);
+	}
+	hash.functbl->final(&hash, id, 0);
+	hash.functbl->fini(&hash, 0);
+	return 0;
+}
+
+static int hash_key_data(pubkey_t *pub, drew_hash_t *hash)
 {
 	uint8_t buf[16];
 	uint16_t mpilen[DREW_OPGP_MAX_MPIS];
@@ -251,6 +295,7 @@ static void hash_key_data(pubkey_t *pub, drew_hash_t *hash)
 		hash_u16(hash, pub->mpi[i].len);
 		hash->functbl->update(hash, pub->mpi[i].data, mpilen[i]);
 	}
+	return 0;
 }
 
 static int hash_key(const drew_loader_t *ldr, pubkey_t *pub, int algoid,
@@ -298,6 +343,44 @@ int drew_opgp_key_get_keyid(drew_opgp_key_t key, drew_opgp_keyid_t keyid)
 	return 0;
 }
 
+static int hash_sig(drew_hash_t *hash, csig_t *sig)
+{
+	if (sig->ver < 4) {
+		return -DREW_ERR_NOT_IMPL;
+	}
+	else {
+		uint32_t len = 1 + 1 + 1 + 1 + 2 + sig->hashedlen;
+		hash_u8(hash, sig->ver);
+		hash_u8(hash, sig->type);
+		hash_u8(hash, sig->pkalgo);
+		hash_u8(hash, sig->mdalgo);
+		hash_u16(hash, sig->hashedlen);
+		hash->functbl->update(hash, sig->hasheddata, sig->hashedlen);
+		// Trailer.
+		hash_u16(hash, 0x04ff);
+		hash_u32(hash, len);
+	}
+	return 0;
+}
+
+static int hash_uid_sig(drew_opgp_key_t key, cuid_t *uid, csig_t *sig,
+		drew_opgp_hash_t digest)
+{
+	drew_hash_t hash;
+	RETFAIL(make_hash(key->ldr, &hash, sig->mdalgo));
+	hash_key_data(&key->pub, &hash);
+	if (sig->ver < 4) {
+		return -DREW_ERR_NOT_IMPL;
+	}
+	else {
+		hash_u8(&hash, 0xb4);
+		hash_u32(&hash, uid->len);
+		hash.functbl->update(&hash, (const uint8_t *)uid->s, uid->len);
+		hash_sig(&hash, sig);
+	}
+	return hash.functbl->final(&hash, digest, 0);
+}
+
 static int synchronize_pubkey(const drew_loader_t *ldr, pubkey_t *pub,
 		pubkey_t *main, int flags)
 {
@@ -325,6 +408,40 @@ static int synchronize_pubkey(const drew_loader_t *ldr, pubkey_t *pub,
 		memcpy(pub->keyid, pub->fp+20-8, 8);
 	}
 	pub->parent = main;
+	if (main) {
+		if (pub->nuids)
+			return -DREW_OPGP_ERR_BAD_KEY_FORMAT;
+	}
+	return 0;
+}
+
+static int synchronize_uid(drew_opgp_key_t key, cuid_t *uid, int flags)
+{
+	pubkey_t *pub = &key->pub;
+	return 0;
+}
+
+/* TODO: don't rehash the key and uid each time; use one context for each hash
+ * algorithm and clone it.
+ */
+static int synchronize_uid_sig(drew_opgp_key_t key, cuid_t *uid, csig_t *sig,
+		int flags)
+{
+	pubkey_t *pub = &key->pub;
+	if (sig->ver < 2 || sig->ver > 4)
+		return -DREW_OPGP_ERR_BAD_SIGNATURE_FORMAT;
+	memset(sig->hash, 0, sizeof(sig->hash));
+	RETFAIL(hash_uid_sig(key, uid, sig, sig->hash));
+	if (!memcmp(sig->left, sig->hash, 2))
+		sig->flags |= DREW_OPGP_SIGNATURE_HASH_CHECK;
+	if (!memcmp(sig->keyid, pub->keyid, sizeof(sig->keyid))) {
+		/* TODO: verify signature if that feature is enabled.
+		 * If we do, and the signature is good, this is a self-signature; add it
+		 * to the list.  If we don't, then mark this as a self-signature, but
+		 * don't mark it as validated.
+		 * Regardless, extract the preferences packet.
+		 */
+	}
 	return 0;
 }
 
@@ -333,9 +450,16 @@ static int synchronize_pubkey(const drew_loader_t *ldr, pubkey_t *pub,
  */
 int drew_opgp_key_synchronize(drew_opgp_key_t key, int flags)
 {
+	pubkey_t *pub = &key->pub;
 	RETFAIL(synchronize_pubkey(key->ldr, &key->pub, NULL, flags));
 	if (key->pub.ver < 4 && (key->npubsubs || key->nprivsubs))
 		return -DREW_OPGP_ERR_BAD_KEY_FORMAT;
+	for (size_t i = 0; i < pub->nuids; i++) {
+		cuid_t *uid = &pub->uids[i];
+		for (size_t j = 0; j < uid->nsigs; j++)
+			RETFAIL(synchronize_uid_sig(key, uid, &uid->sigs[j], flags));
+		RETFAIL(synchronize_uid(key, uid, flags));
+	}
 	for (size_t i = 0; i < key->npubsubs; i++) {
 		RETFAIL(synchronize_pubkey(key->ldr, &key->pubsubs[i], &key->pub,
 					flags));
