@@ -30,21 +30,22 @@ int drew_opgp_parser_free(drew_opgp_parser_t *p)
 
 int drew_opgp_parser_parse_packets(drew_opgp_parser_t p,
 		drew_opgp_packet_t *packets, size_t *npackets, const uint8_t *data,
-		size_t datalen, size_t *off)
+		size_t datalen, size_t *offp)
 {
 	size_t i;
 	int res = 0;
+	size_t off = 0;
 
-	*off = 0;
-
-	for (i = 0; i < *npackets && *off != datalen; i++, *off += res) {
-		res = drew_opgp_parser_parse_packet(p, packets+i, data, datalen);
+	for (i = 0; i < *npackets && off != datalen; i++, off += res) {
+		res = drew_opgp_parser_parse_packet(p, packets+i, data+off,
+				datalen-off);
 		if (res < 0)
 			break;
 	}
 	if (res > 0)
 		res = 0;
 	*npackets = i;
+	*offp = off;
 	return res;
 }
 
