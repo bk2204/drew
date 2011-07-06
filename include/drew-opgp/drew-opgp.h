@@ -14,6 +14,8 @@
 #define DREW_OPGP_ERR_CORRUPT_KEYID		0x20005
 // The format of this key is not understood.
 #define DREW_OPGP_ERR_BAD_KEY_FORMAT	0x20006
+// The format of this signature is not understood.
+#define DREW_OPGP_ERR_BAD_SIGNATURE_FORMAT	0x20007
 
 // The data is not in compliance with the versions specified.
 #define DREW_OPGP_ERR_WRONG_VERSION		0x20101
