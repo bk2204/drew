@@ -25,6 +25,8 @@ typedef struct drew_opgp_prefs_s *drew_opgp_prefs_t;
 #define DREW_OPGP_SIGNATURE_CONSISTENT		(1 << 5)
 // Is this signature incomplete?
 #define DREW_OPGP_SIGNATURE_INCOMPLETE		(1 << 6)
+// Is this signature corrupt?
+#define DREW_OPGP_SIGNATURE_CORRUPT			(1 << 7)
 
 #define DREW_OPGP_KEY_STATE_SYNCHRONIZED	(1 << 0)
 
