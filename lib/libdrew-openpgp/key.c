@@ -416,6 +416,7 @@ static int public_load_uid(pubkey_t *pub, const drew_opgp_packet_t *pkt)
 static int public_load_sig(csig_t *sig, const drew_opgp_packet_sig_t *s)
 {
 	memset(sig, 0, sizeof(*sig));
+	sig->ver = s->ver;
 	if (s->ver < 4) {
 		const drew_opgp_packet_sigv3_t *s3 = &s->data.sigv3;
 		sig->type = s3->type;
