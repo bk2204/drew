@@ -377,6 +377,7 @@ static int load_subpackets(drew_opgp_subpacket_t **sparr, size_t *nsp,
 		// FIXME: split into data chunks.
 		(*nsp)++;
 	}
+	*sparr = sp;
 
 	return data-origdata;
 }
