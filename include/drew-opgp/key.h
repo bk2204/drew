@@ -28,6 +28,11 @@ typedef struct drew_opgp_prefs_s *drew_opgp_prefs_t;
 
 #define DREW_OPGP_KEY_STATE_SYNCHRONIZED	(1 << 0)
 
+#define DREW_OPGP_SYNCHRONIZE_FORCE						(1 << 0)
+#define DREW_OPGP_SYNCHRONIZE_BASIC						(1 << 1)
+#define DREW_OPGP_SYNCHRONIZE_HASH_SIGS					(1 << 2)
+#define DREW_OPGP_SYNCHRONIZE_VALIDATE_SELF_SIGNATURES	(1 << 3)
+
 // The SHA-256 hash, used as an internal identifier.
 typedef uint8_t drew_opgp_id_t[32];
 // A fingerprint, MD5 or SHA-1.
