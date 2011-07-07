@@ -7,7 +7,7 @@ struct drew_opgp_key_s;
 struct drew_opgp_signature_s;
 struct drew_opgp_prefs_s;
 
-typedef struct drew_opgp_signature_s *drew_opgp_signature_t;
+typedef struct drew_opgp_signature_s *drew_opgp_sig_t;
 typedef struct drew_opgp_key_s *drew_opgp_key_t;
 typedef struct drew_opgp_prefs_s *drew_opgp_prefs_t;
 
