@@ -4,15 +4,15 @@
 # SHA-384 and SHA-512.
 
 ## Message digests.
-CFG_MD2			= m
-CFG_MD4			= m
-CFG_MD5			= m
-CFG_RIPE160		= m
-CFG_SHA1		= m
-CFG_SHA256		= m
-CFG_SHA512		= m
-CFG_TIGER		= m
-CFG_WHIRLPOOL	= m
+CFG_MD2			= y
+CFG_MD4			= y
+CFG_MD5			= y
+CFG_RIPE160		= y
+CFG_SHA1		= y
+CFG_SHA256		= y
+CFG_SHA512		= y
+CFG_TIGER		= y
+CFG_WHIRLPOOL	= y
 
 ## Block ciphers.
 # Note that the aes plugin implements Rijndael (the AES algorithm) with key
@@ -23,54 +23,54 @@ CFG_WHIRLPOOL	= m
 # Also, the aria128 and ariabyte plugins both implement ARIA, but the former
 # uses 128-bit quantities which are only available on some platforms.  You do
 # not need both.
-CFG_CAST5		= m
-CFG_CAST6		= m
-CFG_BLOWFISH	= m
-CFG_AES			= m
-CFG_RIJNDAEL	= m
-CFG_TWOFISH		= m
-CFG_DES			= m
-CFG_CAMELLIA	= m
-CFG_RC2			= m
-CFG_SERPENT		= m
-CFG_TEA			= m
-CFG_XTEA		= m
-CFG_SEED		= m
+CFG_CAST5		= y
+CFG_CAST6		= y
+CFG_BLOWFISH	= y
+CFG_AES			= y
+CFG_RIJNDAEL	= y
+CFG_TWOFISH		= y
+CFG_DES			= y
+CFG_CAMELLIA	= y
+CFG_RC2			= y
+CFG_SERPENT		= y
+CFG_TEA			= y
+CFG_XTEA		= y
+CFG_SEED		= y
 CFG_IDEA		= No, thanks.  I'm patented.
-CFG_ARIABYTE	= m
-CFG_ARIA128		= m
+CFG_ARIABYTE	= y
+CFG_ARIA128		= y
 
 # Modes.
-CFG_CFB			= m
-CFG_OFB			= m
-CFG_CBC			= m
-CFG_CTR			= m
+CFG_CFB			= y
+CFG_OFB			= y
+CFG_CBC			= y
+CFG_CTR			= y
 
 # MACs.
-CFG_HMAC		= m
+CFG_HMAC		= y
 
 ## Stream ciphers.
-CFG_RC4			= m
-CFG_SALSA20		= m
-CFG_HC128		= m
-CFG_HC256		= m
-CFG_RABBIT		= m
+CFG_RC4			= y
+CFG_SALSA20		= y
+CFG_HC128		= y
+CFG_HC256		= y
+CFG_RABBIT		= y
 
 ## PRNGs.
-CFG_ARC4STIR	= m
-CFG_ARC4IL		= m
-CFG_SP80090		= m
+CFG_ARC4STIR	= y
+CFG_ARC4IL		= y
+CFG_SP80090		= y
 
 ## Bignum implementations.
-CFG_TOMMATH		= m
+CFG_TOMMATH		= y
 CFG_OPENSSLBN	= No, thanks.
 
 ## Public key encryption.
-CFG_RSAENC		= m
+CFG_RSAENC		= y
 
 ## Public key signatures.
-CFG_RSASIG		= m
-CFG_DSA			= m
+CFG_RSASIG		= y
+CFG_DSA			= y
 
 ## Additional libraries using libdrew.
 CFG_LIBMD		= y
