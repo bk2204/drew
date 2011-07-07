@@ -16,6 +16,8 @@
 #define DREW_OPGP_ERR_BAD_KEY_FORMAT	0x20006
 // The format of this signature is not understood.
 #define DREW_OPGP_ERR_BAD_SIGNATURE_FORMAT	0x20007
+// This signature does not verify.
+#define DREW_OPGP_ERR_BAD_SIGNATURE		0x20008
 
 // The data is not in compliance with the versions specified.
 #define DREW_OPGP_ERR_WRONG_VERSION		0x20101
