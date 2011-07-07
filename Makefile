@@ -36,7 +36,7 @@ CLIKEFLAGS		+= -floop-interchange -floop-block
 CLIKEFLAGS		+= ${CFLAGS-y}
 CXXFLAGS		:= ${CLIKEFLAGS}
 CFLAGS			:= ${CLIKEFLAGS}
-CXXFLAGS		+= -fno-rtti -fno-exceptions
+CXXFLAGS		+= -fno-rtti
 CFLAGS			+= -std=c99
 
 LIBCFLAGS		+= -shared
