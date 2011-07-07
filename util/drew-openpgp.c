@@ -169,7 +169,9 @@ int print_fingerprint(struct file *f, struct util *util)
 		res = print_error(20, res, "failed loading packets");
 		goto out;
 	}
-	if ((res = drew_opgp_key_synchronize(key, 0)) < 0) {
+	if ((res = drew_opgp_key_synchronize(key,
+					DREW_OPGP_SYNCHRONIZE_ALL|DREW_OPGP_SYNCHRONIZE_FORCE))
+			< 0) {
 		res = print_error(21, res, "failed to synchronize");
 		goto out;
 	}
