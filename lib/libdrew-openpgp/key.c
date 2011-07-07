@@ -706,7 +706,6 @@ int drew_opgp_key_load_public(drew_opgp_key_t key,
 		if (res < 0)
 			return res;
 	}
-	RETFAIL(drew_opgp_key_synchronize(key, 0));
 	return i;
 }
 
