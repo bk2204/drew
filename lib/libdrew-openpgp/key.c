@@ -9,6 +9,7 @@
 #include <drew/drew.h>
 #include <drew/hash.h>
 #include <drew/plugin.h>
+#include <drew/pksig.h>
 
 #include <drew-opgp/drew-opgp.h>
 #include <drew-opgp/key.h>
@@ -171,33 +172,221 @@ int drew_opgp_key_generate(drew_opgp_key_t key, uint8_t algo, size_t nbits,
 	return -DREW_ERR_NOT_IMPL;
 }
 
+struct hash_algos {
+	const char *algoname;
+	size_t len;
+	size_t prefixlen;
+	const uint8_t prefix[32];
+};
+
+struct hash_algos hashes[] = {
+	{
+		NULL, 0, 0, {}
+	},
+	{
+		"MD5", 16, 18, {
+			0x30, 0x20, 0x30, 0x0c, 0x06, 0x08, 0x2a, 0x86,
+			0x48, 0x86, 0xf7, 0x0d, 0x02, 0x05, 0x05, 0x00,
+			0x04, 0x10
+		}
+	},
+	{
+		"SHA-1", 20, 15, {
+			0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2b, 0x0e,
+			0x03, 0x02, 0x1a, 0x05, 0x00, 0x04, 0x14
+		}
+	},
+	{
+		"RIPEMD-160", 20, 15, {
+			0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2b, 0x24,
+			0x03, 0x02, 0x01, 0x05, 0x00, 0x04, 0x14
+		}
+	},
+	{
+		NULL, 0, 0, {}
+	},
+	{
+		"MD2", 16, 18, {
+			0x30, 0x20, 0x30, 0x0c, 0x06, 0x08, 0x2a, 0x86,
+			0x48, 0x86, 0xf7, 0x0d, 0x02, 0x02, 0x05, 0x00,
+			0x04, 0x10
+		}
+	},
+	{
+		"Tiger", 24, 0, {}
+	},
+	{
+		NULL, 0, 0, {}
+	},
+	{
+		"SHA-256", 32, 19, {
+			0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86,
+			0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05,
+			0x00, 0x04, 0x20
+		}
+	},
+	{
+		"SHA-384", 32, 19, {
+			0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86,
+			0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, 0x05,
+			0x00, 0x04, 0x30
+		}
+	},
+	{
+		"SHA-512", 64, 19, {
+			0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86,
+			0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x05,
+			0x00, 0x04, 0x40
+		}
+	},
+	{
+		"SHA-224", 28, 19, {
+			0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86,
+			0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x04, 0x05,
+			0x00, 0x04, 0x1c
+		}
+	}
+};
+
+static int make_bignum(const drew_loader_t *ldr, drew_bignum_t *bn)
+{
+	int id = 0, res = 0;
+	const void *tbl = NULL;
+
+	id = drew_loader_lookup_by_name(ldr, "Bignum", 0, -1);
+	if (id < 0)
+		return id;
+	res = drew_loader_get_functbl(ldr, id, &tbl);
+	if (res < 0)
+		return res;
+	bn->functbl = tbl;
+	RETFAIL(bn->functbl->init(bn, 0, ldr, NULL));
+	return 0;
+}
+
+static int make_pksig(const drew_loader_t *ldr, drew_pksig_t *pksig,
+		const char *algoname)
+{
+	int id = 0, res = 0;
+	const void *tbl = NULL;
+	drew_param_t param;
+	drew_bignum_t bn;
+
+	id = drew_loader_lookup_by_name(ldr, algoname, 0, -1);
+	if (id == -DREW_ERR_NONEXISTENT)
+		return -DREW_OPGP_ERR_NO_SUCH_ALGO;
+	else if (id < 0)
+		return id;
+	res = drew_loader_get_functbl(ldr, id, &tbl);
+	if (res < 0)
+		return res;
+	pksig->functbl = tbl;
+	param.next = 0;
+	param.name = "bignum";
+	param.param.value = &bn;
+	RETFAIL(make_bignum(ldr, &bn));
+	RETFAIL(pksig->functbl->init(pksig, 0, ldr, &param));
+	return 0;
+}
+
+static int verify_rsa(drew_opgp_key_t key, pubkey_t *pub, drew_pksig_t *pksig,
+		drew_opgp_hash_t digest, size_t len, int hashalgo,
+		const drew_opgp_mpi_t *mpi)
+{
+	drew_bignum_t bn[2];
+	drew_bignum_t *c = bn+0, *m = bn+1;
+	size_t nlen, mlen;
+	int res = 0;
+
+	if (hashalgo >= DIM(hashes) || !hashes[hashalgo].prefixlen)
+		return -DREW_OPGP_ERR_NO_SUCH_ALGO;
+
+	if (!len)
+		len = hashes[hashalgo].len;
+
+	if (len != hashes[hashalgo].len)
+		return -DREW_OPGP_ERR_BAD_SIGNATURE;
+
+	for (size_t i = 0; i < DIM(bn); i++)
+		RETFAIL(make_bignum(key->ldr, bn+i));
+
+	nlen = (pub->mpi[0].len + 7) / 8;
+	pksig->functbl->setval(pksig, "n", pub->mpi[0].data, nlen);
+	pksig->functbl->setval(pksig, "e", pub->mpi[1].data, (pub->mpi[1].len+7)/8);
+	c->functbl->setbytes(c, mpi[0].data, (mpi[0].len + 7)/8);
+
+	pksig->functbl->verify(pksig, m, c);
+	mlen = m->functbl->nbytes(m);
+	if (mlen != nlen - 1)
+		return -DREW_OPGP_ERR_BAD_SIGNATURE;
+	uint8_t *buf = malloc(mlen);
+	if (!buf)
+		return -ENOMEM;
+	m->functbl->bytes(m, buf, mlen);
+	size_t soh = mlen - len, sop = soh - hashes[hashalgo].prefixlen;
+	if (sop-1 - 1 < 8)
+		res = -DREW_OPGP_ERR_BAD_SIGNATURE;
+	if (buf[0] != 0x01)
+		res = -DREW_OPGP_ERR_BAD_SIGNATURE;
+	if (memcmp(buf+soh, digest, len))
+		res = -DREW_OPGP_ERR_BAD_SIGNATURE;
+	if (memcmp(buf+sop, hashes[hashalgo].prefix, hashes[hashalgo].prefixlen))
+		res = -DREW_OPGP_ERR_BAD_SIGNATURE;
+	if (buf[sop-1] != 0x00)
+		res = -DREW_OPGP_ERR_BAD_SIGNATURE;
+	for (size_t i = 1; i < sop-1; i++)
+		if (buf[i] != 0xff)
+			res = -DREW_OPGP_ERR_BAD_SIGNATURE;
+	free(buf);
+	return res;
+}
+
+static int verify_dsa(drew_opgp_key_t key, pubkey_t *pub, drew_pksig_t *pksig,
+		drew_opgp_hash_t digest, size_t len, int hashalgo,
+		const drew_opgp_mpi_t *mpi)
+{
+	return 0;
+}
+
+static int verify_sig(drew_opgp_key_t key, pubkey_t *pub,
+		drew_opgp_hash_t digest, size_t len, int pkalgo, int hashalgo,
+		const drew_opgp_mpi_t *mpi)
+{
+	drew_pksig_t xsa;
+	const char *algoname = NULL;
+	int (*verify)(drew_opgp_key_t, pubkey_t *, drew_pksig_t *, drew_opgp_hash_t,
+			size_t, int, const drew_opgp_mpi_t *);
+
+	if (pkalgo >= 1 && pkalgo <= 3) {
+		algoname = "RSASignature";
+		verify = verify_rsa;
+	}
+	else if (pkalgo == 17) {
+		algoname = "DSA";
+		verify = verify_dsa;
+	}
+	else if (pkalgo == 16 || pkalgo == 20)
+		return -DREW_ERR_NOT_IMPL;
+	else
+		return -DREW_OPGP_ERR_NO_SUCH_ALGO;
+	RETFAIL(make_pksig(key->ldr, &xsa, algoname));
+	return verify(key, pub, &xsa, digest, len, hashalgo, mpi);
+}
+
 static int make_hash(const drew_loader_t *ldr, drew_hash_t *hash, int algoid)
 {
 	int id = 0, res = 0;
 	const void *tbl = NULL;
-	const char *algonames[] = {
-		NULL,
-		"MD5",
-		"SHA-1",
-		"RIPEMD-160",
-		NULL,
-		"MD2",
-		"Tiger",
-		NULL,
-		"SHA-256",
-		"SHA-384",
-		"SHA-512",
-		"SHA-224"
-	};
 
-	if (algoid >= DIM(algonames))
+	if (algoid >= DIM(hashes))
 		return -DREW_ERR_INVALID;
-	if (!algonames[algoid])
+	if (!hashes[algoid].algoname)
 		return -DREW_ERR_INVALID;
 
-	id = drew_loader_lookup_by_name(ldr, algonames[algoid], 0, -1);
-	if (id == -DREW_ERR_NONEXISTENT)
+	id = drew_loader_lookup_by_name(ldr, hashes[algoid].algoname, 0, -1);
+	if (id == -DREW_ERR_NONEXISTENT) {
 		return -DREW_OPGP_ERR_NO_SUCH_ALGO;
+	}
 	else if (id < 0)
 		return id;	
 	res = drew_loader_get_functbl(ldr, id, &tbl);
@@ -427,20 +616,34 @@ static int synchronize_uid(drew_opgp_key_t key, cuid_t *uid, int flags)
 static int synchronize_uid_sig(drew_opgp_key_t key, cuid_t *uid, csig_t *sig,
 		int flags)
 {
+	int res = 0;
 	pubkey_t *pub = &key->pub;
 	if (sig->ver < 2 || sig->ver > 4)
 		return -DREW_OPGP_ERR_BAD_SIGNATURE_FORMAT;
-	memset(sig->hash, 0, sizeof(sig->hash));
-	RETFAIL(hash_uid_sig(key, uid, sig, sig->hash));
-	if (!memcmp(sig->left, sig->hash, 2))
-		sig->flags |= DREW_OPGP_SIGNATURE_HASH_CHECK;
-	if (!memcmp(sig->keyid, pub->keyid, sizeof(sig->keyid))) {
-		/* TODO: verify signature if that feature is enabled.
-		 * If we do, and the signature is good, this is a self-signature; add it
-		 * to the list.  If we don't, then mark this as a self-signature, but
-		 * don't mark it as validated.
-		 * Regardless, extract the preferences packet.
-		 */
+	if (flags & (DREW_OPGP_SYNCHRONIZE_HASH_SIGS |
+				DREW_OPGP_SYNCHRONIZE_VALIDATE_SELF_SIGNATURES)) {
+		memset(sig->hash, 0, sizeof(sig->hash));
+		RETFAIL(hash_uid_sig(key, uid, sig, sig->hash));
+		if (!memcmp(sig->left, sig->hash, 2))
+			sig->flags |= DREW_OPGP_SIGNATURE_HASH_CHECK;
+		if (!memcmp(sig->keyid, pub->keyid, sizeof(sig->keyid))) {
+			/* TODO: verify signature if that feature is enabled.  If we do, and
+			 * the signature is good, this is a self-signature; add it to the
+			 * list.  If we don't, then mark this as a self-signature, but don't
+			 * mark it as validated.  Regardless, extract the preferences
+			 * packet.
+			 */
+			if (flags & DREW_OPGP_SYNCHRONIZE_VALIDATE_SELF_SIGNATURES) {
+				const int checked_sig = DREW_OPGP_SIGNATURE_CHECKED;
+				const int good_sig = checked_sig |
+					DREW_OPGP_SIGNATURE_VALIDATED;
+				res = verify_sig(key, &key->pub, sig->hash, 0, sig->pkalgo,
+							sig->mdalgo, sig->mpi);
+				sig->flags &= ~good_sig;
+				sig->flags |= (!res) ? good_sig :
+					((res == -DREW_OPGP_ERR_BAD_SIGNATURE) ?  checked_sig : 0);
+			}
+		}
 	}
 	return 0;
 }
