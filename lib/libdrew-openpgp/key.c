@@ -108,7 +108,7 @@ struct hash_algos {
 	const uint8_t prefix[32];
 };
 
-struct hash_algos hashes[] = {
+static struct hash_algos hashes[] = {
 	{
 		NULL, 0, 0, {}
 	},
