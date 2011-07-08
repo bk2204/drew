@@ -527,7 +527,7 @@ static int hash_uid_sig(drew_opgp_key_t key, cuid_t *uid, csig_t *sig,
 	RETFAIL(make_hash(key->ldr, &hash, sig->mdalgo));
 	hash_key_data(&key->pub, &hash);
 	if (sig->ver < 4) {
-		return -DREW_ERR_NOT_IMPL;
+		sig->flags |= DREW_OPGP_SIGNATURE_IGNORED;
 	}
 	else {
 		hash_u8(&hash, 0xb4);
@@ -587,7 +587,15 @@ static int synchronize_uid_sig(drew_opgp_key_t key, cuid_t *uid, csig_t *sig,
 	int res = 0;
 	pubkey_t *pub = &key->pub;
 	if (sig->ver < 2 || sig->ver > 4)
-		return -DREW_OPGP_ERR_BAD_SIGNATURE_FORMAT;
+		sig->flags |= DREW_OPGP_SIGNATURE_IGNORED;
+	if (sig->type == 0x30) {
+		// FIXME: implement.
+		sig->flags |= DREW_OPGP_SIGNATURE_IGNORED;
+	}
+	else if ((sig->type & ~3) != 0x10) {
+		// Wherever this signature belongs, it's not here.
+		sig->flags |= DREW_OPGP_SIGNATURE_IGNORED;
+	}
 	if (flags & (DREW_OPGP_SYNCHRONIZE_HASH_SIGS |
 				DREW_OPGP_SYNCHRONIZE_VALIDATE_SELF_SIGNATURES)) {
 		memset(sig->hash, 0, sizeof(sig->hash));
