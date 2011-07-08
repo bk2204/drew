@@ -274,7 +274,46 @@ static int verify_dsa(drew_opgp_key_t key, pubkey_t *pub, drew_pksig_t *pksig,
 		drew_opgp_hash_t digest, size_t len, int hashalgo,
 		const drew_opgp_mpi_t *mpi)
 {
-	return 0;
+	drew_bignum_t bn[5];
+	drew_bignum_t *r = bn+0, *s = bn+1, *h = bn+2, *v = bn+3, *z = bn+4;
+	size_t qlen;
+	int res = 0;
+
+	if (hashalgo >= DIM(hashes) || !hashes[hashalgo].prefixlen)
+		return -DREW_OPGP_ERR_NO_SUCH_ALGO;
+
+	if (!len)
+		len = hashes[hashalgo].len;
+
+	if (len != hashes[hashalgo].len)
+		return -DREW_OPGP_ERR_BAD_SIGNATURE;
+
+	// The hash must be at least as large as q.
+	qlen = (pub->mpi[1].len + 7) / 8;
+	if (len < qlen)
+		return -DREW_OPGP_ERR_BAD_SIGNATURE;
+
+	for (size_t i = 0; i < DIM(bn); i++)
+		RETFAIL(make_bignum(key->ldr, bn+i));
+
+	const char *names[] = {"p", "q", "g", "y"};
+	for (size_t i = 0; i < 4; i++)
+		pksig->functbl->setval(pksig, names[i], pub->mpi[i].data,
+				(pub->mpi[i].len+7)/8);
+
+	z->functbl->setzero(z);
+	r->functbl->setbytes(r, mpi[0].data, (mpi[0].len + 7)/8);
+	s->functbl->setbytes(s, mpi[1].data, (mpi[1].len + 7)/8);
+	if (!r->functbl->compare(r, z, 0) || !s->functbl->compare(s, z, 0))
+		return -DREW_OPGP_ERR_BAD_SIGNATURE;
+	h->functbl->setbytes(s, digest, qlen);
+	pksig->functbl->verify(pksig, v, bn);
+	res = r->functbl->compare(r, v, 0) ? 0 : -DREW_OPGP_ERR_BAD_SIGNATURE;
+
+	for (size_t i = 0; i < DIM(bn); i++)
+		bn[i].functbl->fini(bn+i, 0);
+
+	return res;
 }
 
 static int verify_sig(drew_opgp_key_t key, pubkey_t *pub,
