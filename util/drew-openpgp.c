@@ -14,6 +14,7 @@
 #include <drew-opgp/drew-opgp.h>
 #include <drew-opgp/key.h>
 #include <drew-opgp/parser.h>
+#include <drew-opgp/sig.h>
 
 #define DIM(x) (sizeof(x)/sizeof(x[0]))
 
@@ -145,13 +146,58 @@ out:
 	return res;
 }
 
+void print_key_signature_info(drew_opgp_sig_t sig)
+{
+	drew_opgp_keyid_t keyid;
+	int flags;
+	char c, rev = ' ', exp = ' ', loc = ' ', self = ' ';
+	drew_opgp_sig_get_flags(sig, &flags, 1);
+	drew_opgp_sig_get_issuer(sig, keyid);
+	if (flags & DREW_OPGP_SIGNATURE_CORRUPT)
+		c = '-';
+	else if (flags & DREW_OPGP_SIGNATURE_INCOMPLETE)
+		c = '-';
+	else if (!(flags & DREW_OPGP_SIGNATURE_CHECKED))
+		c = '?';
+	else
+		switch (flags & (DREW_OPGP_SIGNATURE_HASH_CHECK | 
+					DREW_OPGP_SIGNATURE_VALIDATED))
+		{
+			case 0:
+				c = '?';
+				break;
+			case DREW_OPGP_SIGNATURE_HASH_CHECK:
+				c = 'h';
+				break;
+			case DREW_OPGP_SIGNATURE_VALIDATED:
+				c = 'V';
+				break;
+			default:
+				c = 'v';
+				break;
+		}
+	if (flags & DREW_OPGP_SIGNATURE_IRREVOCABLE)
+		rev = '!';
+	else if (flags & DREW_OPGP_SIGNATURE_REVOKED)
+		rev = 'x';
+	if (flags & DREW_OPGP_SIGNATURE_EXPIRED)
+		exp = 't';
+	if (flags & DREW_OPGP_SIGNATURE_LOCAL)
+		loc = 'p';
+	printf("        Signature: %c%c%c%c%c ", c, self, rev, exp, loc);
+	for (size_t i = 0; i < sizeof(keyid); i++)
+		printf("%02x", keyid[i]);
+	printf("\n");
+}
+
 void print_key_info(drew_opgp_key_t key)
 {
 	drew_opgp_fp_t fp;
 	drew_opgp_id_t id;
 	drew_opgp_keyid_t keyid;
-	int version, nuids;
+	int version, nuids, nsigs;
 	drew_opgp_uid_t *uids;
+	drew_opgp_sig_t *sigs;
 	version = drew_opgp_key_get_version(key);
 	drew_opgp_key_get_fingerprint(key, fp);
 	drew_opgp_key_get_id(key, id);
@@ -171,6 +217,9 @@ void print_key_info(drew_opgp_key_t key)
 		const char *text;
 		drew_opgp_uid_get_text(uids[i], &text);
 		printf("    User ID: %s\n", text);
+		nsigs = drew_opgp_uid_get_signatures(uids[i], &sigs);
+		for (int j = 0; j < nsigs; j++)
+			print_key_signature_info(sigs[i]);
 	}
 	free(uids);
 }
