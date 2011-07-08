@@ -54,6 +54,20 @@ int drew_opgp_sig_set_version(drew_opgp_sig_t sig, int version)
 	return 0;
 }
 
+int drew_opgp_sig_get_flags(drew_opgp_sig_t sig, int *flags, size_t nflags)
+{
+	if (!nflags)
+		return 0;
+	*flags = sig->flags;
+	return 0;
+}
+
+int drew_opgp_sig_get_issuer(drew_opgp_sig_t sig, drew_opgp_keyid_t keyid)
+{
+	memcpy(keyid, sig->keyid, sizeof(drew_opgp_keyid_t));
+	return 0;
+}
+
 int drew_opgp_sig_get_version(drew_opgp_sig_t sig)
 {
 	return sig->ver;
