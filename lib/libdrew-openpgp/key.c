@@ -869,3 +869,39 @@ int drew_opgp_key_get_preferences(drew_opgp_key_t key, int type,
 {
 	return -DREW_ERR_NOT_IMPL;
 }
+
+int drew_opgp_key_get_user_ids(drew_opgp_key_t key, drew_opgp_uid_t **uids)
+{
+	if (!uids)
+		return key->pub.nuids;
+
+	drew_opgp_uid_t *p = malloc(sizeof(*p) * key->pub.nuids);
+	if (!p)
+		return -ENOMEM;
+
+	for (size_t i = 0; i < key->pub.nuids; i++)
+		p[i] = key->pub.uids+i;
+	*uids = p;
+	return key->pub.nuids;
+}
+
+int drew_opgp_uid_get_text(drew_opgp_uid_t uid, const char **p)
+{
+	*p = uid->s;
+	return 0;
+}
+
+int drew_opgp_uid_get_signatures(drew_opgp_uid_t uid, drew_opgp_sig_t **sigs)
+{
+	if (!sigs)
+		return uid->nsigs;
+
+	drew_opgp_sig_t *p = malloc(sizeof(*p) * uid->nsigs);
+	if (!p)
+		return -ENOMEM;
+
+	for (size_t i = 0; i < uid->nsigs; i++)
+		p[i] = uid->sigs+i;
+	*sigs = p;
+	return uid->nsigs;
+}

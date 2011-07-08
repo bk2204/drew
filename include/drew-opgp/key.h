@@ -81,5 +81,10 @@ int drew_opgp_key_store_private(drew_opgp_key_t key,
 		const drew_opgp_packet_t *pkts, size_t npkts);
 int drew_opgp_key_get_preferences(drew_opgp_key_t key, int type,
 		drew_opgp_prefs_t *prefs);
+int drew_opgp_key_get_user_ids(drew_opgp_key_t key, drew_opgp_uid_t **uids);
+
+
+int drew_opgp_uid_get_text(drew_opgp_uid_t uid, const char **p);
+int drew_opgp_uid_get_signatures(drew_opgp_uid_t uid, drew_opgp_sig_t **sigs);
 
 #endif
