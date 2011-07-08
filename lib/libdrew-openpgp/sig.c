@@ -76,7 +76,7 @@ int drew_opgp_sig_set_sig_expiration_time(drew_opgp_sig_t sig, time_t exp)
 	return 0;
 }
 
-int drew_opgp_is_self_signature(drew_opgp_sig_t sig)
+int drew_opgp_sig_is_self_signature(drew_opgp_sig_t sig)
 {
 	return !!(sig->flags & DREW_OPGP_SIGNATURE_SELF_SIG);
 }
@@ -89,9 +89,10 @@ int drew_opgp_make_self_signature(drew_opgp_sig_t sig)
 	return 0;
 }
 
-int drew_opgp_get_cipher_prefs(drew_opgp_sig_t sig, drew_opgp_prefs_t *prefs)
+int drew_opgp_sig_get_cipher_prefs(drew_opgp_sig_t sig,
+		drew_opgp_prefs_t *prefs)
 {
-	if (!drew_opgp_is_self_signature(sig))
+	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
 	memcpy(prefs, sig->selfsig.prefs+PREFS_CIPHER, sizeof(*prefs));
 	return 0;
@@ -100,15 +101,15 @@ int drew_opgp_get_cipher_prefs(drew_opgp_sig_t sig, drew_opgp_prefs_t *prefs)
 int drew_opgp_set_cipher_prefs(drew_opgp_sig_t sig,
 		const drew_opgp_prefs_t *prefs)
 {
-	if (!drew_opgp_is_self_signature(sig))
+	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
 	memcpy(sig->selfsig.prefs+PREFS_CIPHER, prefs, sizeof(*prefs));
 	return 0;
 }
 
-int drew_opgp_get_hash_prefs(drew_opgp_sig_t sig, drew_opgp_prefs_t *prefs)
+int drew_opgp_sig_get_hash_prefs(drew_opgp_sig_t sig, drew_opgp_prefs_t *prefs)
 {
-	if (!drew_opgp_is_self_signature(sig))
+	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
 	memcpy(prefs, sig->selfsig.prefs+PREFS_HASH, sizeof(*prefs));
 	return 0;
@@ -117,15 +118,16 @@ int drew_opgp_get_hash_prefs(drew_opgp_sig_t sig, drew_opgp_prefs_t *prefs)
 int drew_opgp_set_hash_prefs(drew_opgp_sig_t sig,
 		const drew_opgp_prefs_t *prefs)
 {
-	if (!drew_opgp_is_self_signature(sig))
+	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
 	memcpy(sig->selfsig.prefs+PREFS_HASH, prefs, sizeof(*prefs));
 	return 0;
 }
 
-int drew_opgp_get_compress_prefs(drew_opgp_sig_t sig, drew_opgp_prefs_t *prefs)
+int drew_opgp_sig_get_compress_prefs(drew_opgp_sig_t sig,
+		drew_opgp_prefs_t *prefs)
 {
-	if (!drew_opgp_is_self_signature(sig))
+	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
 	memcpy(prefs, sig->selfsig.prefs+PREFS_COMPRESS, sizeof(*prefs));
 	return 0;
@@ -134,7 +136,7 @@ int drew_opgp_get_compress_prefs(drew_opgp_sig_t sig, drew_opgp_prefs_t *prefs)
 int drew_opgp_set_compress_prefs(drew_opgp_sig_t sig,
 		const drew_opgp_prefs_t *prefs)
 {
-	if (!drew_opgp_is_self_signature(sig))
+	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
 	memcpy(sig->selfsig.prefs+PREFS_COMPRESS, prefs, sizeof(*prefs));
 	return 0;
@@ -142,7 +144,7 @@ int drew_opgp_set_compress_prefs(drew_opgp_sig_t sig,
 
 int drew_opgp_sig_get_key_expiration_time(drew_opgp_sig_t sig, time_t *exp)
 {
-	if (!drew_opgp_is_self_signature(sig))
+	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
 	*exp = sig->selfsig.keyexp;
 	return 0;
@@ -150,7 +152,7 @@ int drew_opgp_sig_get_key_expiration_time(drew_opgp_sig_t sig, time_t *exp)
 
 int drew_opgp_sig_set_key_expiration_time(drew_opgp_sig_t sig, time_t exp)
 {
-	if (!drew_opgp_is_self_signature(sig))
+	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
 	sig->selfsig.keyexp = exp;
 	return 0;
@@ -186,7 +188,7 @@ int drew_opgp_sig_set_exportable(drew_opgp_sig_t sig, bool export)
 
 int drew_opgp_sig_get_key_flags(drew_opgp_sig_t sig, int *flags, size_t sz)
 {
-	if (!drew_opgp_is_self_signature(sig))
+	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
 	if (sz > 0) {
 		memset(flags, 0, sz * sizeof(*flags));
@@ -197,7 +199,7 @@ int drew_opgp_sig_get_key_flags(drew_opgp_sig_t sig, int *flags, size_t sz)
 
 int drew_opgp_sig_set_key_flags(drew_opgp_sig_t sig, int *flags)
 {
-	if (!drew_opgp_is_self_signature(sig))
+	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
 	sig->selfsig.keyflags = *flags;
 	return 0;
