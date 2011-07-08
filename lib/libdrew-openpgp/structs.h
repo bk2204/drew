@@ -75,6 +75,7 @@ typedef struct drew_opgp_pubkey_s {
 	time_t etime;
 	struct drew_opgp_pubkey_s *parent;
 	drew_opgp_mpi_t mpi[DREW_OPGP_MAX_MPIS];
+	cuid_t *theuid;
 	cuid_t *uids;
 	size_t nuids;
 	csig_t *sigs;
