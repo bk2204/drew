@@ -35,6 +35,9 @@ typedef struct drew_opgp_uid_s *drew_opgp_uid_t;
 #define DREW_OPGP_SIGNATURE_IRREVOCABLE		(1 << 9)
 // Is this signature local?
 #define DREW_OPGP_SIGNATURE_LOCAL			(1 << 10)
+// Is this signature to be ignored?
+// This is for algorithms that we do not have or key formats we do not support.
+#define DREW_OPGP_SIGNATURE_IGNORED			(1 << 11)
 
 #define DREW_OPGP_KEY_STATE_SYNCHRONIZED	(1 << 0)
 

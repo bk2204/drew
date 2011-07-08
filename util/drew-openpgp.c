@@ -219,7 +219,7 @@ void print_key_info(drew_opgp_key_t key)
 		printf("    User ID: %s\n", text);
 		nsigs = drew_opgp_uid_get_signatures(uids[i], &sigs);
 		for (int j = 0; j < nsigs; j++)
-			print_key_signature_info(sigs[i]);
+			print_key_signature_info(sigs[j]);
 	}
 	free(uids);
 }
