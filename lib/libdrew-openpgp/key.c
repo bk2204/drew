@@ -503,7 +503,9 @@ int drew_opgp_key_get_keyid(drew_opgp_key_t key, drew_opgp_keyid_t keyid)
 static int hash_sig(drew_hash_t *hash, csig_t *sig)
 {
 	if (sig->ver < 4) {
-		return -DREW_ERR_NOT_IMPL;
+		hash_u8(hash, sig->type);
+		hash_u32(hash, sig->ctime);
+		return 0;
 	}
 	else {
 		uint32_t len = 1 + 1 + 1 + 1 + 2 + sig->hashedlen;
@@ -526,15 +528,12 @@ static int hash_uid_sig(drew_opgp_key_t key, cuid_t *uid, csig_t *sig,
 	drew_hash_t hash;
 	RETFAIL(make_hash(key->ldr, &hash, sig->mdalgo));
 	hash_key_data(&key->pub, &hash);
-	if (sig->ver < 4) {
-		sig->flags |= DREW_OPGP_SIGNATURE_IGNORED;
-	}
-	else {
+	if (sig->ver == 4) {
 		hash_u8(&hash, 0xb4);
 		hash_u32(&hash, uid->len);
-		hash.functbl->update(&hash, (const uint8_t *)uid->s, uid->len);
-		hash_sig(&hash, sig);
 	}
+	hash.functbl->update(&hash, (const uint8_t *)uid->s, uid->len);
+	hash_sig(&hash, sig);
 	return hash.functbl->final(&hash, digest, 0);
 }
 
