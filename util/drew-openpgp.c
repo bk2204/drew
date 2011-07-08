@@ -164,7 +164,7 @@ void print_key_signature_info(drew_opgp_sig_t sig)
 					DREW_OPGP_SIGNATURE_VALIDATED))
 		{
 			case 0:
-				c = '?';
+				c = 'x';
 				break;
 			case DREW_OPGP_SIGNATURE_HASH_CHECK:
 				c = 'h';
