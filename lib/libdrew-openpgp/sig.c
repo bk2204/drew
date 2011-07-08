@@ -364,6 +364,18 @@ int drew_opgp_sig_synchronize(drew_opgp_sig_t sig)
 	return 0;
 }
 
+int drew_opgp_sig_generate_direct_key(drew_opgp_sig_t sig,
+		int mdalgo, drew_opgp_key_t signer, drew_opgp_key_t signedk)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+int drew_opgp_sig_verify_direct_key(drew_opgp_sig_t sig,
+		drew_opgp_key_t signer, drew_opgp_key_t signedk)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
 /* Generate a signature over the given data of the given type. */
 int drew_opgp_sig_generate_data(drew_opgp_sig_t sig, drew_opgp_key_t key,
 		int type, int mdalgo, const uint8_t *data, size_t len)
@@ -378,14 +390,25 @@ int drew_opgp_sig_verify_data(drew_opgp_sig_t sig, drew_opgp_key_t key,
 	return -DREW_ERR_NOT_IMPL;
 }
 
-int drew_opgp_sig_generate_hash(drew_opgp_key_t key, int type, int mdalgo,
-		const uint8_t *hash, size_t len)
+int drew_opgp_sig_generate_hash(drew_opgp_sig_t sig, drew_opgp_key_t key,
+		int type, int mdalgo, const uint8_t *hash, size_t len)
 {
 	return -DREW_ERR_NOT_IMPL;
 }
 
-int drew_opgp_sig_verify_hash(drew_opgp_key_t key, int type, int mdalgo,
-		const uint8_t *hash, size_t len)
+int drew_opgp_sig_verify_hash(drew_opgp_sig_t sig, drew_opgp_key_t key,
+		int type, int mdalgo, const uint8_t *hash, size_t len)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+int drew_opgp_sig_generate_standalone(drew_opgp_sig_t sig, drew_opgp_key_t key,
+		int mdalgo)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+int drew_opgp_sig_verify_standalone(drew_opgp_sig_t sig, drew_opgp_key_t key)
 {
 	return -DREW_ERR_NOT_IMPL;
 }
