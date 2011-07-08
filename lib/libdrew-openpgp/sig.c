@@ -270,19 +270,98 @@ loop:
 	}
 }
 
+static void free_subpackets(drew_opgp_sig_t sig)
+{
+	for (size_t i = 0; i < sig->nhashed; i++)
+		free(sig->hashed[i].data);
+	free(sig->hashed);
+	free(sig->hasheddata);
+	sig->hashedlen = sig->nhashed = 0;
+	sig->hashed = NULL;
+	sig->hasheddata = NULL;
+	for (size_t i = 0; i < sig->nunhashed; i++)
+		free(sig->unhashed[i].data);
+	free(sig->unhashed);
+	free(sig->unhasheddata);
+	sig->unhashedlen = sig->nunhashed = 0;
+	sig->unhashed = NULL;
+	sig->unhasheddata = NULL;
+}
+
+static int add_subpacket(drew_opgp_sig_t sig, uint8_t type, const uint8_t *data,
+		size_t len)
+{
+	drew_opgp_subpacket_t *sp, *arr;
+	uint8_t *p;
+
+	if (len+1 >= 192)
+		return -DREW_ERR_NOT_IMPL;
+	arr = realloc(sig->hashed, sizeof(*sig->hashed) * (sig->nhashed + 1));
+	if (!arr)
+		return -ENOMEM;
+	sig->hashed = arr;
+	sp = arr+sig->nhashed;
+	sp->type = type;
+	sp->lenoflen = 1;
+	sp->critical = false;
+	sp->len = len;
+	sp->data = malloc(sp->len);
+	if (!sp->data) 
+		return -ENOMEM;
+	memcpy(sp->data, data, len);
+
+	p = realloc(sig->hasheddata, sig->hashedlen + len + 2);
+	if (!p)
+		return -ENOMEM;
+	sig->hasheddata = p;
+	p += sig->hashedlen;
+	p[0] = len + 1;
+	p[1] = type;
+	memcpy(p+2, data, len);
+	sig->hashedlen += len + 2;
+	return 0;
+}
+
+static int add_byte_subpacket(drew_opgp_sig_t sig, uint8_t type, uint8_t byte)
+{
+	return add_subpacket(sig, type, &byte, 1);
+}
+
+static int update_subpackets(drew_opgp_sig_t sig)
+{
+	selfsig_t *s = &sig->selfsig;
+	size_t len;
+	free_subpackets(sig);
+	if (sig->flags & DREW_OPGP_SIGNATURE_IRREVOCABLE)
+		RETFAIL(add_byte_subpacket(sig, 0x07, 0x00));
+	if (sig->flags & DREW_OPGP_SIGNATURE_LOCAL)
+		RETFAIL(add_byte_subpacket(sig, 0x04, 0x00));
+	if ((len = s->prefs[PREFS_CIPHER].len))
+		RETFAIL(add_subpacket(sig, 0x0b, s->prefs[PREFS_CIPHER].vals, len));
+	if ((len = s->prefs[PREFS_HASH].len))
+		RETFAIL(add_subpacket(sig, 0x15, s->prefs[PREFS_HASH].vals, len));
+	if ((len = s->prefs[PREFS_COMPRESS].len))
+		RETFAIL(add_subpacket(sig, 0x16, s->prefs[PREFS_COMPRESS].vals, len));
+	if (s->keyflags)
+		RETFAIL(add_byte_subpacket(sig, 0x2b, s->keyflags));
+	return 0;
+}
+
 int drew_opgp_sig_synchronize(drew_opgp_sig_t sig)
 {
 	if (sig->type < 0x10 || sig->type > 0x13)
 		sig->flags &= ~DREW_OPGP_SIGNATURE_SELF_SIG;
-	if (sig->flags & DREW_OPGP_SIGNATURE_SELF_SIG) {
+	if (sig->ver == 4 && sig->flags & DREW_OPGP_SIGNATURE_SELF_SIG) {
 		sync_hash_prefs(sig);
 		sync_cipher_prefs(sig);
 		sync_compress_prefs(sig);
+		sig->selfsig.keyflags &= 0xbf;
 	}
-	else {
+	else
 		memset(&sig->selfsig, 0, sizeof(sig->selfsig));
-	}
-	return -DREW_ERR_NOT_IMPL;
+	if (sig->ver == 4)
+		update_subpackets(sig);
+	return 0;
 }
 
 /* Generate a signature over the given data of the given type. */
