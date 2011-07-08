@@ -10,6 +10,24 @@
 #include <drew-opgp/key.h>
 #include <drew-opgp/parser.h>
 
+#define PREFS_CIPHER	0
+#define PREFS_HASH		1
+#define PREFS_COMPRESS	2
+
+struct drew_opgp_prefs_s {
+	uint8_t type;
+	size_t len;
+	uint8_t vals[16];
+};
+
+struct drew_opgp_self_sig_s {
+	int keyflags;
+	time_t keyexp;
+	drew_opgp_prefs_t prefs[3];
+};
+
+typedef struct drew_opgp_self_sig_s selfsig_t;
+
 struct drew_opgp_signature_s {
 	int flags;
 	uint8_t ver;
@@ -17,6 +35,7 @@ struct drew_opgp_signature_s {
 	uint8_t pkalgo;
 	uint8_t mdalgo;
 	time_t ctime;
+	time_t etime;
 	drew_opgp_keyid_t keyid;
 	size_t hashedlen;	
 	size_t nhashed;
@@ -27,6 +46,7 @@ struct drew_opgp_signature_s {
 	uint8_t *unhasheddata;
 	drew_opgp_subpacket_t *unhashed;
 	uint8_t left[2];
+	selfsig_t selfsig;
 	drew_opgp_mpi_t mpi[DREW_OPGP_MAX_MPIS];
 	drew_opgp_hash_t hash;
 	drew_opgp_id_t id;

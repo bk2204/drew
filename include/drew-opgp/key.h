@@ -9,7 +9,7 @@ struct drew_opgp_prefs_s;
 
 typedef struct drew_opgp_signature_s *drew_opgp_sig_t;
 typedef struct drew_opgp_key_s *drew_opgp_key_t;
-typedef struct drew_opgp_prefs_s *drew_opgp_prefs_t;
+typedef struct drew_opgp_prefs_s drew_opgp_prefs_t;
 
 // Has this signature been checked?
 #define DREW_OPGP_SIGNATURE_CHECKED			(1 << 0)
@@ -29,6 +29,10 @@ typedef struct drew_opgp_prefs_s *drew_opgp_prefs_t;
 #define DREW_OPGP_SIGNATURE_CORRUPT			(1 << 7)
 // Is this signature a self-signature?
 #define DREW_OPGP_SIGNATURE_SELF_SIG		(1 << 8)
+// Is this signature irrevocable?
+#define DREW_OPGP_SIGNATURE_IRREVOCABLE		(1 << 9)
+// Is this signature local?
+#define DREW_OPGP_SIGNATURE_LOCAL			(1 << 10)
 
 #define DREW_OPGP_KEY_STATE_SYNCHRONIZED	(1 << 0)
 
