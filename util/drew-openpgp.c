@@ -145,6 +145,36 @@ out:
 	return res;
 }
 
+void print_key_info(drew_opgp_key_t key)
+{
+	drew_opgp_fp_t fp;
+	drew_opgp_id_t id;
+	drew_opgp_keyid_t keyid;
+	int version, nuids;
+	drew_opgp_uid_t *uids;
+	version = drew_opgp_key_get_version(key);
+	drew_opgp_key_get_fingerprint(key, fp);
+	drew_opgp_key_get_id(key, id);
+	drew_opgp_key_get_keyid(key, keyid);
+	printf("Key ");
+	for (size_t i = 0; i < 32; i++)
+		printf("%02x", id[i]);
+	printf(":\n    Info:    %d ", version);
+	for (size_t i = 0; i < 8; i++)
+		printf("%02x", keyid[i]);
+	printf(" ");
+	for (size_t i = 0; i < (version < 4 ? 16 : 20); i++)
+		printf("%02x", fp[i]);
+	printf("\n");
+	nuids = drew_opgp_key_get_user_ids(key, &uids);
+	for (int i = 0; i < nuids; i++) {
+		const char *text;
+		drew_opgp_uid_get_text(uids[i], &text);
+		printf("    User ID: %s\n", text);
+	}
+	free(uids);
+}
+
 int print_fingerprint(struct file *f, struct util *util)
 {
 	int res = 0;
@@ -152,10 +182,6 @@ int print_fingerprint(struct file *f, struct util *util)
 	// FIXME: do not hardcode this.
 	drew_opgp_packet_t pkts[50];
 	drew_opgp_key_t key;
-	drew_opgp_fp_t fp;
-	drew_opgp_id_t id;
-	drew_opgp_keyid_t keyid;
-	int version;
 	size_t npkts = DIM(pkts), nused = 0, nparsed = 1;
 
 	memset(pkts, 0, sizeof(pkts));
@@ -181,23 +207,8 @@ int print_fingerprint(struct file *f, struct util *util)
 			res = print_error(21, res, "failed to synchronize");
 			goto out;
 		}
-		version = drew_opgp_key_get_version(key);
-		drew_opgp_key_get_fingerprint(key, fp);
-		drew_opgp_key_get_id(key, id);
-		drew_opgp_key_get_keyid(key, keyid);
+		print_key_info(key);
 		drew_opgp_key_free(&key);
-		printf("fp: ");
-		for (size_t i = 0; i < (version < 4 ? 16 : 20); i++)
-			printf("%02x", fp[i]);
-		printf("\n");
-		printf("di: ");
-		for (size_t i = 0; i < 32; i++)
-			printf("%02x", id[i]);
-		printf("\n");
-		printf("id: ");
-		for (size_t i = 0; i < 8; i++)
-			printf("%02x", keyid[i]);
-		printf("\n");
 		res = 0;
 		for (size_t i = nused; i < DIM(pkts) && pkts[i].type &&
 				pkts[i].type != 6; i++, nused++);
