@@ -54,8 +54,9 @@ struct drew_opgp_signature_s {
 
 typedef struct drew_opgp_signature_s csig_t;
 typedef struct drew_opgp_key_s ckey_t;
+typedef struct drew_opgp_uid_s cuid_t;
 
-typedef struct {
+struct drew_opgp_uid_s {
 	char *s;
 	size_t len;
 	csig_t *theselfsig;
@@ -64,7 +65,7 @@ typedef struct {
 	csig_t *sigs;
 	size_t nsigs;
 	drew_opgp_id_t id;
-} cuid_t;
+};
 
 typedef struct drew_opgp_pubkey_s {
 	int state;
