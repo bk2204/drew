@@ -890,9 +890,13 @@ int drew_opgp_key_load_public(drew_opgp_key_t key,
 			res = public_load_public(pub, pkts+i);
 			state = 1;
 		}
-		else if (state > 0 && state < 3 && pkts[i].type == 13) {
+		else if (state > 0 && state < 4 && pkts[i].type == 13) {
 			res = public_load_uid(pub, pkts+i);
 			state = 2;
+		}
+		else if (state > 0 && state < 4 && pkts[i].type == 17) {
+			res = 0;
+			state = 3;
 		}
 		else if (state == 1 && pkts[i].type == 2) {
 			res = public_load_direct_sig(pub, pkts+i);
@@ -900,11 +904,14 @@ int drew_opgp_key_load_public(drew_opgp_key_t key,
 		else if (state == 2 && pkts[i].type == 2) {
 			res = public_load_uid_sig(pub, pkts+i);
 		}
+		else if (state == 3 && pkts[i].type == 2) {
+			res = 0;
+		}
 		else if (state > 0 && pkts[i].type == 14) {
 			res = public_load_subkey(key, pkts+i);
-			state = 3;
+			state = 4;
 		}
-		else if (state == 3 && pkts[i].type == 2) {
+		else if (state == 4 && pkts[i].type == 2) {
 			res = public_load_subkey_sig(key, pkts+i);
 		}
 		else
