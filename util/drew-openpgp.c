@@ -233,13 +233,14 @@ int print_fingerprint(struct file *f, struct util *util, size_t pktbufsz)
 	drew_opgp_packet_t *pkts;
 	drew_opgp_key_t key;
 	size_t npkts = pktbufsz, nused = 0, nparsed = 1;
+	size_t fill = 0;
 
 	pkts = malloc(sizeof(*pkts) * pktbufsz);
 
 	memset(pkts, 0, sizeof(*pkts) * pktbufsz);
 	while (off < f->size || nparsed || pkts[0].type) {
-		npkts = pktbufsz - nused;
-		res = drew_opgp_parser_parse_packets(util->pars, pkts+nused, &npkts,
+		npkts = pktbufsz - fill;
+		res = drew_opgp_parser_parse_packets(util->pars, pkts+fill, &npkts,
 				f->buf+off, f->size-off, &toff);
 		if (res < 0) {
 			res = print_error(19, res, "failed parsing packets");
@@ -247,10 +248,11 @@ int print_fingerprint(struct file *f, struct util *util, size_t pktbufsz)
 		}
 		off += toff;
 		nparsed = npkts;
+		fill += nparsed;
 		if (!pkts[0].type)
 			break;
 		drew_opgp_key_new(&key, util->ldr);
-		if ((res = drew_opgp_key_load_public(key, pkts, npkts+nused)) < 0) {
+		if ((res = drew_opgp_key_load_public(key, pkts, fill)) < 0) {
 			res = print_error(20, res, "failed loading packets");
 			goto out;
 		}
@@ -269,6 +271,7 @@ int print_fingerprint(struct file *f, struct util *util, size_t pktbufsz)
 		size_t rem = pktbufsz - nused;
 		memmove(pkts, pkts+nused, rem * sizeof(*pkts));
 		memset(pkts+rem, 0, nused * sizeof(*pkts));
+		fill = rem;
 	}
 out:
 	free(pkts);
