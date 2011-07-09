@@ -230,7 +230,6 @@ int print_fingerprint(struct file *f, struct util *util, size_t pktbufsz)
 {
 	int res = 0;
 	size_t off = 0, toff;
-	// FIXME: do not hardcode this.
 	drew_opgp_packet_t *pkts;
 	drew_opgp_key_t key;
 	size_t npkts = pktbufsz, nused = 0, nparsed = 1;
