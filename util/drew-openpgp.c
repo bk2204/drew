@@ -237,7 +237,7 @@ int print_fingerprint(struct file *f, struct util *util, size_t pktbufsz)
 
 	pkts = malloc(sizeof(*pkts) * pktbufsz);
 
-	memset(pkts, 0, sizeof(pkts));
+	memset(pkts, 0, sizeof(*pkts) * pktbufsz);
 	while (off < f->size || nparsed || pkts[0].type) {
 		npkts = pktbufsz - nused;
 		res = drew_opgp_parser_parse_packets(util->pars, pkts+nused, &npkts,
