@@ -702,7 +702,9 @@ static int public_load_public(pubkey_t *pub, const drew_opgp_packet_t *pkt)
 {
 	int res = 0;
 	pub->ver = pkt->data.pubkey.ver;
-	if (pub->ver < 4) {
+	if (pub->ver < 2)
+		return -DREW_OPGP_ERR_BAD_KEY_FORMAT;
+	else if (pub->ver < 4) {
 		const drew_opgp_packet_pubkeyv3_t *pk = &pkt->data.pubkey.data.pubkeyv3;
 		pub->ctime = pk->ctime;
 		pub->algo = pk->pkalgo;
