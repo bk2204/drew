@@ -846,6 +846,7 @@ static int public_load_subkey(drew_opgp_key_t key,
 	p = realloc(key->pubsubs, sizeof(*p) * (key->npubsubs + 1));
 	if (!p)
 		return -ENOMEM;
+	memset(p+key->npubsubs, 0, sizeof(*p));
 	key->pubsubs = p;
 	pub = &key->pubsubs[key->npubsubs];
 	RETFAIL(public_load_public(pub, pkt));
