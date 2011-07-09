@@ -608,17 +608,23 @@ static int synchronize_uid_sig(drew_opgp_key_t key, cuid_t *uid, csig_t *sig,
 			 * mark it as validated.  Regardless, extract the preferences
 			 * packet.
 			 */
+			const int checked_sig = DREW_OPGP_SIGNATURE_CHECKED;
+			const int good_sig = checked_sig | DREW_OPGP_SIGNATURE_VALIDATED;
 			if (flags & DREW_OPGP_SYNCHRONIZE_VALIDATE_SELF_SIGNATURES) {
-				const int checked_sig = DREW_OPGP_SIGNATURE_CHECKED;
-				const int good_sig = checked_sig |
-					DREW_OPGP_SIGNATURE_VALIDATED;
 				res = verify_sig(key, &key->pub, sig->hash, 0, sig->pkalgo,
 							sig->mdalgo, sig->mpi);
 				sig->flags &= ~good_sig;
 				sig->flags |= (!res) ? good_sig :
 					((res == -DREW_OPGP_ERR_BAD_SIGNATURE) ?  checked_sig : 0);
 			}
+			if (!(sig->flags & checked_sig) ||
+					(sig->flags & good_sig) == good_sig)
+				sig->flags |= DREW_OPGP_SIGNATURE_SELF_SIG;
+			else
+				sig->flags &= ~DREW_OPGP_SIGNATURE_SELF_SIG;
 		}
+		if (!(sig->flags & DREW_OPGP_SIGNATURE_SELF_SIG))
+			memset(&sig->selfsig, 0, sizeof(sig->selfsig));
 	}
 	return 0;
 }
