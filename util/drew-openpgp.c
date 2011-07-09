@@ -259,13 +259,19 @@ int print_fingerprint(struct file *f, struct util *util, size_t pktbufsz)
 			goto out;
 		}
 		nused = res;
-		if ((res = drew_opgp_key_synchronize(key,
-						DREW_OPGP_SYNCHRONIZE_ALL|DREW_OPGP_SYNCHRONIZE_FORCE))
-				< 0) {
-			res = print_error(21, res, "failed to synchronize");
-			goto out;
+		if (nused) {
+			if ((res = drew_opgp_key_synchronize(key,
+							DREW_OPGP_SYNCHRONIZE_ALL|
+							DREW_OPGP_SYNCHRONIZE_FORCE))
+					< 0) {
+				res = print_error(21, res, "failed to synchronize");
+				goto out;
+			}
+			print_key_info(key);
 		}
-		print_key_info(key);
+		else
+			return print_error(22, 0,
+					"packet buffer (%zu packets) is too small", pktbufsz);
 		drew_opgp_key_free(&key);
 		res = 0;
 		for (size_t i = nused; i < pktbufsz && pkts[i].type &&
