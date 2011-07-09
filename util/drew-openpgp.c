@@ -244,6 +244,8 @@ int print_fingerprint(struct file *f, struct util *util)
 		}
 		off += toff;
 		nparsed = npkts;
+		if (!pkts[0].type)
+			break;
 		drew_opgp_key_new(&key, util->ldr);
 		if ((res = drew_opgp_key_load_public(key, pkts, npkts+nused)) < 0) {
 			res = print_error(20, res, "failed loading packets");
