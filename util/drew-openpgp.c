@@ -224,18 +224,20 @@ void print_key_info(drew_opgp_key_t key)
 	free(uids);
 }
 
-int print_fingerprint(struct file *f, struct util *util)
+int print_fingerprint(struct file *f, struct util *util, size_t pktbufsz)
 {
 	int res = 0;
 	size_t off = 0, toff;
 	// FIXME: do not hardcode this.
-	drew_opgp_packet_t pkts[50];
+	drew_opgp_packet_t *pkts;
 	drew_opgp_key_t key;
-	size_t npkts = DIM(pkts), nused = 0, nparsed = 1;
+	size_t npkts = pktbufsz, nused = 0, nparsed = 1;
+
+	pkts = malloc(sizeof(*pkts) * pktbufsz);
 
 	memset(pkts, 0, sizeof(pkts));
 	while (off < f->size || nparsed || pkts[0].type) {
-		npkts = DIM(pkts) - nused;
+		npkts = pktbufsz - nused;
 		res = drew_opgp_parser_parse_packets(util->pars, pkts+nused, &npkts,
 				f->buf+off, f->size-off, &toff);
 		if (res < 0) {
@@ -261,13 +263,14 @@ int print_fingerprint(struct file *f, struct util *util)
 		print_key_info(key);
 		drew_opgp_key_free(&key);
 		res = 0;
-		for (size_t i = nused; i < DIM(pkts) && pkts[i].type &&
+		for (size_t i = nused; i < pktbufsz && pkts[i].type &&
 				pkts[i].type != 6; i++, nused++);
-		size_t rem = DIM(pkts) - nused;
+		size_t rem = pktbufsz - nused;
 		memmove(pkts, pkts+nused, rem * sizeof(*pkts));
 		memset(pkts+rem, 0, nused * sizeof(*pkts));
 	}
 out:
+	free(pkts);
 	return res;
 }
 
@@ -300,7 +303,7 @@ int main(int argc, char **argv)
 			close_file(&f);
 			return res;
 		}
-		res = print_fingerprint(&f, &util);
+		res = print_fingerprint(&f, &util, 500);
 		destroy_util(&util);
 		close_file(&f);
 		return res;
