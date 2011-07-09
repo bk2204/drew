@@ -22,6 +22,7 @@ struct drew_opgp_prefs_s {
 
 struct drew_opgp_self_sig_s {
 	int keyflags;
+	bool primary;
 	time_t keyexp;
 	drew_opgp_prefs_t prefs[3];
 };
