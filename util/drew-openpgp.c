@@ -40,9 +40,11 @@ int print_error(int retval, int error, const char *msg, ...)
 	va_list ap;
 	fprintf(stderr, "%s: ", programname);
 	va_start(ap, msg);
-	fprintf(stderr, msg, ap);
+	vfprintf(stderr, msg, ap);
 	va_end(ap);
-	fprintf(stderr, ": %s\n", drew_strerror(error));
+	if (error)
+		fprintf(stderr, ": %s", drew_strerror(error));
+	fprintf(stderr, "\n");
 	return retval;
 }
 
