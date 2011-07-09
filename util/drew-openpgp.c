@@ -8,6 +8,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <popt.h>
+
 #include <drew/drew.h>
 #include <drew/plugin.h>
 
@@ -276,16 +278,28 @@ out:
 
 int main(int argc, char **argv)
 {
-	int res = 0;
+	int res = 0, cmd = 0, pktbufsz = 500;
 	struct file f;
 	struct util util;
+	struct poptOption optsargs[] = {
+		{"list-packets", 0, POPT_ARG_VAL, &cmd, 1, NULL, NULL},
+		{"fingerprint", 0, POPT_ARG_VAL, &cmd, 2, NULL, NULL},
+		{"packet-buffer-size", 0, POPT_ARG_INT, &pktbufsz, 0, NULL, NULL},
+		POPT_TABLEEND
+	};
+	const char *filename = NULL;
+	poptContext ctx;
+
 	programname = argv[0];
-	if (argc < 3) {
-		fprintf(stderr, "%s: need at least two arguments\n", argv[0]);
-		return 2;
-	}
-	if (!strcmp(argv[1], "--list-packets")) {
-		if ((res = open_file(&f, argv[2])))
+	ctx = poptGetContext(programname, argc, argv, optsargs, 0);
+	while (poptGetNextOpt(ctx) >= 0);
+	filename = poptGetArg(ctx);
+	poptFreeContext(ctx);
+
+	if (!filename)
+		return 5;
+	if (cmd == 1) {
+		if ((res = open_file(&f, filename)))
 			return res;
 		if ((res = create_util(&util))) {
 			close_file(&f);
@@ -296,14 +310,14 @@ int main(int argc, char **argv)
 		close_file(&f);
 		return res;
 	}
-	else if (!strcmp(argv[1], "--fingerprint")) {
-		if ((res = open_file(&f, argv[2])))
+	else if (cmd == 2) {
+		if ((res = open_file(&f, filename)))
 			return res;
 		if ((res = create_util(&util))) {
 			close_file(&f);
 			return res;
 		}
-		res = print_fingerprint(&f, &util, 500);
+		res = print_fingerprint(&f, &util, pktbufsz);
 		destroy_util(&util);
 		close_file(&f);
 		return res;
