@@ -574,6 +574,27 @@ static int synchronize_pubkey(const drew_loader_t *ldr, pubkey_t *pub,
 static int synchronize_uid(drew_opgp_key_t key, cuid_t *uid, int flags)
 {
 	pubkey_t *pub = &key->pub;
+	time_t latest = 0;
+	size_t ssidx = 0;
+
+	uid->nselfsigs = 0;
+	free(uid->selfsigs);
+	uid->theselfsig = NULL;
+
+	for (size_t i = 0; i < uid->nsigs; i++)
+		if (uid->sigs[i].flags & DREW_OPGP_SIGNATURE_SELF_SIG)
+			uid->nselfsigs++;
+	if (!(uid->selfsigs = malloc(uid->nselfsigs * sizeof(*uid->selfsigs))))
+		return -ENOMEM;
+	
+	for (size_t i = 0; i < uid->nsigs; i++)
+		if (uid->sigs[i].flags & DREW_OPGP_SIGNATURE_SELF_SIG) {
+			uid->selfsigs[ssidx++] = uid->sigs+i;
+			if (uid->sigs[i].ctime > latest) {
+				latest = uid->sigs[i].ctime;
+				uid->theselfsig = uid->sigs+i;
+			}
+		}
 	return 0;
 }
 

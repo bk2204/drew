@@ -61,7 +61,7 @@ struct drew_opgp_uid_s {
 	char *s;
 	size_t len;
 	csig_t *theselfsig;
-	csig_t *selfsigs;
+	csig_t **selfsigs;
 	size_t nselfsigs;
 	csig_t *sigs;
 	size_t nsigs;
