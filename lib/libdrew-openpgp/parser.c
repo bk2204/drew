@@ -1,3 +1,5 @@
+#include "internal.h"
+
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,8 +8,6 @@
 
 #include <drew-opgp/drew-opgp.h>
 #include <drew-opgp/parser.h>
-
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
 
 int drew_opgp_parser_new(drew_opgp_parser_t *p, int mode, const int *flags)
 {
@@ -75,8 +75,6 @@ static inline uint32_t get_uint32(const uint8_t **datap)
 	return res;
 }
 
-// Return on failure.
-#define RETFAIL(x) do { int res = (x); if (res < 0) return res; } while(0)
 // Declare a need for at least x more bytes.  Return if they're not available.
 #define DECLARE_NEED(x) \
 	do { if ((data+(x)-origdata) > datalen) return -DREW_ERR_MORE_DATA; } \
@@ -840,7 +838,6 @@ static int (*const func[64])(drew_opgp_parser_t, drew_opgp_packet_t *,
 	parse_pubkey,
 	NULL,
 	NULL,
-	NULL,
 	parse_attr,
 	parse_seidata,
 	parse_mdc,
@@ -850,10 +847,10 @@ static int (*const func[64])(drew_opgp_parser_t, drew_opgp_packet_t *,
 int drew_opgp_parser_parse_packet_contents(drew_opgp_parser_t parser,
 		drew_opgp_packet_t *pkt, const uint8_t *data, size_t datalen)
 {
-	if (pkt->type == 0)
-		return -DREW_OPGP_ERR_INVALID;
+	if (pkt->type <= 0 || pkt->type >= DIM(func))
+		return -DREW_ERR_INVALID;
 	else if (!func[pkt->type])
-		return -DREW_OPGP_ERR_NOT_IMPL;
+		return -DREW_ERR_NOT_IMPL;
 
 	int res = func[pkt->type](parser, pkt, data, datalen);
 	return res;
