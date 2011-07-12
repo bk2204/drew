@@ -15,6 +15,7 @@
 
 #include <drew-opgp/drew-opgp.h>
 #include <drew-opgp/key.h>
+#include <drew-opgp/keystore.h>
 #include <drew-opgp/parser.h>
 #include <drew-opgp/sig.h>
 
@@ -286,14 +287,86 @@ out:
 	return res;
 }
 
+int import(struct file *f, struct util *util, size_t pktbufsz,
+		const char *keystorefile)
+{
+	int res = 0;
+	size_t off = 0, toff;
+	drew_opgp_packet_t *pkts;
+	drew_opgp_key_t key;
+	drew_opgp_keystore_t ks;
+	size_t npkts = pktbufsz, nused = 0, nparsed = 1;
+	size_t fill = 0;
+
+	pkts = malloc(sizeof(*pkts) * pktbufsz);
+
+	memset(pkts, 0, sizeof(*pkts) * pktbufsz);
+	drew_opgp_keystore_new(&ks, util->ldr);
+	while (off < f->size || nparsed || pkts[0].type) {
+		npkts = pktbufsz - fill;
+		res = drew_opgp_parser_parse_packets(util->pars, pkts+fill, &npkts,
+				f->buf+off, f->size-off, &toff);
+		if (res < 0) {
+			res = print_error(19, res, "failed parsing packets");
+			goto out;
+		}
+		off += toff;
+		nparsed = npkts;
+		fill += nparsed;
+		if (!pkts[0].type)
+			break;
+		drew_opgp_key_new(&key, util->ldr);
+		if ((res = drew_opgp_key_load_public(key, pkts, fill)) < 0) {
+			res = print_error(20, res, "failed loading packets");
+			goto out;
+		}
+		nused = res;
+		if (nused) {
+			if ((res = drew_opgp_key_synchronize(key,
+							DREW_OPGP_SYNCHRONIZE_ALL|
+							DREW_OPGP_SYNCHRONIZE_FORCE))
+					< 0) {
+				res = print_error(21, res, "failed to synchronize");
+				goto out;
+			}
+			print_key_info(key);
+		}
+		else
+			return print_error(22, 0,
+					"packet buffer (%zu packets) is too small", pktbufsz);
+		drew_opgp_keystore_update_key(ks, key, 0);
+		//drew_opgp_key_free(&key);
+		res = 0;
+		for (size_t i = nused; i < pktbufsz && pkts[i].type &&
+				pkts[i].type != 6; i++, nused++);
+		size_t rem = pktbufsz - nused;
+		memmove(pkts, pkts+nused, rem * sizeof(*pkts));
+		memset(pkts+rem, 0, nused * sizeof(*pkts));
+		fill = rem;
+	}
+out:
+	drew_opgp_keystore_set_backend(ks, "file");
+	printf("Saving keystore...");
+	fflush(stdout);
+	if ((res = drew_opgp_keystore_store(ks, keystorefile)))
+		return print_error(23, res, "keystore failure");
+	drew_opgp_keystore_free(&ks);
+	printf("done.\n");
+	free(pkts);
+	return res;
+}
+
 int main(int argc, char **argv)
 {
 	int res = 0, cmd = 0, pktbufsz = 500;
 	struct file f;
 	struct util util;
+	const char *keystorefile = NULL;
 	struct poptOption optsargs[] = {
 		{"list-packets", 0, POPT_ARG_VAL, &cmd, 1, NULL, NULL},
 		{"fingerprint", 0, POPT_ARG_VAL, &cmd, 2, NULL, NULL},
+		{"import", 0, POPT_ARG_VAL, &cmd, 3, NULL, NULL},
+		{"keystore", 0, POPT_ARG_STRING, &keystorefile, 1, NULL, NULL},
 		{"packet-buffer-size", 0, POPT_ARG_INT, &pktbufsz, 0, NULL, NULL},
 		POPT_TABLEEND
 	};
@@ -328,6 +401,20 @@ int main(int argc, char **argv)
 			return res;
 		}
 		res = print_fingerprint(&f, &util, pktbufsz);
+		destroy_util(&util);
+		close_file(&f);
+		return res;
+	}
+	else if (cmd == 3) {
+		if (!keystorefile)
+			return 32;
+		if ((res = open_file(&f, filename)))
+			return res;
+		if ((res = create_util(&util))) {
+			close_file(&f);
+			return res;
+		}
+		res = import(&f, &util, pktbufsz, keystorefile);
 		destroy_util(&util);
 		close_file(&f);
 		return res;
