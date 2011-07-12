@@ -162,9 +162,7 @@ void print_key_signature_info(drew_opgp_sig_t sig)
 		c = '-';
 	else if (flags & DREW_OPGP_SIGNATURE_INCOMPLETE)
 		c = '-';
-	else if (!(flags & DREW_OPGP_SIGNATURE_CHECKED))
-		c = '?';
-	else
+	else if (flags & DREW_OPGP_SIGNATURE_CHECKED)
 		switch (flags & (DREW_OPGP_SIGNATURE_HASH_CHECK | 
 					DREW_OPGP_SIGNATURE_VALIDATED))
 		{
@@ -181,6 +179,11 @@ void print_key_signature_info(drew_opgp_sig_t sig)
 				c = 'v';
 				break;
 		}
+	else if (flags & DREW_OPGP_SIGNATURE_HASH_CHECK)
+		c = 'p';
+	else
+		c = '?';
+
 	if (flags & DREW_OPGP_SIGNATURE_IRREVOCABLE)
 		rev = '!';
 	else if (flags & DREW_OPGP_SIGNATURE_REVOKED)
