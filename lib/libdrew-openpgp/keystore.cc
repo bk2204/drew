@@ -216,7 +216,12 @@ class FileBackend : public Backend
 		}
 		virtual void ReadKeyChunk(KeyChunk &k)
 		{
-			read(fd, k.chunk, sizeof(k.chunk));
+			ssize_t res;
+			res = read(fd, k.chunk, sizeof(k.chunk));
+			if (res < 0)
+				throw -errno;
+			if (!res)
+				throw 0;
 		}
 		virtual Chunk *ReadChunks(const KeyChunk &k, size_t &nchunks)
 		{
