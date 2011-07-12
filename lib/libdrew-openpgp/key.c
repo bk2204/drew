@@ -382,6 +382,18 @@ inline static void hash_u32(drew_hash_t *hash, uint32_t x)
 	hash->functbl->update(hash, (const uint8_t *)&x, 4);
 }
 
+static int make_mpi_id(const drew_loader_t *ldr, drew_opgp_mpi_t *mpi,
+		drew_opgp_id_t id)
+{
+	drew_hash_t hash;
+	RETFAIL(make_hash(ldr, &hash, DREW_OPGP_MDALGO_SHA256));
+	hash_u16(&hash, mpi->len);
+	hash.functbl->update(&hash, mpi->data, (mpi->len + 7) / 8);
+	hash.functbl->final(&hash, id, 0);
+	hash.functbl->fini(&hash, 0);
+	return 0;
+}
+
 static int make_sig_id(const drew_loader_t *ldr, csig_t *sig,
 		drew_opgp_id_t id)
 {
@@ -568,6 +580,8 @@ static int synchronize_pubkey(const drew_loader_t *ldr, pubkey_t *pub,
 		if (pub->nuids)
 			return -DREW_OPGP_ERR_BAD_KEY_FORMAT;
 	}
+	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && pub->mpi[i].len; i++)
+		make_mpi_id(ldr, pub->mpi+i, pub->mpi[i].id);
 	return 0;
 }
 
@@ -647,6 +661,8 @@ static int synchronize_uid_sig(drew_opgp_key_t key, cuid_t *uid, csig_t *sig,
 		if (!(sig->flags & DREW_OPGP_SIGNATURE_SELF_SIG))
 			memset(&sig->selfsig, 0, sizeof(sig->selfsig));
 	}
+	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && sig->mpi[i].len; i++)
+		make_mpi_id(key->ldr, sig->mpi+i, sig->mpi[i].id);
 	return 0;
 }
 
