@@ -19,6 +19,9 @@
 // containing lots of data 
 typedef off_t drew_opgp_len_t;
 
+// The SHA-256 hash, used as an internal identifier.
+typedef uint8_t drew_opgp_id_t[32];
+
 struct drew_opgp_parser_s {
 	int flags;
 };
@@ -28,6 +31,7 @@ typedef struct drew_opgp_parser_s *drew_opgp_parser_t;
 typedef struct {
 	uint16_t len;
 	uint8_t *data;
+	drew_opgp_id_t id;
 } drew_opgp_mpi_t;
 
 typedef struct {

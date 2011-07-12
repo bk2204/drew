@@ -47,8 +47,6 @@ typedef struct drew_opgp_uid_s *drew_opgp_uid_t;
 #define DREW_OPGP_SYNCHRONIZE_VALIDATE_SELF_SIGNATURES	(1 << 3)
 #define DREW_OPGP_SYNCHRONIZE_ALL						(~(1 << 0))
 
-// The SHA-256 hash, used as an internal identifier.
-typedef uint8_t drew_opgp_id_t[32];
 // A fingerprint, MD5 or SHA-1.
 typedef uint8_t drew_opgp_fp_t[20];
 // A hash value (could be as large as SHA-512).
