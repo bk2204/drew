@@ -40,6 +40,7 @@ typedef struct drew_opgp_uid_s *drew_opgp_uid_t;
 #define DREW_OPGP_SIGNATURE_IGNORED			(1 << 11)
 
 #define DREW_OPGP_KEY_STATE_SYNCHRONIZED	(1 << 0)
+#define DREW_OPGP_KEY_STATE_IGNORED			(1 << 1)
 
 #define DREW_OPGP_SYNCHRONIZE_FORCE						(1 << 0)
 #define DREW_OPGP_SYNCHRONIZE_BASIC						(1 << 1)
