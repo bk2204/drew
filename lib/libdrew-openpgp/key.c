@@ -14,6 +14,7 @@
 
 #include <drew-opgp/drew-opgp.h>
 #include <drew-opgp/key.h>
+#include <drew-opgp/keystore.h>
 #include <drew-opgp/parser.h>
 
 int drew_opgp_key_new(drew_opgp_key_t *key, const drew_loader_t *ldr)
@@ -612,13 +613,54 @@ static int synchronize_uid(drew_opgp_key_t key, cuid_t *uid, int flags)
 	return 0;
 }
 
+static int validate_signature(drew_opgp_key_t key, pubkey_t *pub,
+		csig_t *sig, int is_selfsig)
+{
+	int res = 0;
+	const int checked_sig = DREW_OPGP_SIGNATURE_CHECKED;
+	const int good_sig = checked_sig | DREW_OPGP_SIGNATURE_VALIDATED;
+	res = verify_sig(key, pub, sig->hash, 0, sig->pkalgo,
+			sig->mdalgo, sig->mpi);
+	sig->flags &= ~good_sig;
+	sig->flags |= (!res) ? good_sig :
+		((res == -DREW_OPGP_ERR_BAD_SIGNATURE) ?  checked_sig : 0);
+	if (is_selfsig) {
+		if ((!(sig->flags & checked_sig) ||
+				(sig->flags & good_sig) == good_sig))
+			sig->flags |= DREW_OPGP_SIGNATURE_SELF_SIG;
+		else
+			sig->flags &= ~DREW_OPGP_SIGNATURE_SELF_SIG;
+	}
+	return res;
+}
+
+int drew_opgp_key_validate_signatures(drew_opgp_key_t key,
+		drew_opgp_keystore_t ks)
+{
+	drew_opgp_key_t signer;
+	for (size_t i = 0; i < key->pub.nsigs; i++) {
+		csig_t *sig = key->pub.sigs+i;
+		if (!drew_opgp_keystore_lookup_by_keyid(ks, &signer, 1, sig->keyid))
+			continue;
+		validate_signature(signer, &signer->pub, sig, 0);
+	}
+	for (size_t i = 0; i < key->pub.nuids; i++) {
+		for (size_t j = 0; j < key->pub.uids[i].nsigs; i++) {
+			csig_t *sig = key->pub.uids[i].sigs+j;
+			if (!drew_opgp_keystore_lookup_by_keyid(ks, &signer, 1, sig->keyid))
+				continue;
+			validate_signature(signer, &signer->pub, sig, 0);
+		}
+	}
+	return 0;
+}
+
 /* TODO: don't rehash the key and uid each time; use one context for each hash
  * algorithm and clone it.
  */
 static int synchronize_uid_sig(drew_opgp_key_t key, cuid_t *uid, csig_t *sig,
 		int flags)
 {
-	int res = 0;
 	pubkey_t *pub = &key->pub;
 	if (sig->ver < 2 || sig->ver > 4)
 		sig->flags |= DREW_OPGP_SIGNATURE_IGNORED;
@@ -643,20 +685,8 @@ static int synchronize_uid_sig(drew_opgp_key_t key, cuid_t *uid, csig_t *sig,
 			 * mark it as validated.  Regardless, extract the preferences
 			 * packet.
 			 */
-			const int checked_sig = DREW_OPGP_SIGNATURE_CHECKED;
-			const int good_sig = checked_sig | DREW_OPGP_SIGNATURE_VALIDATED;
-			if (flags & DREW_OPGP_SYNCHRONIZE_VALIDATE_SELF_SIGNATURES) {
-				res = verify_sig(key, &key->pub, sig->hash, 0, sig->pkalgo,
-							sig->mdalgo, sig->mpi);
-				sig->flags &= ~good_sig;
-				sig->flags |= (!res) ? good_sig :
-					((res == -DREW_OPGP_ERR_BAD_SIGNATURE) ?  checked_sig : 0);
-			}
-			if (!(sig->flags & checked_sig) ||
-					(sig->flags & good_sig) == good_sig)
-				sig->flags |= DREW_OPGP_SIGNATURE_SELF_SIG;
-			else
-				sig->flags &= ~DREW_OPGP_SIGNATURE_SELF_SIG;
+			if (flags & DREW_OPGP_SYNCHRONIZE_VALIDATE_SELF_SIGNATURES)
+				validate_signature(key, &key->pub, sig, 1);
 		}
 		if (!(sig->flags & DREW_OPGP_SIGNATURE_SELF_SIG))
 			memset(&sig->selfsig, 0, sizeof(sig->selfsig));

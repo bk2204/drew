@@ -44,6 +44,9 @@ int drew_opgp_keystore_lookup_by_keyid(drew_opgp_keystore_t ks,
 int drew_opgp_keystore_get_keys(drew_opgp_keystore_t ks,
 		drew_opgp_key_t *key, size_t nkeys);
 
+int drew_opgp_key_validate_signatures(drew_opgp_key_t key,
+		drew_opgp_keystore_t ks);
+
 #ifdef __cplusplus
 }
 #endif
