@@ -32,6 +32,98 @@ int drew_opgp_key_free(drew_opgp_key_t *key)
 	return -DREW_ERR_NOT_IMPL;
 }
 
+static int clone_mpis(drew_opgp_mpi_t *new, drew_opgp_mpi_t *old)
+{
+	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++) {
+		if (old[i].len) {
+			memcpy(new+i, old+i, sizeof(*new));
+			if (!(new[i].data = malloc(old[i].len)))
+				return -ENOMEM;
+			memcpy(new[i].data, old[i].data, old[i].len);
+		}
+		else
+			memset(new+i, 0, sizeof(*new));
+	}
+	return 0;
+}
+
+static int clone_sig(csig_t *new, csig_t *old)
+{
+	memcpy(new, old, sizeof(*new));
+	RETFAIL(clone_mpis(new->mpi, old->mpi));
+	if (!(new->hasheddata = malloc(new->hashedlen)))
+		return -ENOMEM;
+	memcpy(new->hasheddata, old->hasheddata, new->hashedlen);
+	if (!(new->unhasheddata = malloc(new->unhashedlen)))
+		return -ENOMEM;
+	memcpy(new->unhasheddata, old->unhasheddata, new->unhashedlen);
+	if (!(new->hashed = malloc(new->nhashed * sizeof(*new->hashed))))
+		return -ENOMEM;
+	memcpy(new->hashed, old->hashed, new->nhashed * sizeof(*new->hashed));
+	for (size_t i = 0; i < new->nhashed; i++) {
+		new->hashed[i].data = malloc(new->hashed[i].len);
+		memcpy(new->hashed[i].data, old->hashed[i].data, new->hashed[i].len);
+	}
+	if (!(new->unhashed = malloc(new->nunhashed * sizeof(*new->hashed))))
+		return -ENOMEM;
+	memcpy(new->unhashed, old->unhashed,
+			new->nunhashed * sizeof(*new->unhashed));
+	for (size_t i = 0; i < new->nunhashed; i++) {
+		new->unhashed[i].data = malloc(new->unhashed[i].len);
+		memcpy(new->unhashed[i].data, old->unhashed[i].data,
+				new->unhashed[i].len);
+	}
+	return 0;
+}
+
+static int clone_uid(cuid_t *new, cuid_t *old)
+{
+	memcpy(new, old, sizeof(*new));
+	new->s = malloc(new->len + 1);
+	memcpy(new->s, old->s, new->len + 1);
+	if (!(new->sigs = malloc(new->nsigs * sizeof(*new->sigs))))
+		return -ENOMEM;
+	for (size_t i = 0; i < new->nsigs; i++)
+		clone_sig(new->sigs+i, old->sigs+i);
+	if (!(new->selfsigs = malloc(new->nselfsigs * sizeof(*new->selfsigs))))
+		return -ENOMEM;
+	for (size_t i = 0; i < new->nselfsigs; i++)
+		new->selfsigs[i] = new->sigs + (old->selfsigs[i] - old->sigs);
+	return 0;
+}
+
+static int clone_pubkey(pubkey_t *new, pubkey_t *old, pubkey_t *parent)
+{
+	memcpy(new, old, sizeof(*new));
+	new->parent = parent;
+	RETFAIL(clone_mpis(new->mpi, old->mpi));
+	if (!(new->sigs = malloc(new->nsigs)))
+		return -ENOMEM;
+	for (size_t i = 0; i < new->nsigs; i++)
+		RETFAIL(clone_sig(new->sigs+i, old->sigs+i));
+	new->uids = malloc(new->nuids);
+	for (size_t i = 0; i < new->nuids; i++)
+		RETFAIL(clone_uid(new->uids+i, old->uids+i));
+	if (!new->theuid)
+		new->theuid = new->uids + (old->theuid - old->uids);
+	return 0;
+}
+
+int drew_opgp_key_clone(drew_opgp_key_t *newp, drew_opgp_key_t old)
+{
+	drew_opgp_key_t new;
+	RETFAIL(drew_opgp_key_new(newp, old->ldr));
+	new = *newp;
+	new->npubsubs = old->npubsubs;
+	new->pubsubs = calloc(new->npubsubs, sizeof(*new->pubsubs));
+	for (size_t i = 0; i < new->npubsubs; i++)
+		clone_pubkey(new->pubsubs+i, old->pubsubs+i, &new->pub);
+	new->nprivsubs = old->nprivsubs;
+	new->privsubs = calloc(new->nprivsubs, sizeof(*new->privsubs));
+	memcpy(new->id, old->id, sizeof(new->id));
+	return 0;
+}
+
 /* Does secret material exist for this key, either in a dummy or usable form?
  * Returns 1 for true and 0 for false.
  */
