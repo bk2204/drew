@@ -68,7 +68,7 @@ typedef struct {
 } drew_opgp_subpacket_t;
 
 typedef struct {
-	uint8_t len;
+	size_t len;
 	uint8_t type;
 	uint8_t pkalgo;
 	uint8_t mdalgo;
