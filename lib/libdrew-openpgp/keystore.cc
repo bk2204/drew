@@ -738,6 +738,55 @@ int drew_opgp_keystore_update_key(drew_opgp_keystore_t ks, drew_opgp_key_t key,
 }
 
 extern "C"
+int drew_opgp_keystore_lookup_by_id(drew_opgp_keystore_t ks,
+		drew_opgp_key_t *key, drew_opgp_id_t id)
+{
+	ItemStore::iterator it;
+
+	it = ks->items.find(DrewID(id));
+	if (it == ks->items.end())
+		return 0;
+	if (key)
+		*key = it->second.key;
+	return 1;
+}
+
+// TODO: store a mapping from key ID to (sequence of) Drew ID in the store.
+extern "C"
+int drew_opgp_keystore_lookup_by_keyid(drew_opgp_keystore_t ks,
+		drew_opgp_key_t *key, size_t nkeys, drew_opgp_keyid_t keyid)
+{
+	// TODO: look up subkeys, too.
+	size_t nitems = 0;
+	typedef ItemStore::iterator it_t;
+	for (it_t it = ks->items.begin(); it != ks->items.end(); it++) {
+		if (it->second.key && !memcmp(it->second.key->pub.keyid, keyid, 8)) {
+			if (key && nitems < nkeys)
+				key[nitems] = it->second.key;
+			nitems++;
+		}
+	}
+	return nitems;
+}
+
+extern "C"
+int drew_opgp_keystore_get_keys(drew_opgp_keystore_t ks, drew_opgp_key_t *key,
+		size_t nkeys)
+{
+	// TODO: look up subkeys, too.
+	size_t nitems = 0;
+	typedef ItemStore::iterator it_t;
+	for (it_t it = ks->items.begin(); it != ks->items.end(); it++) {
+		if (it->second.key) {
+			if (key && nitems < nkeys)
+				key[nitems] = it->second.key;
+			nitems++;
+		}
+	}
+	return nitems;
+}
+
+extern "C"
 int drew_opgp_keystore_check(drew_opgp_keystore_t ks, int flags)
 {
 	return -DREW_ERR_NOT_IMPL;

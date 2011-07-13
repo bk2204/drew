@@ -37,6 +37,12 @@ int drew_opgp_keystore_update_keys(drew_opgp_keystore_t ks,
 int drew_opgp_keystore_update_key(drew_opgp_keystore_t ks, drew_opgp_key_t key,
 		int flags);
 int drew_opgp_keystore_check(drew_opgp_keystore_t ks, int flags);
+int drew_opgp_keystore_lookup_by_id(drew_opgp_keystore_t ks,
+		drew_opgp_key_t *key, drew_opgp_id_t id);
+int drew_opgp_keystore_lookup_by_keyid(drew_opgp_keystore_t ks,
+		drew_opgp_key_t *key, size_t nkeys, drew_opgp_keyid_t keyid);
+int drew_opgp_keystore_get_keys(drew_opgp_keystore_t ks,
+		drew_opgp_key_t *key, size_t nkeys);
 
 #ifdef __cplusplus
 }
