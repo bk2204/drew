@@ -14,11 +14,16 @@
 
 #define DIM(x) (sizeof(x)/sizeof((x)[0]))
 
+/* This needs to be large enough to handle one block of the hash algorithm as
+ * well as the digest size.
+ */
+#define BUFFER_SIZE		256
+
 struct hmac {
 	const drew_loader_t *ldr;
 	drew_hash_t outside;
 	drew_hash_t inside;
-	uint8_t *keybuf;
+	uint8_t keybuf[BUFFER_SIZE];
 	size_t keybufsz;
 	size_t blksz;
 	size_t digestsz;
@@ -44,21 +49,25 @@ static int hmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
 	if (!algo)
 		return -EINVAL;
 
-	struct hmac *p = drew_mem_malloc(sizeof(*p));
+	struct hmac *p = drew_mem_smalloc(sizeof(*p));
 	memset(p, 0, sizeof(*p));
 	p->ldr = ldr;
 	p->outside.functbl = p->inside.functbl = algo->functbl;
 	p->blksz = p->outside.functbl->info(DREW_HASH_BLKSIZE, NULL);
 	p->digestsz = p->outside.functbl->info(DREW_HASH_SIZE, NULL);
-	p->keybuf = drew_mem_smalloc(p->blksz);
 	p->keybufsz = 0;
 	p->param = oparam;
 	p->outside.functbl->init(&p->outside, 0, p->ldr, p->param);
 	p->inside.functbl->init(&p->inside, 0, p->ldr, p->param);
 
+	if (p->blksz > BUFFER_SIZE || p->digestsz > BUFFER_SIZE) {
+		drew_mem_sfree(p);
+		return -DREW_ERR_INVALID;
+	}
+
 	if (flags & DREW_MAC_FIXED) {
 		memcpy(ctx->ctx, p, sizeof(*p));
-		drew_mem_free(p);
+		drew_mem_sfree(p);
 	}
 	else
 		ctx->ctx = p;
@@ -94,8 +103,8 @@ static int hmac_fini(drew_mac_t *ctx, int flags)
 static int hmac_setkey(drew_mac_t *ctxt, const uint8_t *data, size_t len)
 {
 	struct hmac *ctx = ctxt->ctx;
-	uint8_t *outpad;
-	uint8_t *inpad;
+	uint8_t outpad[BUFFER_SIZE];
+	uint8_t inpad[BUFFER_SIZE];
 	size_t i;
 	const uint8_t *k = ctx->keybuf;
 	drew_hash_t keyhash;
@@ -113,8 +122,6 @@ static int hmac_setkey(drew_mac_t *ctxt, const uint8_t *data, size_t len)
 	}
 
 	size_t min = len < ctx->blksz ? len : ctx->blksz;
-	outpad = drew_mem_scalloc(ctx->blksz, 1);
-	inpad = drew_mem_scalloc(ctx->blksz, 1);
 	for (i = 0; i < min; i++) {
 		outpad[i] = 0x5c ^ k[i];
 		inpad[i] = 0x36 ^ k[i];
@@ -126,8 +133,8 @@ static int hmac_setkey(drew_mac_t *ctxt, const uint8_t *data, size_t len)
 	ctx->outside.functbl->update(&ctx->outside, outpad, ctx->blksz);
 	ctx->inside.functbl->update(&ctx->inside, inpad, ctx->blksz);
 
-	drew_mem_sfree(outpad);
-	drew_mem_sfree(inpad);
+	memset(outpad, 0, sizeof(outpad));
+	memset(inpad, 0, sizeof(inpad));
 
 	return 0;
 }
@@ -154,7 +161,7 @@ static int hmac_update(drew_mac_t *ctx, const uint8_t *data, size_t len)
 static int hmac_final(drew_mac_t *ctx, uint8_t *digest, int flags)
 {
 	struct hmac *c = ctx->ctx;
-	uint8_t *buf = drew_mem_smalloc(c->digestsz);
+	uint8_t buf[BUFFER_SIZE];
 
 	c->inside.functbl->final(&c->inside, buf, 0);
 	c->outside.functbl->update(&c->outside, buf, c->digestsz);
@@ -162,7 +169,7 @@ static int hmac_final(drew_mac_t *ctx, uint8_t *digest, int flags)
 	c->inside.functbl->reset(&c->inside);
 	c->outside.functbl->reset(&c->outside);
 
-	drew_mem_sfree(buf);
+	memset(buf, 0, sizeof(buf));
 
 	return 0;
 }
@@ -181,7 +188,7 @@ static int hmac_test_generic(const drew_loader_t *ldr, const char *name,
 {
 	int result = 0;
 	drew_mac_t c;
-	uint8_t buf[128];
+	uint8_t buf[BUFFER_SIZE];
 	drew_param_t param;
 	drew_hash_t hash;
 	int id;
