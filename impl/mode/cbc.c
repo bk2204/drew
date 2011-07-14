@@ -81,7 +81,7 @@ static int cbc_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	struct cbc *newctx = ctx->ctx;
 
 	if (!(flags & DREW_MODE_FIXED))
-		newctx = malloc(sizeof(*newctx));
+		newctx = drew_mem_malloc(sizeof(*newctx));
 	newctx->ldr = ldr;
 	newctx->algo = NULL;
 	
@@ -109,9 +109,9 @@ static int cbc_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 
 	c->algo = algoctx;
 	c->blksize = c->algo->functbl->info(DREW_BLOCK_BLKSIZE, NULL);
-	if (!(c->buf = malloc(c->blksize)))
+	if (!(c->buf = drew_mem_smalloc(c->blksize)))
 		return -ENOMEM;
-	if (!(c->iv = malloc(c->blksize)))
+	if (!(c->iv = drew_mem_smalloc(c->blksize)))
 		return -ENOMEM;
 
 	return 0;
@@ -332,12 +332,12 @@ static int cbc_fini(drew_mode_t *ctx, int flags)
 	struct cbc *c = ctx->ctx;
 
 	memset(c->buf, 0, c->blksize);
-	free(c->buf);
+	drew_mem_sfree(c->buf);
 	memset(c->iv, 0, c->blksize);
-	free(c->iv);
+	drew_mem_sfree(c->iv);
 	memset(c, 0, sizeof(*c));
 	if (!(flags & DREW_MODE_FIXED))
-		free(c);
+		drew_mem_free(c);
 
 	ctx->ctx = NULL;
 	return 0;
@@ -346,7 +346,7 @@ static int cbc_fini(drew_mode_t *ctx, int flags)
 static int cbc_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags)
 {
 	if (!(flags & DREW_MODE_FIXED))
-		newctx->ctx = malloc(sizeof(struct cbc));
+		newctx->ctx = drew_mem_malloc(sizeof(struct cbc));
 	memcpy(newctx->ctx, oldctx->ctx, sizeof(struct cbc));
 	newctx->functbl = oldctx->functbl;
 	return 0;

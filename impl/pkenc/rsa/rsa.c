@@ -152,7 +152,7 @@ static int rsa_init(drew_pkenc_t *ctx, int flags, const drew_loader_t *ldr,
 	int res = 0;
 
 	if (!(flags & DREW_PKENC_FIXED))
-		newctx = malloc(sizeof(*newctx));
+		newctx = drew_mem_malloc(sizeof(*newctx));
 
 	if ((res = init(newctx, flags, ldr, param)))
 		return res;
@@ -169,7 +169,7 @@ static int rsa_fini(drew_pkenc_t *ctx, int flags)
 
 	fini(c, flags);
 	if (!(flags & DREW_PKENC_FIXED))
-		free(c);
+		drew_mem_free(c);
 
 	ctx->ctx = NULL;
 	return 0;
@@ -182,7 +182,7 @@ static int rsa_clone(drew_pkenc_t *newctx, const drew_pkenc_t *oldctx,
 		int flags)
 {
 	if (!(flags & DREW_PKENC_FIXED))
-		newctx->ctx = malloc(sizeof(struct rsa));
+		newctx->ctx = drew_mem_malloc(sizeof(struct rsa));
 
 	memset(newctx->ctx, 0, sizeof(struct rsa));
 

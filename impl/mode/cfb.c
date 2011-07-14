@@ -83,7 +83,7 @@ static int cfb_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	struct cfb *newctx = ctx->ctx;
 
 	if (!(flags & DREW_MODE_FIXED))
-		newctx = malloc(sizeof(*newctx));
+		newctx = drew_mem_malloc(sizeof(*newctx));
 	newctx->ldr = ldr;
 	newctx->feedback = 0;
 	newctx->algo = NULL;
@@ -121,11 +121,11 @@ static int cfb_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 	c->blksize = c->algo->functbl->info(DREW_BLOCK_BLKSIZE, NULL);
 	if (!c->feedback)
 		c->feedback = c->blksize;
-	if (!(c->buf = malloc(c->blksize)))
+	if (!(c->buf = drew_mem_smalloc(c->blksize)))
 		return -ENOMEM;
-	if (!(c->prev = malloc(c->blksize)))
+	if (!(c->prev = drew_mem_smalloc(c->blksize)))
 		return -ENOMEM;
-	if (!(c->iv = malloc(c->blksize)))
+	if (!(c->iv = drew_mem_smalloc(c->blksize)))
 		return -ENOMEM;
 
 	return 0;
@@ -434,13 +434,11 @@ static int cfb_fini(drew_mode_t *ctx, int flags)
 {
 	struct cfb *c = ctx->ctx;
 
-	memset(c->buf, 0, c->blksize);
-	free(c->buf);
-	memset(c->prev, 0, c->blksize);
-	free(c->prev);
-	memset(c, 0, sizeof(*c));
+	drew_mem_sfree(c->buf);
+	drew_mem_sfree(c->prev);
+	drew_mem_sfree(c->iv);
 	if (!(flags & DREW_MODE_FIXED))
-		free(c);
+		drew_mem_free(c);
 
 	ctx->ctx = NULL;
 	return 0;
@@ -449,7 +447,7 @@ static int cfb_fini(drew_mode_t *ctx, int flags)
 static int cfb_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags)
 {
 	if (!(flags & DREW_MODE_FIXED))
-		newctx->ctx = malloc(sizeof(struct cfb));
+		newctx->ctx = drew_mem_malloc(sizeof(struct cfb));
 	memcpy(newctx->ctx, oldctx->ctx, sizeof(struct cfb));
 	newctx->functbl = oldctx->functbl;
 	return 0;

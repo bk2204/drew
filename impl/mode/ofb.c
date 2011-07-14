@@ -87,7 +87,7 @@ static int ofb_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	struct ofb *newctx = ctx->ctx;
 
 	if (!(flags & DREW_MODE_FIXED))
-		newctx = malloc(sizeof(*newctx));
+		newctx = drew_mem_smalloc(sizeof(*newctx));
 	newctx->ldr = ldr;
 	newctx->algo = NULL;
 	newctx->boff = 0;
@@ -362,9 +362,8 @@ static int ofb_fini(drew_mode_t *ctx, int flags)
 {
 	struct ofb *c = ctx->ctx;
 
-	memset(c, 0, sizeof(*c));
 	if (!(flags & DREW_MODE_FIXED))
-		free(c);
+		drew_mem_sfree(c);
 
 	ctx->ctx = NULL;
 	return 0;
@@ -373,7 +372,7 @@ static int ofb_fini(drew_mode_t *ctx, int flags)
 static int ofb_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags)
 {
 	if (!(flags & DREW_MODE_FIXED))
-		newctx->ctx = malloc(sizeof(struct ofb));
+		newctx->ctx = drew_mem_smalloc(sizeof(struct ofb));
 	memcpy(newctx->ctx, oldctx->ctx, sizeof(struct ofb));
 	newctx->functbl = oldctx->functbl;
 	return 0;

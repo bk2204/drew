@@ -91,7 +91,7 @@ static int ctr_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	struct ctr *newctx = ctx->ctx;
 
 	if (!(flags & DREW_MODE_FIXED))
-		newctx = malloc(sizeof(*newctx));
+		newctx = drew_mem_smalloc(sizeof(*newctx));
 	newctx->ldr = ldr;
 	newctx->algo = NULL;
 	newctx->boff = 0;
@@ -353,11 +353,8 @@ static int ctr_fini(drew_mode_t *ctx, int flags)
 {
 	struct ctr *c = ctx->ctx;
 
-	memset(c->buf, 0, c->blksize);
-	memset(c->ctr, 0, c->blksize);
-	memset(c, 0, sizeof(*c));
 	if (!(flags & DREW_MODE_FIXED))
-		free(c);
+		drew_mem_sfree(c);
 
 	ctx->ctx = NULL;
 	return 0;
@@ -366,7 +363,7 @@ static int ctr_fini(drew_mode_t *ctx, int flags)
 static int ctr_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags)
 {
 	if (!(flags & DREW_MODE_FIXED))
-		newctx->ctx = malloc(sizeof(struct ctr));
+		newctx->ctx = drew_mem_smalloc(sizeof(struct ctr));
 	memcpy(newctx->ctx, oldctx->ctx, sizeof(struct ctr));
 	newctx->functbl = oldctx->functbl;
 	return 0;
