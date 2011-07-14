@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include <drew/bignum.h>
+#include <drew/mem.h>
 #include <drew/pksig.h>
 #include <drew/plugin.h>
 

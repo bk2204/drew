@@ -131,6 +131,22 @@ static inline void *allocate(size_t size, int secure, int clear)
 	return p;
 }
 
+void *drew_mem_memdup(void *ptr, size_t size)
+{
+	void *p = allocate(size, 0, 0);
+	if (p)
+		memcpy(p, ptr, size);
+	return p;
+}
+
+void *drew_mem_smemdup(void *ptr, size_t size)
+{
+	void *p = allocate(size, 1, 0);
+	if (p)
+		memcpy(p, ptr, size);
+	return p;
+}
+
 void *drew_mem_malloc(size_t size)
 {
 	return allocate(size, 0, 0);

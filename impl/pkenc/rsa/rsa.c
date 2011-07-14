@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include <drew/bignum.h>
+#include <drew/mem.h>
 #include <drew/pkenc.h>
 #include <drew/plugin.h>
 
