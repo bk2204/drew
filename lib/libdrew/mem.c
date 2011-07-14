@@ -131,7 +131,7 @@ static inline void *allocate(size_t size, int secure, int clear)
 	return p;
 }
 
-void *drew_mem_memdup(void *ptr, size_t size)
+void *drew_mem_memdup(const void *ptr, size_t size)
 {
 	void *p = allocate(size, 0, 0);
 	if (p)
@@ -139,7 +139,7 @@ void *drew_mem_memdup(void *ptr, size_t size)
 	return p;
 }
 
-void *drew_mem_smemdup(void *ptr, size_t size)
+void *drew_mem_smemdup(const void *ptr, size_t size)
 {
 	void *p = allocate(size, 1, 0);
 	if (p)
