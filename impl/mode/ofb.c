@@ -193,17 +193,7 @@ static int ofb_encryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 	len /= DREW_MODE_ALIGNMENT;
 	for (size_t iters = 0; iters < len; iters++, in++, out++) {
 		c->algo->functbl->encryptfast(c->algo, c->buf, c->buf, c->chunks);
-#ifdef VECTOR_T
-		typedef int vector_t __attribute__ ((vector_size (16)));
-		vector_t bufv, inv;
-		memcpy(&bufv, c->buf, sizeof(vector_t));
-		memcpy(&inv, in->data, sizeof(vector_t));
-		bufv ^= inv;
-		memcpy(out->data, &bufv, sizeof(vector_t));
-#else
-		for (int i = 0; i < DREW_MODE_ALIGNMENT; i++)
-			out->data[i] = c->buf[i] ^ in->data[i];
-#endif
+		xor_aligned(out->data, c->buf, in->data, DREW_MODE_ALIGNMENT);
 	}
 	return 0;
 }
