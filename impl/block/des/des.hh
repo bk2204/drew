@@ -7,6 +7,7 @@
 #include "block-plugin.hh"
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 class TripleDES;
@@ -44,5 +45,6 @@ class TripleDES : public BlockCipher<8>
 };
 
 }
+UNHIDE()
 
 #endif

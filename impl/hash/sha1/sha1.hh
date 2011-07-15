@@ -5,6 +5,7 @@
 #include "util.hh"
 #include <stdint.h>
 
+HIDE()
 namespace drew {
 
 template<int Rotate>
@@ -43,5 +44,6 @@ class SHA0 : public SHA<0>
 };
 
 }
+UNHIDE()
 
 #endif

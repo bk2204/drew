@@ -10,6 +10,7 @@
 #error "util-i386.hh is only for i386 and amd64 machines!"
 #endif
 
+HIDE()
 #if defined(__GNUC__)
 /* GCC does a crappy job in optimizing non-constant rotates (see PR45216).  As a
  * consequence, we have to help it out.  Do note, though, that unconditionally
@@ -85,5 +86,6 @@ inline uint32_t *Endian<DREW_BIG_ENDIAN>::Copy<uint32_t>(uint32_t *dest, const u
 		return CopyByConvert(dest, src, len);
 }
 #endif
+UNHIDE()
 
 #endif

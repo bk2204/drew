@@ -10,6 +10,7 @@
 #include "stream-plugin.h"
 #include "testcase.hh"
 
+HIDE()
 extern "C" {
 
 static int hc128_test(void *, const drew_loader_t *);
@@ -326,3 +327,4 @@ void drew::HC128Keystream::FillBuffer(uint8_t buf[4096])
 	}
 	E::Copy(buf, tbuf, sizeof(tbuf));
 }
+UNHIDE()

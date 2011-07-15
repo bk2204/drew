@@ -7,6 +7,7 @@
 #include "block-plugin.hh"
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 class Camellia : public BlockCipher<16>
@@ -42,5 +43,6 @@ class Camellia : public BlockCipher<16>
 };
 
 }
+UNHIDE()
 
 #endif

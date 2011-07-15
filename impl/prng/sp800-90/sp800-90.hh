@@ -10,6 +10,7 @@
 
 #include "prng.hh"
 
+HIDE()
 namespace drew {
 
 class HashHelper
@@ -114,5 +115,6 @@ class HMACDRBG : public DRBG
 };
 
 }
+UNHIDE()
 
 #endif

@@ -1,4 +1,5 @@
 #include "internal.h"
+#include "util.h"
 
 #include <errno.h>
 #include <stddef.h>
@@ -28,6 +29,7 @@
 #define COPY(to, from) do { \
 	if (to != from) RETFAIL(mp_copy(MPC(from), MP(to))); } while (0)
 
+HIDE()
 struct bignum {
 	mp_int mp;
 	mp_digit dig;
@@ -370,6 +372,7 @@ static struct plugin plugin_data[] = {
 	{ "BignumTomMath", &bn_functbl }
 };
 
+EXPORT()
 int DREW_PLUGIN_NAME(tommath)(void *ldr, int op, int id, void *p)
 {
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
@@ -398,3 +401,5 @@ int DREW_PLUGIN_NAME(tommath)(void *ldr, int op, int id, void *p)
 			return -EINVAL;
 	}
 }
+UNEXPORT()
+UNHIDE()

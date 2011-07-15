@@ -19,6 +19,7 @@
 #include "util.hh"
 #include "hash-plugin.hh"
 
+HIDE()
 extern "C" {
 PLUGIN_STRUCTURE(rmd160, RIPEMD160)
 PLUGIN_DATA_START()
@@ -165,3 +166,4 @@ void drew::RIPEMD160::Transform(quantum_t *state, const uint8_t *block)
 	state[4] = state[0] + b + cc;
 	state[0] = t;
 }
+UNHIDE()

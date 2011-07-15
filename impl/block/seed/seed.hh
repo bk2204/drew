@@ -7,6 +7,7 @@
 #include "block-plugin.hh"
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 class SEED : public BlockCipher<16>
@@ -30,5 +31,6 @@ class SEED : public BlockCipher<16>
 
 };
 }
+UNHIDE()
 
 #endif

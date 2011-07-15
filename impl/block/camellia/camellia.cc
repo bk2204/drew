@@ -8,6 +8,7 @@
 #include "block-plugin.hh"
 #include "btestcase.hh"
 
+HIDE()
 extern "C" {
 
 static const int camelliakeysz[] =
@@ -351,3 +352,4 @@ void drew::Camellia::Decrypt256(uint64_t d[2]) const
 }
 
 #include "tables.cc"
+UNHIDE()

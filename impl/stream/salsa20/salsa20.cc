@@ -10,6 +10,7 @@
 #include "stream-plugin.h"
 #include "testcase.hh"
 
+HIDE()
 extern "C" {
 
 static int salsa20_test(void *, const drew_loader_t *);
@@ -314,3 +315,4 @@ void drew::Salsa20Keystream::FillBufferAligned(uint8_t bufp[64])
 	}
 	ctr++;
 }
+UNHIDE()

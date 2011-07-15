@@ -11,6 +11,7 @@
 #include "tea.hh"
 #include "btestcase.hh"
 
+HIDE()
 extern "C" {
 
 static const int teakeysz[] =
@@ -227,3 +228,4 @@ int drew::TEA::Decrypt(uint8_t *out, const uint8_t *in) const
 	E::Copy(out, v, sizeof(v));
 	return 0;
 }
+UNHIDE()

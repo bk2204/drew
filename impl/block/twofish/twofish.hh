@@ -7,6 +7,7 @@
 #include "block-plugin.hh"
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 class Twofish : public BlockCipher<16>
@@ -37,5 +38,6 @@ class Twofish : public BlockCipher<16>
 };
 
 }
+UNHIDE()
 
 #endif

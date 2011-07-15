@@ -11,6 +11,7 @@
 #include "seed.hh"
 #include "btestcase.hh"
 
+HIDE()
 extern "C" {
 
 static const int seedkeysz[] =
@@ -430,3 +431,4 @@ const uint32_t drew::SEED::ss3[] = {
 	0xc9d1d819, 0x4c404c0c, 0x83838003, 0x8f838c0f,
 	0xcec2cc0e, 0x0b33383b, 0x4a42480a, 0x87b3b437
 };
+UNHIDE()

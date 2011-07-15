@@ -11,6 +11,7 @@
 #include "xtea.hh"
 #include "btestcase.hh"
 
+HIDE()
 extern "C" {
 
 static const int xteakeysz[] =
@@ -132,3 +133,4 @@ int drew::XTEA::Decrypt(uint8_t *out, const uint8_t *in) const
 	E::Copy(out, v, sizeof(v));
 	return 0;
 }
+UNHIDE()

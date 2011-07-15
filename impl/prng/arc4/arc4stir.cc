@@ -46,6 +46,7 @@
 // This is a non-blocking random device.  If you don't have one, use /dev/null.
 #define DEVICE "/dev/urandom"
 
+HIDE()
 extern "C" {
 
 static int a4s_info(int op, void *p);
@@ -226,3 +227,4 @@ void drew::ARC4Stir::Stir(const uint8_t *k)
 {
 	m_ks->Stir(k, InternalGetByte());
 }
+UNHIDE()

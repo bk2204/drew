@@ -6,6 +6,7 @@
 #include "prng.hh"
 #include "keystream.hh"
 
+HIDE()
 namespace drew {
 
 class ARC4Interleave : public BytePRNG
@@ -28,5 +29,6 @@ class ARC4Interleave : public BytePRNG
 };
 
 }
+UNHIDE()
 
 #endif

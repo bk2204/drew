@@ -6,6 +6,7 @@
 
 #include <sstream>
 
+HIDE()
 namespace drew {
 
 template<class T>
@@ -170,5 +171,5 @@ class BlockTestCase
 };
 
 }
-
+UNHIDE()
 #endif

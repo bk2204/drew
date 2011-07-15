@@ -11,6 +11,7 @@
 
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 template<class T, unsigned Size, unsigned BufSize, unsigned BlkSize, class E>
@@ -119,5 +120,6 @@ class Hash
 };
 
 }
+UNHIDE()
 
 #endif

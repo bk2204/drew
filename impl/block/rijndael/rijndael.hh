@@ -9,6 +9,7 @@
 
 #define MAXROUNDS 14
 
+HIDE()
 namespace drew {
 
 class Rijndael
@@ -144,5 +145,6 @@ class Rijndael256 : public GenericRijndael<256>
 
 
 }
+UNHIDE()
 
 #endif

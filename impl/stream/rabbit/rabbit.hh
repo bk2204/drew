@@ -6,6 +6,7 @@
 
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 class RabbitKeystream
@@ -51,5 +52,6 @@ class Rabbit
 };
 
 }
+UNHIDE()
 
 #endif

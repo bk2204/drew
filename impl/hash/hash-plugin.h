@@ -33,6 +33,7 @@ struct plugin {
 #define PLUGIN_INFO(name) static const char *pname = name
 #define PLUGIN_INTERFACE(x) \
 \
+EXPORT() \
 int DREW_PLUGIN_NAME(x)(void *ldr, int op, int id, void *p) \
 { \
 \
@@ -59,7 +60,8 @@ int DREW_PLUGIN_NAME(x)(void *ldr, int op, int id, void *p) \
 		default: \
 			return -EINVAL; \
 	} \
-}
+} \
+UNEXPORT()
 
 #ifdef __cplusplus
 }

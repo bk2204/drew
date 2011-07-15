@@ -38,6 +38,7 @@
 #include "block-plugin.h"
 #include "rijndael.hh"
 
+HIDE()
 static drew::Rijndael *rijndael_new(size_t blksz)
 {
 	drew::Rijndael *p = 0;
@@ -1273,3 +1274,4 @@ const uint32_t drew::Rijndael::Et3[] = {
 	0xeb13f8f8, 0xe910f9f9, 0xef15fafa, 0xed16fbfb, 
 	0xe31ffcfc, 0xe11cfdfd, 0xe719fefe, 0xe51affff, 
 };
+UNHIDE()

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <utility>
 
+HIDE()
 drew::KeystreamGenerator::KeystreamGenerator(int index)
 {
 	static const uint8_t *table[4] = {
@@ -182,3 +183,4 @@ const uint8_t drew::KeystreamGenerator::ariatable2[256] = {
 	0xed, 0x14, 0xe0, 0xa5, 0x3d, 0x22, 0xb3, 0xf8, 
 	0x89, 0xde, 0x71, 0x1a, 0xaf, 0xba, 0xb5, 0x81
 };
+UNHIDE()

@@ -1,4 +1,5 @@
 #include "internal.h"
+#include "util.h"
 
 #include <errno.h>
 #include <stdbool.h>
@@ -580,6 +581,7 @@ static struct plugin plugin_data[] = {
 	{ "DSA", &dsa_functbl },
 };
 
+EXPORT()
 int DREW_PLUGIN_NAME(dsa)(void *ldr, int op, int id, void *p)
 {
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
@@ -608,3 +610,4 @@ int DREW_PLUGIN_NAME(dsa)(void *ldr, int op, int id, void *p)
 			return -EINVAL;
 	}
 }
+UNEXPORT()

@@ -7,6 +7,7 @@
 #include "block-plugin.hh"
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 class TEA : public BlockCipher<8>
@@ -24,5 +25,6 @@ class TEA : public BlockCipher<8>
 
 };
 }
+UNHIDE()
 
 #endif

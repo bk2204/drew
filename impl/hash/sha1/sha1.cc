@@ -18,6 +18,7 @@
 #include "testcase.hh"
 #include "hash-plugin.hh"
 
+HIDE()
 extern "C" {
 PLUGIN_STRUCTURE(sha1, SHA1)
 PLUGIN_STRUCTURE(sha0, SHA0)
@@ -189,3 +190,4 @@ void drew::SHA<Rotate>::Transform(quantum_t *state, const uint8_t *block)
 	state[3] += d;
 	state[4] += e;
 }
+UNHIDE()

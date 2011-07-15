@@ -1,4 +1,5 @@
 #include "internal.h"
+#include "util.h"
 
 #include <errno.h>
 #include <stddef.h>
@@ -12,6 +13,7 @@
 #include <drew/bignum.h>
 #include <drew/plugin.h>
 
+HIDE()
 struct bignum {
 	BIGNUM *bn;
 };
@@ -404,6 +406,7 @@ static struct plugin plugin_data[] = {
 	{ "BignumOpenSSL", &bn_functbl }
 };
 
+EXPORT()
 int DREW_PLUGIN_NAME(tommath)(void *ldr, int op, int id, void *p)
 {
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
@@ -432,3 +435,5 @@ int DREW_PLUGIN_NAME(tommath)(void *ldr, int op, int id, void *p)
 			return -EINVAL;
 	}
 }
+UNEXPORT()
+UNHIDE()

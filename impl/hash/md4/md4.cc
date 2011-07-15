@@ -17,6 +17,7 @@
 #include "testcase.hh"
 #include "hash-plugin.hh"
 
+HIDE()
 extern "C" {
 PLUGIN_STRUCTURE(md4, MD4)
 PLUGIN_DATA_START()
@@ -117,3 +118,4 @@ void drew::MD4::Transform(quantum_t *state, const uint8_t *block)
 	state[2] += c;
 	state[3] += d;
 }
+UNHIDE()

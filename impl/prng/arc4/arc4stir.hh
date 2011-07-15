@@ -6,6 +6,7 @@
 #include "prng.hh"
 #include "keystream.hh"
 
+HIDE()
 namespace drew {
 
 class ARC4Stir : public BytePRNG
@@ -27,5 +28,6 @@ class ARC4Stir : public BytePRNG
 };
 
 }
+UNHIDE()
 
 #endif

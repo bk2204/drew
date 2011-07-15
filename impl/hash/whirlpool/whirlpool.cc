@@ -12,6 +12,7 @@
 #include "testcase.hh"
 #include "hash-plugin.hh"
 
+HIDE()
 extern "C" {
 PLUGIN_STRUCTURE(wp, Whirlpool)
 PLUGIN_DATA_START()
@@ -744,3 +745,4 @@ void drew::Whirlpool::Pad()
 	E::Copy(buf+trip+sizeof(zero), len, sizeof(len), sizeof(len));
 	Transform(buf);
 }
+UNHIDE()

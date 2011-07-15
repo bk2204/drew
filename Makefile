@@ -42,7 +42,7 @@ CFLAGS			+= -std=c99
 LIBCFLAGS		+= -shared
 PLUGINCFLAGS	+= -I.
 
-LDFLAGS			+= -Wl,--version-script,misc/limited-symbols.ld -Wl,--as-needed
+LDFLAGS			+= -Wl,--as-needed
 LIBS			+= ${LDFLAGS} -lrt -ldl
 
 .TARGET			= $@

@@ -7,6 +7,7 @@
 #include "twofish.hh"
 #include "block-plugin.hh"
 
+HIDE()
 extern "C" {
 
 static const int twofishkeysz[] =
@@ -580,3 +581,4 @@ const uint32_t drew::Twofish::mds[4][256] = {
 	0xecc94aec, 0xfdd25efd, 0xab7fc1ab, 0xd8a8e0d8
 }
 };
+UNHIDE()

@@ -5,6 +5,7 @@
 #include "util.hh"
 #include <stdint.h>
 
+HIDE()
 namespace drew {
 
 class Tiger : public Hash<uint64_t, 24, 24, 64, LittleEndian>
@@ -29,5 +30,6 @@ class Tiger : public Hash<uint64_t, 24, 24, 64, LittleEndian>
 		static const uint64_t t1[], t2[], t3[], t4[];
 };
 }
+UNHIDE()
 
 #endif

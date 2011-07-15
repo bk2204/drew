@@ -1,6 +1,7 @@
 /* This is a C99 implementation of CBC, known in French as Radio-Canada. */
 
 #include "internal.h"
+#include "util.h"
 
 #include <errno.h>
 #include <stddef.h>
@@ -362,6 +363,7 @@ static struct plugin plugin_data[] = {
 	{ "CBC", &cbc_functbl }
 };
 
+EXPORT()
 int DREW_PLUGIN_NAME(cbc)(void *ldr, int op, int id, void *p)
 {
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
@@ -390,3 +392,4 @@ int DREW_PLUGIN_NAME(cbc)(void *ldr, int op, int id, void *p)
 			return -EINVAL;
 	}
 }
+UNEXPORT()
