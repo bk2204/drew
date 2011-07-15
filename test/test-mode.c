@@ -161,6 +161,8 @@ int test_execute(void *data, const char *name, const void *tbl,
 	drew_mode_t ctx;
 	drew_block_t *bctx = new_block_cipher(tep, tc->algo);
 	drew_param_t param;
+	int blksize = 0;
+	bool use_fast = false;
 
 	param.next = NULL;
 	param.name = "feedbackBits";
@@ -171,15 +173,27 @@ int test_execute(void *data, const char *name, const void *tbl,
 		return TEST_NOT_FOR_US;
 
 	bctx->functbl->setkey(bctx, tc->key, tc->klen, 0);
+	blksize = bctx->functbl->info(DREW_BLOCK_BLKSIZE, 0);
 
-	uint8_t *buf = malloc(tc->len);
+	if (((tc->feedbackBits / 8) == blksize) && !(tc->len % blksize))
+		use_fast = true;
+
+	uint8_t *buf = malloc(tc->len), *buf2 = malloc(tc->len);
 	ctx.functbl = tbl;
 	ctx.functbl->init(&ctx, 0, tep->ldr, tc->feedbackBits ? &param : NULL);
 	ctx.functbl->setblock(&ctx, bctx);
 	ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
 	ctx.functbl->encrypt(&ctx, buf, tc->pt, tc->len);
+	if (use_fast) {
+		ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
+		ctx.functbl->encryptfast(&ctx, buf2, tc->pt, tc->len);
+	}
 	ctx.functbl->fini(&ctx, 0);
 	if (memcmp(buf, tc->ct, tc->len)) {
+		result = TEST_FAILED;
+		goto out;
+	}
+	if (use_fast && memcmp(buf2, tc->ct, tc->len)) {
 		result = TEST_FAILED;
 		goto out;
 	}
@@ -188,12 +202,19 @@ int test_execute(void *data, const char *name, const void *tbl,
 	ctx.functbl->setblock(&ctx, bctx);
 	ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
 	ctx.functbl->decrypt(&ctx, buf, tc->ct, tc->len);
+	if (use_fast) {
+		ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
+		ctx.functbl->decryptfast(&ctx, buf2, tc->ct, tc->len);
+	}
 	ctx.functbl->fini(&ctx, 0);
 	if (memcmp(buf, tc->pt, tc->len))
+		result = TEST_FAILED;
+	if (use_fast && memcmp(buf2, tc->pt, tc->len))
 		result = TEST_FAILED;
 
 out:
 	free(buf);
+	free(buf2);
 	return result;
 }
 
