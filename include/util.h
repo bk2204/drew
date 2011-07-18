@@ -89,6 +89,8 @@
 #define BRANCH_PREDICTION
 #if defined(__SIZEOF_INT128__) && __SIZEOF_INT128__ == 16
 #define FEATURE_128_BIT_INTEGERS
+typedef __int128_t int128_t;
+typedef __uint128_t uint128_t; 
 #endif
 #endif
 
