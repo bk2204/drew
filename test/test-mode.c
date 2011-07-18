@@ -17,6 +17,7 @@
 
 #include <drew/plugin.h>
 #include <drew/block.h>
+#include <drew/mem.h>
 #include <drew/mode.h>
 
 #define FILENAME "test/vectors-mode"
@@ -53,6 +54,9 @@ struct testcase {
 	size_t feedbackBits;
 	uint8_t *pt;
 	uint8_t *ct;
+	uint8_t *aad;
+	size_t ctlen;
+	size_t aadlen;
 };
 
 const char *test_get_filename()
@@ -75,6 +79,7 @@ void test_reset_data(void *p, int flags)
 		free(tc->nonce);
 		free(tc->pt);
 		free(tc->ct);
+		free(tc->aad);
 		memset(p, 0, sizeof(struct testcase));
 	}
 	if (flags & TEST_RESET_ZERO)
@@ -103,11 +108,14 @@ void *test_clone_data(void *tc, int flags)
 	q->nonce = malloc(q->nlen);
 	memcpy(q->nonce, p->nonce, q->nlen);
 	q->len = p->len;
+	q->ctlen = p->ctlen;
 	q->feedbackBits = p->feedbackBits;
 	q->pt = malloc(q->len);
 	memcpy(q->pt, p->pt, q->len);
-	q->ct = malloc(q->len);
-	memcpy(q->ct, p->ct, q->len);
+	q->ct = malloc(q->ctlen);
+	memcpy(q->ct, p->ct, q->ctlen);
+	q->aadlen = p->aadlen;
+	q->aad = drew_mem_memdup(p->aad, q->aadlen);
 
 	return q;
 }
@@ -175,25 +183,31 @@ int test_execute(void *data, const char *name, const void *tbl,
 	bctx->functbl->setkey(bctx, tc->key, tc->klen, 0);
 	blksize = bctx->functbl->info(DREW_BLOCK_BLKSIZE, 0);
 
-	if (((tc->feedbackBits / 8) == blksize) && !(tc->len % blksize))
+	if (((tc->feedbackBits / 8) == blksize) && !(tc->len % blksize) &&
+			!tc->aadlen && tc->ctlen == tc->len)
 		use_fast = true;
 
-	uint8_t *buf = malloc(tc->len), *buf2 = malloc(tc->len);
+	uint8_t *buf = malloc(tc->ctlen), *buf2 = malloc(tc->ctlen);
 	ctx.functbl = tbl;
 	ctx.functbl->init(&ctx, 0, tep->ldr, tc->feedbackBits ? &param : NULL);
 	ctx.functbl->setblock(&ctx, bctx);
 	ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
+	if (tc->aadlen)
+		ctx.functbl->setdata(&ctx, tc->aad, tc->aadlen);
 	ctx.functbl->encrypt(&ctx, buf, tc->pt, tc->len);
+	if (tc->len != tc->ctlen)
+		ctx.functbl->encryptfinal(&ctx, buf+tc->len, tc->ctlen-tc->len, NULL,
+				0);
 	if (use_fast) {
 		ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
 		ctx.functbl->encryptfast(&ctx, buf2, tc->pt, tc->len);
 	}
 	ctx.functbl->fini(&ctx, 0);
-	if (memcmp(buf, tc->ct, tc->len)) {
+	if (memcmp(buf, tc->ct, tc->ctlen)) {
 		result = TEST_FAILED;
 		goto out;
 	}
-	if (use_fast && memcmp(buf2, tc->ct, tc->len)) {
+	if (use_fast && memcmp(buf2, tc->ct, tc->ctlen)) {
 		result = TEST_FAILED;
 		goto out;
 	}
@@ -201,7 +215,13 @@ int test_execute(void *data, const char *name, const void *tbl,
 	ctx.functbl->init(&ctx, 0, tep->ldr, tc->feedbackBits ? &param : NULL);
 	ctx.functbl->setblock(&ctx, bctx);
 	ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
+	if (tc->aadlen)
+		ctx.functbl->setdata(&ctx, tc->aad, tc->aadlen);
 	ctx.functbl->decrypt(&ctx, buf, tc->ct, tc->len);
+	if (tc->len != tc->ctlen)
+		if (ctx.functbl->decryptfinal(&ctx, NULL, 0, tc->ct+tc->len,
+					tc->ctlen-tc->len) < 0)
+			result = TEST_FAILED;
 	if (use_fast) {
 		ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
 		ctx.functbl->decryptfast(&ctx, buf2, tc->ct, tc->len);
@@ -269,8 +289,13 @@ int test_process_testcase(void *data, int type, const char *item,
 				return TEST_CORRUPT;
 			break;
 		case 'c':
-			tc->len = strlen(item) / 2;
-			if (process_bytes(tc->len, &tc->ct, item))
+			tc->ctlen = strlen(item) / 2;
+			if (process_bytes(tc->ctlen, &tc->ct, item))
+				return TEST_CORRUPT;
+			break;
+		case 'd':
+			tc->aadlen = strlen(item) / 2;
+			if (process_bytes(tc->aadlen, &tc->aad, item))
 				return TEST_CORRUPT;
 			break;
 	}
