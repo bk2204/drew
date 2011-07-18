@@ -45,6 +45,7 @@ CFG_CFB			= y
 CFG_OFB			= y
 CFG_CBC			= y
 CFG_CTR			= y
+CFG_GCM			= y
 
 # MACs.
 CFG_HMAC		= y
