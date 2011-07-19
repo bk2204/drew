@@ -8,6 +8,7 @@ test/test-prng
 test/test-bignum
 test/test-pkenc
 test/test-pksig
+test/test-kdf
 test/plugin-main
 util/*sum
 *.o
