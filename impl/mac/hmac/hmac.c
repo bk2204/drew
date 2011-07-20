@@ -349,7 +349,23 @@ static int hmac_test(void *p, const drew_loader_t *ldr)
 
 int hmack_info(int op, void *p)
 {
-	return -DREW_ERR_NOT_IMPL;
+	drew_kdf_t *kdf = p;
+	struct hmac *ctx;
+	switch (op) {
+		case DREW_KDF_VERSION:
+			return 2;
+		case DREW_KDF_SIZE:
+		case DREW_KDF_BLKSIZE:
+			if (!p)
+				return -DREW_ERR_MORE_INFO;
+			ctx = p->ctx;
+			return ctx->outside.functbl->info(op, &ctx->outside);
+		case DREW_KDF_ENDIAN:
+			return 0;
+		case DREW_KDF_INTSIZE:
+			return sizeof(struct hmac);
+	}
+	return -DREW_ERR_INVALID;
 }
 
 int hmack_init(drew_kdf_t *ctx, int flags, const drew_loader_t *ldr,
