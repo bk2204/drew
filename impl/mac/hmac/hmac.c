@@ -358,7 +358,7 @@ int hmack_info(int op, void *p)
 		case DREW_KDF_BLKSIZE:
 			if (!p)
 				return -DREW_ERR_MORE_INFO;
-			ctx = p->ctx;
+			ctx = kdf->ctx;
 			return ctx->outside.functbl->info(op, &ctx->outside);
 		case DREW_KDF_ENDIAN:
 			return 0;
