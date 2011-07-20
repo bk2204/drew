@@ -90,7 +90,7 @@ static int hmac_clone(drew_mac_t *newctx, const drew_mac_t *oldctx, int flags)
 		memcpy(newctx->ctx, oldctx->ctx, sizeof(*h));
 	}
 	else {
-		h = drew_mem_malloc(sizeof(*h));
+		h = drew_mem_smalloc(sizeof(*h));
 		newctx->ctx = h;
 	}
 
