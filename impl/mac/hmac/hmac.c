@@ -123,6 +123,7 @@ static int hmac_setkey(drew_mac_t *ctxt, const uint8_t *data, size_t len)
 		keyhash.functbl->init(&keyhash, 0, ctx->ldr, ctx->param);
 		keyhash.functbl->update(&keyhash, data, len);
 		keyhash.functbl->final(&keyhash, ctx->keybuf, 0);
+		keyhash.functbl->fini(&keyhash, 0);
 		ctx->keybufsz = len = ctx->digestsz;
 	}
 	else if (data != ctx->keybuf) {
