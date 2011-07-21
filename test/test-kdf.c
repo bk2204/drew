@@ -86,9 +86,10 @@ void test_reset_data(void *p, int flags)
 		free(tc->algo);
 		free(tc->kdf);
 		free(tc->prf);
-		free(tc->key);
-		free(tc->pt);
-		free(tc->ct);
+		drew_mem_free(tc->key);
+		drew_mem_free(tc->salt);
+		drew_mem_free(tc->pt);
+		drew_mem_free(tc->ct);
 		memset(p, 0, sizeof(struct testcase));
 	}
 	if (flags & TEST_RESET_ZERO)
@@ -111,11 +112,14 @@ void *test_clone_data(void *tc, int flags)
 	q->id = NULL;
 	q->algo = strdup(p->algo);
 	q->kdf = strdup(p->kdf);
+	if (p->prf)
+		q->prf = strdup(p->prf);
 	q->klen = p->klen;
 	q->key = drew_mem_memdup(p->key, q->klen);
 	q->len = p->len;
 	q->pt = drew_mem_memdup(p->pt, q->len);
 	q->ct = drew_mem_memdup(p->ct, q->kdflen);
+	q->salt = drew_mem_memdup(p->salt, q->slen);
 
 	return q;
 }
@@ -148,6 +152,8 @@ int test_execute(void *data, const char *name, const void *tbl,
 	drew_block_t block;
 
 	memset(&param, 0, sizeof(param));
+	memset(&hash, 0, sizeof(hash));
+	memset(&block, 0, sizeof(block));
 
 	if (!(res = make_new_ctx(tep->ldr, tc->algo, &hash, DREW_TYPE_HASH))) {
 		param.name = "digest";
@@ -181,7 +187,8 @@ int test_execute(void *data, const char *name, const void *tbl,
 	ctx.functbl = tbl;
 	if (ctx.functbl->init(&ctx, 0, tep->ldr, &param))
 		return TEST_FAILED;
-	ctx.functbl->setkey(&ctx, tc->key, tc->klen);
+	if (tc->klen)
+		ctx.functbl->setkey(&ctx, tc->key, tc->klen);
 	if (tc->slen)
 		ctx.functbl->setsalt(&ctx, tc->salt, tc->slen);
 	if (tc->count)
