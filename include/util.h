@@ -171,6 +171,19 @@ inline void xor_aligned2(uint8_t *outp, const uint8_t *xorp, size_t len)
 #endif
 	}
 }
+
+inline void xor_buffers(uint8_t *outp, const uint8_t *inp, const uint8_t *xorp,
+		size_t len)
+{
+	for (size_t i = 0; i < len; i++)
+		*outp++ = *inp++ ^ *xorp++;
+}
+
+inline void xor_buffers2(uint8_t *outp, const uint8_t *xorp, size_t len)
+{
+	for (size_t i = 0; i < len; i++)
+		*outp++ ^= *xorp++;
+}
 UNHIDE()
 
 #ifdef BRANCH_PREDICTION
