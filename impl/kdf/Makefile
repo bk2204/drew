@@ -1,0 +1,10 @@
+PLUGINS_KDF-${CFG_PBKDF2}		+= pbkdf/pbkdf2
+
+KDF_DIR			:= impl/kdf
+KDF_PLUGINS		:= $(patsubst %,${KDF_DIR}/%,$(PLUGINS_KDF-m))
+KDF_MODULES		:= $(patsubst %,${KDF_DIR}/%.o,$(PLUGINS_KDF-y))
+PLUGINS			+= $(KDF_PLUGINS)
+MODULES			+= $(KDF_MODULES)
+
+$(KDF_PLUGINS): CPPFLAGS += -I$(KDF_DIR) -DDREW_AS_PLUGIN
+$(KDF_MODULES): CPPFLAGS += -I$(KDF_DIR) -DDREW_AS_MODULE
