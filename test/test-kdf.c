@@ -78,14 +78,14 @@ void test_reset_data(void *p, int flags)
 {
 	struct testcase *tc = p;
 	if (flags & TEST_RESET_PARTIAL) {
-		free(tc->id);
+		drew_mem_free(tc->id);
 		tc->id = NULL;
 	}
 	if (flags & TEST_RESET_FREE) {
-		free(tc->id);
-		free(tc->algo);
-		free(tc->kdf);
-		free(tc->prf);
+		drew_mem_free(tc->id);
+		drew_mem_free(tc->algo);
+		drew_mem_free(tc->kdf);
+		drew_mem_free(tc->prf);
 		drew_mem_free(tc->key);
 		drew_mem_free(tc->salt);
 		drew_mem_free(tc->pt);
@@ -98,7 +98,7 @@ void test_reset_data(void *p, int flags)
 
 void *test_create_data()
 {
-	void *p = malloc(sizeof(struct testcase));
+	void *p = drew_mem_malloc(sizeof(struct testcase));
 	test_reset_data(p, TEST_RESET_ZERO);
 	return p;
 }
@@ -114,9 +114,7 @@ void *test_clone_data(void *tc, int flags)
 	q->kdf = strdup(p->kdf);
 	if (p->prf)
 		q->prf = strdup(p->prf);
-	q->klen = p->klen;
 	q->key = drew_mem_memdup(p->key, q->klen);
-	q->len = p->len;
 	q->pt = drew_mem_memdup(p->pt, q->len);
 	q->ct = drew_mem_memdup(p->ct, q->kdflen);
 	q->salt = drew_mem_memdup(p->salt, q->slen);
@@ -183,7 +181,7 @@ int test_execute(void *data, const char *name, const void *tbl,
 		param.next = &param2;
 	}
 
-	uint8_t *buf = malloc(tc->kdflen);
+	uint8_t *buf = drew_mem_malloc(tc->kdflen);
 	ctx.functbl = tbl;
 	if (ctx.functbl->init(&ctx, 0, tep->ldr, &param))
 		return TEST_FAILED;
@@ -207,7 +205,7 @@ int test_execute(void *data, const char *name, const void *tbl,
 	if (block.ctx)
 		block.functbl->fini(&block, 0);
 
-	free(buf);
+	drew_mem_free(buf);
 	return res;
 }
 
@@ -225,15 +223,15 @@ int test_process_testcase(void *data, int type, const char *item,
 				return TEST_EXECUTE;
 			break;
 		case 'g':
-			free(tc->prf);
+			drew_mem_free(tc->prf);
 			tc->prf = strdup(item);
 			break;
 		case 'a':
-			free(tc->algo);
+			drew_mem_free(tc->algo);
 			tc->algo = strdup(item);
 			break;
 		case 'm':
-			free(tc->kdf);
+			drew_mem_free(tc->kdf);
 			tc->kdf = strdup(item);
 			break;
 		case 'R':
@@ -351,15 +349,15 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		bparam.next = &pparam;
 	}
 
-	buf = calloc(chunk, 1);
+	buf = drew_mem_calloc(chunk, 1);
 	if (!buf)
 		return ENOMEM;
 
-	key = calloc(keysz, 1);
+	key = drew_mem_calloc(keysz, 1);
 	if (!key)
 		return ENOMEM;
 
-	result = calloc(resultsz, 1);
+	result = drew_mem_calloc(resultsz, 1);
 	if (!result)
 		return ENOMEM;
 
@@ -379,9 +377,9 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		prf->functbl->fini(prf, 0);
 
 	drew_mem_free(prf);
-	free(buf);
-	free(key);
-	free(result);
+	drew_mem_free(buf);
+	drew_mem_free(key);
+	drew_mem_free(result);
 
 	print_speed_info(chunk, nchunks, &cstart, &cend);
 	

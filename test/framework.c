@@ -21,6 +21,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <drew/mem.h>
 #include <drew/plugin.h>
 
 bool is_forbidden_errno(int val)
@@ -57,7 +58,7 @@ void *framework_setup(void)
 	struct framework_data *fwdata;
 	struct sigaction act;
 
-	fwdata = malloc(sizeof(*fwdata));
+	fwdata = drew_mem_malloc(sizeof(*fwdata));
 	if (!fwdata)
 		return NULL;
 
@@ -139,17 +140,17 @@ void print_speed_info(int chunk, int nchunks, const struct timespec *cstart,
 int process_bytes(ssize_t len, uint8_t **buf, const char *data)
 {
 	uint8_t *p;
+	drew_mem_free(*buf);
 	if (len < 0)
 		return TEST_CORRUPT;
 	if (strlen(data) != len * 2) {
 		return TEST_CORRUPT;
 	}
-	free(*buf);
 	// Make sure we don't get a NULL pointer if len is 0.
-	*buf = p = malloc(len ? len : 1);
+	*buf = p = drew_mem_malloc(len ? len : 1);
 	for (size_t i = 0; i < len; i++) {
 		if (sscanf(data+(i*2), "%02hhx", p+i) != 1) {
-			free(p);
+			drew_mem_free(p);
 			return TEST_CORRUPT;
 		}
 	}
