@@ -196,7 +196,7 @@ void drew_mem_free(void *ptr)
 			memset(ptr, 0, p->size);
 			if (p->block)
 				munlock(p->mem, p->block);
-			if (prev == mempool.alloc)
+			if (mempool.alloc == p)
 				mempool.alloc = p->next;
 			else
 				prev->next = p->next;
