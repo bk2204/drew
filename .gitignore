@@ -9,6 +9,7 @@ test/test-bignum
 test/test-pkenc
 test/test-pksig
 test/test-kdf
+test/test-mem
 test/plugin-main
 util/*sum
 *.o
