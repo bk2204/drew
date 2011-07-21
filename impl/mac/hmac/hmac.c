@@ -26,6 +26,7 @@
  * duplicating lots of code needlessly.
  */
 
+HIDE()
 struct hmac {
 	const drew_loader_t *ldr;
 	drew_hash_t outside;
@@ -547,3 +548,4 @@ int DREW_PLUGIN_NAME(hmac)(void *ldr, int op, int id, void *p)
 	}
 }
 UNEXPORT()
+UNHIDE()

@@ -18,6 +18,7 @@
  */
 #define BUFFER_SIZE		256
 
+HIDE()
 struct pbkdf {
 	const drew_loader_t *ldr;
 	drew_kdf_t prf;
@@ -408,3 +409,4 @@ int DREW_PLUGIN_NAME(pbkdf2)(void *ldr, int op, int id, void *p)
 	}
 }
 UNEXPORT()
+UNHIDE()
