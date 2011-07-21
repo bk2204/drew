@@ -32,6 +32,12 @@
 
 #include <drew/mem.h>
 
+#if defined(__linux__)
+#define ODD_MLOCK_OK	1
+#else
+#define ODD_MLOCK_OK	0
+#endif
+
 struct allocation {
 	struct allocation *next;
 	void *mem;
@@ -85,7 +91,7 @@ static inline void *do_allocate(size_t size, int secure, int clear)
 	struct allocation *new = NULL;
 	if (!size)
 		return NULL;
-	if (!secure) {
+	if (!secure || ODD_MLOCK_OK) {
 		if (clear)
 			p = calloc(1, size);
 		else
@@ -95,6 +101,8 @@ static inline void *do_allocate(size_t size, int secure, int clear)
 		errno = res;
 		goto err;
 	}
+	else if (clear)
+		memset(p, 0, size);
 	new = malloc(sizeof(struct allocation));
 	if (!p || !new) {
 		errno = ENOMEM;
@@ -103,9 +111,13 @@ static inline void *do_allocate(size_t size, int secure, int clear)
 	new->next = mempool.alloc;
 	new->block = 0;
 	if (secure) {
+#if ODD_MLOCK_OK-0
+		new->block = size;
+#else
 		/* Assumes mempool.pgsize is a power of two. */
 		uintptr_t mask = ~(mempool.pgsize - 1);
 		new->block = (size + (mempool.pgsize - 1)) & mask;
+#endif
 		if (mlock(p, new->block))
 			goto err;
 	}
