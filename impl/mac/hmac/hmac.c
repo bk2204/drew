@@ -351,15 +351,17 @@ int hmack_info(int op, void *p)
 {
 	drew_kdf_t *kdf = p;
 	struct hmac *ctx;
+	int hop = DREW_HASH_BLKSIZE;
 	switch (op) {
 		case DREW_KDF_VERSION:
 			return 2;
 		case DREW_KDF_SIZE:
+			hop = DREW_HASH_SIZE;
 		case DREW_KDF_BLKSIZE:
 			if (!p)
 				return -DREW_ERR_MORE_INFO;
 			ctx = kdf->ctx;
-			return ctx->outside.functbl->info(op, &ctx->outside);
+			return ctx->outside.functbl->info(hop, &ctx->outside);
 		case DREW_KDF_ENDIAN:
 			return 0;
 		case DREW_KDF_INTSIZE:
