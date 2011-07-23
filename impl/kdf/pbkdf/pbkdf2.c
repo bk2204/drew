@@ -70,7 +70,8 @@ static int pbkdf_init(drew_kdf_t *ctx, int flags, const drew_loader_t *ldr,
 		return -ENOMEM;
 	p->ldr = ldr;
 	p->prf.functbl = algo->functbl;
-	p->prf.functbl->init(&p->prf, 0, ldr, oparam);
+	p->prf.functbl->clone(&p->prf, algo, 0);
+	p->prf.functbl->reset(&p->prf);
 	if ((res = p->prf.functbl->info(DREW_KDF_SIZE, &p->prf)) < 0)
 		return res;
 	p->prfsz = res;
