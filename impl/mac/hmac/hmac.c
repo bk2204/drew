@@ -35,7 +35,6 @@ struct hmac {
 	size_t keybufsz;
 	size_t blksz;
 	size_t digestsz;
-	const drew_param_t *param;
 };
 
 static int hmac_info(int op, void *p)
@@ -47,7 +46,6 @@ static int hmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param)
 {
 	drew_hash_t *algo = NULL;
-	const drew_param_t *oparam = param;
 
 	for (; param; param = param->next)
 		if (!strcmp(param->name, "digest")) {
@@ -55,7 +53,7 @@ static int hmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
 		}
 
 	if (!algo)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	struct hmac *p = drew_mem_smalloc(sizeof(*p));
 	if (!p)
@@ -66,9 +64,10 @@ static int hmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
 	p->blksz = p->outside.functbl->info(DREW_HASH_BLKSIZE, NULL);
 	p->digestsz = p->outside.functbl->info(DREW_HASH_SIZE, NULL);
 	p->keybufsz = 0;
-	p->param = oparam;
-	p->outside.functbl->init(&p->outside, 0, p->ldr, p->param);
-	p->inside.functbl->init(&p->inside, 0, p->ldr, p->param);
+	p->outside.functbl->clone(&p->outside, algo, 0);
+	p->outside.functbl->reset(&p->outside);
+	p->inside.functbl->clone(&p->inside, algo, 0);
+	p->inside.functbl->reset(&p->inside);
 
 	if (p->blksz > BUFFER_SIZE || p->digestsz > BUFFER_SIZE) {
 		drew_mem_sfree(p);
@@ -86,14 +85,16 @@ static int hmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
 
 static int hmac_clone(drew_mac_t *newctx, const drew_mac_t *oldctx, int flags)
 {
-	struct hmac *h;
-	if (flags & DREW_MAC_FIXED) {
-		memcpy(newctx->ctx, oldctx->ctx, sizeof(*h));
+	struct hmac *h, *oh;
+	if (!(flags & DREW_MAC_FIXED)) {
+		newctx->ctx = drew_mem_smalloc(sizeof(*h));
 	}
-	else {
-		h = drew_mem_smalloc(sizeof(*h));
-		newctx->ctx = h;
-	}
+	memcpy(newctx->ctx, oldctx->ctx, sizeof(*h));
+	h = newctx->ctx;
+	oh = oldctx->ctx;
+
+	h->outside.functbl->clone(&h->outside, &oh->outside, 0);
+	h->inside.functbl->clone(&h->inside, &oh->inside, 0);
 
 	return 0;
 }
@@ -103,10 +104,11 @@ static int hmac_fini(drew_mac_t *ctx, int flags)
 	struct hmac *h = ctx->ctx;
 	h->outside.functbl->fini(&h->outside, 0);
 	h->inside.functbl->fini(&h->inside, 0);
-	drew_mem_sfree(h);
 
-	if (!(flags & DREW_MAC_FIXED))
+	if (!(flags & DREW_MAC_FIXED)) {
+		drew_mem_sfree(h);
 		ctx->ctx = NULL;
+	}
 	return 0;
 }
 
@@ -121,7 +123,8 @@ static int hmac_setkey(drew_mac_t *ctxt, const uint8_t *data, size_t len)
 
 	if (len > ctx->blksz) {
 		keyhash.functbl = ctx->inside.functbl;
-		keyhash.functbl->init(&keyhash, 0, ctx->ldr, ctx->param);
+		keyhash.functbl->clone(&keyhash, &ctx->inside, 0);
+		keyhash.functbl->reset(&keyhash);
 		keyhash.functbl->update(&keyhash, data, len);
 		keyhash.functbl->final(&keyhash, ctx->keybuf, 0);
 		keyhash.functbl->fini(&keyhash, 0);
@@ -154,8 +157,10 @@ static int hmac_reset(drew_mac_t *ctx)
 {
 	int res = 0;
 	struct hmac *c = ctx->ctx;
-	c->outside.functbl->reset(&c->outside); 
-	c->inside.functbl->reset(&c->inside);
+	if (c->outside.ctx)
+		c->outside.functbl->reset(&c->outside);
+	if (c->inside.ctx)
+		c->inside.functbl->reset(&c->inside);
 	if (c->keybufsz)
 		res = hmac_setkey(ctx, c->keybuf, c->keybufsz);
 	return res;
@@ -337,7 +342,7 @@ static int hmac_test(void *p, const drew_loader_t *ldr)
 	int result = 0, tres;
 	size_t ntests = 0;
 	if (!ldr)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	if ((tres = hmac_test_md5(ldr, &ntests)) >= 0) {
 		result <<= ntests;
@@ -485,7 +490,7 @@ static int hmack_test(void *p, const drew_loader_t *ldr)
 	int result = 0, tres;
 	size_t ntests = 0;
 	if (!ldr)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	if ((tres = hmack_test_md5(ldr, &ntests)) >= 0) {
 		result <<= ntests;
@@ -524,7 +529,7 @@ int DREW_PLUGIN_NAME(hmac)(void *ldr, int op, int id, void *p)
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 
 	if (id < 0 || id >= nplugins)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	switch (op) {
 		case DREW_LOADER_LOOKUP_NAME:
@@ -544,7 +549,7 @@ int DREW_PLUGIN_NAME(hmac)(void *ldr, int op, int id, void *p)
 			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1);
 			return 0;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
 UNEXPORT()

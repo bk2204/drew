@@ -55,7 +55,6 @@ static int pbkdf_init(drew_kdf_t *ctx, int flags, const drew_loader_t *ldr,
 {
 	int res = 0;
 	drew_kdf_t *algo = NULL;
-	const drew_param_t *oparam = param;
 
 	for (; param; param = param->next)
 		if (!strcmp(param->name, "prf")) {
@@ -93,16 +92,14 @@ static int pbkdf_init(drew_kdf_t *ctx, int flags, const drew_loader_t *ldr,
 static int pbkdf_clone(drew_kdf_t *newctx, const drew_kdf_t *oldctx, int flags)
 {
 	struct pbkdf *h, *old = oldctx->ctx;
-	if (flags & DREW_KDF_FIXED) {
-		memcpy(newctx->ctx, oldctx->ctx, sizeof(*h));
-	}
-	else {
-		if (!(h = drew_mem_smalloc(sizeof(*h))))
+	if (!(flags & DREW_KDF_FIXED)) {
+		if (!(newctx->ctx = drew_mem_smalloc(sizeof(*h))))
 			return -ENOMEM;
-		newctx->ctx = h;
 	}
+	memcpy(newctx->ctx, oldctx->ctx, sizeof(*h));
 	h = newctx->ctx;
-	h->salt = drew_mem_smemdup(old->salt, h->saltsz);
+	if (old->salt)
+		h->salt = drew_mem_smemdup(old->salt, h->saltsz);
 
 	return 0;
 }
