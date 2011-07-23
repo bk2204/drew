@@ -12,6 +12,7 @@ test/test-kdf
 test/test-mem
 test/plugin-main
 util/*sum
+util/daniel
 *.o
 *.gen
 *.so*
