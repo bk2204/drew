@@ -63,7 +63,7 @@ static int pbkdf_init(drew_kdf_t *ctx, int flags, const drew_loader_t *ldr,
 		}
 
 	if (!algo)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	struct pbkdf *p = drew_mem_scalloc(1, sizeof(*p));
 	if (!p)
@@ -353,7 +353,7 @@ static int pbkdf_test(void *p, const drew_loader_t *ldr)
 	int result = 0, tres;
 	size_t ntests = 0;
 	if (!ldr)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 #if 0
 	if ((tres = pbkdf_test_md5(ldr, &ntests)) >= 0) {
@@ -386,7 +386,7 @@ int DREW_PLUGIN_NAME(pbkdf2)(void *ldr, int op, int id, void *p)
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 
 	if (id < 0 || id >= nplugins)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	switch (op) {
 		case DREW_LOADER_LOOKUP_NAME:
@@ -406,7 +406,7 @@ int DREW_PLUGIN_NAME(pbkdf2)(void *ldr, int op, int id, void *p)
 			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1);
 			return 0;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
 UNEXPORT()
