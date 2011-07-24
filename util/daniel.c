@@ -181,7 +181,7 @@ void process_strings(struct crypto *c, uint8_t *out, size_t nbytes,
 	}
 	c->kdf->functbl->reset(c->kdf);
 	c->kdf->functbl->setsalt(c->kdf, data, len);
-	c->kdf->functbl->setcount(c->kdf, 4096);
+	c->kdf->functbl->setcount(c->kdf, 1024);
 	c->kdf->functbl->generate(c->kdf, out, nbytes, buf, tsize);
 	drew_mem_sfree(buf);
 }
