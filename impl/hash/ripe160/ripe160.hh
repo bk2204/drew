@@ -5,6 +5,7 @@
 #include "util.hh"
 #include <stdint.h>
 
+HIDE()
 namespace drew {
 
 class RIPEMD160 : public Hash<uint32_t, 20, 20, 64, LittleEndian>
@@ -23,5 +24,6 @@ class RIPEMD160 : public Hash<uint32_t, 20, 20, 64, LittleEndian>
 };
 
 }
+UNHIDE()
 
 #endif

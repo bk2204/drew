@@ -5,6 +5,7 @@
 #include "util.hh"
 #include <stdint.h>
 
+HIDE()
 namespace drew {
 
 class Whirlpool : public Hash<uint64_t, 64, 64, 64, BigEndian>
@@ -28,5 +29,6 @@ class Whirlpool : public Hash<uint64_t, 64, 64, 64, BigEndian>
 };
 
 }
+UNHIDE()
 
 #endif

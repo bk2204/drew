@@ -11,6 +11,7 @@
 #include "btestcase.hh"
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 class ARIA : public BlockCipher<16>
@@ -184,6 +185,6 @@ static const int ariakeysz[] =
 	16, 24, 32
 };
 }
-
+UNHIDE()
 
 #endif

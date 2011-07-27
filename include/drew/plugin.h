@@ -38,6 +38,7 @@ typedef struct drew_loader_s drew_loader_t;
 #define DREW_TYPE_BIGNUM 7
 #define DREW_TYPE_PKENC 8
 #define DREW_TYPE_PKSIG 9
+#define DREW_TYPE_KDF 10
 
 /* The system dynamic loader failed. */
 #define DREW_ERR_RESOLUTION		0x10001
@@ -61,6 +62,10 @@ typedef struct drew_loader_s drew_loader_t;
  * Alternately, no item matching the criteria was available.
  */
 #define DREW_ERR_NONEXISTENT	0x1000a
+/* The verification failed.  That is, the MAC is wrong, the signature is not
+ * valid, etc.
+ */
+#define DREW_ERR_VERIFY_FAILED	0x1000b
 
 int drew_loader_new(drew_loader_t **ldr);
 int drew_loader_free(drew_loader_t **ldr);

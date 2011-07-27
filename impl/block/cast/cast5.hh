@@ -8,6 +8,7 @@
 #include "util.hh"
 #include "cast.hh"
 
+HIDE()
 namespace drew {
 
 class CAST5 : public CAST, public BlockCipher<8>
@@ -35,5 +36,6 @@ class CAST5 : public CAST, public BlockCipher<8>
 };
 
 }
+UNHIDE()
 
 #endif

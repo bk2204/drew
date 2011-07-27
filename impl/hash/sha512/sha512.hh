@@ -5,6 +5,7 @@
 #include "util.hh"
 #include <stdint.h>
 
+HIDE()
 namespace drew {
 
 class SHA512Transform
@@ -84,5 +85,6 @@ class SHA384 : public Hash<uint64_t, 48, 64, 128, BigEndian>,
 };
 
 }
+UNHIDE()
 
 #endif

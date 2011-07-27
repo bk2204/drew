@@ -8,6 +8,7 @@
 #include "testcase.hh"
 #include "hash-plugin.hh"
 
+HIDE()
 extern "C" {
 PLUGIN_STRUCTURE(sha512, SHA512)
 PLUGIN_STRUCTURE(sha384, SHA384)
@@ -393,3 +394,4 @@ void drew::SHA512Transform::Transform(uint64_t *state, const uint8_t *block)
 	state[6] += g;
 	state[7] += h;
 }
+UNHIDE()

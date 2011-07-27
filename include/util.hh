@@ -18,6 +18,7 @@
 #define DREW_BYTE_ORDER		DREW_LITTLE_ENDIAN
 #endif
 
+HIDE()
 template<class T, size_t N>
 struct AlignedBlock
 {
@@ -504,6 +505,7 @@ inline void BigEndian::Convert(uint8_t *buf, uint16_t p)
 	uint16_t x = ntohs(p);
 	memcpy(buf, &x, sizeof(x));
 }
+UNHIDE()
 
 #if BYTE_ORDER == BIG_ENDIAN
 typedef BigEndian NativeEndian;

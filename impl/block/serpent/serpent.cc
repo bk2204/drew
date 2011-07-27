@@ -12,6 +12,7 @@
 #include "btestcase.hh"
 #include "serpent.hh"
 
+HIDE()
 extern "C" {
 
 static const int serpentkeysz[] =
@@ -637,3 +638,4 @@ int drew::Serpent::Decrypt(uint8_t *out, const uint8_t *in) const
 	E::Copy(out, b, sizeof(b));
 	return 0;
 }
+UNHIDE()

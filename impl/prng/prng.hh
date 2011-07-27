@@ -2,6 +2,7 @@
 #define BMC_PRNG_HH
 
 #include <internal.h>
+#include "util.h"
 #include <drew/prng.h>
 
 #include <fcntl.h>
@@ -11,6 +12,7 @@
 
 #define RANDOM_DEVICE "/dev/urandom"
 
+HIDE()
 namespace drew {
 
 class PRNG
@@ -135,5 +137,6 @@ class DevURandom : public SeedlessPRNG, public BlockPRNG
 };
 
 }
+UNHIDE()
 
 #endif

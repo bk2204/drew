@@ -1,4 +1,5 @@
 #include "internal.h"
+#include "util.h"
 
 #include <errno.h>
 #include <stddef.h>
@@ -7,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <drew/mem.h>
 #include <drew/mode.h>
 #include <drew/block.h>
 #include <drew/plugin.h>
@@ -17,11 +19,12 @@ struct cfb {
 	const drew_loader_t *ldr;
 	size_t feedback;
 	const drew_block_t *algo;
-	uint8_t *buf;
-	uint8_t *prev;
+	uint8_t buf[32] ALIGNED_T;
+	uint8_t prev[32] ALIGNED_T;
 	uint8_t *iv;
 	size_t blksize;
 	size_t boff;
+	size_t chunks;
 };
 
 static int cfb_info(int op, void *p);
@@ -34,6 +37,10 @@ static int cfb_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len);
 static int cfb_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
 static int cfb_decrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len);
+static int cfb_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len);
+static int cfb_decryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
 static int cfb_fini(drew_mode_t *ctx, int flags);
 static int cfb_test(void *p, const drew_loader_t *ldr);
@@ -48,6 +55,13 @@ static const drew_mode_functbl_t cfb_functbl = {
 	cfb_info, cfb_init, cfb_clone, cfb_reset, cfb_fini, cfb_setpad,
 	cfb_setblock, cfb_setiv, cfb_encrypt, cfb_decrypt, cfb_encrypt, cfb_decrypt,
 	cfb_setdata, cfb_encryptfinal, cfb_decryptfinal, cfb_test
+};
+
+static const drew_mode_functbl_t cfb_functblfast = {
+	cfb_info, cfb_init, cfb_clone, cfb_reset, cfb_fini, cfb_setpad,
+	cfb_setblock, cfb_setiv, cfb_encrypt, cfb_decrypt,
+	cfb_encryptfast, cfb_decryptfast, cfb_setdata,
+	cfb_encryptfinal, cfb_decryptfinal, cfb_test
 };
 
 static int cfb_info(int op, void *p)
@@ -83,7 +97,7 @@ static int cfb_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	struct cfb *newctx = ctx->ctx;
 
 	if (!(flags & DREW_MODE_FIXED))
-		newctx = malloc(sizeof(*newctx));
+		newctx = drew_mem_smalloc(sizeof(*newctx));
 	newctx->ldr = ldr;
 	newctx->feedback = 0;
 	newctx->algo = NULL;
@@ -121,11 +135,11 @@ static int cfb_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 	c->blksize = c->algo->functbl->info(DREW_BLOCK_BLKSIZE, NULL);
 	if (!c->feedback)
 		c->feedback = c->blksize;
-	if (!(c->buf = malloc(c->blksize)))
-		return -ENOMEM;
-	if (!(c->prev = malloc(c->blksize)))
-		return -ENOMEM;
-	if (!(c->iv = malloc(c->blksize)))
+	if (c->feedback == c->blksize && (c->blksize == 8 || c->blksize == 16)) {
+		c->chunks = DREW_MODE_ALIGNMENT / c->blksize;
+		ctx->functbl = &cfb_functblfast;
+	}
+	if (!(c->iv = drew_mem_smalloc(c->blksize)))
 		return -ENOMEM;
 
 	return 0;
@@ -224,6 +238,51 @@ static int cfb_decrypt(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 			out[i] = c->buf[i] ^ (c->prev[i + leftover] = in[i]);
 		c->boff = len;
 	}
+
+	return 0;
+}
+
+
+struct aligned {
+	uint8_t data[DREW_MODE_ALIGNMENT] ALIGNED_T;
+};
+
+static int cfb_encryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
+		size_t len)
+{
+	struct cfb *c = ctx->ctx;
+	struct aligned *cur = (struct aligned *)c->prev;
+	struct aligned *out = (struct aligned *)outp;
+	const struct aligned *in = (const struct aligned *)inp;
+
+	len /= DREW_MODE_ALIGNMENT;
+
+	for (size_t j = 0; j < len; j++, out++, in++) {
+		c->algo->functbl->encryptfast(c->algo, c->buf, cur->data, c->chunks);
+		xor_aligned(out->data, c->buf, in->data, DREW_MODE_ALIGNMENT);
+		cur = out;
+	}
+	memcpy(c->prev, cur, DREW_MODE_ALIGNMENT);
+
+	return 0;
+}
+
+static int cfb_decryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
+		size_t len)
+{
+	struct cfb *c = ctx->ctx;
+	struct aligned *out = (struct aligned *)outp;
+	const struct aligned *cur = (const struct aligned *)c->prev;
+	const struct aligned *in = (const struct aligned *)inp;
+
+	len /= DREW_MODE_ALIGNMENT;
+
+	for (size_t j = 0; j < len; j++, out++, in++) {
+		c->algo->functbl->encryptfast(c->algo, c->buf, cur->data, c->chunks);
+		xor_aligned(out->data, c->buf, in->data, DREW_MODE_ALIGNMENT);
+		cur = in;
+	}
+	memcpy(c->prev, cur, DREW_MODE_ALIGNMENT);
 
 	return 0;
 }
@@ -434,13 +493,13 @@ static int cfb_fini(drew_mode_t *ctx, int flags)
 {
 	struct cfb *c = ctx->ctx;
 
-	memset(c->buf, 0, c->blksize);
-	free(c->buf);
-	memset(c->prev, 0, c->blksize);
-	free(c->prev);
-	memset(c, 0, sizeof(*c));
-	if (!(flags & DREW_MODE_FIXED))
-		free(c);
+	drew_mem_sfree(c->iv);
+	if (flags & DREW_MODE_FIXED) {
+		memset(c->buf, 0, sizeof(c->buf));
+		memset(c->prev, 0, sizeof(c->prev));
+	}
+	else
+		drew_mem_sfree(c);
 
 	ctx->ctx = NULL;
 	return 0;
@@ -449,7 +508,7 @@ static int cfb_fini(drew_mode_t *ctx, int flags)
 static int cfb_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags)
 {
 	if (!(flags & DREW_MODE_FIXED))
-		newctx->ctx = malloc(sizeof(struct cfb));
+		newctx->ctx = drew_mem_malloc(sizeof(struct cfb));
 	memcpy(newctx->ctx, oldctx->ctx, sizeof(struct cfb));
 	newctx->functbl = oldctx->functbl;
 	return 0;
@@ -464,6 +523,7 @@ static struct plugin plugin_data[] = {
 	{ "CFB", &cfb_functbl }
 };
 
+EXPORT()
 int DREW_PLUGIN_NAME(cfb)(void *ldr, int op, int id, void *p)
 {
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
@@ -492,3 +552,4 @@ int DREW_PLUGIN_NAME(cfb)(void *ldr, int op, int id, void *p)
 			return -EINVAL;
 	}
 }
+UNEXPORT()

@@ -2,6 +2,7 @@ SUMS					:= md5 sha1 sha224 sha256 sha384 sha512
 SUMS_PROGS				:= $(patsubst %,util/%sum,$(SUMS))
 
 UTILS					+= drew-openpgp
+UTILS					+= daniel
 UTILITIES				:= $(patsubst %,util/%,$(UTILS))
 UTILITIES				+= $(SUMS_PROGS)
 

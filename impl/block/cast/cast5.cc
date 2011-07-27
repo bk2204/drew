@@ -8,6 +8,7 @@
 #include "block-plugin.hh"
 #include "btestcase.hh"
 
+HIDE()
 extern "C" {
 
 static const int cast5keysz[] =
@@ -222,3 +223,4 @@ int drew::CAST5::Decrypt(uint8_t *out, const uint8_t *in) const
 
 	return 0;
 }
+UNHIDE()

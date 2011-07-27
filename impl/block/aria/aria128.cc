@@ -1,6 +1,7 @@
 #define ARIA_128
 #include "aria.hh"
 
+HIDE()
 extern "C" {
 #if defined(FEATURE_128_BIT_INTEGERS)
 	PLUGIN_STRUCTURE(aria, ARIA128)
@@ -19,6 +20,7 @@ static int ariatest(void *, const drew_loader_t *)
 }
 #endif
 
+EXPORT()
 int DREW_PLUGIN_NAME(aria128)(void *ldr, int op, int id, void *p) 
 { 
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]); 
@@ -49,6 +51,7 @@ int DREW_PLUGIN_NAME(aria128)(void *ldr, int op, int id, void *p)
 			return -DREW_ERR_INVALID; 
 	} 
 }
+UNEXPORT()
 }
 
 #if defined(FEATURE_128_BIT_INTEGERS)
@@ -152,3 +155,4 @@ int drew::ARIA128::SetKey(const uint8_t *key, size_t len)
 	return 0;
 }
 #endif
+UNHIDE()

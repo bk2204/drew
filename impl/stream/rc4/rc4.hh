@@ -6,6 +6,7 @@
 
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 template<class T>
@@ -79,5 +80,6 @@ class RC4
 };
 
 }
+UNHIDE()
 
 #endif

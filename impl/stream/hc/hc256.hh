@@ -6,6 +6,7 @@
 
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 class HC256Keystream
@@ -50,5 +51,5 @@ class HC256
 };
 
 }
-
+UNHIDE()
 #endif

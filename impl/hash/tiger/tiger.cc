@@ -8,6 +8,7 @@
 #include "testcase.hh"
 #include "hash-plugin.hh"
 
+HIDE()
 extern "C" {
 PLUGIN_STRUCTURE(tiger, Tiger)
 PLUGIN_DATA_START()
@@ -677,3 +678,4 @@ const uint64_t drew::Tiger::t4[] = {
     0xcd56d9430ea8280eLL,    0xc12591d7535f5065LL,
     0xc83223f1720aef96LL,    0xc3a0396f7363a51fLL
 };
+UNHIDE()

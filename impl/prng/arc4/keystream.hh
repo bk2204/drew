@@ -5,6 +5,7 @@
 
 #include "prng.hh"
 
+HIDE()
 namespace drew {
 
 class KeystreamGenerator
@@ -23,5 +24,6 @@ class KeystreamGenerator
 };
 
 }
+UNHIDE()
 
 #endif

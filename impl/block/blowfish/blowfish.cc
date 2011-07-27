@@ -7,6 +7,7 @@
 #include "blowfish.hh"
 #include "block-plugin.hh"
 
+HIDE()
 extern "C" {
 
 static const int blowfishkeysz[] =
@@ -411,4 +412,4 @@ const uint32_t drew::Blowfish::m_parray[] = {
 	0xc0ac29b7L, 0xc97c50ddL, 0x3f84d5b5L, 0xb5470917L,
 	0x9216d5d9L, 0x8979fb1bL
 };
-
+UNHIDE()

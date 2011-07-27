@@ -10,6 +10,7 @@
 #include "stream-plugin.h"
 #include "testcase.hh"
 
+HIDE()
 extern "C" {
 
 static int rc4_test(void *, const drew_loader_t *);
@@ -212,3 +213,4 @@ void drew::RC4::Decrypt(uint8_t *out, const uint8_t *in, size_t len)
 {
 	return Encrypt(out, in, len);
 }
+UNHIDE()

@@ -14,6 +14,7 @@
 #include "prng-plugin.h"
 #include "util.hh"
 
+HIDE()
 template<class T>
 static int make_new(T *ctx, const drew_loader_t *ldr, const drew_param_t *param,
 		const char *paramname, int type, const char *algonames[], size_t nalgos)
@@ -918,3 +919,4 @@ void drew::HMACDRBG::GetBytes(uint8_t *data, size_t len)
 	Update(&b, 1);
 	rc++;
 }
+UNHIDE()

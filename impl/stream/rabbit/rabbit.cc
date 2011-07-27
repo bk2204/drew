@@ -10,6 +10,7 @@
 #include "stream-plugin.h"
 #include "testcase.hh"
 
+HIDE()
 extern "C" {
 
 static int rabbit_test(void *, const drew_loader_t *)
@@ -292,3 +293,4 @@ void drew::RabbitKeystream::FillBuffer(uint8_t buf[16])
 	GetValue(s);
 	E::Copy(buf, s, sizeof(s));
 }
+UNHIDE()

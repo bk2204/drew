@@ -45,6 +45,7 @@ CFG_CFB			= y
 CFG_OFB			= y
 CFG_CBC			= y
 CFG_CTR			= y
+CFG_GCM			= y
 
 # MACs.
 CFG_HMAC		= y
@@ -71,6 +72,9 @@ CFG_RSAENC		= y
 ## Public key signatures.
 CFG_RSASIG		= y
 CFG_DSA			= y
+
+# PRFs and KDFs.
+CFG_PBKDF2		= y
 
 ## Additional libraries using libdrew.
 CFG_LIBMD		= y

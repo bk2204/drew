@@ -1,6 +1,6 @@
 include config
 
-CATEGORIES		:= hash block mode mac stream prng bignum pkenc pksig
+CATEGORIES		:= hash block mode mac stream prng bignum pkenc pksig kdf
 
 TEST_SRC		+= libmd/testsuite.c
 TEST_OBJ		:= ${SRC:.c=.o} ${TEST_SRC:.c=.o}
@@ -42,7 +42,7 @@ CFLAGS			+= -std=c99
 LIBCFLAGS		+= -shared
 PLUGINCFLAGS	+= -I.
 
-LDFLAGS			+= -Wl,--version-script,misc/limited-symbols.ld -Wl,--as-needed
+LDFLAGS			+= -Wl,--as-needed
 LIBS			+= ${LDFLAGS} -lrt -ldl
 
 .TARGET			= $@

@@ -1,6 +1,7 @@
 #define ARIA_BYTEWISE
 #include "aria.hh"
 
+HIDE()
 extern "C" {
 static int ariatest(void *, const drew_loader_t *)
 {
@@ -119,3 +120,4 @@ int drew::ARIABytewise::SetKey(const uint8_t *key, size_t len)
 
 	return 0;
 }
+UNHIDE()

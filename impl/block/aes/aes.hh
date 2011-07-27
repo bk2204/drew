@@ -7,6 +7,7 @@
 #include "block-plugin.hh"
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 class AES : public BlockCipher<16>
@@ -47,5 +48,6 @@ class AES : public BlockCipher<16>
 };
 
 }
+UNHIDE()
 
 #endif

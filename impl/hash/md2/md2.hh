@@ -5,6 +5,7 @@
 #include "util.hh"
 #include <stdint.h>
 
+HIDE()
 namespace drew {
 
 class MD2 : public Hash<uint8_t, 16, 64, 16, NonEndian>
@@ -27,5 +28,6 @@ class MD2 : public Hash<uint8_t, 16, 64, 16, NonEndian>
 };
 
 }
+UNHIDE()
 
 #endif

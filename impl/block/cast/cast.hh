@@ -6,6 +6,7 @@
 
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 class CAST
@@ -39,5 +40,6 @@ class CAST
 };
 
 }
+UNHIDE()
 
 #endif

@@ -8,9 +8,12 @@ test/test-prng
 test/test-bignum
 test/test-pkenc
 test/test-pksig
+test/test-kdf
+test/test-mem
 test/plugin-main
 util/drew-openpgp
 util/*sum
+util/daniel
 *.o
 *.gen
 *.so*

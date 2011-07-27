@@ -7,6 +7,7 @@
 #include "block-plugin.hh"
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 class XTEA : public BlockCipher<8>
@@ -26,5 +27,6 @@ class XTEA : public BlockCipher<8>
 
 };
 }
+UNHIDE()
 
 #endif

@@ -1,4 +1,5 @@
 #include "internal.h"
+#include "util.h"
 
 #include <errno.h>
 #include <stdbool.h>
@@ -9,6 +10,7 @@
 #include <string.h>
 
 #include <drew/bignum.h>
+#include <drew/mem.h>
 #include <drew/pksig.h>
 #include <drew/plugin.h>
 
@@ -342,7 +344,7 @@ static int dsa_test(void *ptr, const drew_loader_t *ldr)
 static drew_bignum_t *init_bignum(const drew_loader_t *ldr,
 		const drew_param_t *param, const void *functbl)
 {
-	drew_bignum_t *ctx = malloc(sizeof(*ctx));
+	drew_bignum_t *ctx = drew_mem_malloc(sizeof(*ctx));
 
 	ctx->functbl = functbl;
 	ctx->functbl->init(ctx, 0, ldr, param);
@@ -353,7 +355,7 @@ static drew_bignum_t *init_bignum(const drew_loader_t *ldr,
 static void free_bignum(drew_bignum_t *ctx)
 {
 	ctx->functbl->fini(ctx, 0);
-	free(ctx);
+	drew_mem_free(ctx);
 }
 
 static int fini(struct dsa *c, int flags)
@@ -395,7 +397,7 @@ static int dsa_init(drew_pksig_t *ctx, int flags, const drew_loader_t *ldr,
 	struct dsa *newctx = ctx->ctx;
 
 	if (!(flags & DREW_PKSIG_FIXED))
-		newctx = malloc(sizeof(*newctx));
+		newctx = drew_mem_malloc(sizeof(*newctx));
 
 	const void *functbl;
 	int res = 0;
@@ -433,7 +435,7 @@ static int dsa_fini(drew_pksig_t *ctx, int flags)
 
 	fini(c, flags);
 	if (!(flags & DREW_PKSIG_FIXED))
-		free(c);
+		drew_mem_free(c);
 
 	ctx->ctx = NULL;
 	return 0;
@@ -446,7 +448,7 @@ static int dsa_clone(drew_pksig_t *newctx, const drew_pksig_t *oldctx,
 		int flags)
 {
 	if (!(flags & DREW_PKSIG_FIXED))
-		newctx->ctx = malloc(sizeof(struct dsa));
+		newctx->ctx = drew_mem_malloc(sizeof(struct dsa));
 
 	memset(newctx->ctx, 0, sizeof(struct dsa));
 
@@ -579,6 +581,7 @@ static struct plugin plugin_data[] = {
 	{ "DSA", &dsa_functbl },
 };
 
+EXPORT()
 int DREW_PLUGIN_NAME(dsa)(void *ldr, int op, int id, void *p)
 {
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
@@ -607,3 +610,4 @@ int DREW_PLUGIN_NAME(dsa)(void *ldr, int op, int id, void *p)
 			return -EINVAL;
 	}
 }
+UNEXPORT()

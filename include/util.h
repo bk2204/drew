@@ -89,7 +89,21 @@
 #define BRANCH_PREDICTION
 #if defined(__SIZEOF_INT128__) && __SIZEOF_INT128__ == 16
 #define FEATURE_128_BIT_INTEGERS
+typedef __int128_t int128_t;
+typedef __uint128_t uint128_t; 
 #endif
+#endif
+
+#ifdef __GNUC__
+#define HIDE() _Pragma("GCC visibility push(hidden)")
+#define UNHIDE() _Pragma("GCC visibility pop")
+#define EXPORT() _Pragma("GCC visibility push(default)")
+#define UNEXPORT() _Pragma("GCC visibility pop")
+#else
+#define HIDE()
+#define UNHIDE()
+#define EXPORT()
+#define UNEXPORT()
 #endif
 
 #if !defined(__STDC_ISO_10646__)
@@ -104,6 +118,7 @@
 
 #define STATIC_ASSERT(e) ((void)sizeof(char[1 - 2*!(e)]))
 
+HIDE()
 inline void xor_aligned(uint8_t *outp, const uint8_t *inp, const uint8_t *xorp, size_t len)
 {
 	struct aligned_data {
@@ -156,6 +171,20 @@ inline void xor_aligned2(uint8_t *outp, const uint8_t *xorp, size_t len)
 #endif
 	}
 }
+
+inline void xor_buffers(uint8_t *outp, const uint8_t *inp, const uint8_t *xorp,
+		size_t len)
+{
+	for (size_t i = 0; i < len; i++)
+		*outp++ = *inp++ ^ *xorp++;
+}
+
+inline void xor_buffers2(uint8_t *outp, const uint8_t *xorp, size_t len)
+{
+	for (size_t i = 0; i < len; i++)
+		*outp++ ^= *xorp++;
+}
+UNHIDE()
 
 #ifdef BRANCH_PREDICTION
 #define likely(x)	__builtin_expect(!!(x), 1)

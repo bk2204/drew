@@ -10,6 +10,7 @@
 
 #define MD2_BLOCK_LENGTH 16
 
+HIDE()
 extern "C" {
 PLUGIN_STRUCTURE(md2, MD2)
 PLUGIN_DATA_START()
@@ -112,3 +113,4 @@ void drew::MD2::Pad()
 	 */
 	Update(m_hash + 48, 16);
 }
+UNHIDE()

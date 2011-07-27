@@ -6,6 +6,7 @@
 
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 class Salsa20Keystream
@@ -50,5 +51,6 @@ class Salsa20
 };
 
 }
+UNHIDE()
 
 #endif

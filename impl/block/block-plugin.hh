@@ -11,6 +11,7 @@
 #include "block-plugin.h"
 #include "util.hh"
 
+HIDE()
 namespace drew {
 	template<size_t BlockSize>
 	class BlockCipher {
@@ -68,6 +69,7 @@ namespace drew {
 		private:
 	};
 }
+UNHIDE()
 
 #define PLUGIN_STRUCTURE(prefix, bname) \
 PLUGIN_STRUCTURE2(prefix, bname) \
