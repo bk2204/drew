@@ -104,7 +104,9 @@ int create_util(struct util *util)
 		"sha512",
 		"ripe160",
 		"blowfish",
+		"aesni",
 		"aes",
+		"rijndael",
 		"camellia",
 		"des",
 		"cast5"
