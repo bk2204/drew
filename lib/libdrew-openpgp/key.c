@@ -737,7 +737,7 @@ int drew_opgp_key_validate_signatures(drew_opgp_key_t key,
 		validate_signature(signer, &signer->pub, sig, 0);
 	}
 	for (size_t i = 0; i < key->pub.nuids; i++) {
-		for (size_t j = 0; j < key->pub.uids[i].nsigs; i++) {
+		for (size_t j = 0; j < key->pub.uids[i].nsigs; j++) {
 			csig_t *sig = key->pub.uids[i].sigs+j;
 			if (!drew_opgp_keystore_lookup_by_keyid(ks, &signer, 1, sig->keyid))
 				continue;
