@@ -292,8 +292,21 @@ out:
 	return res;
 }
 
+static void validate_keys(drew_opgp_keystore_t ks, int print)
+{
+	int nkeys = drew_opgp_keystore_get_keys(ks, NULL, 0);
+	drew_opgp_key_t *keys;
+	keys = malloc(nkeys * sizeof(*keys));
+	drew_opgp_keystore_get_keys(ks, keys, nkeys);
+	for (int i = 0; i < nkeys; i++) {
+		drew_opgp_key_validate_signatures(keys[i], ks);
+		if (print)
+			print_key_info(keys[i]);
+	}
+}
+
 int import(struct file *f, struct util *util, size_t pktbufsz,
-		const char *keystorefile)
+		const char *keystorefile, int validate)
 {
 	int res = 0;
 	size_t off = 0, toff;
@@ -334,7 +347,6 @@ int import(struct file *f, struct util *util, size_t pktbufsz,
 				res = print_error(21, res, "failed to synchronize");
 				goto out;
 			}
-			print_key_info(key);
 		}
 		else
 			return print_error(22, 0,
@@ -351,6 +363,12 @@ int import(struct file *f, struct util *util, size_t pktbufsz,
 	}
 out:
 	drew_opgp_keystore_set_backend(ks, "file");
+	if (validate) {
+		printf("Validating keys...");
+		validate_keys(ks, 1);
+		fflush(stdout);
+		printf("done.\n");
+	}
 	printf("Saving keystore...");
 	fflush(stdout);
 	if ((res = drew_opgp_keystore_store(ks, keystorefile)))
@@ -363,7 +381,7 @@ out:
 
 int main(int argc, char **argv)
 {
-	int res = 0, cmd = 0, pktbufsz = 500;
+	int res = 0, cmd = 0, pktbufsz = 500, validate = 0;
 	struct file f;
 	struct util util;
 	const char *keystorefile = NULL;
@@ -371,6 +389,7 @@ int main(int argc, char **argv)
 		{"list-packets", 0, POPT_ARG_VAL, &cmd, 1, NULL, NULL},
 		{"fingerprint", 0, POPT_ARG_VAL, &cmd, 2, NULL, NULL},
 		{"import", 0, POPT_ARG_VAL, &cmd, 3, NULL, NULL},
+		{"validate", 0, POPT_ARG_NONE, &validate, 1, NULL, NULL},
 		{"keystore", 0, POPT_ARG_STRING, &keystorefile, 1, NULL, NULL},
 		{"packet-buffer-size", 0, POPT_ARG_INT, &pktbufsz, 0, NULL, NULL},
 		POPT_TABLEEND
@@ -419,7 +438,7 @@ int main(int argc, char **argv)
 			close_file(&f);
 			return res;
 		}
-		res = import(&f, &util, pktbufsz, keystorefile);
+		res = import(&f, &util, pktbufsz, keystorefile, validate);
 		destroy_util(&util);
 		close_file(&f);
 		return res;
