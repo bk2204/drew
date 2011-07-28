@@ -18,7 +18,8 @@ int drew_opgp_keystore_new(drew_opgp_keystore_t *ksp, const drew_loader_t *ldr);
 int drew_opgp_keystore_free(drew_opgp_keystore_t *ksp);
 int drew_opgp_keystore_set_backend(drew_opgp_keystore_t ks,
 		const char *backend);
-int drew_opgp_keystore_load(drew_opgp_keystore_t ks, const char *filename);
+int drew_opgp_keystore_load(drew_opgp_keystore_t ks, const char *filename,
+		drew_opgp_id_t missingid);
 int drew_opgp_keystore_store(drew_opgp_keystore_t ks, const char *filename);
 int drew_opgp_keystore_update_sigs(drew_opgp_keystore_t ks,
 		drew_opgp_sig_t *sigs, size_t nsigs, int flags);

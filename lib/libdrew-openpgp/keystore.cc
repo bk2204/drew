@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <drew/drew.h>
+#include <drew/mem.h>
 #include <drew/plugin.h>
 
 #include <drew-opgp/drew-opgp.h>
@@ -120,6 +121,14 @@ struct Chunk
 		return chunk;
 	}
 	uint8_t &operator[](int offset)
+	{
+		return chunk[offset];
+	}
+	operator const uint8_t *() const
+	{
+		return chunk;
+	}
+	const uint8_t &operator[](int offset) const
 	{
 		return chunk[offset];
 	}
@@ -295,12 +304,6 @@ int drew_opgp_keystore_set_backend(drew_opgp_keystore_t ks, const char *backend)
 	else
 		return -DREW_ERR_INVALID;
 	return 0;
-}
-
-extern "C"
-int drew_opgp_keystore_load(drew_opgp_keystore_t ks, const char *filename)
-{
-	return -DREW_ERR_NOT_IMPL;
 }
 
 #define ROUND(x) (RoundUpToPowerOf2(x, 2))
@@ -586,9 +589,8 @@ static void store_uid(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 	delete[] c;
 }
 
-static void store_header(drew_opgp_keystore_t ks)
+static void set_header(drew_opgp_keystore_t ks, KeyChunk &chunk)
 {
-	KeyChunk chunk;
 	chunk[0x20] = CHUNK_TYPE_HEADER;
 	chunk[0x21] = CHUNK_HEADER_CONSTANT;
 	chunk[0x22] = ks->major;
@@ -615,7 +617,135 @@ static void store_header(drew_opgp_keystore_t ks)
 	chunk[0x3d] = 0x4c;
 	chunk[0x3e] = 0x01;
 	chunk[0x3f] = 0x6f;
+}
+
+static int load_header(drew_opgp_keystore_t ks)
+{
+	KeyChunk chunk, k;
+	set_header(ks, k);
+	ks->b->ReadKeyChunk(chunk);
+	return memcmp(k.chunk, chunk.chunk, sizeof(k.chunk)) ? -DREW_ERR_INVALID :
+		0;
+}
+
+static void store_header(drew_opgp_keystore_t ks)
+{
+	KeyChunk chunk;
+	set_header(ks, chunk);
 	ks->b->WriteChunks(chunk, 0, 0);
+}
+
+static int load_pubkey(drew_opgp_keystore_t ks, const Chunk &key,
+		const Chunk *c, size_t nchunks)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+static int load_subkey(drew_opgp_keystore_t ks, const Chunk &key,
+		const Chunk *c, size_t nchunks)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+static int load_uid(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
+		size_t nchunks)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+static int load_sig(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
+		size_t nchunks)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+static int load_mpi(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
+		size_t nchunks)
+{
+	drew_opgp_mpi_t *mpi;
+	size_t nbytes = 0;
+
+	mpi = (drew_opgp_mpi_t *)drew_mem_malloc(sizeof(*mpi));
+	if (!mpi)
+		return -ENOMEM;
+
+	memcpy(mpi->id, key, 0x20);
+	mpi->len = E::Convert<uint32_t>(c[0]+0x04);
+	nbytes = E::Convert<uint32_t>(c[0]+0x08);
+	mpi->data = (uint8_t *)drew_mem_malloc(nbytes);
+	if (!mpi->data) {
+		drew_mem_free(mpi);
+		return -ENOMEM;
+	}
+	for (size_t i = 1, off = 0; i <= nchunks; i++, off += 0x40)
+		memcpy(mpi->data+off, c[i], std::min<size_t>(0x40, nbytes-off));
+	return 0;
+}
+
+static int load_item(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
+		size_t nchunks)
+{
+	if (key[0x22] != ks->major)
+		return -DREW_ERR_NOT_IMPL;
+	switch (key[0x21]) {
+		case CHUNK_ID_MPI:
+			return load_mpi(ks, key, c, nchunks);
+		case CHUNK_ID_SIG:
+			return load_sig(ks, key, c, nchunks);
+		case CHUNK_ID_UID:
+			return load_uid(ks, key, c, nchunks);
+		case CHUNK_ID_PUBSUBKEY:
+			return load_subkey(ks, key, c, nchunks);
+		case CHUNK_ID_PUBKEY:
+			return load_pubkey(ks, key, c, nchunks);
+		default:
+			return -DREW_ERR_NOT_IMPL;
+	}
+}
+
+extern "C"
+int drew_opgp_keystore_load(drew_opgp_keystore_t ks, const char *filename,
+		drew_opgp_id_t missingid)
+{
+	int res = 0;
+
+	ks->b->Open(filename, false);
+
+	if (!ks->b->IsOpen())
+		return ks->b->GetError();
+
+	RETFAIL(load_header(ks));
+	if (!ks->b->IsRandomAccess()) {
+		for (;;) {
+			KeyChunk key;
+			Chunk *c = 0;
+			try {
+				ks->b->ReadKeyChunk(key);
+				size_t nchunks;
+				c = ks->b->ReadChunks(key, nchunks);
+				if (key[0x20] != CHUNK_TYPE_ID) {
+					delete[] c;
+					continue;
+				}
+				if ((res = load_item(ks, key, c, nchunks))) {
+					delete[] c;
+					return res;
+				}
+				delete[] c;	
+			}
+			catch (int e) {
+				if (c)
+					delete[] c;
+				if (!e)
+					break; // done.
+				return e;
+			}
+		}
+	}
+	else {
+		return -DREW_ERR_NOT_IMPL;
+	}
+	return 0;
 }
 
 extern "C"
