@@ -640,22 +640,169 @@ static void store_header(drew_opgp_keystore_t ks)
 	ks->b->WriteChunks(chunk, 0, 0);
 }
 
-static int load_pubkey(drew_opgp_keystore_t ks, const Chunk &key,
-		const Chunk *c, size_t nchunks)
+static int load_pubkey(drew_opgp_keystore_t ks, pubkey_t *pub,
+		drew_opgp_key_t key, const Chunk &kchunk, const Chunk *c,
+		size_t nchunks, drew_opgp_id_t missingid)
 {
-	return -DREW_ERR_NOT_IMPL;
+	memcpy(pub->id, kchunk, 0x20);
+
+	uint32_t nmpis = 0, npubsubs = 0;
+	pub->state = E::Convert<uint16_t>(c[0]+0x04);
+	pub->ver = c[0][0x05];
+	pub->algo = c[0][0x06];
+	pub->ctime = E::Convert<uint32_t>(c[0]+0x08);
+	pub->etime = E::Convert<uint32_t>(c[0]+0x0c);
+	pub->nuids = E::Convert<uint32_t>(c[0]+0x10);
+	pub->nsigs = E::Convert<uint32_t>(c[0]+0x14);
+	memcpy(pub->keyid, c[0]+0x18, 8);
+	memcpy(pub->fp, c[0]+0x20, (pub->ver == 4 ? 20 : 16));
+	npubsubs = E::Convert<uint32_t>(c[0]+0x34);
+	nmpis = E::Convert<uint32_t>(c[0]+0x38);
+
+	pub->uids = (cuid_t *)drew_mem_malloc(pub->nuids * sizeof(*pub->uids));
+	pub->sigs = (csig_t *)drew_mem_malloc(pub->nsigs * sizeof(*pub->sigs));
+	if (key) {
+		key->npubsubs = npubsubs;
+		key->pubsubs = (pubkey_t *)drew_mem_calloc(key->npubsubs,
+				sizeof(*key->pubsubs));
+	}
+	size_t off = 1, offset = 0x00;
+	for (size_t i = 0; i < pub->nuids; i++, offset += 0x20) {
+		if (offset == 0x40) {
+			off++;
+			offset = 0x00;
+		}
+		Item item = ks->items[DrewID(c[off]+offset)];
+		if (!item.uid) {
+			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
+			return -DREW_ERR_MORE_INFO;
+		}
+		clone_uid(pub->uids+i, item.uid);
+		offset += 0x20;
+	}
+	pub->theuid = pub->uids;
+
+	if (offset == 0x20) {
+		off++;
+		offset = 0x00;
+	}
+
+	for (size_t i = 0; i < pub->nsigs; i++, offset += 0x20) {
+		if (offset == 0x40) {
+			off++;
+			offset = 0x00;
+		}
+		Item item = ks->items[DrewID(c[off]+offset)];
+		if (!item.sig) {
+			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
+			return -DREW_ERR_MORE_INFO;
+		}
+		clone_sig(pub->sigs+i, item.sig);
+		offset += 0x20;
+	}
+
+	if (offset == 0x20) {
+		off++;
+		offset = 0x00;
+	}
+
+	for (size_t i = 0; i < npubsubs; i++, offset += 0x20) {
+		if (offset == 0x40) {
+			off++;
+			offset = 0x00;
+		}
+		Item item = ks->items[DrewID(c[off]+offset)];
+		if (!item.sig) {
+			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
+			return -DREW_ERR_MORE_INFO;
+		}
+		clone_pubkey(key->pubsubs+i, item.pub, pub);
+		key->pubsubs[i].parent = pub;
+		offset += 0x20;
+	}
+
+	if (offset == 0x20) {
+		off++;
+		offset = 0x00;
+	}
+
+	for (size_t i = 0, offset = 0; i < nmpis; i++, offset += 0x20) {
+		if (offset == 0x40) {
+			off++;
+			offset = 0x00;
+		}
+		DrewID id(c[off]+offset);
+		Item item = ks->items[id];
+		if (!item.mpi) {
+			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
+			return -DREW_ERR_MORE_INFO;
+		}
+		clone_mpi(pub->mpi+i, item.mpi);
+	}
+	return 0;
+}
+
+static int load_key(drew_opgp_keystore_t ks, const Chunk &kchunk,
+		const Chunk *c, size_t nchunks, drew_opgp_id_t missingid)
+{
+	drew_opgp_key_t key = (drew_opgp_key_t)drew_mem_calloc(1, sizeof(*key));
+	if (!key)
+		return -ENOMEM;
+	RETFAIL(load_pubkey(ks, &key->pub, key, kchunk, c, nchunks, missingid));
+	ks->items[DrewID(key->pub.id)] = Item(key);
+	return 0;
 }
 
 static int load_subkey(drew_opgp_keystore_t ks, const Chunk &key,
-		const Chunk *c, size_t nchunks)
+		const Chunk *c, size_t nchunks, drew_opgp_id_t missingid)
 {
-	return -DREW_ERR_NOT_IMPL;
+	pubkey_t *pub = (pubkey_t *)drew_mem_calloc(1, sizeof(*pub));
+	RETFAIL(load_pubkey(ks, pub, 0, key, c, nchunks, missingid));
+	ks->items[DrewID(pub->id)] = Item(pub);
+	return 0;
 }
 
 static int load_uid(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
-		size_t nchunks)
+		size_t nchunks, drew_opgp_id_t missingid)
 {
-	return -DREW_ERR_NOT_IMPL;
+	cuid_t *uid = (cuid_t *)drew_mem_calloc(1, sizeof(*uid));
+	if (!uid)
+		return -ENOMEM;
+
+	memcpy(uid->id, key, sizeof(drew_opgp_id_t));
+
+	uid->nsigs = E::Convert<uint32_t>(c[0]+0x04);
+	uid->nselfsigs = E::Convert<uint32_t>(c[0]+0x08);
+	uid->len = E::Convert<uint32_t>(c[0]+0x0c);
+
+	uid->theselfsig = 0;
+	uid->sigs = (csig_t *)drew_mem_malloc(uid->nsigs * sizeof(*uid->sigs));
+	uid->selfsigs =
+		(csig_t **)drew_mem_malloc(uid->nselfsigs * sizeof(*uid->selfsigs));
+
+	size_t off = 1, offset = 0x00;
+	for (size_t i = 0; i < uid->nsigs; i++, offset += 0x20) {
+		if (offset == 0x40) {
+			off++;
+			offset = 0x00;
+		}
+		Item item = ks->items[DrewID(c[off]+offset)];
+		if (!item.sig) {
+			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
+			return -DREW_ERR_MORE_INFO;
+		}
+		clone_sig(uid->sigs+i, item.sig);
+		offset += 0x20;
+	}
+
+	if (uid->nsigs && uid->nselfsigs)
+		uid->theselfsig = uid->sigs;
+
+	for (size_t i = 0; i < uid->nselfsigs; i++)
+		uid->selfsigs[i] = &uid->sigs[i];
+
+	ks->items[DrewID(uid->id)] = Item(uid);
+	return 0;
 }
 
 static void load_subpackets1(drew_opgp_subpacket_group_t *spg, const Chunk *c,
@@ -796,11 +943,11 @@ static int load_item(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 		case CHUNK_ID_SIG:
 			return load_sig(ks, key, c, nchunks, missingid);
 		case CHUNK_ID_UID:
-			return load_uid(ks, key, c, nchunks);
+			return load_uid(ks, key, c, nchunks, missingid);
 		case CHUNK_ID_PUBSUBKEY:
-			return load_subkey(ks, key, c, nchunks);
+			return load_subkey(ks, key, c, nchunks, missingid);
 		case CHUNK_ID_PUBKEY:
-			return load_pubkey(ks, key, c, nchunks);
+			return load_key(ks, key, c, nchunks, missingid);
 		default:
 			return -DREW_ERR_NOT_IMPL;
 	}
