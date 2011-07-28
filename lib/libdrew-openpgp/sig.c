@@ -9,6 +9,7 @@
 
 #include <drew/drew.h>
 #include <drew/hash.h>
+#include <drew/mem.h>
 #include <drew/plugin.h>
 #include <drew/pksig.h>
 
@@ -286,22 +287,19 @@ loop:
 	}
 }
 
+static void free_subpacket_group(drew_opgp_subpacket_group_t *spg)
+{
+	for (size_t i = 0; i < spg->nsubpkts; i++)
+		drew_mem_free(spg->subpkts[i].data);
+	drew_mem_free(spg->subpkts);
+	drew_mem_free(spg->data);
+	memset(spg, 0, sizeof(*spg));
+}
+
 static void free_subpackets(drew_opgp_sig_t sig)
 {
-	for (size_t i = 0; i < sig->nhashed; i++)
-		free(sig->hashed[i].data);
-	free(sig->hashed);
-	free(sig->hasheddata);
-	sig->hashedlen = sig->nhashed = 0;
-	sig->hashed = NULL;
-	sig->hasheddata = NULL;
-	for (size_t i = 0; i < sig->nunhashed; i++)
-		free(sig->unhashed[i].data);
-	free(sig->unhashed);
-	free(sig->unhasheddata);
-	sig->unhashedlen = sig->nunhashed = 0;
-	sig->unhashed = NULL;
-	sig->unhasheddata = NULL;
+	free_subpacket_group(&sig->hashed);
+	free_subpacket_group(&sig->unhashed);
 }
 
 static int add_subpacket(drew_opgp_sig_t sig, uint8_t type, const uint8_t *data,
@@ -312,11 +310,12 @@ static int add_subpacket(drew_opgp_sig_t sig, uint8_t type, const uint8_t *data,
 
 	if (len+1 >= 192)
 		return -DREW_ERR_NOT_IMPL;
-	arr = realloc(sig->hashed, sizeof(*sig->hashed) * (sig->nhashed + 1));
+	arr = drew_mem_realloc(sig->hashed.subpkts,
+			sizeof(*sig->hashed.subpkts) * (sig->hashed.nsubpkts + 1));
 	if (!arr)
 		return -ENOMEM;
-	sig->hashed = arr;
-	sp = arr+sig->nhashed;
+	sig->hashed.subpkts = arr;
+	sp = arr+sig->hashed.nsubpkts;
 	sp->type = type;
 	sp->lenoflen = 1;
 	sp->critical = false;
@@ -326,15 +325,15 @@ static int add_subpacket(drew_opgp_sig_t sig, uint8_t type, const uint8_t *data,
 		return -ENOMEM;
 	memcpy(sp->data, data, len);
 
-	p = realloc(sig->hasheddata, sig->hashedlen + len + 2);
+	p = drew_mem_realloc(sig->hashed.data, sig->hashed.len + len + 2);
 	if (!p)
 		return -ENOMEM;
-	sig->hasheddata = p;
-	p += sig->hashedlen;
+	sig->hashed.data = p;
+	p += sig->hashed.len;
 	p[0] = len + 1;
 	p[1] = type;
 	memcpy(p+2, data, len);
-	sig->hashedlen += len + 2;
+	sig->hashed.len += len + 2;
 	return 0;
 }
 
