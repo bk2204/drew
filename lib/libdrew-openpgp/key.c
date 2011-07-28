@@ -18,6 +18,8 @@
 #include <drew-opgp/keystore.h>
 #include <drew-opgp/parser.h>
 
+#include "util.h"
+
 int drew_opgp_key_new(drew_opgp_key_t *key, const drew_loader_t *ldr)
 {
 	drew_opgp_key_t k;
@@ -33,22 +35,27 @@ int drew_opgp_key_free(drew_opgp_key_t *key)
 	return -DREW_ERR_NOT_IMPL;
 }
 
-static int clone_mpis(drew_opgp_mpi_t *new, drew_opgp_mpi_t *old)
+HIDE()
+int clone_mpi(drew_opgp_mpi_t *new, drew_opgp_mpi_t *old)
 {
-	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++) {
-		if (old[i].len) {
-			memcpy(new+i, old+i, sizeof(*new));
-			if (!(new[i].data = malloc(old[i].len)))
-				return -ENOMEM;
-			memcpy(new[i].data, old[i].data, old[i].len);
-		}
-		else
-			memset(new+i, 0, sizeof(*new));
+	if (old->len) {
+		memcpy(new, old, sizeof(*new));
+		if (!(new->data = drew_mem_memdup(old->data, old->len)))
+			return -ENOMEM;
 	}
+	else
+		memset(new, 0, sizeof(*new));
 	return 0;
 }
 
-static int clone_subpackets(drew_opgp_subpacket_group_t *new,
+int clone_mpis(drew_opgp_mpi_t *new, drew_opgp_mpi_t *old)
+{
+	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++)
+		clone_mpi(new+i, old+i);
+	return 0;
+}
+
+int clone_subpackets(drew_opgp_subpacket_group_t *new,
 		const drew_opgp_subpacket_group_t *old)
 {
 	memcpy(new, old, sizeof(*new));
@@ -68,7 +75,7 @@ static int clone_subpackets(drew_opgp_subpacket_group_t *new,
 	return 0;
 }
 
-static int clone_sig(csig_t *new, csig_t *old)
+int clone_sig(csig_t *new, csig_t *old)
 {
 	memcpy(new, old, sizeof(*new));
 	RETFAIL(clone_mpis(new->mpi, old->mpi));
@@ -77,7 +84,7 @@ static int clone_sig(csig_t *new, csig_t *old)
 	return 0;
 }
 
-static int clone_uid(cuid_t *new, cuid_t *old)
+int clone_uid(cuid_t *new, cuid_t *old)
 {
 	memcpy(new, old, sizeof(*new));
 	new->s = malloc(new->len + 1);
@@ -93,7 +100,7 @@ static int clone_uid(cuid_t *new, cuid_t *old)
 	return 0;
 }
 
-static int clone_pubkey(pubkey_t *new, pubkey_t *old, pubkey_t *parent)
+int clone_pubkey(pubkey_t *new, pubkey_t *old, pubkey_t *parent)
 {
 	memcpy(new, old, sizeof(*new));
 	new->parent = parent;
@@ -109,6 +116,7 @@ static int clone_pubkey(pubkey_t *new, pubkey_t *old, pubkey_t *parent)
 		new->theuid = new->uids + (old->theuid - old->uids);
 	return 0;
 }
+UNHIDE()
 
 int drew_opgp_key_clone(drew_opgp_key_t *newp, drew_opgp_key_t old)
 {
