@@ -425,6 +425,42 @@ static void store_mpi(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 	delete[] c;
 }
 
+static void store_subpackets1(Chunk *c, const drew_opgp_subpacket_group_t *spg,
+		size_t &off, size_t &offset)
+{
+	for (size_t i = 0; i < spg->nsubpkts; i++, offset += 0x4) {
+		if (offset == 0x40) {
+			off++;
+			offset = 0x00;
+		}
+		E::Convert<uint16_t>(c[off]+offset+0x00, spg->subpkts[i].len);
+		c[off][offset+0x02] = spg->subpkts[i].type |
+			(spg->subpkts[i].critical ? 0x80 : 0);
+		c[off][offset+0x03] = spg->subpkts[i].lenoflen;
+	}
+	if (offset)
+		off++;
+	offset = 0x00;
+}
+
+static void store_subpackets2(Chunk *c, const drew_opgp_subpacket_group_t *spg,
+		size_t &off)
+{
+	for (size_t j = 0; j < spg->nsubpkts; j++)
+		for (size_t i = off, offset = 0; offset < spg->subpkts[j].len;
+				i++, offset += 0x40)
+			memcpy(c[i], spg->subpkts[j].data+offset,
+					std::min<size_t>(0x40, spg->subpkts[j].len-offset));
+}
+
+static void store_subpackets3(Chunk *c, const drew_opgp_subpacket_group_t *spg,
+		size_t &off)
+{
+	for (size_t i = off, offset = 0; offset < spg->nsubpkts;
+			i++, offset += 0x40)
+		memcpy(c[i], spg->data+off, std::min<size_t>(0x40, spg->len-off));
+}
+
 static void store_sig(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 		drew_opgp_sig_t sig)
 {
@@ -440,14 +476,14 @@ static void store_sig(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 	uint32_t nmpis = 0;
 	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && sig->mpi[i].len; i++, nmpis++);
 	uint32_t hchunks = 0, uchunks = 0;
-	for (size_t i = 0; i < sig->nhashed; i++)
-		hchunks += DivideAndRoundUp(sig->hashed[i].len, 0x40);
-	for (size_t i = 0; i < sig->nunhashed; i++)
-		uchunks += DivideAndRoundUp(sig->unhashed[i].len, 0x40);
-	uint32_t nhashedlens = DivideAndRoundUp(sig->nhashed * 4, 0x40);
-	uint32_t nunhashedlens = DivideAndRoundUp(sig->nunhashed * 4, 0x40);
-	uint32_t nhashed = DivideAndRoundUp(sig->hashedlen, 0x40);
-	uint32_t nunhashed = DivideAndRoundUp(sig->unhashedlen, 0x40);
+	for (size_t i = 0; i < sig->hashed.nsubpkts; i++)
+		hchunks += DivideAndRoundUp(sig->hashed.subpkts[i].len, 0x40);
+	for (size_t i = 0; i < sig->unhashed.nsubpkts; i++)
+		uchunks += DivideAndRoundUp(sig->unhashed.subpkts[i].len, 0x40);
+	uint32_t nhashedlens = DivideAndRoundUp(sig->hashed.nsubpkts * 4, 0x40);
+	uint32_t nunhashedlens = DivideAndRoundUp(sig->unhashed.nsubpkts * 4, 0x40);
+	uint32_t nhashed = DivideAndRoundUp(sig->hashed.len, 0x40);
+	uint32_t nunhashed = DivideAndRoundUp(sig->unhashed.len, 0x40);
 	uint32_t nchunks = nhashedlens + nunhashedlens + nhashed + nunhashed +
 		hchunks + uchunks + ROUND(nmpis) + 3;
 	Chunk *c = new Chunk[nchunks + 2];
@@ -470,62 +506,22 @@ static void store_sig(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 	c[0][0x2d] = sig->selfsig.prefs[1].len;
 	c[0][0x2e] = sig->selfsig.prefs[2].len;
 	c[0][0x2f] = nmpis;
-	E::Convert<uint32_t>(c[0]+0x30, sig->nhashed);
-	E::Convert<uint32_t>(c[0]+0x34, sig->nunhashed);
-	E::Convert<uint32_t>(c[0]+0x38, sig->hashedlen);
-	E::Convert<uint32_t>(c[0]+0x3c, sig->unhashedlen);
+	E::Convert<uint32_t>(c[0]+0x30, sig->hashed.nsubpkts);
+	E::Convert<uint32_t>(c[0]+0x34, sig->unhashed.nsubpkts);
+	E::Convert<uint32_t>(c[0]+0x38, sig->hashed.len);
+	E::Convert<uint32_t>(c[0]+0x3c, sig->unhashed.len);
 
 	memcpy(c[1], sig->hash, 0x40);
 
-	uint32_t off = 2, offset = 0;
-	for (size_t i = 0; i < sig->nhashed; i++, offset += 0x4) {
-		if (offset == 0x40) {
-			off++;
-			offset = 0x00;
-		}
-		E::Convert<uint16_t>(c[off]+offset+0x00, sig->hashed[i].len);
-		c[off][offset+0x02] = sig->hashed[i].type |
-			(sig->hashed[i].critical ? 0x80 : 0);
-		c[off][offset+0x03] = sig->hashed[i].lenoflen;
-	}
-	if (offset)
-		off++;
-	offset = 0x00;
+	size_t off = 2, offset = 0;
+	store_subpackets1(c, &sig->hashed, off, offset);
+	store_subpackets1(c, &sig->unhashed, off, offset);
 
-	for (size_t i = 0; i < sig->nunhashed; i++, offset += 0x4) {
-		if (offset == 0x40) {
-			off++;
-			offset = 0x00;
-		}
-		E::Convert<uint16_t>(c[off]+offset+0x00, sig->unhashed[i].len);
-		c[off][offset+0x02] = sig->unhashed[i].type |
-			(sig->unhashed[i].critical ? 0x80 : 0);
-		c[off][offset+0x03] = sig->unhashed[i].lenoflen;
-	}
-	if (offset)
-		off++;
-	offset = 0x00;
+	store_subpackets2(c, &sig->hashed, off);
+	store_subpackets2(c, &sig->unhashed, off);
 
-	for (size_t j = 0; j < sig->nhashed; j++)
-		for (size_t i = off, offset = 0; offset < sig->hashed[j].len;
-				i++, offset += 0x40)
-			memcpy(c[i], sig->hashed[j].data+offset,
-					std::min<size_t>(0x40, sig->hashed[j].len-offset));
-
-	for (size_t j = 0; j < sig->nunhashed; j++)
-		for (size_t i = off, offset = 0; offset < sig->unhashed[j].len;
-				i++, offset += 0x40)
-			memcpy(c[i], sig->unhashed[j].data+offset,
-					std::min<size_t>(0x40, sig->unhashed[j].len-offset));
-
-	for (size_t i = off, offset = 0; offset < sig->nhashed; i++, offset += 0x40)
-		memcpy(c[i], sig->hasheddata+off,
-				std::min<size_t>(0x40, sig->hashedlen-off));
-
-	for (size_t i = off, offset = 0; offset < sig->nunhashed;
-			i++, offset += 0x40)
-		memcpy(c[i], sig->unhasheddata+off,
-				std::min<size_t>(0x40, sig->unhashedlen-off));
+	store_subpackets3(c, &sig->hashed, off);
+	store_subpackets3(c, &sig->unhashed, off);
 
 	for (size_t i = 0; i < 3; i++, off++)
 		memcpy(c[off], sig->selfsig.prefs[i].vals,
