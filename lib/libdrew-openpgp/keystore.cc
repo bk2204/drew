@@ -1,5 +1,8 @@
+#include "util.hh"
+HIDE()
 #include "internal.h"
 
+EXPORT()
 #include <errno.h>
 #include <fcntl.h>
 #include <stddef.h>
@@ -7,10 +10,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+UNEXPORT()
 
 #include <map>
 #include <vector>
 
+struct drew_opgp_keystore_s;
+EXPORT()
 #include <drew/drew.h>
 #include <drew/mem.h>
 #include <drew/plugin.h>
@@ -18,10 +24,10 @@
 #include <drew-opgp/drew-opgp.h>
 #include <drew-opgp/key.h>
 #include <drew-opgp/keystore.h>
+UNEXPORT()
 
 #include "structs.h"
 #include "misc.h"
-#include "util.hh"
 
 #define CHUNKSZ	64
 
@@ -270,6 +276,7 @@ struct drew_opgp_keystore_s {
 #define CHUNK_ID_SIG				0x6c
 #define CHUNK_ID_MPI				0x6d
 
+EXPORT()
 extern "C"
 int drew_opgp_keystore_new(drew_opgp_keystore_t *ksp, const drew_loader_t *ldr)
 {
@@ -306,6 +313,7 @@ int drew_opgp_keystore_set_backend(drew_opgp_keystore_t ks, const char *backend)
 		return -DREW_ERR_INVALID;
 	return 0;
 }
+UNEXPORT()
 
 #define ROUND(x) (RoundUpToPowerOf2(x, 2))
 
@@ -798,6 +806,7 @@ static int load_item(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 	}
 }
 
+EXPORT()
 extern "C"
 int drew_opgp_keystore_load(drew_opgp_keystore_t ks, const char *filename,
 		drew_opgp_id_t missingid)
@@ -1016,3 +1025,5 @@ int drew_opgp_keystore_check(drew_opgp_keystore_t ks, int flags)
 {
 	return -DREW_ERR_NOT_IMPL;
 }
+UNEXPORT()
+UNHIDE()
