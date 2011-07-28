@@ -1,6 +1,10 @@
 #ifndef DREW_OPGP_KEY_H
 #define DREW_OPGP_KEY_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <drew-opgp/parser.h>
 
 struct drew_opgp_key_s;
@@ -57,6 +61,7 @@ typedef uint8_t drew_opgp_keyid_t[8];
 
 int drew_opgp_key_new(drew_opgp_key_t *key, const drew_loader_t *ldr);
 int drew_opgp_key_free(drew_opgp_key_t *key);
+int drew_opgp_key_clone(drew_opgp_key_t *newp, drew_opgp_key_t old);
 int drew_opgp_key_has_secret(drew_opgp_key_t key);
 int drew_opgp_key_has_usable_secret(drew_opgp_key_t key);
 int drew_opgp_key_can_sign(drew_opgp_key_t key);
@@ -88,5 +93,9 @@ int drew_opgp_key_get_user_ids(drew_opgp_key_t key, drew_opgp_uid_t **uids);
 
 int drew_opgp_uid_get_text(drew_opgp_uid_t uid, const char **p);
 int drew_opgp_uid_get_signatures(drew_opgp_uid_t uid, drew_opgp_sig_t **sigs);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
