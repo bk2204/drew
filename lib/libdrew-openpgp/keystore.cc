@@ -1082,8 +1082,10 @@ int drew_opgp_keystore_add_keys(drew_opgp_keystore_t ks,
 		drew_opgp_key_t *keys, size_t nkeys, int flags)
 {
 	for (size_t i = 0; i < nkeys; i++) {
+		drew_opgp_key_t key;
+		drew_opgp_key_clone(&key, keys[i]);
 		ks->items.insert(std::pair<DrewID, Item>(DrewID(keys[i]->id),
-					Item(keys[i])));
+					Item(key)));
 	}
 	return 0;
 }
@@ -1100,13 +1102,15 @@ int drew_opgp_keystore_update_keys(drew_opgp_keystore_t ks,
 		drew_opgp_key_t *keys, size_t nkeys, int flags)
 {
 	for (size_t i = 0; i < nkeys; i++) {
-		ks->items[DrewID(keys[i]->pub.id)] = Item(keys[i]);
-		for (size_t j = 0; j < keys[i]->pub.nuids; j++)
-			drew_opgp_keystore_update_user_id(ks, keys[i]->pub.uids+j, flags);
-		for (size_t j = 0; j < DREW_OPGP_MAX_MPIS && keys[i]->pub.mpi[j].len;
+		drew_opgp_key_t key;
+		drew_opgp_key_clone(&key, keys[i]);
+		ks->items[DrewID(key->pub.id)] = Item(key);
+		for (size_t j = 0; j < key->pub.nuids; j++)
+			drew_opgp_keystore_update_user_id(ks, key->pub.uids+j, flags);
+		for (size_t j = 0; j < DREW_OPGP_MAX_MPIS && key->pub.mpi[j].len;
 				j++)
-			ks->items[DrewID(keys[i]->pub.mpi[j].id)] =
-				Item(keys[i]->pub.mpi+j);
+			ks->items[DrewID(key->pub.mpi[j].id)] =
+				Item(key->pub.mpi+j);
 	}
 	return 0;
 }
