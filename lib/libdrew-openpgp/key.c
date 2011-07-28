@@ -9,6 +9,7 @@
 
 #include <drew/drew.h>
 #include <drew/hash.h>
+#include <drew/mem.h>
 #include <drew/plugin.h>
 #include <drew/pksig.h>
 
@@ -47,32 +48,32 @@ static int clone_mpis(drew_opgp_mpi_t *new, drew_opgp_mpi_t *old)
 	return 0;
 }
 
+static int clone_subpackets(drew_opgp_subpacket_group_t *new,
+		const drew_opgp_subpacket_group_t *old)
+{
+	memcpy(new, old, sizeof(*new));
+	if (!(new->data = drew_mem_memdup(new->data, new->len)))
+		return -ENOMEM;
+	new->subpkts = drew_mem_memdup(new->subpkts,
+			new->nsubpkts * sizeof(*new->subpkts));
+	if (!new->subpkts)
+		return -ENOMEM;
+
+	for (size_t i = 0; i < new->nsubpkts; i++) {
+		new->subpkts[i].data = drew_mem_memdup(new->subpkts[i].data,
+				new->subpkts[i].len);
+		if (!new->subpkts[i].data)
+			return -ENOMEM;
+	}
+	return 0;
+}
+
 static int clone_sig(csig_t *new, csig_t *old)
 {
 	memcpy(new, old, sizeof(*new));
 	RETFAIL(clone_mpis(new->mpi, old->mpi));
-	if (!(new->hasheddata = malloc(new->hashedlen)))
-		return -ENOMEM;
-	memcpy(new->hasheddata, old->hasheddata, new->hashedlen);
-	if (!(new->unhasheddata = malloc(new->unhashedlen)))
-		return -ENOMEM;
-	memcpy(new->unhasheddata, old->unhasheddata, new->unhashedlen);
-	if (!(new->hashed = malloc(new->nhashed * sizeof(*new->hashed))))
-		return -ENOMEM;
-	memcpy(new->hashed, old->hashed, new->nhashed * sizeof(*new->hashed));
-	for (size_t i = 0; i < new->nhashed; i++) {
-		new->hashed[i].data = malloc(new->hashed[i].len);
-		memcpy(new->hashed[i].data, old->hashed[i].data, new->hashed[i].len);
-	}
-	if (!(new->unhashed = malloc(new->nunhashed * sizeof(*new->hashed))))
-		return -ENOMEM;
-	memcpy(new->unhashed, old->unhashed,
-			new->nunhashed * sizeof(*new->unhashed));
-	for (size_t i = 0; i < new->nunhashed; i++) {
-		new->unhashed[i].data = malloc(new->unhashed[i].len);
-		memcpy(new->unhashed[i].data, old->unhashed[i].data,
-				new->unhashed[i].len);
-	}
+	RETFAIL(clone_subpackets(&new->hashed, &old->hashed));
+	RETFAIL(clone_subpackets(&new->unhashed, &old->unhashed));
 	return 0;
 }
 
@@ -505,23 +506,23 @@ static int make_sig_id(const drew_loader_t *ldr, csig_t *sig,
 	 * length's worth of data).
 	 */
 	hash_u8(&hash, 0x8a);
-	totallen += 1 + 1 + 1 + 1 + 4 + 2 + sig->hashedlen + 2 + sig->unhashedlen +
-		(2 * nmpis);
+	totallen += 1 + 1 + 1 + 1 + 4 + 2 + sig->hashed.len + 2 +
+		sig->unhashed.len + (2 * nmpis);
 	hash_u32(&hash, totallen);
 	hash_u8(&hash, sig->ver);
 	hash_u8(&hash, sig->type);
 	hash_u8(&hash, sig->pkalgo);
 	hash_u8(&hash, sig->mdalgo);
 	hash_u32(&hash, sig->ctime);
-	hash_u16(&hash, sig->hashedlen);
-	hash.functbl->update(&hash, sig->hasheddata, sig->hashedlen);
+	hash_u16(&hash, sig->hashed.len);
+	hash.functbl->update(&hash, sig->hashed.data, sig->hashed.len);
 	/* We include the unhashed data here because our interest is providing a
 	 * unique ID for this signature and we want to distinguish between
 	 * signatures that have different unhashed data (where the issuer key ID is
 	 * usually placed.
 	 */
-	hash_u16(&hash, sig->unhashedlen);
-	hash.functbl->update(&hash, sig->unhasheddata, sig->unhashedlen);
+	hash_u16(&hash, sig->unhashed.len);
+	hash.functbl->update(&hash, sig->unhashed.data, sig->unhashed.len);
 	for (size_t i = 0; i < nmpis; i++) {
 		hash_u16(&hash, sig->mpi[i].len);
 		hash.functbl->update(&hash, sig->mpi[i].data, mpilen[i]);
@@ -613,13 +614,13 @@ static int hash_sig(drew_hash_t *hash, csig_t *sig)
 		return 0;
 	}
 	else {
-		uint32_t len = 1 + 1 + 1 + 1 + 2 + sig->hashedlen;
+		uint32_t len = 1 + 1 + 1 + 1 + 2 + sig->hashed.len;
 		hash_u8(hash, sig->ver);
 		hash_u8(hash, sig->type);
 		hash_u8(hash, sig->pkalgo);
 		hash_u8(hash, sig->mdalgo);
-		hash_u16(hash, sig->hashedlen);
-		hash->functbl->update(hash, sig->hasheddata, sig->hashedlen);
+		hash_u16(hash, sig->hashed.len);
+		hash->functbl->update(hash, sig->hashed.data, sig->hashed.len);
 		// Trailer.
 		hash_u16(hash, 0x04ff);
 		hash_u32(hash, len);
@@ -901,30 +902,15 @@ static int public_load_sig(csig_t *sig, const drew_opgp_packet_sig_t *s)
 		sig->type = s4->type;
 		sig->pkalgo = s4->pkalgo;
 		sig->mdalgo = s4->mdalgo;
-		sig->hashedlen = s4->hashedlen;
-		sig->nhashed = s4->nhashed;
-		sig->unhashedlen = s4->unhashedlen;
-		sig->nunhashed = s4->nunhashed;
 		RETFAIL(dup_mpi(sig->mpi, DIM(sig->mpi), s4->mpi, DIM(s4->mpi)));
-		if (!(sig->hashed = malloc(sizeof(*sig->hashed) * sig->nhashed)))
-			return -ENOMEM;
-		memcpy(sig->hashed, s4->hashed, sizeof(*sig->hashed) * sig->nhashed);
-		if (!(sig->hasheddata = malloc(sig->hashedlen)))
-			return -ENOMEM;
-		memcpy(sig->hasheddata, s4->hasheddata, sig->hashedlen);
-		if (!(sig->unhashed = malloc(sizeof(*sig->unhashed) * sig->nunhashed)))
-			return -ENOMEM;
-		memcpy(sig->unhashed, s4->unhashed, sizeof(*sig->unhashed) *
-				sig->nunhashed);
-		if (!(sig->unhasheddata = malloc(sig->unhashedlen)))
-			return -ENOMEM;
-		memcpy(sig->unhasheddata, s4->unhasheddata, sig->unhashedlen);
+		clone_subpackets(&sig->hashed, &s4->hashed);
+		clone_subpackets(&sig->unhashed, &s4->unhashed);
 		memcpy(sig->left, s4->left, 2);
 		// We need to find the ctime.
 		sig->ctime = -1;
 		int nctimes = 0, nissuers = 0;
-		for (size_t i = 0; i < sig->nhashed; i++) {
-			drew_opgp_subpacket_t *sp = &sig->hashed[i];
+		for (size_t i = 0; i < sig->hashed.nsubpkts; i++) {
+			drew_opgp_subpacket_t *sp = &sig->hashed.subpkts[i];
 			if (sp->type == 2) {
 				sig->ctime = 0;
 				if (sp->len != 4)
@@ -943,8 +929,8 @@ static int public_load_sig(csig_t *sig, const drew_opgp_packet_sig_t *s)
 			}
 		}
 		if (!nissuers) {
-			for (size_t i = 0; i < sig->nunhashed; i++) {
-				drew_opgp_subpacket_t *sp = &sig->unhashed[i];
+			for (size_t i = 0; i < sig->unhashed.nsubpkts; i++) {
+				drew_opgp_subpacket_t *sp = &sig->unhashed.subpkts[i];
 				if (sp->type == 16) {
 					if (sp->len != 8)
 						continue;

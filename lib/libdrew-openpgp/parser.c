@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <drew/mem.h>
 #include <drew/plugin.h>
 
 #include <drew-opgp/drew-opgp.h>
@@ -326,20 +327,22 @@ static int parse_sigv3(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 	return data-origdata;
 }
 
-static int load_subpackets(drew_opgp_subpacket_t **sparr, size_t *nsp,
-		const uint8_t *data, uint16_t datalen)
+static int load_subpackets(drew_opgp_subpacket_group_t *spgrp,
+		const uint8_t *data)
 {
 	const uint8_t *origdata = data;
 	size_t nalloced = 20; // Probably larger than needed.
-	drew_opgp_subpacket_t *sp = malloc(sizeof(*sp) * nalloced);
+	drew_opgp_subpacket_t *sp = drew_mem_malloc(sizeof(*sp) * nalloced);
+	size_t datalen = spgrp->len, nsp;
 
 	if (!sp)
 		return -ENOMEM;
-	*nsp = 0;
+	nsp = 0;
 
 	for (size_t i = 0; (data - origdata) < datalen; i++) {
 		if (i >= nalloced) {
-			drew_opgp_subpacket_t *spnew = realloc(sp, sizeof(*sp) * i);
+			drew_opgp_subpacket_t *spnew =
+				drew_mem_realloc(sp, sizeof(*sp) * i);
 			if (!spnew)
 				return -ENOMEM;
 			sp = spnew;
@@ -369,13 +372,15 @@ static int load_subpackets(drew_opgp_subpacket_t **sparr, size_t *nsp,
 		uint8_t typebyte = *data++;
 		sp[i].type = typebyte & 0x7f;
 		sp[i].critical = typebyte & 0x80;
-		sp[i].data = malloc(sp[i].len);
-		memcpy(sp[i].data, data, sp[i].len);
+		sp[i].data = drew_mem_memdup(data, sp[i].len);
 		data += sp[i].len;
 		// FIXME: split into data chunks.
-		(*nsp)++;
+		nsp++;
 	}
-	*sparr = sp;
+	// Shrink size if possible.
+	sp = drew_mem_realloc(sp, sizeof(*sp) * nsp);
+	spgrp->subpkts = sp;
+	spgrp->nsubpkts = nsp;
 
 	return data-origdata;
 }
@@ -393,27 +398,25 @@ static int parse_sigv4(drew_opgp_parser_t parser, drew_opgp_packet_t *pkt,
 	p->type = *data++;
 	p->pkalgo = *data++;
 	p->mdalgo = *data++;
-	p->hashedlen = GET_UINT16();
+	p->hashed.len = GET_UINT16();
 
-	DECLARE_NEED(p->hashedlen);
-	if (!(p->hasheddata = malloc(p->hashedlen)))
+	DECLARE_NEED(p->hashed.len);
+	if (!(p->hashed.data = drew_mem_memdup(data, p->hashed.len)))
 		return -ENOMEM;
-	memcpy(p->hasheddata, data, p->hashedlen);
-	res = load_subpackets(&p->hashed, &p->nhashed, data, p->hashedlen);
+	res = load_subpackets(&p->hashed, data);
 	if (res < 0)
 		return res;
-	data += p->hashedlen;
+	data += p->hashed.len;
 
-	p->unhashedlen = GET_UINT16();
+	p->unhashed.len = GET_UINT16();
 
-	DECLARE_NEED(p->unhashedlen);
-	if (!(p->unhasheddata = malloc(p->unhashedlen)))
+	DECLARE_NEED(p->unhashed.len);
+	if (!(p->unhashed.data = drew_mem_memdup(data, p->unhashed.len)))
 		return -ENOMEM;
-	memcpy(p->unhasheddata, data, p->unhashedlen);
-	res = load_subpackets(&p->unhashed, &p->nunhashed, data, p->unhashedlen);
+	res = load_subpackets(&p->unhashed, data);
 	if (res < 0)
 		return res;
-	data += p->unhashedlen;
+	data += p->unhashed.len;
 
 	memcpy(p->left, data, sizeof(p->left));
 	data += sizeof(p->left);

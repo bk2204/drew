@@ -68,18 +68,19 @@ typedef struct {
 } drew_opgp_subpacket_t;
 
 typedef struct {
+	uint16_t len;
+	uint8_t *data;
+	size_t nsubpkts;
+	drew_opgp_subpacket_t *subpkts;
+} drew_opgp_subpacket_group_t;
+
+typedef struct {
 	size_t len;
 	uint8_t type;
 	uint8_t pkalgo;
 	uint8_t mdalgo;
-	uint16_t hashedlen;
-	size_t nhashed;
-	uint8_t *hasheddata;
-	drew_opgp_subpacket_t *hashed;
-	uint16_t unhashedlen;
-	size_t nunhashed;
-	uint8_t *unhasheddata;
-	drew_opgp_subpacket_t *unhashed;
+	drew_opgp_subpacket_group_t hashed;
+	drew_opgp_subpacket_group_t unhashed;
 	uint8_t left[2]; // This is the left 16 bits of the hash value.
 	drew_opgp_mpi_t mpi[DREW_OPGP_MAX_MPIS_SIGN];
 } drew_opgp_packet_sigv4_t;

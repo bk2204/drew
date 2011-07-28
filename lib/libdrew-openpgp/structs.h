@@ -38,14 +38,8 @@ struct drew_opgp_signature_s {
 	time_t ctime;
 	time_t etime;
 	drew_opgp_keyid_t keyid;
-	size_t hashedlen;	
-	size_t nhashed;
-	uint8_t *hasheddata;
-	drew_opgp_subpacket_t *hashed;
-	size_t unhashedlen;	
-	size_t nunhashed;
-	uint8_t *unhasheddata;
-	drew_opgp_subpacket_t *unhashed;
+	drew_opgp_subpacket_group_t hashed;
+	drew_opgp_subpacket_group_t unhashed;
 	uint8_t left[2];
 	selfsig_t selfsig;
 	drew_opgp_mpi_t mpi[DREW_OPGP_MAX_MPIS];
