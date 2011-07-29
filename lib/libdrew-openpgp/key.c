@@ -87,8 +87,7 @@ int clone_sig(csig_t *new, csig_t *old)
 int clone_uid(cuid_t *new, cuid_t *old)
 {
 	memcpy(new, old, sizeof(*new));
-	new->s = malloc(new->len + 1);
-	memcpy(new->s, old->s, new->len + 1);
+	new->s = drew_mem_memdup(old->s, new->len + 1);
 	if (!(new->sigs = malloc(new->nsigs * sizeof(*new->sigs))))
 		return -ENOMEM;
 	for (size_t i = 0; i < new->nsigs; i++)
@@ -97,6 +96,8 @@ int clone_uid(cuid_t *new, cuid_t *old)
 		return -ENOMEM;
 	for (size_t i = 0; i < new->nselfsigs; i++)
 		new->selfsigs[i] = new->sigs + (old->selfsigs[i] - old->sigs);
+	if (old->theselfsig)
+		new->theselfsig = new->sigs + (old->theselfsig - old->sigs);
 	return 0;
 }
 
@@ -104,16 +105,16 @@ int clone_pubkey(pubkey_t *new, pubkey_t *old, pubkey_t *parent)
 {
 	memcpy(new, old, sizeof(*new));
 	new->parent = parent;
-	RETFAIL(clone_mpis(new->mpi, old->mpi));
-	if (!(new->sigs = malloc(new->nsigs)))
+	if (!(new->sigs = malloc(new->nsigs * sizeof(*new->sigs))))
 		return -ENOMEM;
 	for (size_t i = 0; i < new->nsigs; i++)
 		RETFAIL(clone_sig(new->sigs+i, old->sigs+i));
-	new->uids = malloc(new->nuids);
+	new->uids = calloc(new->nuids, sizeof(*new->uids));
 	for (size_t i = 0; i < new->nuids; i++)
 		RETFAIL(clone_uid(new->uids+i, old->uids+i));
 	if (!new->theuid)
 		new->theuid = new->uids + (old->theuid - old->uids);
+	RETFAIL(clone_mpis(new->mpi, old->mpi));
 	return 0;
 }
 UNHIDE()
@@ -123,13 +124,11 @@ int drew_opgp_key_clone(drew_opgp_key_t *newp, drew_opgp_key_t old)
 	drew_opgp_key_t new;
 	RETFAIL(drew_opgp_key_new(newp, old->ldr));
 	new = *newp;
-	new->npubsubs = old->npubsubs;
+	memcpy(new, old, sizeof(*new));
 	new->pubsubs = calloc(new->npubsubs, sizeof(*new->pubsubs));
 	for (size_t i = 0; i < new->npubsubs; i++)
 		clone_pubkey(new->pubsubs+i, old->pubsubs+i, &new->pub);
-	new->nprivsubs = old->nprivsubs;
-	new->privsubs = calloc(new->nprivsubs, sizeof(*new->privsubs));
-	memcpy(new->id, old->id, sizeof(new->id));
+	new->privsubs = drew_mem_memdup(new->privsubs, new->nprivsubs);
 	return 0;
 }
 
