@@ -237,61 +237,30 @@ void print_key_info(drew_opgp_key_t key, int full)
 	free(uids);
 }
 
-int print_fingerprint(struct file *f, struct util *util, size_t pktbufsz)
+int print_fingerprint(struct util *util, const char *keystorefile)
 {
-	int res = 0;
-	size_t off = 0, toff;
-	drew_opgp_packet_t *pkts;
-	drew_opgp_key_t key;
-	size_t npkts = pktbufsz, nused = 0, nparsed = 1;
-	size_t fill = 0;
+	int res = 0, nkeys = 0;
+	drew_opgp_keystore_t ks;
+	drew_opgp_key_t *keys;
+	drew_opgp_id_t missingid;
 
-	pkts = malloc(sizeof(*pkts) * pktbufsz);
-
-	memset(pkts, 0, sizeof(*pkts) * pktbufsz);
-	while (off < f->size || nparsed || pkts[0].type) {
-		npkts = pktbufsz - fill;
-		res = drew_opgp_parser_parse_packets(util->pars, pkts+fill, &npkts,
-				f->buf+off, f->size-off, &toff);
-		if (res < 0) {
-			res = print_error(19, res, "failed parsing packets");
-			goto out;
-		}
-		off += toff;
-		nparsed = npkts;
-		fill += nparsed;
-		if (!pkts[0].type)
-			break;
-		drew_opgp_key_new(&key, util->ldr);
-		if ((res = drew_opgp_key_load_public(key, pkts, fill)) < 0) {
-			res = print_error(20, res, "failed loading packets");
-			goto out;
-		}
-		nused = res;
-		if (nused) {
-			if ((res = drew_opgp_key_synchronize(key,
-							DREW_OPGP_SYNCHRONIZE_ALL|
-							DREW_OPGP_SYNCHRONIZE_FORCE))
-					< 0) {
-				res = print_error(21, res, "failed to synchronize");
-				goto out;
-			}
-			print_key_info(key);
-		}
-		else
-			return print_error(22, 0,
-					"packet buffer (%zu packets) is too small", pktbufsz);
-		drew_opgp_key_free(&key);
-		res = 0;
-		for (size_t i = nused; i < pktbufsz && pkts[i].type &&
-				pkts[i].type != 6; i++, nused++);
-		size_t rem = pktbufsz - nused;
-		memmove(pkts, pkts+nused, rem * sizeof(*pkts));
-		memset(pkts+rem, 0, nused * sizeof(*pkts));
-		fill = rem;
+	drew_opgp_keystore_new(&ks, util->ldr);
+	drew_opgp_keystore_set_backend(ks, "file");
+	if ((res = drew_opgp_keystore_load(ks, keystorefile, missingid))) {
+		if (res == -DREW_ERR_MORE_INFO)
+			return print_error(23, res, "missing ID: %02x%02x%02x%02x",
+					missingid[0], missingid[1], missingid[2], missingid[3]);
+		return print_error(23, res, "keystore failure");
 	}
-out:
-	free(pkts);
+	nkeys = drew_opgp_keystore_get_keys(ks, NULL, 0);
+	keys = malloc(nkeys * sizeof(*keys));
+	drew_opgp_keystore_get_keys(ks, keys, nkeys);
+
+	for (int i = 0; i < nkeys; i++)
+		print_key_info(keys[i], 1);
+
+	free(keys);
+	drew_opgp_keystore_free(&ks);
 	return res;
 }
 
@@ -323,6 +292,7 @@ int import(struct file *f, struct util *util, size_t pktbufsz,
 
 	memset(pkts, 0, sizeof(*pkts) * pktbufsz);
 	drew_opgp_keystore_new(&ks, util->ldr);
+	printf("Importing keys...\n");
 	while (off < f->size || nparsed || pkts[0].type) {
 		npkts = pktbufsz - fill;
 		res = drew_opgp_parser_parse_packets(util->pars, pkts+fill, &npkts,
@@ -407,49 +377,41 @@ int main(int argc, char **argv)
 	filename = poptGetArg(ctx);
 	poptFreeContext(ctx);
 
-	if (!filename)
-		return 5;
-	if (cmd == 1) {
+	if ((res = create_util(&util))) {
+		close_file(&f);
+		return res;
+	}
+	if (filename)
 		if ((res = open_file(&f, filename)))
 			return res;
-		if ((res = create_util(&util))) {
-			close_file(&f);
-			return res;
+	if (cmd == 1) {
+		if (!filename) {
+			res = 5;
+			goto out;
 		}
 		res = list_packets(&f, &util);
-		destroy_util(&util);
-		close_file(&f);
-		return res;
 	}
 	else if (cmd == 2) {
-		if ((res = open_file(&f, filename)))
-			return res;
-		if ((res = create_util(&util))) {
-			close_file(&f);
-			return res;
+		if (!keystorefile) {
+			res = 32;
+			goto out;
 		}
-		res = print_fingerprint(&f, &util, pktbufsz);
-		destroy_util(&util);
-		close_file(&f);
-		return res;
+		res = print_fingerprint(&util, keystorefile);
 	}
 	else if (cmd == 3) {
-		if (!keystorefile)
-			return 32;
-		if ((res = open_file(&f, filename)))
-			return res;
-		if ((res = create_util(&util))) {
-			close_file(&f);
-			return res;
+		if (!keystorefile) {
+			res = 32;
+			goto out;
 		}
 		res = import(&f, &util, pktbufsz, keystorefile, validate);
-		destroy_util(&util);
-		close_file(&f);
-		return res;
 	}
 	else {
-		fprintf(stderr, "%s: only --list-packets is supported\n", argv[0]);
-		return 3;
+		fprintf(stderr, "%s: need a valid command\n", argv[0]);
+		res = 3;
 	}
-	return 0;
+out:
+	destroy_util(&util);
+	if (filename)
+		close_file(&f);
+	return res;
 }
