@@ -40,7 +40,7 @@ int clone_mpi(drew_opgp_mpi_t *new, drew_opgp_mpi_t *old)
 {
 	if (old->len) {
 		memcpy(new, old, sizeof(*new));
-		if (!(new->data = drew_mem_memdup(old->data, old->len)))
+		if (!(new->data = drew_mem_memdup(old->data, (old->len + 7) / 8)))
 			return -ENOMEM;
 	}
 	else
