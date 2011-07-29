@@ -200,7 +200,7 @@ void print_key_signature_info(drew_opgp_sig_t sig)
 	printf("\n");
 }
 
-void print_key_info(drew_opgp_key_t key)
+void print_key_info(drew_opgp_key_t key, int full)
 {
 	drew_opgp_fp_t fp;
 	drew_opgp_id_t id;
@@ -215,7 +215,10 @@ void print_key_info(drew_opgp_key_t key)
 	printf("Key ");
 	for (size_t i = 0; i < 32; i++)
 		printf("%02x", id[i]);
-	printf(":\n    Info:    %d ", version);
+	printf(":\n");
+	if (!full)
+		return;
+	printf("Info:    %d ", version);
 	for (size_t i = 0; i < 8; i++)
 		printf("%02x", keyid[i]);
 	printf(" ");
@@ -301,7 +304,7 @@ static void validate_keys(drew_opgp_keystore_t ks, int print)
 	for (int i = 0; i < nkeys; i++) {
 		drew_opgp_key_validate_signatures(keys[i], ks);
 		if (print)
-			print_key_info(keys[i]);
+			print_key_info(keys[i], 0);
 	}
 }
 
@@ -352,7 +355,8 @@ int import(struct file *f, struct util *util, size_t pktbufsz,
 			return print_error(22, 0,
 					"packet buffer (%zu packets) is too small", pktbufsz);
 		drew_opgp_keystore_update_key(ks, key, 0);
-		//drew_opgp_key_free(&key);
+		print_key_info(key, 0);
+		drew_opgp_key_free(&key);
 		res = 0;
 		for (size_t i = nused; i < pktbufsz && pkts[i].type &&
 				pkts[i].type != 6; i++, nused++);
