@@ -314,7 +314,7 @@ int drew_opgp_keystore_set_backend(drew_opgp_keystore_t ks, const char *backend)
 }
 UNEXPORT()
 
-#define ROUND(x) (RoundUpToPowerOf2(x, 2))
+#define ROUND(x) (DivideAndRoundUp(x, 2))
 
 /* There is intentionally no external documentation for this format.  Because
  * the format includes precomputed information, like whether a signature is
