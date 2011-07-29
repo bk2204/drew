@@ -344,11 +344,11 @@ static void store_pubkey(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 
 	uint32_t nmpis = 0;
 	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && pub->mpi[i].len; i++, nmpis++);
-	uint32_t off = ROUND(pub->nuids) + ROUND(pub->nsigs) + ROUND(npubsubs)
+	uint32_t nchunks = ROUND(pub->nuids) + ROUND(pub->nsigs) + ROUND(npubsubs)
 		+ ROUND(nmpis);
-	Chunk *c = new Chunk[off + 1];
+	Chunk *c = new Chunk[nchunks + 1];
 	// Number of subsequent chunks.
-	E::Convert(c[0], off);
+	E::Convert(c[0], nchunks);
 	E::Convert<uint16_t>(c[0]+0x04, pub->state);
 	c[0][0x05] = pub->ver;
 	c[0][0x06] = pub->algo;
@@ -387,7 +387,7 @@ static void store_pubkey(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 		idc.Add(DrewID());
 
 	idc.ToChunks(c+1);
-	ks->b->WriteChunks(fchunk, c, off+1);
+	ks->b->WriteChunks(fchunk, c, nchunks+1);
 	delete[] c;
 }
 
