@@ -650,6 +650,19 @@ static int hash_uid_sig(drew_opgp_key_t key, cuid_t *uid, csig_t *sig,
 	return hash.functbl->final(&hash, digest, 0);
 }
 
+static int make_uid_id(drew_opgp_key_t key, cuid_t *uid,
+		drew_opgp_hash_t digest)
+{
+	drew_hash_t hash;
+	RETFAIL(make_hash(key->ldr, &hash, DREW_OPGP_MDALGO_SHA256));
+	hash_key_data(&key->pub, &hash);
+	hash_u8(&hash, 0xb4);
+	hash_u32(&hash, uid->len);
+	hash.functbl->update(&hash, (const uint8_t *)uid->s, uid->len);
+	return hash.functbl->final(&hash, digest, 0);
+}
+
+
 static int synchronize_pubkey(const drew_loader_t *ldr, pubkey_t *pub,
 		pubkey_t *main, int flags)
 {
@@ -683,6 +696,12 @@ static int synchronize_pubkey(const drew_loader_t *ldr, pubkey_t *pub,
 	}
 	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && pub->mpi[i].len; i++)
 		make_mpi_id(ldr, pub->mpi+i, pub->mpi[i].id);
+	for (size_t i = 0; i < pub->nsigs; i++) {
+		make_sig_id(ldr, pub->sigs+i, pub->sigs[i].id);
+		for (size_t j = 0; j < DREW_OPGP_MAX_MPIS && pub->sigs[i].mpi[j].len;
+				j++)
+			make_mpi_id(ldr, pub->sigs[i].mpi+j, pub->sigs[i].mpi[j].id);
+	}
 	return 0;
 }
 
@@ -710,6 +729,7 @@ static int synchronize_uid(drew_opgp_key_t key, cuid_t *uid, int flags)
 				uid->theselfsig = uid->sigs+i;
 			}
 		}
+	RETFAIL(make_uid_id(key, uid, uid->id));
 	return 0;
 }
 
@@ -793,6 +813,7 @@ static int synchronize_uid_sig(drew_opgp_key_t key, cuid_t *uid, csig_t *sig,
 	}
 	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && sig->mpi[i].len; i++)
 		make_mpi_id(key->ldr, sig->mpi+i, sig->mpi[i].id);
+	make_sig_id(key->ldr, sig, sig->id);
 	return 0;
 }
 
