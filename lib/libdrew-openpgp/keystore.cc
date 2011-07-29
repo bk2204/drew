@@ -378,7 +378,7 @@ static void store_pubkey(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 
 	for (size_t i = 0; i < npubsubs; i++)
 		idc.Add(DrewID(key->pubsubs[i].id));
-	if (pub->nsigs & 1)
+	if (npubsubs & 1)
 		idc.Add(DrewID());
 
 	for (size_t i = 0; i < nmpis; i++)
@@ -464,9 +464,9 @@ static void store_subpackets2(Chunk *c, const drew_opgp_subpacket_group_t *spg,
 static void store_subpackets3(Chunk *c, const drew_opgp_subpacket_group_t *spg,
 		size_t &off)
 {
-	for (size_t i = off, offset = 0; offset < spg->nsubpkts;
+	for (size_t i = off, offset = 0; offset < spg->len;
 			i++, offset += 0x40)
-		memcpy(c[i], spg->data+off, std::min<size_t>(0x40, spg->len-off));
+		memcpy(c[i], spg->data+offset, std::min<size_t>(0x40, spg->len-offset));
 }
 
 static void store_sig(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
@@ -571,7 +571,8 @@ static void store_uid(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 		idc.Add(DrewID(uid->theselfsig->id));
 
 	for (size_t i = 0; i < uid->nselfsigs; i++)
-		idc.Add(DrewID(uid->selfsigs[i]->id));
+		if (uid->theselfsig != uid->selfsigs[i])
+			idc.Add(DrewID(uid->selfsigs[i]->id));
 
 	for (size_t i = 0; i < uid->nsigs; i++) {
 		bool found = false;
@@ -658,8 +659,8 @@ static int load_pubkey(drew_opgp_keystore_t ks, pubkey_t *pub,
 	npubsubs = E::Convert<uint32_t>(c[0]+0x34);
 	nmpis = E::Convert<uint32_t>(c[0]+0x38);
 
-	pub->uids = (cuid_t *)drew_mem_malloc(pub->nuids * sizeof(*pub->uids));
-	pub->sigs = (csig_t *)drew_mem_malloc(pub->nsigs * sizeof(*pub->sigs));
+	pub->uids = (cuid_t *)drew_mem_calloc(pub->nuids, sizeof(*pub->uids));
+	pub->sigs = (csig_t *)drew_mem_calloc(pub->nsigs, sizeof(*pub->sigs));
 	if (key) {
 		key->npubsubs = npubsubs;
 		key->pubsubs = (pubkey_t *)drew_mem_calloc(key->npubsubs,
@@ -677,14 +678,12 @@ static int load_pubkey(drew_opgp_keystore_t ks, pubkey_t *pub,
 			return -DREW_ERR_MORE_INFO;
 		}
 		clone_uid(pub->uids+i, item.uid);
-		offset += 0x20;
 	}
 	pub->theuid = pub->uids;
 
-	if (offset == 0x20) {
+	if (offset)
 		off++;
-		offset = 0x00;
-	}
+	offset = 0x00;
 
 	for (size_t i = 0; i < pub->nsigs; i++, offset += 0x20) {
 		if (offset == 0x40) {
@@ -697,13 +696,11 @@ static int load_pubkey(drew_opgp_keystore_t ks, pubkey_t *pub,
 			return -DREW_ERR_MORE_INFO;
 		}
 		clone_sig(pub->sigs+i, item.sig);
-		offset += 0x20;
 	}
 
-	if (offset == 0x20) {
+	if (offset)
 		off++;
-		offset = 0x00;
-	}
+	offset = 0x00;
 
 	for (size_t i = 0; i < npubsubs; i++, offset += 0x20) {
 		if (offset == 0x40) {
@@ -711,19 +708,17 @@ static int load_pubkey(drew_opgp_keystore_t ks, pubkey_t *pub,
 			offset = 0x00;
 		}
 		Item item = ks->items[DrewID(c[off]+offset)];
-		if (!item.sig) {
+		if (!item.pub) {
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
 			return -DREW_ERR_MORE_INFO;
 		}
 		clone_pubkey(key->pubsubs+i, item.pub, pub);
 		key->pubsubs[i].parent = pub;
-		offset += 0x20;
 	}
 
-	if (offset == 0x20) {
+	if (offset)
 		off++;
-		offset = 0x00;
-	}
+	offset = 0x00;
 
 	for (size_t i = 0, offset = 0; i < nmpis; i++, offset += 0x20) {
 		if (offset == 0x40) {
@@ -775,6 +770,7 @@ static int load_uid(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 	uid->len = E::Convert<uint32_t>(c[0]+0x0c);
 
 	uid->theselfsig = 0;
+	uid->s = (char *)drew_mem_calloc(1, uid->len + 1);
 	uid->sigs = (csig_t *)drew_mem_malloc(uid->nsigs * sizeof(*uid->sigs));
 	uid->selfsigs =
 		(csig_t **)drew_mem_malloc(uid->nselfsigs * sizeof(*uid->selfsigs));
@@ -791,8 +787,14 @@ static int load_uid(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 			return -DREW_ERR_MORE_INFO;
 		}
 		clone_sig(uid->sigs+i, item.sig);
-		offset += 0x20;
 	}
+	if (offset)
+		off++;
+	offset = 0x00;
+
+	for (size_t i = off; offset < (uid->len+1); i++, offset += 0x40)
+		memcpy(uid->s+offset, c[i],
+				std::min<size_t>(0x40, (uid->len+1)-offset));
 
 	if (uid->nsigs && uid->nselfsigs)
 		uid->theselfsig = uid->sigs;
@@ -807,6 +809,8 @@ static int load_uid(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 static void load_subpackets1(drew_opgp_subpacket_group_t *spg, const Chunk *c,
 		size_t &off, size_t &offset)
 {
+	spg->subpkts = (drew_opgp_subpacket_t *)
+		drew_mem_calloc(spg->nsubpkts, sizeof(*spg->subpkts));
 	for (size_t i = 0; i < spg->nsubpkts; i++, offset += 0x4) {
 		if (offset == 0x40) {
 			off++;
@@ -826,19 +830,22 @@ static void load_subpackets1(drew_opgp_subpacket_group_t *spg, const Chunk *c,
 static void load_subpackets2(drew_opgp_subpacket_group_t *spg, const Chunk *c,
 		size_t &off)
 {
-	for (size_t j = 0; j < spg->nsubpkts; j++)
+	for (size_t j = 0; j < spg->nsubpkts; j++) {
+		spg->subpkts[j].data = (uint8_t *)drew_mem_malloc(spg->subpkts[j].len);
 		for (size_t i = off, offset = 0; offset < spg->subpkts[j].len;
 				i++, offset += 0x40)
 			memcpy(spg->subpkts[j].data+offset, c[i],
 					std::min<size_t>(0x40, spg->subpkts[j].len-offset));
+	}
 }
 
 static void load_subpackets3(drew_opgp_subpacket_group_t *spg, const Chunk *c,
 		size_t &off)
 {
-	for (size_t i = off, offset = 0; offset < spg->nsubpkts;
+	spg->data = (uint8_t *)drew_mem_malloc(spg->len);
+	for (size_t i = off, offset = 0; offset < spg->len;
 			i++, offset += 0x40)
-		memcpy(spg->data+off, c[i], std::min<size_t>(0x40, spg->len-off));
+		memcpy(spg->data+offset, c[i], std::min<size_t>(0x40, spg->len-offset));
 }
 
 static int load_sig(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
@@ -925,7 +932,7 @@ static int load_mpi(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 		drew_mem_free(mpi);
 		return -ENOMEM;
 	}
-	for (size_t i = 1, off = 0; i <= nchunks; i++, off += 0x40)
+	for (size_t i = 1, off = 0; i < nchunks; i++, off += 0x40)
 		memcpy(mpi->data+off, c[i], std::min<size_t>(0x40, nbytes-off));
 	ks->items[DrewID(mpi->id)] = Item(mpi);
 	return 0;
@@ -1095,7 +1102,18 @@ int drew_opgp_keystore_add_key(drew_opgp_keystore_t ks, drew_opgp_key_t key,
 {
 	return drew_opgp_keystore_add_keys(ks, &key, 1, flags);
 }
+UNEXPORT()
 
+static void update_pubkeys(drew_opgp_keystore_t ks, pubkey_t *pub, int flags)
+{
+	ks->items[DrewID(pub->id)] = Item(pub);
+	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && pub->mpi[i].len; i++)
+		ks->items[DrewID(pub->mpi[i].id)] = Item(pub->mpi+i);
+	for (size_t i = 0; i < pub->nsigs; i++)
+		drew_opgp_keystore_update_sig(ks, pub->sigs+i, flags);
+}
+
+EXPORT()
 extern "C"
 int drew_opgp_keystore_update_keys(drew_opgp_keystore_t ks,
 		drew_opgp_key_t *keys, size_t nkeys, int flags)
@@ -1104,8 +1122,12 @@ int drew_opgp_keystore_update_keys(drew_opgp_keystore_t ks,
 		drew_opgp_key_t key;
 		drew_opgp_key_clone(&key, keys[i]);
 		ks->items[DrewID(key->pub.id)] = Item(key);
+		for (size_t j = 0; j < key->npubsubs; j++)
+			update_pubkeys(ks, key->pubsubs+j, flags);
 		for (size_t j = 0; j < key->pub.nuids; j++)
 			drew_opgp_keystore_update_user_id(ks, key->pub.uids+j, flags);
+		for (size_t j = 0; j < key->pub.nsigs; j++)
+			drew_opgp_keystore_update_sig(ks, key->pub.sigs+j, flags);
 		for (size_t j = 0; j < DREW_OPGP_MAX_MPIS && key->pub.mpi[j].len;
 				j++)
 			ks->items[DrewID(key->pub.mpi[j].id)] =
