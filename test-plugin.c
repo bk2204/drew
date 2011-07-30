@@ -6,7 +6,7 @@
  */
 #include "plugin.h"
 
-#include <errno.h>
+#include <drew/drew.h>
 
 static int func(void)
 {
@@ -34,6 +34,6 @@ int drew_plugin_info(void *ldr, int op, int id, void *p)
 			*tbl = functbl;
 			return 0;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
