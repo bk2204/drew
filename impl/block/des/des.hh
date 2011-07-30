@@ -1,3 +1,9 @@
+/*-
+ * This code (which is in the public domain) comes from libcrypto++ 5.6.0.  The
+ * original code was written by Phil Karn and Wei Dei, with contributions from
+ * Jim Gillogly and Richard Outerbridge.  brian m. carlson converted it to a
+ * drew block cipher plugin.
+ */
 #ifndef RIJNDAEL_HH
 #define RIJNDAEL_HH
 

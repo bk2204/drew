@@ -1,3 +1,6 @@
+/*-
+ * This file is in the public domain since it consists of nothing original.
+ */
 #include "cast.hh"
 
 HIDE()
