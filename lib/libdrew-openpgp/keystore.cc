@@ -11,7 +11,11 @@ EXPORT()
 #include <unistd.h>
 UNEXPORT()
 
+#ifdef FEATURE_TR1
+#include <tr1/unordered_map>
+#else
 #include <map>
+#endif
 #include <vector>
 
 struct drew_opgp_keystore_s;
@@ -108,7 +112,24 @@ struct DrewID
 	drew_opgp_id_t id;
 };
 
+#ifdef FEATURE_TR1
+namespace std {
+	namespace tr1 {
+		template<>
+		struct hash<DrewID> : public unary_function<DrewID, size_t>
+		{
+			size_t operator()(const DrewID &id) const
+			{
+				return NativeEndian::Convert<size_t>(id.id);
+			}
+		};
+	}
+}
+
+typedef std::tr1::unordered_map<DrewID, Item> ItemStore;
+#else
 typedef std::map<DrewID, Item> ItemStore;
+#endif
 
 typedef uint8_t chunk_t[64];
 
