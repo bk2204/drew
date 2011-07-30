@@ -17,8 +17,8 @@
  * If a modified version is not distributed under both licenses, the copyright
  * and permission notices should be updated accordingly.
  */
-#ifndef BLOWFISH_HH
-#define BLOWFISH_HH
+#ifndef CAMELLIA_HH
+#define CAMELLIA_HH
 
 #include <stddef.h>
 #include <stdint.h>

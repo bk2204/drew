@@ -17,8 +17,8 @@
  * If a modified version is not distributed under both licenses, the copyright
  * and permission notices should be updated accordingly.
  */
-#ifndef SHA512_HH
-#define SHA512_HH
+#ifndef TIGER_HH
+#define TIGER_HH
 
 #include "hash.hh"
 #include "util.hh"

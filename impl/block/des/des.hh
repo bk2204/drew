@@ -4,8 +4,8 @@
  * Jim Gillogly and Richard Outerbridge.  brian m. carlson converted it to a
  * drew block cipher plugin.
  */
-#ifndef RIJNDAEL_HH
-#define RIJNDAEL_HH
+#ifndef DES_HH
+#define DES_HH
 
 #include <stddef.h>
 #include <stdint.h>
