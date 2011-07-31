@@ -22,9 +22,10 @@
 #ifndef UTIL_I386_HH
 #define UTIL_I386_HH
 
-/* This file simply contains specializations for i386 and amd64 machines.  No
- * extra functionality is available here, only performance optimizations.  For
- * cleanliness reasons only, this file is split out of the main util.hh.
+/* This file simply contains specializations for i386 and amd64 machines.  Most
+ * of this file provides no extra functionality, only performance optimizations.
+ * The sole exception is the GetCpuid function, which is used to determine if
+ * certain cryptographic operations are available on the processor.
  */
 
 #if !(defined(__i386__) || defined(__x86_64__))
@@ -61,6 +62,19 @@ ROTATE(64, Right, q, r, >>, <<)
 #endif
 #undef ROTATE
 #endif
+
+inline int GetCpuid(uint32_t func, uint32_t &a, uint32_t &b, uint32_t &c,
+		uint32_t &d)
+{
+#if defined(__GNUC__)
+	__asm__ __volatile__("cpuid"
+			: "=a"(a), "=b"(b), "=c"(c), "=d"(d)
+			: "a"(func));
+	return 0;
+#else
+	return -DREW_ERR_NOT_IMPL;
+#endif
+}
 
 template<>
 inline uint8_t EndianBase::GetArrayByte(const uint64_t *arr, size_t n)
