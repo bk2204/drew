@@ -38,29 +38,14 @@ class PRNG
 {
 	public:
 		virtual ~PRNG() {}
-		virtual void Initialize()
+		virtual int Initialize()
 		{
 			m_entropy.SetValue(0);
+			return 0;
 		}
 		virtual int AddRandomData(const uint8_t *buf, size_t len,
 				size_t entropy) = 0;
-		virtual uint8_t GetByte() = 0;
-		virtual void GetBytes(uint8_t *buf, size_t nbytes) = 0;
-		virtual uint32_t GetInteger()
-		{
-			return ((GetByte() << 24) | (GetByte() << 16) | (GetByte() << 8) |
-					GetByte());
-		}
-		uint32_t GetUniformInteger(uint32_t upper_bound)
-		{
-			uint32_t overage = (0xffffffff % upper_bound) + 1;
-			uint32_t limit = 0xffffffff - overage;
-			uint32_t retval;
-
-			while ((retval = GetInteger()) > limit);
-			
-			return retval;
-		}
+		virtual int GetBytes(uint8_t *buf, size_t nbytes) = 0;
 		size_t GetEntropyAvailable() const
 		{
 			return m_entropy.GetValue();
@@ -100,22 +85,23 @@ class PRNG
 class BytePRNG : public virtual PRNG
 {
 	public:
-		virtual void GetBytes(uint8_t *buf, size_t nbytes)
+		virtual int GetBytes(uint8_t *buf, size_t nbytes)
 		{
-			for (size_t i = 0; i < nbytes; i++)
-				buf[i] = GetByte();
+			try {
+				for (size_t i = 0; i < nbytes; i++)
+					buf[i] = GetByte();
+				return nbytes;
+			}
+			catch (int x) {
+				return x;
+			}
 		}
+	protected:
+		virtual uint8_t GetByte() = 0;
 };
 
 class BlockPRNG : public virtual PRNG
 {
-	public:
-		virtual uint8_t GetByte()
-		{
-			uint8_t b;
-			GetBytes(&b, 1);
-			return b;
-		}
 };
 
 // This class is for PRNGs that must be seeded before use.
