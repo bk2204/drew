@@ -83,10 +83,13 @@ typedef struct drew_loader_s drew_loader_t;
  * Alternately, no item matching the criteria was available.
  */
 #define DREW_ERR_NONEXISTENT	0x1000a
-/* The verification failed.  That is, the MAC is wrong, the signature is not
- * valid, etc.
+/* The operation failed.  If a verification, the MAC is wrong, the signature is
+ * not valid, etc.  If a hardware PRNG, the hardware is broken, is out of
+ * entropy, etc.
  */
-#define DREW_ERR_VERIFY_FAILED	0x1000b
+#define DREW_ERR_FAILED			0x1000b
+/* Retained for compatibility. */
+#define DREW_ERR_VERIFY_FAILED	DREW_ERR_FAILED
 
 int drew_loader_new(drew_loader_t **ldr);
 int drew_loader_free(drew_loader_t **ldr);
