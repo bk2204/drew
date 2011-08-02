@@ -1,6 +1,7 @@
 PLUGINS_PRNG-${CFG_ARC4STIR}		+= arc4/arc4stir
 PLUGINS_PRNG-${CFG_ARC4IL}			+= arc4/arc4interleave
 PLUGINS_PRNG-${CFG_SP80090}			+= sp800-90/sp800-90
+PLUGINS_PRNG-${CFG_SYSPRNG}			+= system/sysprng
 
 PRNG_DIR		:= impl/prng
 PRNG_PLUGINS	:= $(patsubst %,${PRNG_DIR}/%,$(PLUGINS_PRNG-m))
