@@ -99,13 +99,8 @@ int drew::AESNI::SetKey(const uint8_t *key, size_t len)
 {
 	switch (len) {
 		case 16:
-			SetKeyEncrypt128(key);
-			break;
 		case 24:
-			SetKeyEncrypt192(key);
-			break;
 		case 32:
-			SetKeyEncrypt256(key);
 			break;
 		case 20:
 		case 28:
@@ -116,6 +111,7 @@ int drew::AESNI::SetKey(const uint8_t *key, size_t len)
 	m_nk = (len / 4);
 	m_nr = 6 + std::max(m_nb, m_nk);
 
+	SetKeyEncrypt(key, len);
 	SetKeyDecrypt();
 	return 0;
 }
@@ -123,123 +119,47 @@ int drew::AESNI::SetKey(const uint8_t *key, size_t len)
 typedef drew::AESNI::vector_t vector_t;
 typedef drew::AESNI::vector4i_t vector4i_t;
 
-/* This basic idea is from the Intel documentation.  It has been converted into
- * GCC intrinsics using GCC vectorization.
- */
-static inline vector_t Assist128(vector_t t1, vector_t t2)
+/* This key scheduling algorithm is from Crypto++. */
+void drew::AESNI::SetKeyEncrypt(const uint8_t *key, size_t len)
 {
-	vector_t t3;
-	t2 = (vector_t)__builtin_ia32_pshufd(vector4i_t(t2), 0xff);
-	t3 = __builtin_ia32_pslldqi128(t1, 32);
-	t1 ^= t3;
-	t3 = __builtin_ia32_pslldqi128(t3, 32);
-	t1 ^= t3;
-	t3 = __builtin_ia32_pslldqi128(t3, 32);
-	t1 ^= t3;
-	t1 ^= t2;
-	return t1;
-}
+	const size_t shortlen = len / 4;
+	uint32_t *rk = (uint32_t *)m_rk, *rko;
+	vector_t t;
+	const uint8_t *rc = rcon;
+	memcpy(&t, key+len-16, 16);
+	memcpy(rk, key, len);
+	rko = rk;
 
-void drew::AESNI::SetKeyEncrypt128(const uint8_t *key)
-{
-	vector_t t1, t2;
-	memcpy(&t1, key, 16);
-	for (size_t i = 0; i < 10; i++) {
-		m_rk[i] = t1;
-		t2 = __builtin_ia32_aeskeygenassist128(t1, rcon[i]);
-		t1 = Assist128(t1, t2);
+	for (;; rk += shortlen) {
+		vector_t t2;
+		t2 = __builtin_ia32_aeskeygenassist128(t, 0);
+		rk[shortlen+0] = rk[0] ^
+			__builtin_ia32_vec_ext_v4si(vector4i_t(t2), 3) ^ *(rc++);
+		rk[shortlen+1] = rk[1] ^ rk[shortlen+0];
+		rk[shortlen+2] = rk[2] ^ rk[shortlen+1];
+		rk[shortlen+3] = rk[3] ^ rk[shortlen+2];
+
+		if (rk + shortlen + 4 == rko + (4 * (m_nr + 1)))
+			break;
+
+		if (len == 24) {
+			rk[10] = rk[4] ^ rk[9];
+			rk[11] = rk[5] ^ rk[10];
+			t = (vector_t)__builtin_ia32_vec_set_v4si(vector4i_t(t), rk[11], 3);
+		}
+		else if (len == 32) {
+			t =(vector_t) __builtin_ia32_vec_set_v4si(vector4i_t(t), rk[11], 3);
+			t2 = __builtin_ia32_aeskeygenassist128(t, 0);
+			rk[12] = rk[4] ^ __builtin_ia32_vec_ext_v4si(vector4i_t(t2), 2);
+			rk[13] = rk[5] ^ rk[12];
+			rk[14] = rk[6] ^ rk[13];
+			rk[15] = rk[7] ^ rk[14];
+			t = (vector_t)__builtin_ia32_vec_set_v4si(vector4i_t(t), rk[15], 3);
+		}
+		else
+			t = (vector_t)__builtin_ia32_vec_set_v4si(vector4i_t(t), rk[7], 3);
+
 	}
-	m_rk[10] = t1;
-}
-
-static inline void Assist192(vector_t &t1, vector_t &t2, vector_t &t3)
-{
-	vector_t t4;
-	t2 = (vector_t)__builtin_ia32_pshufd(vector4i_t(t2), 0x55);
-	t4 = __builtin_ia32_pslldqi128(t1, 32);
-	t1 ^= t4;
-	t4 = __builtin_ia32_pslldqi128(t4, 32);
-	t1 ^= t4;
-	t4 = __builtin_ia32_pslldqi128(t4, 32);
-	t1 ^= t4;
-	t1 ^= t2;
-	t2 = (vector_t)__builtin_ia32_pshufd(vector4i_t(t1), 0xff);
-	t4 = __builtin_ia32_pslldqi128(t3, 32);
-	t3 ^= t4;
-	t3 ^= t2;
-}
-
-void drew::AESNI::SetKeyEncrypt192(const uint8_t *key)
-{
-	typedef double vector2d_t __attribute__((vector_size(16)));
-	uint8_t buf[32] ALIGNED_T = {0x00};
-	vector_t t1, t2, t3;
-	memcpy(buf, key, 24);
-	memcpy(&t1, buf, 16);
-	memcpy(&t3, buf+16, 16);
-	for (size_t i = 0, ri = 1; i < 12; i += 3) {
-		vector_t t5 = t3;
-		m_rk[i+0] = t1;
-		t2 = __builtin_ia32_aeskeygenassist128(t3, ri);
-		ri <<= 1;
-		Assist192(t1, t2, t3);
-		m_rk[i+1] = (vector_t)__builtin_ia32_shufpd(vector2d_t(t5),
-				vector2d_t(t1), 0);
-		m_rk[i+2] = (vector_t)__builtin_ia32_shufpd(vector2d_t(t1),
-				vector2d_t(t3), 1);
-		t2 = __builtin_ia32_aeskeygenassist128(t3, ri);
-		ri <<= 1;
-		Assist192(t1, t2, t3);
-	}
-	m_rk[12] = t1;
-	m_rk[13] = t3;
-}
-
-static inline void Assist256(vector_t &t1, vector_t &t2)
-{
-	vector_t t4;
-	t2 = (vector_t)__builtin_ia32_pshufd(vector4i_t(t2), 0xff);
-	t4 = __builtin_ia32_pslldqi128(t1, 32);
-	t1 ^= t4;
-	t4 = __builtin_ia32_pslldqi128(t4, 32);
-	t1 ^= t4;
-	t4 = __builtin_ia32_pslldqi128(t4, 32);
-	t1 ^= t4;
-	t1 ^= t2;
-}
-
-static inline void AssistMore256(vector_t &t1, vector_t &t3)
-{
-	vector_t t2, t4;
-	t4 = __builtin_ia32_aeskeygenassist128(t1, 0);
-	t2 = (vector_t)__builtin_ia32_pshufd(vector4i_t(t4), 0xaa);
-	t4 = __builtin_ia32_pslldqi128(t3, 32);
-	t3 ^= t4;
-	t4 = __builtin_ia32_pslldqi128(t4, 32);
-	t3 ^= t4;
-	t4 = __builtin_ia32_pslldqi128(t4, 32);
-	t3 ^= t4;
-	t3 ^= t2;
-}
-
-void drew::AESNI::SetKeyEncrypt256(const uint8_t *key)
-{
-	vector_t t1, t2, t3;
-	memcpy(&t1, key, 16);
-	memcpy(&t3, key+16, 16);
-	m_rk[0] = t1;
-	m_rk[1] = t3;
-	for (size_t i = 2, ri = 1; i < 14; i += 2) {
-		t2 = __builtin_ia32_aeskeygenassist128(t3, ri);
-		ri <<= 1;
-		Assist256(t1, t2);
-		m_rk[i+0] = t1;
-		AssistMore256(t1, t3);
-		m_rk[i+1] = t3;
-	}
-	t2 = __builtin_ia32_aeskeygenassist128(t3, 0x40);
-	Assist256(t1, t2);
-	m_rk[14] = t1;
 }
 
 void drew::AESNI::SetKeyDecrypt(void)
