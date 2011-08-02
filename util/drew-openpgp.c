@@ -355,7 +355,7 @@ out:
 
 int main(int argc, char **argv)
 {
-	int res = 0, cmd = 0, pktbufsz = 500, validate = 0;
+	int res = 0, cmd = 0, pktbufsz = 20000, validate = 0;
 	struct file f;
 	struct util util;
 	const char *keystorefile = NULL;
