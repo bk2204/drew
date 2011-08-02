@@ -113,7 +113,8 @@ int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
 	}
 
 	prng.functbl = tbl;
-	prng.functbl->init(&prng, 0, ldr, NULL);
+	if ((ret = prng.functbl->init(&prng, 0, ldr, NULL)))
+		goto out;
 	// This will trigger the autoseeding, if any.
 	prng.functbl->bytes(&prng, p, NBYTES);
 	// Seed the generator with part of whatever randomness may have been
@@ -121,7 +122,9 @@ int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
 	// what it contains.
 	prng.functbl->seed(&prng, p, NBYTES >> 4, 0);
 	// Use this for the tests.
-	prng.functbl->bytes(&prng, p, NBYTES);
+	if ((ret = prng.functbl->bytes(&prng, p, NBYTES)) < 0)
+		goto out;
+	ret = 0;
 	prng.functbl->fini(&prng, 0);
 
 	ret |= !prng_test_monobit(p, NBYTES);
