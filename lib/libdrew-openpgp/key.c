@@ -385,6 +385,7 @@ static int verify_rsa(drew_opgp_key_t key, pubkey_t *pub, drew_pksig_t *pksig,
 	c->functbl->setbytes(c, mpi[0].data, (mpi[0].len + 7)/8);
 
 	pksig->functbl->verify(pksig, m, c);
+	pksig->functbl->fini(pksig, 0);
 	mlen = m->functbl->nbytes(m);
 	if (mlen != nlen - 1)
 		return -DREW_OPGP_ERR_BAD_SIGNATURE;
@@ -448,6 +449,7 @@ static int verify_dsa(drew_opgp_key_t key, pubkey_t *pub, drew_pksig_t *pksig,
 		return -DREW_OPGP_ERR_BAD_SIGNATURE;
 	h->functbl->setbytes(s, digest, qlen);
 	pksig->functbl->verify(pksig, v, bn);
+	pksig->functbl->fini(pksig, 0);
 	res = r->functbl->compare(r, v, 0) ? 0 : -DREW_OPGP_ERR_BAD_SIGNATURE;
 
 	for (size_t i = 0; i < DIM(bn); i++)
