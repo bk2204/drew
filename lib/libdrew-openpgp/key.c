@@ -112,7 +112,7 @@ int clone_pubkey(pubkey_t *new, pubkey_t *old, pubkey_t *parent)
 	new->uids = calloc(new->nuids, sizeof(*new->uids));
 	for (size_t i = 0; i < new->nuids; i++)
 		RETFAIL(clone_uid(new->uids+i, old->uids+i));
-	if (!new->theuid)
+	if (new->theuid)
 		new->theuid = new->uids + (old->theuid - old->uids);
 	RETFAIL(clone_mpis(new->mpi, old->mpi));
 	return 0;
@@ -125,6 +125,7 @@ int drew_opgp_key_clone(drew_opgp_key_t *newp, drew_opgp_key_t old)
 	RETFAIL(drew_opgp_key_new(newp, old->ldr));
 	new = *newp;
 	memcpy(new, old, sizeof(*new));
+	clone_pubkey(&new->pub, &old->pub, NULL);
 	new->pubsubs = calloc(new->npubsubs, sizeof(*new->pubsubs));
 	for (size_t i = 0; i < new->npubsubs; i++)
 		clone_pubkey(new->pubsubs+i, old->pubsubs+i, &new->pub);
