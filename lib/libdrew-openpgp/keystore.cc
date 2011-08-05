@@ -45,26 +45,40 @@ UNEXPORT()
 
 typedef BigEndian E;
 
+// The context is part of a larger structure and will be freed along with that
+// structure.
+#define ITEM_CONSOLIDATED 1
 // FIXME: clone each of these contexts and on destruction, free them.
 struct Item
 {
-	Item() : type(TYPE_NIL), key(0), sig(0), uid(0), pub(0), mpi(0) {}
+	Item() : type(TYPE_NIL), key(0), sig(0), uid(0), pub(0), mpi(0), flags(0) {}
 	Item(drew_opgp_key_t keyp) :
-		type(TYPE_KEY), key(keyp), sig(0), uid(0), pub(0), mpi(0) {}
+		type(TYPE_KEY), key(keyp), sig(0), uid(0), pub(0), mpi(0), flags(0) {}
 	Item(drew_opgp_sig_t sigp) :
-		type(TYPE_SIG), key(0), sig(sigp), uid(0), pub(0), mpi(0) {}
+		type(TYPE_SIG), key(0), sig(sigp), uid(0), pub(0), mpi(0), flags(0) {}
 	Item(drew_opgp_uid_t uidp) :
-		type(TYPE_UID), key(0), sig(0), uid(uidp), pub(0), mpi(0) {}
+		type(TYPE_UID), key(0), sig(0), uid(uidp), pub(0), mpi(0), flags(0) {}
 	Item(pubkey_t *pubp) :
-		type(TYPE_SUB), key(0), sig(0), uid(0), pub(pubp), mpi(0) {}
+		type(TYPE_SUB), key(0), sig(0), uid(0), pub(pubp), mpi(0), flags(0) {}
 	Item(drew_opgp_mpi_t *mpip) :
-		type(TYPE_MPI), key(0), sig(0), uid(0), pub(0), mpi(mpip) {}
+		type(TYPE_MPI), key(0), sig(0), uid(0), pub(0), mpi(mpip), flags(0) {}
+	Item(drew_opgp_key_t keyp, int f) :
+		type(TYPE_KEY), key(keyp), sig(0), uid(0), pub(0), mpi(0), flags(f) {}
+	Item(drew_opgp_sig_t sigp, int f) :
+		type(TYPE_SIG), key(0), sig(sigp), uid(0), pub(0), mpi(0), flags(f) {}
+	Item(drew_opgp_uid_t uidp, int f) :
+		type(TYPE_UID), key(0), sig(0), uid(uidp), pub(0), mpi(0), flags(f) {}
+	Item(pubkey_t *pubp, int f) :
+		type(TYPE_SUB), key(0), sig(0), uid(0), pub(pubp), mpi(0), flags(f) {}
+	Item(drew_opgp_mpi_t *mpip, int f) :
+		type(TYPE_MPI), key(0), sig(0), uid(0), pub(0), mpi(mpip), flags(f) {}
 	int type;
 	drew_opgp_key_t key;
 	drew_opgp_sig_t sig;
 	drew_opgp_uid_t uid;
 	pubkey_t *pub;
 	drew_opgp_mpi_t *mpi;
+	int flags;
 };
 
 struct DrewID
@@ -315,8 +329,32 @@ int drew_opgp_keystore_new(drew_opgp_keystore_t *ksp, const drew_loader_t *ldr)
 extern "C"
 int drew_opgp_keystore_free(drew_opgp_keystore_t *ksp)
 {
-	delete (*ksp)->b;
-	delete *ksp;
+	drew_opgp_keystore_t ks = *ksp;
+	typedef ItemStore::iterator it_t;
+	for (it_t it = ks->items.begin(); it != ks->items.end(); it++) {
+		if (it->second.flags & ITEM_CONSOLIDATED)
+			continue;
+		if (it->second.mpi) {
+			free_mpi(it->second.mpi);
+			drew_mem_free(it->second.mpi);
+		}
+		else if (it->second.sig) {
+			free_sig(it->second.sig);
+			drew_mem_free(it->second.sig);
+		}
+		else if (it->second.uid) {
+			free_uid(it->second.uid);
+			drew_mem_free(it->second.uid);
+		}
+		else if (it->second.pub) {
+			free_pubkey(it->second.pub);
+			drew_mem_free(it->second.pub);
+		}
+		else if (it->second.key)
+			drew_opgp_key_free(&it->second.key);
+	}
+	delete ks->b;
+	delete ks;
 	*ksp = 0;
 	return 0;
 }
@@ -693,7 +731,7 @@ static int load_pubkey(drew_opgp_keystore_t ks, pubkey_t *pub,
 			off++;
 			offset = 0x00;
 		}
-		Item item = ks->items[DrewID(c[off]+offset)];
+		Item &item = ks->items[DrewID(c[off]+offset)];
 		if (!item.uid) {
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
 			return -DREW_ERR_MORE_INFO;
@@ -711,7 +749,7 @@ static int load_pubkey(drew_opgp_keystore_t ks, pubkey_t *pub,
 			off++;
 			offset = 0x00;
 		}
-		Item item = ks->items[DrewID(c[off]+offset)];
+		Item &item = ks->items[DrewID(c[off]+offset)];
 		if (!item.sig) {
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
 			return -DREW_ERR_MORE_INFO;
@@ -728,7 +766,7 @@ static int load_pubkey(drew_opgp_keystore_t ks, pubkey_t *pub,
 			off++;
 			offset = 0x00;
 		}
-		Item item = ks->items[DrewID(c[off]+offset)];
+		Item &item = ks->items[DrewID(c[off]+offset)];
 		if (!item.pub) {
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
 			return -DREW_ERR_MORE_INFO;
@@ -747,7 +785,7 @@ static int load_pubkey(drew_opgp_keystore_t ks, pubkey_t *pub,
 			offset = 0x00;
 		}
 		DrewID id(c[off]+offset);
-		Item item = ks->items[id];
+		Item &item = ks->items[id];
 		if (!item.mpi) {
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
 			return -DREW_ERR_MORE_INFO;
@@ -1069,11 +1107,11 @@ int drew_opgp_keystore_update_sigs(drew_opgp_keystore_t ks,
 		drew_opgp_sig_t *sigs, size_t nsigs, int flags)
 {
 	for (size_t i = 0; i < nsigs; i++) {
-		ks->items[DrewID(sigs[i]->id)] = Item(sigs[i]);
+		ks->items[DrewID(sigs[i]->id)] = Item(sigs[i], ITEM_CONSOLIDATED);
 		for (size_t j = 0; j < DREW_OPGP_MAX_MPIS && sigs[i]->mpi[j].len;
 				j++)
 			ks->items[DrewID(sigs[i]->mpi[j].id)] =
-				Item(sigs[i]->mpi+j);
+				Item(sigs[i]->mpi+j, ITEM_CONSOLIDATED);
 	}
 	return 0;
 }
@@ -1090,7 +1128,7 @@ int drew_opgp_keystore_update_user_ids(drew_opgp_keystore_t ks,
 		drew_opgp_uid_t *uids, size_t nuids, int flags)
 {
 	for (size_t i = 0; i < nuids; i++) {
-		ks->items[DrewID(uids[i]->id)] = Item(uids[i]);
+		ks->items[DrewID(uids[i]->id)] = Item(uids[i], ITEM_CONSOLIDATED);
 		for (size_t j = 0; j < uids[i]->nsigs; j++)
 			drew_opgp_keystore_update_sig(ks, uids[i]->sigs+j, flags);
 	}
@@ -1129,7 +1167,7 @@ static void update_pubkeys(drew_opgp_keystore_t ks, pubkey_t *pub, int flags)
 {
 	ks->items[DrewID(pub->id)] = Item(pub);
 	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && pub->mpi[i].len; i++)
-		ks->items[DrewID(pub->mpi[i].id)] = Item(pub->mpi+i);
+		ks->items[DrewID(pub->mpi[i].id)] = Item(pub->mpi+i, ITEM_CONSOLIDATED);
 	for (size_t i = 0; i < pub->nsigs; i++)
 		drew_opgp_keystore_update_sig(ks, pub->sigs+i, flags);
 }
@@ -1152,7 +1190,7 @@ int drew_opgp_keystore_update_keys(drew_opgp_keystore_t ks,
 		for (size_t j = 0; j < DREW_OPGP_MAX_MPIS && key->pub.mpi[j].len;
 				j++)
 			ks->items[DrewID(key->pub.mpi[j].id)] =
-				Item(key->pub.mpi+j);
+				Item(key->pub.mpi+j, ITEM_CONSOLIDATED);
 	}
 	return 0;
 }
