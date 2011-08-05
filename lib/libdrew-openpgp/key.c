@@ -20,10 +20,49 @@
 
 #include "util.h"
 
+HIDE()
+void free_mpi(drew_opgp_mpi_t *mpi)
+{
+	drew_mem_free(mpi->data);
+}
+
+void free_subpacket_group(drew_opgp_subpacket_group_t *spg)
+{
+	drew_mem_free(spg->data);
+	drew_mem_free(spg->subpkts);
+}
+
+void free_sig(csig_t *sig)
+{
+	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++)
+		free_mpi(sig->mpi+i);
+	free_subpacket_group(&sig->hashed);
+	free_subpacket_group(&sig->unhashed);
+}
+
+void free_uid(cuid_t *uid)
+{
+	for (size_t i = 0; i < uid->nsigs; i++)
+		free_sig(uid->sigs+i);
+	drew_mem_free(uid->sigs);
+	drew_mem_free(uid->selfsigs);
+}
+
+void free_pubkey(pubkey_t *pub)
+{
+	for (size_t i = 0; i < pub->nuids; i++)
+		free_uid(pub->uids+i);
+	drew_mem_free(pub->uids);
+	for (size_t i = 0; i < pub->nsigs; i++)
+		free_sig(pub->sigs+i);
+	drew_mem_free(pub->sigs);
+}
+UNHIDE()
+
 int drew_opgp_key_new(drew_opgp_key_t *key, const drew_loader_t *ldr)
 {
 	drew_opgp_key_t k;
-	if (!(k = calloc(sizeof(*k), 1)))
+	if (!(k = drew_mem_calloc(sizeof(*k), 1)))
 		return -ENOMEM;
 	k->ldr = ldr;
 	*key = k;
@@ -32,7 +71,12 @@ int drew_opgp_key_new(drew_opgp_key_t *key, const drew_loader_t *ldr)
 
 int drew_opgp_key_free(drew_opgp_key_t *key)
 {
-	return -DREW_ERR_NOT_IMPL;
+	drew_opgp_key_t k = *key;
+	free_pubkey(&k->pub);
+	for (size_t i = 0; i < k->npubsubs; i++)
+		free_pubkey(k->pubsubs+i);
+	drew_mem_free(k->pubsubs);
+	return 0;
 }
 
 HIDE()
