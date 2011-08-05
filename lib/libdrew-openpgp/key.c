@@ -613,10 +613,13 @@ static int hash_key(const drew_loader_t *ldr, pubkey_t *pub, int algoid,
 		drew_opgp_hash_t digest)
 {
 	drew_hash_t hash;
+	int res = 0;
 	RETFAIL(make_hash(ldr, &hash, algoid));
 
 	hash_key_data(pub, &hash);
-	return hash.functbl->final(&hash, digest, 0);
+	res = hash.functbl->final(&hash, digest, 0);
+	hash.functbl->fini(&hash, 0);
+	return res;
 }
 
 static int make_v3_fingerprint(const drew_loader_t *ldr, pubkey_t *pub,
