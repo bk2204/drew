@@ -4,6 +4,7 @@
 #include "internal.h"
 
 #include <drew/drew.h>
+#include <drew/hash.h>
 #include <drew/plugin.h>
 
 #include <drew-opgp/drew-opgp.h>
@@ -98,5 +99,17 @@ struct drew_opgp_key_s {
 	drew_opgp_id_t id;
 	const drew_loader_t *ldr;
 };
+
+#define MAX_DIGEST_SIZE (512/8)
+#define MAX_HASHES 12
+struct hash_algos {
+	const char *algoname;
+	size_t len;
+	size_t prefixlen;
+	const uint8_t prefix[32];
+};
+
+int make_hash(const drew_loader_t *ldr, drew_hash_t *hash, int algoid);
+extern struct hash_algos hashes[MAX_HASHES];
 
 #endif

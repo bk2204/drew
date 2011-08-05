@@ -202,14 +202,8 @@ int drew_opgp_key_generate(drew_opgp_key_t key, uint8_t algo, size_t nbits,
 	return -DREW_ERR_NOT_IMPL;
 }
 
-struct hash_algos {
-	const char *algoname;
-	size_t len;
-	size_t prefixlen;
-	const uint8_t prefix[32];
-};
-
-static struct hash_algos hashes[] = {
+HIDE()
+struct hash_algos hashes[MAX_HASHES] = {
 	{
 		NULL, 0, 0, {}
 	},
@@ -442,7 +436,7 @@ static int verify_sig(drew_opgp_key_t key, pubkey_t *pub,
 	return verify(key, pub, &xsa, digest, len, hashalgo, mpi);
 }
 
-static int make_hash(const drew_loader_t *ldr, drew_hash_t *hash, int algoid)
+int make_hash(const drew_loader_t *ldr, drew_hash_t *hash, int algoid)
 {
 	int id = 0, res = 0;
 	const void *tbl = NULL;
@@ -593,6 +587,7 @@ static int make_v3_fingerprint(const drew_loader_t *ldr, pubkey_t *pub,
 				(pub->mpi[i].len + 7) / 8);
 	return hash.functbl->final(&hash, digest, 0);
 }
+UNHIDE()
 
 int drew_opgp_key_get_fingerprint(drew_opgp_key_t key, drew_opgp_fp_t fp)
 {
