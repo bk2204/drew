@@ -6,6 +6,7 @@ DREW_OPGP_OBJS		+= parser.o
 DREW_OPGP_OBJS		+= key.o
 DREW_OPGP_OBJS		+= sig.o
 DREW_OPGP_OBJS		+= keystore.o
+DREW_OPGP_OBJS		+= encrypt.o
 DREW_OPGP_DIR_OBJS	+= $(patsubst %,$(DREW_OPGP_DIR)/%,$(DREW_OPGP_OBJS))
 
 $(DREW_OPGP_DIR)/$(DREW_OPGP_SONAME): CFLAGS += -I$(DREW_OPGP_DIR)/include

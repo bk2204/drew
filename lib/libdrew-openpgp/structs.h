@@ -100,6 +100,9 @@ struct drew_opgp_key_s {
 	const drew_loader_t *ldr;
 };
 
+#define MAX_BLOCK_BLKSIZE 16
+#define MAX_BLOCK_KEYSIZE 32
+
 #define MAX_DIGEST_SIZE (512/8)
 #define MAX_HASHES 12
 struct hash_algos {
