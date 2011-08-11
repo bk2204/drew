@@ -205,13 +205,40 @@ void process_strings(struct crypto *c, uint8_t *out, size_t nbytes,
 	drew_mem_sfree(buf);
 }
 
+void process_strings_fast(struct crypto *c, uint8_t *out, size_t nbytes,
+		const char **strs, size_t nstrs, const uint8_t *data, size_t len)
+{
+	size_t tsize = 0, off = 0;
+	uint8_t *buf, tmp[sizeof(uint32_t)], output[32];
+	drew_hash_t hash;
+	for (size_t i = 0; i < nstrs; tsize += strlen(strs[i]) + 4, i++);
+	buf = drew_mem_smalloc(tsize);
+	for (size_t i = 0; i < nstrs; i++) {
+		size_t sl = strlen(strs[i]);
+		store_uint32(buf+off, sl);
+		off += 4;
+		memcpy(buf+off, strs[i], sl);
+		off += sl;
+	}
+	c->hash->functbl->clone(&hash, c->hash, 0);
+	hash.functbl->reset(&hash);
+	hash.functbl->update(&hash, buf, tsize);
+	store_uint32(tmp, len);
+	hash.functbl->update(&hash, tmp, 4);
+	hash.functbl->update(&hash, data, len);
+	hash.functbl->final(&hash, output, 0);
+	memcpy(out, output, nbytes);
+	hash.functbl->fini(&hash, 0);
+	drew_mem_sfree(buf);
+}
+
 void calculate_quick_check(struct crypto *c, struct data *d)
 {
 	uint8_t buf[3];
 	const char *strs[2];
 	strs[0] = prefix;
 	strs[1] = "Quick Check: ";
-	process_strings(c, buf, sizeof(buf), strs, 2, d->master_secret,
+	process_strings_fast(c, buf, sizeof(buf), strs, 2, d->master_secret,
 			sizeof(d->master_secret));
 	snprintf(d->qc, sizeof(d->qc), "%02x%02x%02x", buf[0], buf[1], buf[2]);
 }
