@@ -189,6 +189,8 @@ class Signature : public Identifiable, public ContainsLoader
 		void HashData(Hash &) const;
 		const int &GetFlags() const;
 		int &GetFlags();
+		const selfsig_t &GetSelfSignature() const;
+		selfsig_t &GetSelfSignature();
 		bool IsSelfSignature() const;
 		void HashUserIDSignature(const PublicKey &pub, const UserID &uid);
 		int ValidateSignature(const PublicKey &pub, bool is_selfsig);

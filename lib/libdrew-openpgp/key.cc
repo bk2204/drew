@@ -611,6 +611,16 @@ drew_opgp_subpacket_group_t &drew::Signature::GetUnhashedSubpackets()
 	return unhashed;
 }
 
+const selfsig_t &drew::Signature::GetSelfSignature() const
+{
+	return selfsig;
+}
+
+selfsig_t &drew::Signature::GetSelfSignature()
+{
+	return selfsig;
+}
+
 void drew::Signature::GenerateID()
 {
 	Hash hash(ldr, DREW_OPGP_MDALGO_SHA256);
