@@ -449,6 +449,7 @@ int main(int argc, char **argv)
 	program = argv[0];
 
 	d = drew_mem_scalloc(1, sizeof(*d));
+	d->flags = FLAG_NO_SPACES | FLAG_NO_SYMBOLS_OTHER;
 
 	while ((ch = getopt(argc, argv, "f:v:l:")) > 0) {
 		switch (ch) {
