@@ -26,6 +26,16 @@
         if ((result_code = (x))) { UNLOCK(m); return result_code; } \
 } while (0)
 
+#ifdef __cplusplus
+#define NTHROWFAIL(x) do { \
+        int result_code; \
+        if ((result_code = (x)) < 0) throw -result_code; } while (0)
+#define START_FUNC() try {
+#define END_FUNC() } \
+	catch (int e) { return -abs(e); } \
+	catch (std::bad_alloc) { return -ENOMEM; }
+#endif
+
 #ifdef DREW_THREAD_SAFE
 #include <pthread.h>
 #define DREW_MUTEX_DECL() pthread_mutex_t mutex;
