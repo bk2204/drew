@@ -212,8 +212,8 @@ template<class T>
 inline static void hash_obj(drew_hash_t *hash, T x)
 {
 	uint8_t buf[sizeof(T)];
-	const uint8_t *p = E::CopyIfNeeded(buf, &x, sizeof(T));
-	hash->functbl->update(hash, p, sizeof(T));
+	E::Copy(buf, &x, sizeof(T));
+	hash->functbl->update(hash, buf, sizeof(T));
 }
 
 inline static void hash_u8(drew_hash_t *hash, uint8_t x)
@@ -341,6 +341,15 @@ template<class T>
 void drew::Hash::Update(T x)
 {
 	hash_obj(&hash, x);
+}
+
+// GCC complains if we're in a different namespace.
+namespace drew {
+template<>
+void Hash::Update(uint8_t x)
+{
+	hash_u8(&hash, x);
+}
 }
 
 void drew::Hash::Final(uint8_t *digest)
@@ -471,6 +480,7 @@ drew::Signature::Signature()
 	memset(&hashed, 0, sizeof(hashed));
 	memset(&unhashed, 0, sizeof(unhashed));
 	etime = -1;
+	flags = 0;
 }
 
 drew::Signature::Signature(const Signature &other)
@@ -728,7 +738,12 @@ void drew::Signature::HashData(Hash &hash) const
 	}
 }
 
-int drew::Signature::GetFlags() const
+int &drew::Signature::GetFlags()
+{
+	return flags;
+}
+
+const int &drew::Signature::GetFlags() const
 {
 	return flags;
 }
@@ -800,6 +815,11 @@ const drew::UserID::SignatureStore &drew::UserID::GetSignatures() const
 	return sigs;
 }
 
+drew::UserID::SignatureStore &drew::UserID::GetSignatures()
+{
+	return sigs;
+}
+
 void drew::UserID::AddSignature(const Signature &sig)
 {
 	sigs[sig.GetInternalID()] = sig;
@@ -813,17 +833,18 @@ void drew::UserID::HashData(Hash &hash) const
 }
 
 
-drew::PublicKey::PublicKey() : main(true)
+drew::PublicKey::PublicKey() : main(true), flags(0)
 {
 }
 
-drew::PublicKey::PublicKey(bool is_main) : main(is_main)
+drew::PublicKey::PublicKey(bool is_main) : main(is_main), flags(0)
 {
 }
 
 drew::PublicKey::PublicKey(const PublicKey &pub)
 {
 	ldr = pub.ldr;
+	flags = pub.flags;
 	ver = pub.ver;
 	algo = pub.algo;
 	ctime = pub.ctime;
@@ -887,10 +908,9 @@ void drew::PublicKey::Synchronize(int flags)
 	typedef SignatureStore::iterator sigit_t;
 	for (sigit_t it = sigs.begin(); it != sigs.end(); it++) {
 		it->second.SetLoader(ldr);
-		it->second.GenerateID(*this);
+		it->second.GenerateID();
 		it->second.Synchronize(flags);
 	}
-	return 0;
 }
 
 const drew::PublicKey::UserIDStore &drew::PublicKey::GetUserIDs() const
@@ -899,6 +919,16 @@ const drew::PublicKey::UserIDStore &drew::PublicKey::GetUserIDs() const
 }
 
 const drew::PublicKey::SignatureStore &drew::PublicKey::GetSignatures() const
+{
+	return sigs;
+}
+
+drew::PublicKey::UserIDStore &drew::PublicKey::GetUserIDs()
+{
+	return uids;
+}
+
+drew::PublicKey::SignatureStore &drew::PublicKey::GetSignatures()
 {
 	return sigs;
 }
@@ -996,7 +1026,6 @@ void drew::PublicKey::GenerateID()
 
 void drew::PublicKey::HashData(Hash &hash) const
 {
-	uint8_t buf[16];
 	int nmpis = 0;
 	uint16_t totallen = 0;
 
@@ -1020,6 +1049,16 @@ void drew::PublicKey::HashData(Hash &hash) const
 	}
 }
 
+const int &drew::PublicKey::GetFlags() const
+{
+	return flags;
+}
+
+int &drew::PublicKey::GetFlags()
+{
+	return flags;
+}
+
 void drew::Key::Synchronize(int flags)
 {
 	// v3 subkeys are not allowed.
@@ -1033,32 +1072,42 @@ void drew::Key::Synchronize(int flags)
 	}
 }
 
-const PublicKey &drew::Key::GetPublicMainKey() const
+const drew::PublicKey &drew::Key::GetPublicMainKey() const
 {
 	return main;
 }
 
-const PrivateKey &drew::Key::GetPrivateMainKey() const
+const drew::PrivateKey &drew::Key::GetPrivateMainKey() const
 {
 	return priv;
 }
 
-PublicKey &drew::Key::GetPublicMainKey()
+drew::PublicKey &drew::Key::GetPublicMainKey()
 {
 	return main;
 }
 
-PrivateKey &drew::Key::GetPrivateMainKey()
+drew::PrivateKey &drew::Key::GetPrivateMainKey()
 {
 	return priv;
 }
 
-const std::vector<PublicKey> &drew::Key::GetPublicKeys() const
+const std::vector<drew::PublicKey> &drew::Key::GetPublicKeys() const
 {
 	return pubsubs;
 }
 
-const std::vector<PrivateKey> &drew::Key::GetPrivateKeys() const
+const std::vector<drew::PrivateKey> &drew::Key::GetPrivateKeys() const
+{
+	return privsubs;
+}
+
+std::vector<drew::PublicKey> &drew::Key::GetPublicKeys()
+{
+	return pubsubs;
+}
+
+std::vector<drew::PrivateKey> &drew::Key::GetPrivateKeys()
 {
 	return privsubs;
 }
@@ -1067,9 +1116,11 @@ UNHIDE()
 
 int drew_opgp_key_new(drew_opgp_key_t *key, const drew_loader_t *ldr)
 {
+	using namespace drew;
 	Key *k;
 	START_FUNC();
-	k = new Key(ldr);
+	k = new Key();
+	k->SetLoader(ldr);
 	*key = k;
 	END_FUNC();
 	return 0;
@@ -1077,6 +1128,7 @@ int drew_opgp_key_new(drew_opgp_key_t *key, const drew_loader_t *ldr)
 
 int drew_opgp_key_free(drew_opgp_key_t *key)
 {
+	using namespace drew;
 	Key *k = reinterpret_cast<Key *>(*key);
 	START_FUNC();
 	delete k;
@@ -1086,6 +1138,7 @@ int drew_opgp_key_free(drew_opgp_key_t *key)
 
 int drew_opgp_key_clone(drew_opgp_key_t *newp, drew_opgp_key_t old)
 {
+	using namespace drew;
 	Key *oldk = reinterpret_cast<Key *>(old), *newk;
 	START_FUNC();
 	newk = new Key(*oldk);
@@ -1139,14 +1192,22 @@ int drew_opgp_key_can_do(drew_opgp_key_t key, int flags)
 }
 
 /* Returns the version of the key. */
-int drew_opgp_key_get_version(drew_opgp_key_t key)
+int drew_opgp_key_get_version(drew_opgp_key_t k)
 {
-	return key->pub.ver;
+	using namespace drew;
+	Key *key = reinterpret_cast<Key *>(k);
+	START_FUNC();
+	return key->GetPublicMainKey().GetVersion();
+	END_FUNC();
 }
 
-int drew_opgp_key_get_type(drew_opgp_key_t key)
+int drew_opgp_key_get_type(drew_opgp_key_t k)
 {
-	return key->pub.algo;
+	using namespace drew;
+	Key *key = reinterpret_cast<Key *>(k);
+	START_FUNC();
+	return key->GetPublicMainKey().GetAlgorithm();
+	END_FUNC();
 }
 
 /* Returns the number of subkeys placed in subkeys. */
@@ -1166,6 +1227,7 @@ int drew_opgp_key_generate(drew_opgp_key_t key, uint8_t algo, size_t nbits,
 
 int drew_opgp_key_get_fingerprint(drew_opgp_key_t k, drew_opgp_fp_t fp)
 {
+	using namespace drew;
 	Key *key = reinterpret_cast<Key *>(k);
 	START_FUNC();
 	size_t len = (key->GetPublicMainKey().GetVersion() < 4) ? 16 : 20;
@@ -1174,8 +1236,9 @@ int drew_opgp_key_get_fingerprint(drew_opgp_key_t k, drew_opgp_fp_t fp)
 	return 0;
 }
 
-int drew_opgp_key_get_id(drew_opgp_key_t key, drew_opgp_id_t id)
+int drew_opgp_key_get_id(drew_opgp_key_t k, drew_opgp_id_t id)
 {
+	using namespace drew;
 	Key *key = reinterpret_cast<Key *>(k);
 	START_FUNC();
 	memcpy(id, key->GetPublicMainKey().GetInternalID(), sizeof(drew_opgp_id_t));
@@ -1185,6 +1248,7 @@ int drew_opgp_key_get_id(drew_opgp_key_t key, drew_opgp_id_t id)
 
 int drew_opgp_key_get_keyid(drew_opgp_key_t k, drew_opgp_keyid_t keyid)
 {
+	using namespace drew;
 	Key *key = reinterpret_cast<Key *>(k);
 	START_FUNC();
 	memcpy(keyid, key->GetPublicMainKey().GetKeyID(),
@@ -1193,24 +1257,38 @@ int drew_opgp_key_get_keyid(drew_opgp_key_t k, drew_opgp_keyid_t keyid)
 	return 0;
 }
 
-int drew_opgp_key_validate_signatures(drew_opgp_key_t key,
+int drew_opgp_key_validate_signatures(drew_opgp_key_t k,
 		drew_opgp_keystore_t ks)
 {
+	using namespace drew;
+	Key *key = reinterpret_cast<Key *>(k);
+	PublicKey &pub = key->GetPublicMainKey();
+	START_FUNC();
+
 	drew_opgp_key_t signer;
-	for (size_t i = 0; i < key->pub.nsigs; i++) {
-		csig_t *sig = key->pub.sigs+i;
-		if (!drew_opgp_keystore_lookup_by_keyid(ks, &signer, 1, sig->keyid))
+	typedef PublicKey::SignatureStore::iterator sigit_t;
+	typedef PublicKey::UserIDStore::iterator uidit_t;
+	PublicKey::SignatureStore &pubsigs = pub.GetSignatures();
+	for (sigit_t it = pubsigs.begin(); it != pubsigs.end(); it++) {
+		Signature &sig = it->second;
+		if (!drew_opgp_keystore_lookup_by_keyid(ks, &signer, 1, sig.GetKeyID()))
 			continue;
-		validate_signature(signer, &signer->pub, sig, 0);
+		Key *signerkey = reinterpret_cast<Key *>(signer);
+		sig.ValidateSignature(signerkey->GetPublicMainKey(), false);
 	}
-	for (size_t i = 0; i < key->pub.nuids; i++) {
-		for (size_t j = 0; j < key->pub.uids[i].nsigs; j++) {
-			csig_t *sig = key->pub.uids[i].sigs+j;
-			if (!drew_opgp_keystore_lookup_by_keyid(ks, &signer, 1, sig->keyid))
+	PublicKey::UserIDStore &uids = pub.GetUserIDs();
+	for (uidit_t uit = uids.begin(); uit != uids.end(); uit++) {
+		PublicKey::SignatureStore &sigs = uit->second.GetSignatures();
+		for (sigit_t it = sigs.begin(); it != sigs.end(); it++) {
+			Signature &sig = it->second;
+			if (!drew_opgp_keystore_lookup_by_keyid(ks, &signer, 1,
+						sig.GetKeyID()))
 				continue;
-			validate_signature(signer, &signer->pub, sig, 0);
+			Key *signerkey = reinterpret_cast<Key *>(signer);
+			sig.ValidateSignature(signerkey->GetPublicMainKey(), false);
 		}
 	}
+	END_FUNC();
 	return 0;
 }
 
@@ -1219,6 +1297,7 @@ int drew_opgp_key_validate_signatures(drew_opgp_key_t key,
  */
 int drew_opgp_key_synchronize(drew_opgp_key_t k, int flags)
 {
+	using namespace drew;
 	Key *key = reinterpret_cast<Key *>(k);
 	START_FUNC();
 	key->Synchronize(flags);
@@ -1226,182 +1305,179 @@ int drew_opgp_key_synchronize(drew_opgp_key_t k, int flags)
 	return 0;
 }
 
-static int public_load_public(pubkey_t *pub, const drew_opgp_packet_t *pkt)
+static int public_load_public(drew::PublicKey &pub,
+		const drew_opgp_packet_t *pkt)
 {
-	int res = 0;
-	pub->ver = pkt->data.pubkey.ver;
-	if (pub->ver < 2)
+	using namespace drew;
+	int ver;
+	pub.SetVersion(ver = pkt->data.pubkey.ver);
+	if (ver < 2)
 		return -DREW_OPGP_ERR_BAD_KEY_FORMAT;
-	else if (pub->ver < 4) {
+	else if (ver < 4) {
 		const drew_opgp_packet_pubkeyv3_t *pk = &pkt->data.pubkey.data.pubkeyv3;
-		pub->ctime = pk->ctime;
-		pub->algo = pk->pkalgo;
-		pub->etime = pk->valid_days * 86400 + pub->ctime;
-		res = dup_mpi(pub->mpi, DIM(pub->mpi), pk->mpi, DIM(pk->mpi));
-		if (res < 0)
-			return res;
+		pub.SetCreationTime(pk->ctime);
+		pub.SetAlgorithm(pk->pkalgo);
+		pub.SetExpirationTime(pk->valid_days * 86400 + pk->ctime);
+		for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++)
+			pub.GetMPIs()[i] = MPI(pk->mpi[i]);
 	}
 	else {
 		const drew_opgp_packet_pubkeyv4_t *pk = &pkt->data.pubkey.data.pubkeyv4;
-		pub->ctime = pk->ctime;
-		pub->algo = pk->pkalgo;
-		pub->etime = -1;
-		res = dup_mpi(pub->mpi, DIM(pub->mpi), pk->mpi, DIM(pk->mpi));
-		if (res < 0)
-			return res;
+		pub.SetCreationTime(pk->ctime);
+		pub.SetAlgorithm(pk->pkalgo);
+		pub.SetExpirationTime(-1);
+		for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++)
+			pub.GetMPIs()[i] = MPI(pk->mpi[i]);
 	}
 	return 0;
 }
 
-static int public_load_uid(pubkey_t *pub, const drew_opgp_packet_t *pkt)
+static int public_load_uid(drew::PublicKey &pub, const drew_opgp_packet_t *pkt)
 {
-	cuid_t *p, *uid;
+	drew::UserID uid;
 	const drew_opgp_packet_data_t *d = &pkt->data.data;
-	p = realloc(pub->uids, sizeof(*p) * (pub->nuids + 1));
-	if (!p)
-		return -ENOMEM;
-	pub->uids = p;
-	uid = &pub->uids[pub->nuids];
-	memset(uid, 0, sizeof(*uid));
-	uid->len = d->len;
-	if (!(uid->s = malloc(d->len + 1)))
-		return -ENOMEM;
-	memcpy(uid->s, d->data, d->len);
-	uid->s[d->len] = 0;
-	pub->nuids++;
+
+	uid.SetLoader(pub.GetLoader());
+	uid.GenerateID(pub);
+	uid.SetText(d->data, d->len);
+	pub.GetUserIDs()[uid.GetInternalID()]= uid;
 	return 0;
 }
 
-static int public_load_sig(csig_t *sig, const drew_opgp_packet_sig_t *s)
+static int public_load_sig(drew::Signature &sig,
+		const drew_opgp_packet_sig_t *s)
 {
-	memset(sig, 0, sizeof(*sig));
-	sig->ver = s->ver;
+	using namespace drew;
+	sig.SetVersion(s->ver);
 	if (s->ver < 4) {
 		const drew_opgp_packet_sigv3_t *s3 = &s->data.sigv3;
-		sig->type = s3->type;
-		sig->pkalgo = s3->pkalgo;
-		sig->mdalgo = s3->mdalgo;
-		sig->ctime = s3->ctime;
-		memcpy(sig->keyid, s3->keyid, 8);
-		memcpy(sig->left, s3->left, 2);
-		RETFAIL(dup_mpi(sig->mpi, DIM(sig->mpi), s3->mpi, DIM(s3->mpi)));
+		sig.SetType(s3->type);
+		sig.SetPublicKeyAlgorithm(s3->pkalgo);
+		sig.SetDigestAlgorithm(s3->mdalgo);
+		sig.SetCreationTime(s3->ctime);
+		memcpy(sig.GetKeyID(), s3->keyid, 8);
+		memcpy(sig.GetLeft2(), s3->left, 2);
+		for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++)
+			sig.GetMPIs()[i] = MPI(s3->mpi[i]);
 	}
 	else {
 		const drew_opgp_packet_sigv4_t *s4 = &s->data.sigv4;
-		sig->type = s4->type;
-		sig->pkalgo = s4->pkalgo;
-		sig->mdalgo = s4->mdalgo;
-		RETFAIL(dup_mpi(sig->mpi, DIM(sig->mpi), s4->mpi, DIM(s4->mpi)));
-		clone_subpackets(&sig->hashed, &s4->hashed);
-		clone_subpackets(&sig->unhashed, &s4->unhashed);
-		memcpy(sig->left, s4->left, 2);
+		sig.SetType(s4->type);
+		sig.SetPublicKeyAlgorithm(s4->pkalgo);
+		sig.SetDigestAlgorithm(s4->mdalgo);
+		for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++)
+			sig.GetMPIs()[i] = MPI(s4->mpi[i]);
+		clone_subpackets(&sig.GetHashedSubpackets(), &s4->hashed);
+		clone_subpackets(&sig.GetUnhashedSubpackets(), &s4->unhashed);
+		memcpy(sig.GetLeft2(), s4->left, 2);
 		// We need to find the ctime.
-		sig->ctime = -1;
+		time_t ctime = -1;
 		int nctimes = 0, nissuers = 0;
-		for (size_t i = 0; i < sig->hashed.nsubpkts; i++) {
-			drew_opgp_subpacket_t *sp = &sig->hashed.subpkts[i];
+		drew_opgp_subpacket_group_t &hashed = sig.GetHashedSubpackets();
+		for (size_t i = 0; i < hashed.nsubpkts; i++) {
+			drew_opgp_subpacket_t *sp = &hashed.subpkts[i];
 			if (sp->type == 2) {
-				sig->ctime = 0;
+				ctime = 0;
 				if (sp->len != 4)
 					continue;
 				for (int j = 0; j < 4; j++) {
-					sig->ctime <<= 8;
-					sig->ctime |= sp->data[j];
+					ctime <<= 8;
+					ctime |= sp->data[j];
 				}
 				nctimes++;
 			}
 			else if (sp->type == 16) {
 				if (sp->len != 8)
 					continue;
-				memcpy(sig->keyid, sp->data, 8);
+				memcpy(sig.GetKeyID(), sp->data, 8);
 				nissuers++;
 			}
 		}
+		sig.SetCreationTime(ctime);
 		if (!nissuers) {
-			for (size_t i = 0; i < sig->unhashed.nsubpkts; i++) {
-				drew_opgp_subpacket_t *sp = &sig->unhashed.subpkts[i];
+			drew_opgp_subpacket_group_t &unhashed = sig.GetUnhashedSubpackets();
+			for (size_t i = 0; i < unhashed.nsubpkts; i++) {
+				drew_opgp_subpacket_t *sp = &unhashed.subpkts[i];
 				if (sp->type == 16) {
 					if (sp->len != 8)
 						continue;
-					memcpy(sig->keyid, sp->data, 8);
+					memcpy(sig.GetKeyID(), sp->data, 8);
 					nissuers++;
 				}
 			}
 		}
 		// We should have exactly one ctime and exactly one issuer.
 		if (nctimes != 1 || nissuers != 1)
-			sig->flags |= DREW_OPGP_SIGNATURE_INCOMPLETE;
+			sig.GetFlags() |= DREW_OPGP_SIGNATURE_INCOMPLETE;
 	}
 	return 0;
 }
 
-static int public_load_direct_sig(pubkey_t *pub, const drew_opgp_packet_t *pkt)
-{
-	csig_t *sig, *p;
-	const drew_opgp_packet_sig_t *s = &pkt->data.sig;
-
-	p = realloc(pub->sigs, sizeof(*p) * (pub->nsigs + 1));
-	if (!p)
-		return -ENOMEM;
-	pub->sigs = p;
-	sig = &pub->sigs[pub->nsigs];
-	RETFAIL(public_load_sig(sig, s));
-	pub->nsigs++;
-	return 0;
-}
-
-static int public_load_uid_sig(pubkey_t *pub, const drew_opgp_packet_t *pkt)
-{
-	cuid_t *uid = &pub->uids[pub->nuids - 1];
-	csig_t *sig, *p;
-	const drew_opgp_packet_sig_t *s = &pkt->data.sig;
-
-	p = realloc(uid->sigs, sizeof(*p) * (uid->nsigs + 1));
-	if (!p)
-		return -ENOMEM;
-	uid->sigs = p;
-	sig = &uid->sigs[uid->nsigs];
-	RETFAIL(public_load_sig(sig, s));
-	uid->nsigs++;
-	return 0;
-}
-
-static int public_load_subkey_sig(drew_opgp_key_t key,
+static int public_load_direct_sig(drew::PublicKey &pub,
 		const drew_opgp_packet_t *pkt)
 {
-	pubkey_t *pub = &key->pubsubs[key->npubsubs-1];
+	drew::Signature sig;
+	const drew_opgp_packet_sig_t *s = &pkt->data.sig;
 
+	sig.SetLoader(pub.GetLoader());
+	RETFAIL(public_load_sig(sig, s));
+	pub.AddSignature(sig);
+	return 0;
+}
+
+static int public_load_uid_sig(drew::PublicKey &pub,
+		const drew_opgp_packet_t *pkt)
+{
+	using namespace drew;
+	PublicKey::UserIDStore::iterator it;
+	it = pub.GetUserIDs().end();
+	it--;
+	UserID &uid = it->second;
+	Signature sig;
+	const drew_opgp_packet_sig_t *s = &pkt->data.sig;
+
+	sig.SetLoader(pub.GetLoader());
+	RETFAIL(public_load_sig(sig, s));
+	uid.AddSignature(sig);
+	return 0;
+}
+
+static int public_load_subkey_sig(drew::Key &key, const drew_opgp_packet_t *pkt)
+{
+	using namespace drew;
+	PublicKey &pub = *(key.GetPublicKeys().end()-1);
+
+	pub.SetLoader(key.GetLoader());
 	return public_load_direct_sig(pub, pkt);
 }
 
-static int public_load_subkey(drew_opgp_key_t key,
-		const drew_opgp_packet_t *pkt)
+static int public_load_subkey(drew::Key &key, const drew_opgp_packet_t *pkt)
 {
-	pubkey_t *pub, *p;
+	using namespace drew;
+	PublicKey pub;
 
-	p = realloc(key->pubsubs, sizeof(*p) * (key->npubsubs + 1));
-	if (!p)
-		return -ENOMEM;
-	memset(p+key->npubsubs, 0, sizeof(*p));
-	key->pubsubs = p;
-	pub = &key->pubsubs[key->npubsubs];
+	pub.SetLoader(key.GetLoader());
 	RETFAIL(public_load_public(pub, pkt));
-	key->npubsubs++;
+	key.GetPublicKeys().push_back(pub);
 	return 0;
 }
 
 /* Load a key from a series of packets.  Returns the number of packets
  * processed.
  */
-int drew_opgp_key_load_public(drew_opgp_key_t key,
+int drew_opgp_key_load_public(drew_opgp_key_t k,
 		const drew_opgp_packet_t *pkts, size_t npkts)
 {
-	ssize_t i = 0;
+	using namespace drew;
+	Key *key = reinterpret_cast<Key *>(k);
+	START_FUNC();
+	size_t i = 0;
 	int state = 0, res = 0;
-	pubkey_t *pub = &key->pub;
-	pub->state &= ~DREW_OPGP_KEY_STATE_SYNCHRONIZED;
+	PublicKey &pub = key->GetPublicMainKey();
+	pub.GetFlags() &= ~DREW_OPGP_KEY_STATE_SYNCHRONIZED;
 	for (i = 0; i < npkts; i++) {
 		if (!state && pkts[i].type == 6) {
+			pub.SetLoader(key->GetLoader());
 			res = public_load_public(pub, pkts+i);
 			state = 1;
 		}
@@ -1423,11 +1499,11 @@ int drew_opgp_key_load_public(drew_opgp_key_t key,
 			res = 0;
 		}
 		else if (state > 0 && pkts[i].type == 14) {
-			res = public_load_subkey(key, pkts+i);
+			res = public_load_subkey(*key, pkts+i);
 			state = 4;
 		}
 		else if (state == 4 && pkts[i].type == 2) {
-			res = public_load_subkey_sig(key, pkts+i);
+			res = public_load_subkey_sig(*key, pkts+i);
 		}
 		else
 			break;	// Done with this key.
@@ -1435,6 +1511,7 @@ int drew_opgp_key_load_public(drew_opgp_key_t key,
 			return res;
 	}
 	return i;
+	END_FUNC();
 }
 
 /* Load a key from a series of packets.  Returns the number of packets
@@ -1468,39 +1545,57 @@ int drew_opgp_key_get_preferences(drew_opgp_key_t key, int type,
 
 int drew_opgp_key_get_user_ids(drew_opgp_key_t k, drew_opgp_uid_t **uids)
 {
+	using namespace drew;
 	Key *key = reinterpret_cast<Key *>(k);
 	const PublicKey &pub = key->GetPublicMainKey();
-	int nuids = pub.GetUserIDs().size();
+	const PublicKey::UserIDStore &uidstore = pub.GetUserIDs();
+	int nuids = uidstore.size();
+	START_FUNC();
 	if (!uids)
 		return nuids;
 
-	drew_opgp_uid_t *p = malloc(sizeof(*p) * key->pub.nuids);
+	drew_opgp_uid_t *p = (drew_opgp_uid_t *)drew_mem_malloc(sizeof(*p) * nuids);
 	if (!p)
 		return -ENOMEM;
 
-	for (size_t i = 0; i < key->pub.nuids; i++)
-		p[i] = key->pub.uids+i;
+	typedef PublicKey::UserIDStore::const_iterator it_t;
+	int i = 0;
+	for (it_t it = uidstore.begin(); it != uidstore.end(); it++, i++)
+		p[i] = new UserID(it->second);
 	*uids = p;
+	END_FUNC();
 	return nuids;
 }
 
-int drew_opgp_uid_get_text(drew_opgp_uid_t uid, const char **p)
+int drew_opgp_uid_get_text(drew_opgp_uid_t u, const char **p)
 {
-	*p = uid->s;
+	using namespace drew;
+	UserID *uid = reinterpret_cast<UserID *>(u);
+	START_FUNC();
+	*p = uid->GetText().c_str();
+	END_FUNC();
 	return 0;
 }
 
-int drew_opgp_uid_get_signatures(drew_opgp_uid_t uid, drew_opgp_sig_t **sigs)
+int drew_opgp_uid_get_signatures(drew_opgp_uid_t u, drew_opgp_sig_t **sigs)
 {
-	if (!sigs)
-		return uid->nsigs;
+	using namespace drew;
+	UserID *uid = reinterpret_cast<UserID *>(u);
+	START_FUNC();
+	PublicKey::SignatureStore &sigstore = uid->GetSignatures();
+	size_t nsigs = sigstore.size();
 
-	drew_opgp_sig_t *p = malloc(sizeof(*p) * uid->nsigs);
+	if (!sigs)
+		return nsigs;
+
+	drew_opgp_sig_t *p = (drew_opgp_sig_t *)drew_mem_malloc(sizeof(*p) * nsigs);
 	if (!p)
 		return -ENOMEM;
 
-	for (size_t i = 0; i < uid->nsigs; i++)
-		p[i] = uid->sigs+i;
+	PublicKey::SignatureStore::iterator it = sigstore.begin();
+	for (size_t i = 0; i < nsigs; it++, i++)
+		p[i] = new Signature(it->second);
 	*sigs = p;
-	return uid->nsigs;
+	return nsigs;
+	END_FUNC();
 }

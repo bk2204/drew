@@ -124,6 +124,10 @@ class ContainsLoader
 		{
 			ldr = l;
 		}
+		const drew_loader_t *GetLoader() const
+		{
+			return ldr;
+		}
 	protected:
 		const drew_loader_t *ldr;
 	private:
@@ -183,7 +187,8 @@ class Signature : public Identifiable, public ContainsLoader
 		void GenerateID();
 		void Synchronize(int);
 		void HashData(Hash &) const;
-		int GetFlags() const;
+		const int &GetFlags() const;
+		int &GetFlags();
 		bool IsSelfSignature() const;
 		void HashUserIDSignature(const PublicKey &pub, const UserID &uid);
 		int ValidateSignature(const PublicKey &pub, bool is_selfsig);
@@ -216,6 +221,7 @@ class UserID : public Identifiable, public ContainsLoader
 		void SetText(const uint8_t *, size_t);
 		const std::string &GetText() const;
 		const SignatureStore &GetSignatures() const;
+		SignatureStore &GetSignatures();
 		void AddSignature(const Signature &);
 		void GenerateID(const PublicKey &);
 		void Synchronize(int);
@@ -247,6 +253,8 @@ class PublicKey : public Identifiable, public ContainsLoader
 		void Synchronize(int);
 		const UserIDStore &GetUserIDs() const;
 		const SignatureStore &GetSignatures() const;
+		UserIDStore &GetUserIDs();
+		SignatureStore &GetSignatures();
 		const uint8_t *GetKeyID() const;
 		const uint8_t *GetFingerprint() const;
 		const MPI *GetMPIs() const;
@@ -263,12 +271,15 @@ class PublicKey : public Identifiable, public ContainsLoader
 		void SetAlgorithm(int);
 		void GenerateID();
 		void HashData(Hash &) const;
+		const int &GetFlags() const;
+		int &GetFlags();
 	protected:
 		void CalculateFingerprint();
 		void CalculateFingerprintV3();
 		void CalculateFingerprintV4();
 	private:
 		bool main;
+		int flags;
 		int ver;
 		int algo;
 		time_t ctime;
@@ -298,6 +309,8 @@ class Key: public ContainsLoader
 		PrivateKey &GetPrivateMainKey();
 		const std::vector<PublicKey> &GetPublicKeys() const;
 		const std::vector<PrivateKey> &GetPrivateKeys() const;
+		std::vector<PublicKey> &GetPublicKeys();
+		std::vector<PrivateKey> &GetPrivateKeys();
 	protected:
 	private:
 		PublicKey main;
