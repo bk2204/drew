@@ -28,6 +28,12 @@ struct drew_opgp_self_sig_s {
 	drew_opgp_prefs_t prefs[3];
 };
 
+struct drew_opgp_s {
+	const drew_loader_t *ldr;
+	drew_prng_t prng;
+	int64_t standards;
+};
+
 typedef struct drew_opgp_self_sig_s selfsig_t;
 
 typedef struct drew_opgp_signature_s csig_t;

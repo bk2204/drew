@@ -16,11 +16,6 @@
 struct drew_opgp_s;
 typedef struct drew_opgp_s *drew_opgp_t;
 
-struct drew_opgp_s {
-	const drew_loader_t *ldr;
-	drew_prng_t prng;
-};
-
 static int get_key_length(int skalgo)
 {
 	switch (skalgo) {
@@ -148,7 +143,8 @@ static int make_crypto(const drew_opgp_t ctx, struct crypto *c,
 	memset(c, 0, sizeof(*c));
 
 	c->keylen = keylen;
-	RETFAIL(make_hash(ctx->ldr, &c->hash, 2));
+	RETFAIL(drew_opgp_algo_hash_lookup(ctx, 2, &c->hash, NULL, NULL, NULL,
+				NULL));
 	RETFAIL(make_sk(ctx->ldr, &c->block, skalgo));
 	c->blocklen = c->block.functbl->info(DREW_BLOCK_BLKSIZE, 0);
 	/* CFB only uses encryption; no reason to set up decryption keys. */
@@ -245,9 +241,9 @@ int drew_opgp_sk_generate_key_from_passphrase(const drew_opgp_t ctx,
 		return -DREW_OPGP_ERR_NO_SUCH_ALGO;
 	if ((keylen = get_key_length(skalgo)) < 0)
 		return keylen;
-	mdlen = hashes[mdalgo].len;
+	RETFAIL(drew_opgp_algo_hash_lookup(ctx, mdalgo, &hash, NULL, &mdlen, NULL,
+				NULL));
 	niters = (keylen + mdlen - 1) / mdlen;
-	RETFAIL(make_hash(ctx->ldr, &hash, mdalgo));
 	for (size_t i = 0, off = 0; i < niters; i++, off += mdlen) {
 		size_t nhashed = 0;
 		hash.functbl->reset(&hash);

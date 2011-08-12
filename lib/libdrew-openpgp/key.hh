@@ -24,14 +24,7 @@ class Hash
 		static size_t GetAlgorithmPrefixLength(int);
 		static const uint8_t *GetAlgorithmPrefix(int);
 	protected:
-		struct hash_algos {
-			const char *algoname;
-			size_t len;
-			size_t prefixlen;
-			uint8_t prefix[32];
-		};
 	private:
-		static const struct hash_algos hashes[];
 		const drew_loader_t *ldr;
 		drew_hash_t hash;
 };
