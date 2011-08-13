@@ -53,11 +53,19 @@
 #define DREW_OPGP_SKALGO_CAMELLIA192	12
 #define DREW_OPGP_SKALGO_CAMELLIA256	13
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct drew_opgp_s;
 typedef struct drew_opgp_s *drew_opgp_t;
 
 int drew_opgp_algo_hash_lookup(drew_opgp_t ctx, int algo,
 		drew_hash_t *hash, const char **name, size_t *len,
 		const uint8_t **prefix, size_t *prefixlen);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
