@@ -65,7 +65,7 @@ standard: ${DREW_SONAME} ${MD_SONAME} plugins libmd/testsuite
 standard: $(TEST_BINARIES) $(UTILITIES)
 
 ${TEST_EXE}: ${TEST_SRC} ${MD_SONAME} ${DREW_SONAME} ${DREW_IMPL_SONAME}
-	${CC} -Ilibmd/include ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
+	${CC} -Ilibmd/include ${CPPFLAGS} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
 ${PLUG_EXE}: ${PLUG_OBJ} ${DREW_SONAME} ${DREW_IMPL_SONAME}
 	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
