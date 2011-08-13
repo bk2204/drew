@@ -327,6 +327,13 @@ drew::MPI::~MPI()
 	drew_mem_free(mpi.data);
 }
 
+drew::MPI &drew::MPI::operator=(const drew::MPI &other)
+{
+	SetMPI(other.mpi);
+	this->ldr = other.ldr;
+	return *this;
+}
+
 const drew_opgp_mpi_t &drew::MPI::GetMPI() const
 {
 	return mpi;

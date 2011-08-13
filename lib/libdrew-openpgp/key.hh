@@ -153,6 +153,7 @@ class MPI : public Identifiable, public ContainsLoader
 		MPI(const drew_opgp_mpi_t &);
 		MPI(const MPI &);
 		~MPI();
+		MPI &operator=(const MPI &);
 		size_t GetBitLength() const;
 		size_t GetByteLength() const;
 		const uint8_t *GetData() const;
