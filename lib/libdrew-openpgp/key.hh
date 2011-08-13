@@ -8,6 +8,10 @@
 #include <string>
 #include <vector>
 
+#include <drew-opgp/key.h>
+
+struct drew_opgp_pubkey_s;
+
 namespace drew {
 
 class Hash
@@ -43,9 +47,25 @@ struct InternalID
 	{
 		return memcmp(this->id, kid.id, sizeof(this->id)) < 0;
 	}
+	bool operator <=(const InternalID & kid) const
+	{
+		return memcmp(this->id, kid.id, sizeof(this->id)) <= 0;
+	}
+	bool operator >(const InternalID & kid) const
+	{
+		return memcmp(this->id, kid.id, sizeof(this->id)) > 0;
+	}
+	bool operator >=(const InternalID & kid) const
+	{
+		return memcmp(this->id, kid.id, sizeof(this->id)) >= 0;
+	}
 	bool operator ==(const InternalID & kid) const
 	{
 		return !memcmp(this->id, kid.id, sizeof(this->id));
+	}
+	bool operator !=(const InternalID & kid) const
+	{
+		return memcmp(this->id, kid.id, sizeof(this->id));
 	}
 	void Reset()
 	{
@@ -97,7 +117,7 @@ class Identifiable
 		{
 			return id;
 		}
-		void SetInternalID(drew_opgp_id_t from)
+		void SetInternalID(const drew_opgp_id_t from)
 		{
 			memcpy(id, from, sizeof(id));
 		}
@@ -145,16 +165,32 @@ class MPI : public Identifiable, public ContainsLoader
 		drew_opgp_mpi_t mpi;
 };
 
-class Key;
-class PublicKey;
-class UserID;
-
-class Signature : public Identifiable, public ContainsLoader
+class PrivateKey
 {
 	public:
-		Signature();
-		Signature(const Signature &);
-		~Signature();
+	protected:
+	private:
+};
+
+class AttributeID
+{
+};
+
+typedef ::drew_opgp_sig_s Signature;
+typedef ::drew_opgp_uid_s UserID;
+typedef ::drew_opgp_pubkey_s PublicKey;
+typedef ::drew_opgp_key_s Key;
+
+}
+
+using namespace drew;
+
+struct drew_opgp_sig_s : public Identifiable, public ContainsLoader
+{
+	public:
+		drew_opgp_sig_s();
+		drew_opgp_sig_s(const drew_opgp_sig_s &);
+		~drew_opgp_sig_s();
 		void SetCreationTime(time_t);
 		time_t GetCreationTime() const;
 		void SetExpirationTime(time_t);
@@ -180,6 +216,8 @@ class Signature : public Identifiable, public ContainsLoader
 		void GenerateID();
 		void Synchronize(int);
 		void HashData(Hash &) const;
+		const uint8_t *GetHash() const;
+		uint8_t *GetHash();
 		const int &GetFlags() const;
 		int &GetFlags();
 		const selfsig_t &GetSelfSignature() const;
@@ -207,16 +245,21 @@ class Signature : public Identifiable, public ContainsLoader
 		drew_opgp_hash_t hash;
 };
 
-class UserID : public Identifiable, public ContainsLoader
+struct drew_opgp_uid_s : public Identifiable, public ContainsLoader
 {
 	public:
 		typedef std::map<InternalID, Signature> SignatureStore;
+		typedef std::vector<InternalID> SelfSignatureStore;
 		void SetText(const std::string &);
 		void SetText(const char *);
 		void SetText(const uint8_t *, size_t);
 		const std::string &GetText() const;
 		const SignatureStore &GetSignatures() const;
 		SignatureStore &GetSignatures();
+		const InternalID &GetPrimarySelfSignature() const;
+		void SetPrimarySelfSignature(const InternalID &);
+		const SelfSignatureStore &GetSelfSignatures() const;
+		SelfSignatureStore &GetSelfSignatures();
 		void AddSignature(const Signature &);
 		void GenerateID(const PublicKey &);
 		void Synchronize(int);
@@ -229,19 +272,15 @@ class UserID : public Identifiable, public ContainsLoader
 		SignatureStore sigs;
 };
 
-class AttributeID
-{
-};
-
-class PublicKey : public Identifiable, public ContainsLoader
+struct drew_opgp_pubkey_s : public Identifiable, public ContainsLoader
 {
 	public:
 		typedef std::map<InternalID, UserID> UserIDStore;
 		typedef UserID::SignatureStore SignatureStore;
-		PublicKey();
-		PublicKey(bool is_main);
-		PublicKey(const PublicKey &);
-		~PublicKey();
+		drew_opgp_pubkey_s();
+		drew_opgp_pubkey_s(bool is_main);
+		drew_opgp_pubkey_s(const drew_opgp_pubkey_s &);
+		~drew_opgp_pubkey_s();
 		void AddUserID(const UserID &);
 		void AddSignature(const Signature &);
 		void Merge(const PublicKey &);
@@ -268,6 +307,8 @@ class PublicKey : public Identifiable, public ContainsLoader
 		void HashData(Hash &) const;
 		const int &GetFlags() const;
 		int &GetFlags();
+		const InternalID &GetPrimaryUserID() const;
+		void SetPrimaryUserID(const InternalID &);
 	protected:
 		void CalculateFingerprint();
 		void CalculateFingerprintV3();
@@ -287,14 +328,9 @@ class PublicKey : public Identifiable, public ContainsLoader
 		SignatureStore sigs;
 };
 
-class PrivateKey
-{
-	public:
-	protected:
-	private:
-};
-
-class Key: public ContainsLoader
+// The internal ID used here is only for serialization.  It is not used
+// publicly; the ID of the main public key is used for that.
+struct drew_opgp_key_s: public ContainsLoader
 {
 	public:
 		void Synchronize(int);
@@ -313,7 +349,5 @@ class Key: public ContainsLoader
 		std::vector<PublicKey> pubsubs;
 		std::vector<PrivateKey> privsubs;
 };
-
-}
 
 #endif

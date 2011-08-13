@@ -7,10 +7,9 @@ extern "C" {
 
 #include <drew-opgp/parser.h>
 
-typedef void *drew_opgp_key_t;
-typedef void *drew_opgp_sig_t;
-typedef void *drew_opgp_uid_t;
-
+typedef struct drew_opgp_sig_s *drew_opgp_sig_t;
+typedef struct drew_opgp_uid_s *drew_opgp_uid_t;
+typedef struct drew_opgp_key_s *drew_opgp_key_t;
 typedef struct drew_opgp_prefs_s drew_opgp_prefs_t;
 
 // Has this signature been checked?

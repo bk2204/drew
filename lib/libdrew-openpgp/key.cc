@@ -359,7 +359,7 @@ void drew::MPI::SetMPI(const drew_opgp_mpi_t &other)
 void drew::MPI::SetMPI(const uint8_t *p, size_t len)
 {
 	mpi.len = len;
-	mpi.data = (uint8_t *)drew_mem_memdup(p, len);
+	mpi.data = (uint8_t *)drew_mem_memdup(p, (len + 7) / 8);
 	memset(&mpi.id, 0, sizeof(mpi.id));
 }
 
@@ -396,7 +396,7 @@ void free_subpackets(drew_opgp_subpacket_group_t *spg)
 	drew_mem_free(spg->subpkts);
 }
 
-drew::Signature::Signature()
+drew::Signature::drew_opgp_sig_s()
 {
 	memset(&selfsig, 0, sizeof(selfsig));
 	memset(&hashed, 0, sizeof(hashed));
@@ -405,7 +405,7 @@ drew::Signature::Signature()
 	flags = 0;
 }
 
-drew::Signature::Signature(const Signature &other)
+drew::Signature::drew_opgp_sig_s(const drew_opgp_sig_s &other)
 {
 	memcpy(&selfsig, &other.selfsig, sizeof(selfsig));
 	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++)
@@ -424,7 +424,7 @@ drew::Signature::Signature(const Signature &other)
 	ldr = other.ldr;
 }
 
-drew::Signature::~Signature()
+drew::Signature::~drew_opgp_sig_s()
 {
 	free_subpackets(&hashed);
 	free_subpackets(&unhashed);
@@ -680,6 +680,16 @@ const int &drew::Signature::GetFlags() const
 	return flags;
 }
 
+const uint8_t *drew::Signature::GetHash() const
+{
+	return hash;
+}
+
+uint8_t *drew::Signature::GetHash()
+{
+	return hash;
+}
+
 bool drew::Signature::IsSelfSignature() const
 {
 	return flags & DREW_OPGP_SIGNATURE_SELF_SIG;
@@ -752,6 +762,26 @@ drew::UserID::SignatureStore &drew::UserID::GetSignatures()
 	return sigs;
 }
 
+const drew::InternalID &drew::UserID::GetPrimarySelfSignature() const
+{
+	return theselfsig;
+}
+
+void drew::UserID::SetPrimarySelfSignature(const InternalID &s)
+{
+	theselfsig = s;
+}
+
+const drew::UserID::SelfSignatureStore &drew::UserID::GetSelfSignatures() const
+{
+	return selfsigs;
+}
+
+drew::UserID::SelfSignatureStore &drew::UserID::GetSelfSignatures()
+{
+	return selfsigs;
+}
+
 void drew::UserID::AddSignature(const Signature &sig)
 {
 	sigs[sig.GetInternalID()] = sig;
@@ -765,15 +795,15 @@ void drew::UserID::HashData(Hash &hash) const
 }
 
 
-drew::PublicKey::PublicKey() : main(true), flags(0)
+drew::PublicKey::drew_opgp_pubkey_s() : main(true), flags(0)
 {
 }
 
-drew::PublicKey::PublicKey(bool is_main) : main(is_main), flags(0)
+drew::PublicKey::drew_opgp_pubkey_s(bool is_main) : main(is_main), flags(0)
 {
 }
 
-drew::PublicKey::PublicKey(const PublicKey &pub)
+drew::PublicKey::drew_opgp_pubkey_s(const drew_opgp_pubkey_s &pub)
 {
 	ldr = pub.ldr;
 	flags = pub.flags;
@@ -843,6 +873,16 @@ void drew::PublicKey::Synchronize(int flags)
 		it->second.GenerateID();
 		it->second.Synchronize(flags);
 	}
+}
+
+const InternalID &drew::PublicKey::GetPrimaryUserID() const
+{
+	return theuid;
+}
+
+void drew::PublicKey::SetPrimaryUserID(const InternalID &id)
+{
+	theuid = id;
 }
 
 const drew::PublicKey::UserIDStore &drew::PublicKey::GetUserIDs() const

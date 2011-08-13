@@ -30,6 +30,7 @@ EXPORT()
 UNEXPORT()
 
 #include "structs.h"
+#include "key.hh"
 
 #define CHUNKSZ	64
 
@@ -44,86 +45,57 @@ UNEXPORT()
 
 typedef BigEndian E;
 
-// The context is part of a larger structure and will be freed along with that
-// structure.
-#define ITEM_CONSOLIDATED 1
-// FIXME: clone each of these contexts and on destruction, free them.
+using namespace drew;
+
 struct Item
 {
 	Item() : type(TYPE_NIL), key(0), sig(0), uid(0), pub(0), mpi(0), flags(0) {}
-	Item(drew_opgp_key_t keyp) :
-		type(TYPE_KEY), key(keyp), sig(0), uid(0), pub(0), mpi(0), flags(0) {}
-	Item(drew_opgp_sig_t sigp) :
-		type(TYPE_SIG), key(0), sig(sigp), uid(0), pub(0), mpi(0), flags(0) {}
-	Item(drew_opgp_uid_t uidp) :
-		type(TYPE_UID), key(0), sig(0), uid(uidp), pub(0), mpi(0), flags(0) {}
-	Item(pubkey_t *pubp) :
-		type(TYPE_SUB), key(0), sig(0), uid(0), pub(pubp), mpi(0), flags(0) {}
-	Item(drew_opgp_mpi_t *mpip) :
-		type(TYPE_MPI), key(0), sig(0), uid(0), pub(0), mpi(mpip), flags(0) {}
-	Item(drew_opgp_key_t keyp, int f) :
-		type(TYPE_KEY), key(keyp), sig(0), uid(0), pub(0), mpi(0), flags(f) {}
-	Item(drew_opgp_sig_t sigp, int f) :
-		type(TYPE_SIG), key(0), sig(sigp), uid(0), pub(0), mpi(0), flags(f) {}
-	Item(drew_opgp_uid_t uidp, int f) :
-		type(TYPE_UID), key(0), sig(0), uid(uidp), pub(0), mpi(0), flags(f) {}
-	Item(pubkey_t *pubp, int f) :
-		type(TYPE_SUB), key(0), sig(0), uid(0), pub(pubp), mpi(0), flags(f) {}
-	Item(drew_opgp_mpi_t *mpip, int f) :
-		type(TYPE_MPI), key(0), sig(0), uid(0), pub(0), mpi(mpip), flags(f) {}
+	Item(const Key &keyp) :
+		type(TYPE_KEY), key(new Key(keyp)), sig(0), uid(0), pub(0), mpi(0),
+		flags(0) {}
+	Item(const Signature &sigp) :
+		type(TYPE_SIG), key(0), sig(new Signature(sigp)), uid(0), pub(0),
+		mpi(0), flags(0) {}
+	Item(const UserID &uidp) :
+		type(TYPE_UID), key(0), sig(0), uid(new UserID(uidp)), pub(0), mpi(0),
+		flags(0) {}
+	Item(const PublicKey &pubp) :
+		type(TYPE_SUB), key(0), sig(0), uid(0), pub(new PublicKey(pubp)),
+		mpi(0), flags(0) {}
+	Item(const MPI &mpip) :
+		type(TYPE_MPI), key(0), sig(0), uid(0), pub(0), mpi(new MPI(mpip)),
+		flags(0) {}
+	Item(const Item &other)
+	{
+		if (other.key)
+			key = new Key(*other.key);
+		if (other.sig)
+			sig = new Signature(*other.sig);
+		if (other.uid)
+			uid = new UserID(*other.uid);
+		if (other.pub)
+			pub = new PublicKey(*other.pub);
+		if (other.mpi)
+			mpi = new MPI(*other.mpi);
+	}
+	~Item()
+	{
+		delete key;
+		delete sig;
+		delete uid;
+		delete pub;
+		delete mpi;
+	}
 	int type;
-	drew_opgp_key_t key;
-	drew_opgp_sig_t sig;
-	drew_opgp_uid_t uid;
-	pubkey_t *pub;
-	drew_opgp_mpi_t *mpi;
+	Key *key;
+	Signature *sig;
+	UserID *uid;
+	PublicKey *pub;
+	MPI *mpi;
 	int flags;
 };
 
-struct DrewID
-{
-	DrewID()
-	{
-		Reset();
-	}
-	DrewID(const drew_opgp_id_t idp)
-	{
-		memcpy(this->id, idp, sizeof(this->id));
-	}
-	bool operator <(const DrewID & kid) const
-	{
-		return memcmp(this->id, kid.id, sizeof(this->id)) < 0;
-	}
-	bool operator ==(const DrewID & kid) const
-	{
-		return !memcmp(this->id, kid.id, sizeof(this->id));
-	}
-	void Reset()
-	{
-		memset(id, 0, sizeof(id));
-	}
-	void Write(int fd)
-	{
-		write(fd, id, sizeof(id));
-	}
-	operator uint8_t *()
-	{
-		return id;
-	}
-	operator const uint8_t *() const
-	{
-		return id;
-	}
-	uint8_t &operator[](int offset)
-	{
-		return id[offset];
-	}
-	const uint8_t &operator[](int offset) const
-	{
-		return id[offset];
-	}
-	drew_opgp_id_t id;
-};
+typedef drew::InternalID DrewID;
 
 #ifdef FEATURE_TR1
 namespace std {
@@ -329,29 +301,6 @@ extern "C"
 int drew_opgp_keystore_free(drew_opgp_keystore_t *ksp)
 {
 	drew_opgp_keystore_t ks = *ksp;
-	typedef ItemStore::iterator it_t;
-	for (it_t it = ks->items.begin(); it != ks->items.end(); it++) {
-		if (it->second.flags & ITEM_CONSOLIDATED)
-			continue;
-		if (it->second.mpi) {
-			free_mpi(it->second.mpi);
-			drew_mem_free(it->second.mpi);
-		}
-		else if (it->second.sig) {
-			free_sig(it->second.sig);
-			drew_mem_free(it->second.sig);
-		}
-		else if (it->second.uid) {
-			free_uid(it->second.uid);
-			drew_mem_free(it->second.uid);
-		}
-		else if (it->second.pub) {
-			free_pubkey(it->second.pub);
-			drew_mem_free(it->second.pub);
-		}
-		else if (it->second.key)
-			drew_opgp_key_free(&it->second.key);
-	}
 	delete ks->b;
 	delete ks;
 	*ksp = 0;
@@ -374,6 +323,15 @@ UNEXPORT()
 
 #define ROUND(x) (DivideAndRoundUp(x, 2))
 
+template<class T>
+size_t GetNumberOfMPIs(const T &x)
+{
+	size_t nmpis = 0;
+	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS &&
+			x.GetMPIs()[i].GetByteLength(); i++, nmpis++);
+	return nmpis;
+}
+
 /* There is intentionally no external documentation for this format.  Because
  * the format includes precomputed information, like whether a signature is
  * valid, it should not be read and written by external programs.
@@ -391,7 +349,7 @@ UNEXPORT()
  * data is big-endian.
  */
 static void store_pubkey(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
-		drew_opgp_key_t key, pubkey_t *pub, int type, size_t npubsubs)
+		const Key *key, const PublicKey &pub, int type, size_t npubsubs)
 {
 	KeyChunk fchunk;
 	memcpy(fchunk, id, sizeof(drew_opgp_id_t));
@@ -400,47 +358,54 @@ static void store_pubkey(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 	fchunk[0x22] = ks->major;
 	fchunk[0x23] = ks->minor;
 
-	uint32_t nmpis = 0;
-	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && pub->mpi[i].len; i++, nmpis++);
-	uint32_t nchunks = ROUND(pub->nuids) + ROUND(pub->nsigs) + ROUND(npubsubs)
-		+ ROUND(nmpis);
+	const PublicKey::UserIDStore &uidstore = pub.GetUserIDs();
+	const PublicKey::SignatureStore &sigstore = pub.GetSignatures();
+
+	uint32_t nmpis = GetNumberOfMPIs(pub);
+	uint32_t nchunks = ROUND(uidstore.size()) + ROUND(sigstore.size()) +
+		ROUND(npubsubs) + ROUND(nmpis);
 	Chunk *c = new Chunk[nchunks + 1];
 	// Number of subsequent chunks.
 	E::Convert(c[0], nchunks);
-	E::Convert<uint16_t>(c[0]+0x04, pub->state);
-	c[0][0x05] = pub->ver;
-	c[0][0x06] = pub->algo;
-	E::Convert<uint32_t>(c[0]+0x08, pub->ctime);
-	E::Convert<uint32_t>(c[0]+0x0c, pub->etime);
-	E::Convert<uint32_t>(c[0]+0x10, pub->nuids);
-	E::Convert<uint32_t>(c[0]+0x14, pub->nsigs);
-	memcpy(c[0]+0x18, pub->keyid, 8);
-	memcpy(c[0]+0x20, pub->fp, (pub->ver == 4 ? 20 : 16));
+	E::Convert<uint16_t>(c[0]+0x04, pub.GetFlags());
+	c[0][0x05] = pub.GetVersion();
+	c[0][0x06] = pub.GetAlgorithm();
+	E::Convert<uint32_t>(c[0]+0x08, pub.GetCreationTime());
+	E::Convert<uint32_t>(c[0]+0x0c, pub.GetExpirationTime());
+	E::Convert<uint32_t>(c[0]+0x10, uidstore.size());
+	E::Convert<uint32_t>(c[0]+0x14, sigstore.size());
+	memcpy(c[0]+0x18, pub.GetKeyID(), 8);
+	memcpy(c[0]+0x20, pub.GetFingerprint(), (pub.GetVersion() == 4 ? 20 : 16));
 	E::Convert<uint32_t>(c[0]+0x34, npubsubs);
 	E::Convert<uint32_t>(c[0]+0x38, nmpis);
 
 	IDConverter idc;
+	typedef PublicKey::UserIDStore::const_iterator uidit_t;
+	typedef PublicKey::SignatureStore::const_iterator sigit_t;
 	// Write the primary UID ID first, followed by the others.
-	if (pub->nuids && pub->theuid)
-		idc.Add(DrewID(pub->theuid->id));
-	for (size_t i = 0; i < pub->nuids; i++)
-		if (pub->theuid != pub->uids+i)
-			idc.Add((pub->uids[i].id));
-	if (pub->nuids & 1)
+	if (uidstore.size())
+		idc.Add(pub.GetPrimaryUserID());
+	for (uidit_t it = uidstore.begin(); it != uidstore.end(); it++)
+		if (pub.GetPrimaryUserID() != it->first)
+			idc.Add(it->first);
+	if (uidstore.size() & 1)
 		idc.Add(DrewID());
 
-	for (size_t i = 0; i < pub->nsigs; i++)
-		idc.Add(DrewID(pub->sigs[i].id));
-	if (pub->nsigs & 1)
+	for (sigit_t it = sigstore.begin(); it != sigstore.end(); it++)
+		idc.Add(it->first);
+	if (sigstore.size() & 1)
 		idc.Add(DrewID());
 
-	for (size_t i = 0; i < npubsubs; i++)
-		idc.Add(DrewID(key->pubsubs[i].id));
-	if (npubsubs & 1)
-		idc.Add(DrewID());
+	if (npubsubs) {
+		const std::vector<PublicKey> &pubstore = key->GetPublicKeys();
+		for (size_t i = 0; i < npubsubs; i++)
+			idc.Add(pubstore[i].GetInternalID());
+		if (npubsubs & 1)
+			idc.Add(DrewID());
+	}
 
 	for (size_t i = 0; i < nmpis; i++)
-		idc.Add(DrewID(pub->mpi[i].id));
+		idc.Add(pub.GetMPIs()[i].GetInternalID());
 	if (nmpis & 1)
 		idc.Add(DrewID());
 
@@ -450,23 +415,24 @@ static void store_pubkey(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 }
 
 static void store_subkey(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
-		pubkey_t *pub)
+		const PublicKey *pub)
 {
 	if (!pub)
 		return;
-	store_pubkey(ks, id, NULL, pub, CHUNK_ID_PUBSUBKEY, 0);
+	store_pubkey(ks, id, NULL, *pub, CHUNK_ID_PUBSUBKEY, 0);
 }
 
 static void store_key(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
-		drew_opgp_key_t key)
+		const Key *key)
 {
 	if (!key)
 		return;
-	store_pubkey(ks, id, key, &key->pub, CHUNK_ID_PUBKEY, key->npubsubs);
+	store_pubkey(ks, id, key, key->GetPublicMainKey(), CHUNK_ID_PUBKEY,
+			key->GetPublicKeys().size());
 }
 
 static void store_mpi(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
-		drew_opgp_mpi_t *mpi)
+		const MPI *mpi)
 {
 	if (!mpi)
 		return;
@@ -477,16 +443,16 @@ static void store_mpi(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 	fchunk[0x22] = ks->major;
 	fchunk[0x23] = ks->minor;
 
-	uint32_t nbytes = (mpi->len + 7) / 8;
+	uint32_t nbytes = mpi->GetByteLength();
 	uint32_t nchunks = DivideAndRoundUp(nbytes, 0x40);
 	Chunk *c = new Chunk[nchunks + 1];
 	// Number of subsequent chunks.
 	E::Convert(c[0], nchunks);
-	E::Convert<uint32_t>(c[0]+0x04, mpi->len);
+	E::Convert<uint32_t>(c[0]+0x04, mpi->GetBitLength());
 	E::Convert<uint32_t>(c[0]+0x08, nbytes);
 
 	for (size_t i = 1, off = 0; i <= nchunks; i++, off += 0x40)
-		memcpy(c[i], mpi->data+off, std::min<size_t>(0x40, nbytes-off));
+		memcpy(c[i], mpi->GetData()+off, std::min<size_t>(0x40, nbytes-off));
 	ks->b->WriteChunks(fchunk, c, nchunks+1);
 	delete[] c;
 }
@@ -528,7 +494,7 @@ static void store_subpackets3(Chunk *c, const drew_opgp_subpacket_group_t *spg,
 }
 
 static void store_sig(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
-		drew_opgp_sig_t sig)
+		const Signature *sig)
 {
 	if (!sig)
 		return;
@@ -539,63 +505,65 @@ static void store_sig(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 	fchunk[0x22] = ks->major;
 	fchunk[0x23] = ks->minor;
 
-	uint32_t nmpis = 0;
-	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && sig->mpi[i].len; i++, nmpis++);
+	uint32_t nmpis = GetNumberOfMPIs(*sig);
 	uint32_t hchunks = 0, uchunks = 0;
-	for (size_t i = 0; i < sig->hashed.nsubpkts; i++)
-		hchunks += DivideAndRoundUp(sig->hashed.subpkts[i].len, 0x40);
-	for (size_t i = 0; i < sig->unhashed.nsubpkts; i++)
-		uchunks += DivideAndRoundUp(sig->unhashed.subpkts[i].len, 0x40);
-	uint32_t nhashedlens = DivideAndRoundUp(sig->hashed.nsubpkts * 4, 0x40);
-	uint32_t nunhashedlens = DivideAndRoundUp(sig->unhashed.nsubpkts * 4, 0x40);
-	uint32_t nhashed = DivideAndRoundUp(sig->hashed.len, 0x40);
-	uint32_t nunhashed = DivideAndRoundUp(sig->unhashed.len, 0x40);
+	const drew_opgp_subpacket_group_t &hashed = sig->GetHashedSubpackets();
+	const drew_opgp_subpacket_group_t &unhashed = sig->GetUnhashedSubpackets();
+	const selfsig_t &selfsig = sig->GetSelfSignature();
+	for (size_t i = 0; i < hashed.nsubpkts; i++)
+		hchunks += DivideAndRoundUp(hashed.subpkts[i].len, 0x40);
+	for (size_t i = 0; i < unhashed.nsubpkts; i++)
+		uchunks += DivideAndRoundUp(unhashed.subpkts[i].len, 0x40);
+	uint32_t nhashedlens = DivideAndRoundUp(hashed.nsubpkts * 4, 0x40);
+	uint32_t nunhashedlens = DivideAndRoundUp(unhashed.nsubpkts * 4, 0x40);
+	uint32_t nhashed = DivideAndRoundUp(hashed.len, 0x40);
+	uint32_t nunhashed = DivideAndRoundUp(unhashed.len, 0x40);
 	uint32_t nchunks = nhashedlens + nunhashedlens + nhashed + nunhashed +
 		hchunks + uchunks + ROUND(nmpis) + 3;
 	Chunk *c = new Chunk[nchunks + 2];
 	// Number of subsequent chunks.
 	E::Convert(c[0], nchunks + 1);
-	c[0][0x04] = sig->ver;
-	c[0][0x05] = sig->type;
-	c[0][0x06] = sig->pkalgo;
-	c[0][0x07] = sig->mdalgo;
-	E::Convert<uint32_t>(c[0]+0x08, sig->ctime);
-	E::Convert<uint32_t>(c[0]+0x0c, sig->etime);
-	memcpy(c[0]+0x10, sig->keyid, 8);
-	E::Convert<uint32_t>(c[0]+0x18, sig->flags);
-	E::Convert<uint32_t>(c[0]+0x20, sig->selfsig.keyflags);
-	E::Convert<uint32_t>(c[0]+0x24, sig->selfsig.keyexp);
-	c[0][0x28] = sig->left[0];
-	c[0][0x29] = sig->left[1];
+	c[0][0x04] = sig->GetVersion();
+	c[0][0x05] = sig->GetType();
+	c[0][0x06] = sig->GetPublicKeyAlgorithm();
+	c[0][0x07] = sig->GetDigestAlgorithm();
+	E::Convert<uint32_t>(c[0]+0x08, sig->GetCreationTime());
+	E::Convert<uint32_t>(c[0]+0x0c, sig->GetExpirationTime());
+	memcpy(c[0]+0x10, sig->GetKeyID(), 8);
+	E::Convert<uint32_t>(c[0]+0x18, sig->GetFlags());
+	E::Convert<uint32_t>(c[0]+0x20, selfsig.keyflags);
+	E::Convert<uint32_t>(c[0]+0x24, selfsig.keyexp);
+	c[0][0x28] = sig->GetLeft2()[0];
+	c[0][0x29] = sig->GetLeft2()[1];
 	// Two empty bytes.
-	c[0][0x2c] = sig->selfsig.prefs[0].len;
-	c[0][0x2d] = sig->selfsig.prefs[1].len;
-	c[0][0x2e] = sig->selfsig.prefs[2].len;
+	c[0][0x2c] = selfsig.prefs[0].len;
+	c[0][0x2d] = selfsig.prefs[1].len;
+	c[0][0x2e] = selfsig.prefs[2].len;
 	c[0][0x2f] = nmpis;
-	E::Convert<uint32_t>(c[0]+0x30, sig->hashed.nsubpkts);
-	E::Convert<uint32_t>(c[0]+0x34, sig->unhashed.nsubpkts);
-	E::Convert<uint32_t>(c[0]+0x38, sig->hashed.len);
-	E::Convert<uint32_t>(c[0]+0x3c, sig->unhashed.len);
+	E::Convert<uint32_t>(c[0]+0x30, hashed.nsubpkts);
+	E::Convert<uint32_t>(c[0]+0x34, unhashed.nsubpkts);
+	E::Convert<uint32_t>(c[0]+0x38, hashed.len);
+	E::Convert<uint32_t>(c[0]+0x3c, unhashed.len);
 
-	memcpy(c[1], sig->hash, 0x40);
+	memcpy(c[1], sig->GetHash(), 0x40);
 
 	size_t off = 2, offset = 0;
-	store_subpackets1(c, &sig->hashed, off, offset);
-	store_subpackets1(c, &sig->unhashed, off, offset);
+	store_subpackets1(c, &hashed, off, offset);
+	store_subpackets1(c, &unhashed, off, offset);
 
-	store_subpackets2(c, &sig->hashed, off);
-	store_subpackets2(c, &sig->unhashed, off);
+	store_subpackets2(c, &hashed, off);
+	store_subpackets2(c, &unhashed, off);
 
-	store_subpackets3(c, &sig->hashed, off);
-	store_subpackets3(c, &sig->unhashed, off);
+	store_subpackets3(c, &hashed, off);
+	store_subpackets3(c, &unhashed, off);
 
 	for (size_t i = 0; i < 3; i++, off++)
-		memcpy(c[off], sig->selfsig.prefs[i].vals,
-				sizeof(sig->selfsig.prefs[i].vals));
+		memcpy(c[off], selfsig.prefs[i].vals,
+				sizeof(selfsig.prefs[i].vals));
 
 	IDConverter idc;
 	for (size_t i = 0; i < nmpis; i++)
-		idc.Add(DrewID(sig->mpi[i].id));
+		idc.Add(DrewID(sig->GetMPIs()[i].GetInternalID()));
 	if (nmpis & 1)
 		idc.Add(DrewID());
 
@@ -605,7 +573,7 @@ static void store_sig(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 }
 
 static void store_uid(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
-		drew_opgp_uid_t uid)
+		const UserID *uid)
 {
 	if (!uid)
 		return;
@@ -616,36 +584,45 @@ static void store_uid(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 	fchunk[0x22] = ks->major;
 	fchunk[0x23] = ks->minor;
 
-	uint32_t nchunks = ROUND(uid->nsigs) + DivideAndRoundUp(uid->len + 1, 0x40);
+	typedef UserID::SignatureStore::const_iterator sigit_t;
+	typedef UserID::SelfSignatureStore::const_iterator ssigit_t;
+	const UserID::SignatureStore &sigstore = uid->GetSignatures();
+	const UserID::SelfSignatureStore &selfsigstore = uid->GetSelfSignatures();
+	uint32_t nchunks = ROUND(sigstore.size()) +
+		DivideAndRoundUp(uid->GetText().size() + 1, 0x40);
 	Chunk *c = new Chunk[nchunks + 1];
 	// Number of subsequent chunks.
 	E::Convert(c[0], nchunks);
-	E::Convert<uint32_t>(c[0]+0x04, uid->nsigs);
-	E::Convert<uint32_t>(c[0]+0x08, uid->nselfsigs);
-	E::Convert<uint32_t>(c[0]+0x0c, uid->len);
+	E::Convert<uint32_t>(c[0]+0x04, sigstore.size());
+	E::Convert<uint32_t>(c[0]+0x08, selfsigstore.size());
+	E::Convert<uint32_t>(c[0]+0x0c, uid->GetText().size());
 
 	IDConverter idc;
-	if (uid->theselfsig && uid->nsigs)
-		idc.Add(DrewID(uid->theselfsig->id));
+	const InternalID &theselfsig = uid->GetPrimarySelfSignature();
+	if (sigstore.size())
+		idc.Add(theselfsig);
 
-	for (size_t i = 0; i < uid->nselfsigs; i++)
-		if (uid->theselfsig != uid->selfsigs[i])
-			idc.Add(DrewID(uid->selfsigs[i]->id));
+	for (ssigit_t it = selfsigstore.begin(); it != selfsigstore.end(); it++)
+		if (theselfsig != *it)
+			idc.Add(*it);
 
-	for (size_t i = 0; i < uid->nsigs; i++) {
+	for (sigit_t it = sigstore.begin(); it != sigstore.end(); it++) {
 		bool found = false;
-		for (size_t j = 0; j < uid->nselfsigs; j++)
-			if (uid->sigs+i == uid->selfsigs[j])
+		for (ssigit_t sit = selfsigstore.begin(); sit != selfsigstore.end();
+				it++)
+			if (it->first == *sit)
 				found = true;
 		if (!found)
-			idc.Add(DrewID(uid->sigs[i].id));
+			idc.Add(it->first);
 	}
-	if (uid->nsigs & 1)
+	if (sigstore.size() & 1)
 		idc.Add(DrewID());
 
-	for (size_t i = ROUND(uid->nsigs) + 1, off = 0; i <= nchunks;
+	const std::string &text = uid->GetText();
+	for (size_t i = ROUND(sigstore.size()) + 1, off = 0; i <= nchunks;
 			i++, off += 0x40)
-		memcpy(c[i], uid->s+off, std::min<size_t>(0x40, (uid->len+1)-off));
+		memcpy(c[i], text.c_str()+off,
+				std::min<size_t>(0x40, (text.size()+1)-off));
 
 	idc.ToChunks(c+1);
 	ks->b->WriteChunks(fchunk, c, nchunks+1);
@@ -698,62 +675,58 @@ static void store_header(drew_opgp_keystore_t ks)
 	ks->b->WriteChunks(chunk, 0, 0);
 }
 
-static int load_pubkey(drew_opgp_keystore_t ks, pubkey_t *pub,
-		drew_opgp_key_t key, const Chunk &kchunk, const Chunk *c,
+static int load_pubkey(drew_opgp_keystore_t ks, PublicKey *pub,
+		Key *key, const Chunk &kchunk, const Chunk *c,
 		size_t nchunks, drew_opgp_id_t missingid)
 {
-	memcpy(pub->id, kchunk, 0x20);
+	pub->SetInternalID(kchunk);
 
-	uint32_t nmpis = 0, npubsubs = 0;
-	pub->state = E::Convert<uint16_t>(c[0]+0x04);
-	pub->ver = c[0][0x05];
-	pub->algo = c[0][0x06];
-	pub->ctime = E::Convert<uint32_t>(c[0]+0x08);
-	pub->etime = E::Convert<uint32_t>(c[0]+0x0c);
-	pub->nuids = E::Convert<uint32_t>(c[0]+0x10);
-	pub->nsigs = E::Convert<uint32_t>(c[0]+0x14);
-	memcpy(pub->keyid, c[0]+0x18, 8);
-	memcpy(pub->fp, c[0]+0x20, (pub->ver == 4 ? 20 : 16));
+	uint32_t nmpis = 0, npubsubs = 0, nuids = 0, nsigs = 0;
+	pub->GetFlags() = E::Convert<uint16_t>(c[0]+0x04);
+	pub->SetVersion(c[0][0x05]);
+	pub->SetAlgorithm(c[0][0x06]);
+	pub->SetCreationTime(E::Convert<uint32_t>(c[0]+0x08));
+	pub->SetExpirationTime(E::Convert<uint32_t>(c[0]+0x0c));
+	nuids = E::Convert<uint32_t>(c[0]+0x10);
+	nsigs = E::Convert<uint32_t>(c[0]+0x14);
+	memcpy(pub->GetKeyID(), c[0]+0x18, 8);
+	memcpy(pub->GetFingerprint(), c[0]+0x20, pub->GetVersion() == 4 ? 20 : 16);
 	npubsubs = E::Convert<uint32_t>(c[0]+0x34);
 	nmpis = E::Convert<uint32_t>(c[0]+0x38);
 
-	pub->uids = (cuid_t *)drew_mem_calloc(pub->nuids, sizeof(*pub->uids));
-	pub->sigs = (csig_t *)drew_mem_calloc(pub->nsigs, sizeof(*pub->sigs));
-	if (key) {
-		key->npubsubs = npubsubs;
-		key->pubsubs = (pubkey_t *)drew_mem_calloc(key->npubsubs,
-				sizeof(*key->pubsubs));
-	}
 	size_t off = 1, offset = 0x00;
-	for (size_t i = 0; i < pub->nuids; i++, offset += 0x20) {
+	for (size_t i = 0; i < nuids; i++, offset += 0x20) {
 		if (offset == 0x40) {
 			off++;
 			offset = 0x00;
 		}
-		Item &item = ks->items[DrewID(c[off]+offset)];
+		DrewID id(c[off]+offset);
+		Item &item = ks->items[id];
 		if (!item.uid) {
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
 			return -DREW_ERR_MORE_INFO;
 		}
-		clone_uid(pub->uids+i, item.uid);
+		if (!i)
+			pub->SetPrimaryUserID(id);
+		pub->GetUserIDs()[id] = *item.uid;
 	}
-	pub->theuid = pub->uids;
 
 	if (offset)
 		off++;
 	offset = 0x00;
 
-	for (size_t i = 0; i < pub->nsigs; i++, offset += 0x20) {
+	for (size_t i = 0; i < nsigs; i++, offset += 0x20) {
 		if (offset == 0x40) {
 			off++;
 			offset = 0x00;
 		}
-		Item &item = ks->items[DrewID(c[off]+offset)];
+		DrewID id(c[off]+offset);
+		Item &item = ks->items[id];
 		if (!item.sig) {
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
 			return -DREW_ERR_MORE_INFO;
 		}
-		clone_sig(pub->sigs+i, item.sig);
+		pub->GetSignatures()[id] = *item.sig;
 	}
 
 	if (offset)
@@ -765,13 +738,13 @@ static int load_pubkey(drew_opgp_keystore_t ks, pubkey_t *pub,
 			off++;
 			offset = 0x00;
 		}
-		Item &item = ks->items[DrewID(c[off]+offset)];
+		DrewID id(c[off]+offset);
+		Item &item = ks->items[id];
 		if (!item.pub) {
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
 			return -DREW_ERR_MORE_INFO;
 		}
-		clone_pubkey(key->pubsubs+i, item.pub, pub);
-		key->pubsubs[i].parent = pub;
+		key->GetPublicKeys().push_back(*item.pub);
 	}
 
 	if (offset)
@@ -789,7 +762,7 @@ static int load_pubkey(drew_opgp_keystore_t ks, pubkey_t *pub,
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
 			return -DREW_ERR_MORE_INFO;
 		}
-		clone_mpi(pub->mpi+i, item.mpi);
+		pub->GetMPIs()[i] = *item.mpi;
 	}
 	return 0;
 }
@@ -797,70 +770,62 @@ static int load_pubkey(drew_opgp_keystore_t ks, pubkey_t *pub,
 static int load_key(drew_opgp_keystore_t ks, const Chunk &kchunk,
 		const Chunk *c, size_t nchunks, drew_opgp_id_t missingid)
 {
-	drew_opgp_key_t key = (drew_opgp_key_t)drew_mem_calloc(1, sizeof(*key));
-	if (!key)
-		return -ENOMEM;
-	RETFAIL(load_pubkey(ks, &key->pub, key, kchunk, c, nchunks, missingid));
-	ks->items[DrewID(key->pub.id)] = Item(key);
+	Key *key = new Key;
+	PublicKey &pub = key->GetPublicMainKey();
+	RETFAIL(load_pubkey(ks, &pub, key, kchunk, c, nchunks, missingid));
+	ks->items[pub.GetInternalID()] = Item(key);
 	return 0;
 }
 
 static int load_subkey(drew_opgp_keystore_t ks, const Chunk &key,
 		const Chunk *c, size_t nchunks, drew_opgp_id_t missingid)
 {
-	pubkey_t *pub = (pubkey_t *)drew_mem_calloc(1, sizeof(*pub));
+	PublicKey *pub = new PublicKey;
 	RETFAIL(load_pubkey(ks, pub, 0, key, c, nchunks, missingid));
-	ks->items[DrewID(pub->id)] = Item(pub);
+	ks->items[pub->GetInternalID()] = Item(pub);
 	return 0;
 }
 
 static int load_uid(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 		size_t nchunks, drew_opgp_id_t missingid)
 {
-	cuid_t *uid = (cuid_t *)drew_mem_calloc(1, sizeof(*uid));
-	if (!uid)
-		return -ENOMEM;
+	UserID *uid = new UserID();
 
-	memcpy(uid->id, key, sizeof(drew_opgp_id_t));
+	uid->SetInternalID(key);
 
-	uid->nsigs = E::Convert<uint32_t>(c[0]+0x04);
-	uid->nselfsigs = E::Convert<uint32_t>(c[0]+0x08);
-	uid->len = E::Convert<uint32_t>(c[0]+0x0c);
-
-	uid->theselfsig = 0;
-	uid->s = (char *)drew_mem_calloc(1, uid->len + 1);
-	uid->sigs = (csig_t *)drew_mem_malloc(uid->nsigs * sizeof(*uid->sigs));
-	uid->selfsigs =
-		(csig_t **)drew_mem_malloc(uid->nselfsigs * sizeof(*uid->selfsigs));
+	uint32_t nsigs = E::Convert<uint32_t>(c[0]+0x04);
+	uint32_t nselfsigs = E::Convert<uint32_t>(c[0]+0x08);
+	uint32_t len = E::Convert<uint32_t>(c[0]+0x0c);
 
 	size_t off = 1, offset = 0x00;
-	for (size_t i = 0; i < uid->nsigs; i++, offset += 0x20) {
+	for (size_t i = 0; i < nsigs; i++, offset += 0x20) {
 		if (offset == 0x40) {
 			off++;
 			offset = 0x00;
 		}
-		Item item = ks->items[DrewID(c[off]+offset)];
+		DrewID id(c[off]+offset);
+		Item item = ks->items[id];
 		if (!item.sig) {
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
 			return -DREW_ERR_MORE_INFO;
 		}
-		clone_sig(uid->sigs+i, item.sig);
+		if (!i)
+			uid->SetPrimarySelfSignature(id);
+		if (i < nselfsigs)
+			uid->GetSelfSignatures().push_back(id);
+		uid->GetSignatures()[id] = *item.sig;
 	}
 	if (offset)
 		off++;
 	offset = 0x00;
 
-	for (size_t i = off; offset < (uid->len+1); i++, offset += 0x40)
-		memcpy(uid->s+offset, c[i],
-				std::min<size_t>(0x40, (uid->len+1)-offset));
+	std::string text;
+	for (size_t i = off; offset < (len+1); i++, offset += 0x40)
+		text.append((const char *)(const uint8_t *)c[i],
+				std::min<size_t>(0x40, (len+1)-offset));
+	text.erase(text.size()-1);
 
-	if (uid->nsigs && uid->nselfsigs)
-		uid->theselfsig = uid->sigs;
-
-	for (size_t i = 0; i < uid->nselfsigs; i++)
-		uid->selfsigs[i] = &uid->sigs[i];
-
-	ks->items[DrewID(uid->id)] = Item(uid);
+	ks->items[uid->GetInternalID()] = Item(uid);
 	return 0;
 }
 
@@ -909,51 +874,52 @@ static void load_subpackets3(drew_opgp_subpacket_group_t *spg, const Chunk *c,
 static int load_sig(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 		size_t nchunks, drew_opgp_id_t missingid)
 {
-	drew_opgp_sig_t sig = (drew_opgp_sig_t)drew_mem_calloc(1, sizeof(*sig));
-	if (!sig)
-		return -ENOMEM;
+	Signature *sig = new Signature;
 
-	memcpy(sig->id, key, sizeof(drew_opgp_id_t));
+	sig->SetInternalID(key);
+
+	selfsig_t &selfsig = sig->GetSelfSignature();
+	drew_opgp_subpacket_group_t &hashed = sig->GetHashedSubpackets();
+	drew_opgp_subpacket_group_t &unhashed = sig->GetUnhashedSubpackets();
 
 	uint32_t nmpis = 0;
 	// Number of subsequent chunks.
-	sig->ver = c[0][0x04];
-	sig->type = c[0][0x05];
-	sig->pkalgo = c[0][0x06];
-	sig->mdalgo = c[0][0x07];
-	sig->ctime = E::Convert<uint32_t>(c[0]+0x08);
-	sig->etime = E::Convert<uint32_t>(c[0]+0x0c);
-	memcpy(sig->keyid, c[0]+0x10, 8);
-	sig->flags = E::Convert<uint32_t>(c[0]+0x18);
-	sig->selfsig.keyflags = E::Convert<uint32_t>(c[0]+0x20);
-	sig->selfsig.keyexp = E::Convert<uint32_t>(c[0]+0x24);
-	sig->left[0] = c[0][0x28];
-	sig->left[1] = c[0][0x29];
+	sig->SetVersion(c[0][0x04]);
+	sig->SetType(c[0][0x05]);
+	sig->SetPublicKeyAlgorithm(c[0][0x06]);
+	sig->SetDigestAlgorithm(c[0][0x07]);
+	sig->SetCreationTime(E::Convert<uint32_t>(c[0]+0x08));
+	sig->SetExpirationTime(E::Convert<uint32_t>(c[0]+0x0c));
+	memcpy(sig->GetKeyID(), c[0]+0x10, 8);
+	sig->GetFlags() = E::Convert<uint32_t>(c[0]+0x18);
+	selfsig.keyflags = E::Convert<uint32_t>(c[0]+0x20);
+	selfsig.keyexp = E::Convert<uint32_t>(c[0]+0x24);
+	sig->GetLeft2()[0] = c[0][0x28];
+	sig->GetLeft2()[1] = c[0][0x29];
 	// Two empty bytes.
-	sig->selfsig.prefs[0].len = c[0][0x2c];
-	sig->selfsig.prefs[1].len = c[0][0x2d];
-	sig->selfsig.prefs[2].len = c[0][0x2e];
+	selfsig.prefs[0].len = c[0][0x2c];
+	selfsig.prefs[1].len = c[0][0x2d];
+	selfsig.prefs[2].len = c[0][0x2e];
 	nmpis = c[0][0x2f];
-	sig->hashed.nsubpkts = E::Convert<uint32_t>(c[0]+0x30);
-	sig->unhashed.nsubpkts = E::Convert<uint32_t>(c[0]+0x34);
-	sig->hashed.len = E::Convert<uint32_t>(c[0]+0x38);
-	sig->unhashed.len = E::Convert<uint32_t>(c[0]+0x3c);
+	hashed.nsubpkts = E::Convert<uint32_t>(c[0]+0x30);
+	unhashed.nsubpkts = E::Convert<uint32_t>(c[0]+0x34);
+	hashed.len = E::Convert<uint32_t>(c[0]+0x38);
+	unhashed.len = E::Convert<uint32_t>(c[0]+0x3c);
 
-	memcpy(sig->hash, c[1], 0x40);
+	memcpy(sig->GetHash(), c[1], 0x40);
 
 	size_t off = 2, offset = 0;
-	load_subpackets1(&sig->hashed, c, off, offset);
-	load_subpackets1(&sig->unhashed, c, off, offset);
+	load_subpackets1(&hashed, c, off, offset);
+	load_subpackets1(&unhashed, c, off, offset);
 
-	load_subpackets2(&sig->hashed, c, off);
-	load_subpackets2(&sig->unhashed, c, off);
+	load_subpackets2(&hashed, c, off);
+	load_subpackets2(&unhashed, c, off);
 
-	load_subpackets3(&sig->hashed, c, off);
-	load_subpackets3(&sig->unhashed, c, off);
+	load_subpackets3(&hashed, c, off);
+	load_subpackets3(&unhashed, c, off);
 
 	for (size_t i = 0; i < 3; i++, off++)
-		memcpy(sig->selfsig.prefs[i].vals, c[off],
-				sizeof(sig->selfsig.prefs[i].vals));
+		memcpy(selfsig.prefs[i].vals, c[off], sizeof(selfsig.prefs[i].vals));
 
 	for (size_t i = 0, offset = 0; i < nmpis; i++, offset += 0x20) {
 		if (offset == 0x40) {
@@ -966,33 +932,29 @@ static int load_sig(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
 			return -DREW_ERR_MORE_INFO;
 		}
-		clone_mpi(sig->mpi+i, item.mpi);
+		sig->GetMPIs()[i] = *item.mpi;
 	}
-	ks->items[DrewID(sig->id)] = Item(sig);
+	ks->items[sig->GetInternalID()] = Item(sig);
 	return 0;
 }
 
 static int load_mpi(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 		size_t nchunks)
 {
-	drew_opgp_mpi_t *mpi;
+	MPI *mpio = new MPI;
+	drew_opgp_mpi_t mpi;
 	size_t nbytes = 0;
 
-	mpi = (drew_opgp_mpi_t *)drew_mem_malloc(sizeof(*mpi));
-	if (!mpi)
-		return -ENOMEM;
-
-	memcpy(mpi->id, key, 0x20);
-	mpi->len = E::Convert<uint32_t>(c[0]+0x04);
+	mpio->SetInternalID(key);
+	mpi.len = E::Convert<uint32_t>(c[0]+0x04);
 	nbytes = E::Convert<uint32_t>(c[0]+0x08);
-	mpi->data = (uint8_t *)drew_mem_malloc(nbytes);
-	if (!mpi->data) {
-		drew_mem_free(mpi);
+	mpi.data = (uint8_t *)drew_mem_malloc(nbytes);
+	if (!mpi.data)
 		return -ENOMEM;
-	}
 	for (size_t i = 1, off = 0; i < nchunks; i++, off += 0x40)
-		memcpy(mpi->data+off, c[i], std::min<size_t>(0x40, nbytes-off));
-	ks->items[DrewID(mpi->id)] = Item(mpi);
+		memcpy(mpi.data+off, c[i], std::min<size_t>(0x40, nbytes-off));
+	mpio->SetMPI(mpi);
+	ks->items[mpio->GetInternalID()] = Item(mpio);
 	return 0;
 }
 
@@ -1106,11 +1068,12 @@ int drew_opgp_keystore_update_sigs(drew_opgp_keystore_t ks,
 		drew_opgp_sig_t *sigs, size_t nsigs, int flags)
 {
 	for (size_t i = 0; i < nsigs; i++) {
-		ks->items[DrewID(sigs[i]->id)] = Item(sigs[i], ITEM_CONSOLIDATED);
-		for (size_t j = 0; j < DREW_OPGP_MAX_MPIS && sigs[i]->mpi[j].len;
+		Signature *sig = reinterpret_cast<Signature *>(sigs[i]);
+		ks->items[sig->GetInternalID()] = Item(*sig);
+		MPI *mpi = sig->GetMPIs();
+		for (size_t j = 0; j < DREW_OPGP_MAX_MPIS && mpi[j].GetByteLength();
 				j++)
-			ks->items[DrewID(sigs[i]->mpi[j].id)] =
-				Item(sigs[i]->mpi+j, ITEM_CONSOLIDATED);
+			ks->items[mpi[j].GetInternalID()] = Item(mpi[j]);
 	}
 	return 0;
 }
@@ -1127,9 +1090,12 @@ int drew_opgp_keystore_update_user_ids(drew_opgp_keystore_t ks,
 		drew_opgp_uid_t *uids, size_t nuids, int flags)
 {
 	for (size_t i = 0; i < nuids; i++) {
-		ks->items[DrewID(uids[i]->id)] = Item(uids[i], ITEM_CONSOLIDATED);
-		for (size_t j = 0; j < uids[i]->nsigs; j++)
-			drew_opgp_keystore_update_sig(ks, uids[i]->sigs+j, flags);
+		UserID *uid = reinterpret_cast<UserID *>(uids[i]);
+		ks->items[uid->GetInternalID()] = Item(*uid);
+		UserID::SignatureStore &sigs = uid->GetSignatures();
+		typedef UserID::SignatureStore::iterator sigit_t;
+		for (sigit_t it = sigs.begin(); it != sigs.end(); it++)
+			drew_opgp_keystore_update_sig(ks, &it->second, flags);
 	}
 	return 0;
 }
@@ -1145,12 +1111,8 @@ extern "C"
 int drew_opgp_keystore_add_keys(drew_opgp_keystore_t ks,
 		drew_opgp_key_t *keys, size_t nkeys, int flags)
 {
-	for (size_t i = 0; i < nkeys; i++) {
-		drew_opgp_key_t key;
-		drew_opgp_key_clone(&key, keys[i]);
-		ks->items.insert(std::pair<DrewID, Item>(DrewID(keys[i]->id),
-					Item(key)));
-	}
+	for (size_t i = 0; i < nkeys; i++)
+		ks->items.insert(std::pair<DrewID, Item>(keys[i]->GetPublicMainKey().GetInternalID(), Item(*keys[i])));
 	return 0;
 }
 
@@ -1162,13 +1124,16 @@ int drew_opgp_keystore_add_key(drew_opgp_keystore_t ks, drew_opgp_key_t key,
 }
 UNEXPORT()
 
-static void update_pubkeys(drew_opgp_keystore_t ks, pubkey_t *pub, int flags)
+static void update_pubkeys(drew_opgp_keystore_t ks, PublicKey *pub, int flags)
 {
-	ks->items[DrewID(pub->id)] = Item(pub);
-	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && pub->mpi[i].len; i++)
-		ks->items[DrewID(pub->mpi[i].id)] = Item(pub->mpi+i, ITEM_CONSOLIDATED);
-	for (size_t i = 0; i < pub->nsigs; i++)
-		drew_opgp_keystore_update_sig(ks, pub->sigs+i, flags);
+	ks->items[pub->GetInternalID()] = Item(pub);
+	MPI *mpi = pub->GetMPIs();
+	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && mpi[i].GetByteLength(); i++)
+		ks->items[mpi[i].GetInternalID()] = Item(mpi[i]);
+	PublicKey::SignatureStore &sigs = pub->GetSignatures();
+	typedef PublicKey::SignatureStore::iterator sigit_t;
+	for (sigit_t it = sigs.begin(); it != sigs.end(); it++)
+		drew_opgp_keystore_update_sig(ks, &it->second, flags);
 }
 
 EXPORT()
@@ -1177,19 +1142,25 @@ int drew_opgp_keystore_update_keys(drew_opgp_keystore_t ks,
 		drew_opgp_key_t *keys, size_t nkeys, int flags)
 {
 	for (size_t i = 0; i < nkeys; i++) {
-		drew_opgp_key_t key;
-		drew_opgp_key_clone(&key, keys[i]);
-		ks->items[DrewID(key->pub.id)] = Item(key);
-		for (size_t j = 0; j < key->npubsubs; j++)
-			update_pubkeys(ks, key->pubsubs+j, flags);
-		for (size_t j = 0; j < key->pub.nuids; j++)
-			drew_opgp_keystore_update_user_id(ks, key->pub.uids+j, flags);
-		for (size_t j = 0; j < key->pub.nsigs; j++)
-			drew_opgp_keystore_update_sig(ks, key->pub.sigs+j, flags);
-		for (size_t j = 0; j < DREW_OPGP_MAX_MPIS && key->pub.mpi[j].len;
-				j++)
-			ks->items[DrewID(key->pub.mpi[j].id)] =
-				Item(key->pub.mpi+j, ITEM_CONSOLIDATED);
+		Key *key = keys[i];
+		PublicKey &pub = key->GetPublicMainKey();
+		ks->items[pub.GetInternalID()] = Item(*key);
+		std::vector<PublicKey> &pubs = key->GetPublicKeys();
+		size_t npubsubs = pubs.size();
+		size_t nmpis = GetNumberOfMPIs(pub);
+		MPI *mpi = pub.GetMPIs();
+		PublicKey::UserIDStore &uidstore = pub.GetUserIDs();
+		PublicKey::SignatureStore &sigstore = pub.GetSignatures();
+		for (size_t j = 0; j < npubsubs; j++)
+			update_pubkeys(ks, &pubs[j], flags);
+		for (PublicKey::UserIDStore::iterator it = uidstore.begin();
+				it != uidstore.end(); it++)
+			drew_opgp_keystore_update_user_id(ks, &it->second, flags);
+		for (PublicKey::SignatureStore::iterator it = sigstore.begin();
+				it != sigstore.end(); it++)
+			drew_opgp_keystore_update_sig(ks, &it->second, flags);
+		for (size_t j = 0; j < nmpis; j++)
+			ks->items[mpi[j].GetInternalID()] = Item(mpi[j]);
 	}
 	return 0;
 }
@@ -1224,9 +1195,12 @@ int drew_opgp_keystore_lookup_by_keyid(drew_opgp_keystore_t ks,
 	size_t nitems = 0;
 	typedef ItemStore::iterator it_t;
 	for (it_t it = ks->items.begin(); it != ks->items.end(); it++) {
-		if (it->second.key && !memcmp(it->second.key->pub.keyid, keyid, 8)) {
+		if (it->second.key) {
+			Key *k = it->second.key;
+			if (memcmp(k->GetPublicMainKey().GetKeyID(), keyid, 8))
+				continue;
 			if (key && nitems < nkeys)
-				key[nitems] = it->second.key;
+				key[nitems] = new Key(*it->second.key);
 			nitems++;
 		}
 	}
@@ -1243,7 +1217,7 @@ int drew_opgp_keystore_get_keys(drew_opgp_keystore_t ks, drew_opgp_key_t *key,
 	for (it_t it = ks->items.begin(); it != ks->items.end(); it++) {
 		if (it->second.key) {
 			if (key && nitems < nkeys)
-				key[nitems] = it->second.key;
+				key[nitems] = new Key(*it->second.key);
 			nitems++;
 		}
 	}
