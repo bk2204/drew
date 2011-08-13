@@ -382,6 +382,11 @@ void clone_subpackets(drew_opgp_subpacket_group_t *nu,
 		const drew_opgp_subpacket_group_t *old)
 {
 	memcpy(nu, old, sizeof(*nu));
+	// Don't fail if there's nothing to copy.
+	if (!nu->len) {
+		memset(nu, 0, sizeof(*nu));
+		return;
+	}
 	if (!(nu->data = (uint8_t *)drew_mem_memdup(nu->data, nu->len)))
 		throw ENOMEM;
 	nu->subpkts = (drew_opgp_subpacket_t *)drew_mem_memdup(nu->subpkts,
