@@ -33,6 +33,7 @@ endif
 CPPFLAGS		+= -Iinclude
 CLIKEFLAGS		+= -Wall -fPIC -O3 -g -pipe -D_POSIX_SOURCE=200112L -D_XOPEN_SOURCE=600
 CLIKEFLAGS		+= -floop-interchange -floop-block
+CLIKEFLAGS		+= -fvisibility=hidden
 CLIKEFLAGS		+= ${CFLAGS-y}
 CXXFLAGS		:= ${CLIKEFLAGS}
 CFLAGS			:= ${CLIKEFLAGS}
