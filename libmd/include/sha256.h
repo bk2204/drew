@@ -23,15 +23,24 @@
 
 DREW_LIBMD_HASH_STRUCT(SHA2_CTX, uint32_t, SHA256_DIGEST_LENGTH, SHA256_BLOCK_LENGTH);
 
+DREW_SYM_PUBLIC
 void SHA256Init(SHA2_CTX *ctx);
+DREW_SYM_PUBLIC
 void SHA256Update(SHA2_CTX *ctx, const uint8_t *data, size_t len);
+DREW_SYM_PUBLIC
 void SHA256Pad(SHA2_CTX *ctx);
+DREW_SYM_PUBLIC
 void SHA256Final(uint8_t digest[SHA256_DIGEST_LENGTH], SHA2_CTX *ctx);
+DREW_SYM_PUBLIC
 void SHA256Transform(uint32_t *state, const uint8_t block[SHA256_BLOCK_LENGTH]);
 
+DREW_SYM_PUBLIC
 char *SHA256End(SHA2_CTX *ctx, char *buf);
+DREW_SYM_PUBLIC
 char *SHA256File(const char *filename, char *buf);
+DREW_SYM_PUBLIC
 char *SHA256FileChunk(const char *filename, char *buf, off_t off, off_t len);
+DREW_SYM_PUBLIC
 char *SHA256Data(const uint8_t *data, size_t len, char *buf);
 
 #endif

@@ -93,21 +93,32 @@ typedef struct drew_loader_s drew_loader_t;
 /* Retained for compatibility. */
 #define DREW_ERR_VERIFY_FAILED	DREW_ERR_FAILED
 
+DREW_SYM_PUBLIC
 int drew_loader_new(drew_loader_t **ldr);
+DREW_SYM_PUBLIC
 int drew_loader_free(drew_loader_t **ldr);
+DREW_SYM_PUBLIC
 int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
 		const char *path);
+DREW_SYM_PUBLIC
 int drew_loader_get_nplugins(const drew_loader_t *ldr, int id);
+DREW_SYM_PUBLIC
 int drew_loader_get_type(const drew_loader_t *ldr, int id);
+DREW_SYM_PUBLIC
 int drew_loader_get_functbl(const drew_loader_t *ldr, int id, const void **tbl);
+DREW_SYM_PUBLIC
 int drew_loader_get_algo_name(const drew_loader_t *ldr, int id,
 		const char **namep);
+DREW_SYM_PUBLIC
 int drew_loader_lookup_by_name(const drew_loader_t *ldr, const char *name,
 		int start, int end);
+DREW_SYM_PUBLIC
 int drew_loader_lookup_by_type(const drew_loader_t *ldr, int type, int start,
 		int end);
+DREW_SYM_PUBLIC
 int drew_loader_get_metadata(const drew_loader_t *ldr, int id, int item,
 		drew_metadata_t *meta);
+DREW_SYM_PUBLIC
 int drew_loader_get_search_path(const drew_loader_t *ldr, int num,
 		const char **p);
 

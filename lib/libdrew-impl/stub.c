@@ -14,6 +14,7 @@
 
 #define DIM(x) (sizeof(x)/sizeof((x)[0]))
 
+DREW_SYM_PUBLIC
 int drew_plugin_info(void *ldr, int op, int id, void *p)
 {
 	int plugcnt = 0;

@@ -23,16 +23,25 @@
 
 DREW_LIBMD_HASH_STRUCT(RMD160_CTX, uint32_t, RMD160_DIGEST_LENGTH, RMD160_BLOCK_LENGTH);
 
+DREW_SYM_PUBLIC
 void RMD160Init(RMD160_CTX *ctx);
+DREW_SYM_PUBLIC
 void RMD160Update(RMD160_CTX *ctx, const uint8_t *data, size_t len);
+DREW_SYM_PUBLIC
 void RMD160Pad(RMD160_CTX *ctx);
+DREW_SYM_PUBLIC
 void RMD160Final(uint8_t digest[RMD160_DIGEST_LENGTH], RMD160_CTX *ctx);
+DREW_SYM_PUBLIC
 void RMD160Transform(uint32_t state[5],
 		const uint8_t block[RMD160_BLOCK_LENGTH]);
 
+DREW_SYM_PUBLIC
 char *RMD160End(RMD160_CTX *ctx, char *buf);
+DREW_SYM_PUBLIC
 char *RMD160File(const char *filename, char *buf);
+DREW_SYM_PUBLIC
 char *RMD160FileChunk(const char *filename, char *buf, off_t off, off_t len);
+DREW_SYM_PUBLIC
 char *RMD160Data(const uint8_t *data, size_t len, char *buf);
 
 #endif
