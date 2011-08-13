@@ -30,7 +30,6 @@ EXPORT()
 UNEXPORT()
 
 #include "structs.h"
-#include "misc.h"
 
 #define CHUNKSZ	64
 
