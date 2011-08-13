@@ -67,16 +67,22 @@ struct Item
 		flags(0) {}
 	Item(const Item &other)
 	{
-		if (other.key)
-			key = new Key(*other.key);
-		if (other.sig)
-			sig = new Signature(*other.sig);
-		if (other.uid)
-			uid = new UserID(*other.uid);
-		if (other.pub)
-			pub = new PublicKey(*other.pub);
-		if (other.mpi)
-			mpi = new MPI(*other.mpi);
+		type = other.type;
+		key = other.key ? new Key(*other.key) : 0;
+		sig = other.sig ? new Signature(*other.sig) : 0;
+		uid = other.uid ? new UserID(*other.uid) : 0;
+		pub = other.pub ? new PublicKey(*other.pub) : 0;
+		mpi = other.mpi ? new MPI(*other.mpi) : 0;
+	}
+	Item &operator=(const Item &other)
+	{
+		type = other.type;
+		key = other.key ? new Key(*other.key) : 0;
+		sig = other.sig ? new Signature(*other.sig) : 0;
+		uid = other.uid ? new UserID(*other.uid) : 0;
+		pub = other.pub ? new PublicKey(*other.pub) : 0;
+		mpi = other.mpi ? new MPI(*other.mpi) : 0;
+		return *this;
 	}
 	~Item()
 	{
