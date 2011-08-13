@@ -264,6 +264,7 @@ class FileBackend : public Backend
 struct drew_opgp_keystore_s {
 	int major, minor;
 	int flags;
+	const drew_loader_t *ldr;
 	Backend *b;
 	ItemStore items;
 };
@@ -290,6 +291,7 @@ int drew_opgp_keystore_new(drew_opgp_keystore_t *ksp, const drew_loader_t *ldr)
 	if (!ks)
 		return -ENOMEM;
 
+	ks->ldr = ldr;
 	ks->major = 0x00;
 	ks->minor = 0x01;
 	ks->b = 0;
@@ -772,6 +774,8 @@ static int load_key(drew_opgp_keystore_t ks, const Chunk &kchunk,
 {
 	Key *key = new Key;
 	PublicKey &pub = key->GetPublicMainKey();
+	key->SetLoader(ks->ldr);
+	pub.SetLoader(ks->ldr);
 	RETFAIL(load_pubkey(ks, &pub, key, kchunk, c, nchunks, missingid));
 	ks->items[pub.GetInternalID()] = Item(key);
 	return 0;
@@ -781,6 +785,7 @@ static int load_subkey(drew_opgp_keystore_t ks, const Chunk &key,
 		const Chunk *c, size_t nchunks, drew_opgp_id_t missingid)
 {
 	PublicKey *pub = new PublicKey;
+	pub->SetLoader(ks->ldr);
 	RETFAIL(load_pubkey(ks, pub, 0, key, c, nchunks, missingid));
 	ks->items[pub->GetInternalID()] = Item(pub);
 	return 0;
@@ -791,6 +796,7 @@ static int load_uid(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 {
 	UserID *uid = new UserID();
 
+	uid->SetLoader(ks->ldr);
 	uid->SetInternalID(key);
 
 	uint32_t nsigs = E::Convert<uint32_t>(c[0]+0x04);
@@ -876,6 +882,7 @@ static int load_sig(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 {
 	Signature *sig = new Signature;
 
+	sig->SetLoader(ks->ldr);
 	sig->SetInternalID(key);
 
 	selfsig_t &selfsig = sig->GetSelfSignature();
@@ -945,6 +952,7 @@ static int load_mpi(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 	drew_opgp_mpi_t mpi;
 	size_t nbytes = 0;
 
+	mpio->SetLoader(ks->ldr);
 	mpio->SetInternalID(key);
 	mpi.len = E::Convert<uint32_t>(c[0]+0x04);
 	nbytes = E::Convert<uint32_t>(c[0]+0x08);
