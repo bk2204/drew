@@ -1,0 +1,132 @@
+#include "internal.h"
+
+#include <string.h>
+
+#include <drew/drew.h>
+#include <drew/plugin.h>
+
+#include <drew-opgp/drew-opgp.h>
+
+#include "structs.h"
+
+struct hash_algos {
+	const char *algoname;
+	size_t len;
+	size_t prefixlen;
+	uint8_t prefix[32];
+};
+
+static const struct hash_algos hashes[] = {
+	{
+		NULL, 0, 0, {}
+	},
+	{
+		"MD5", 16, 18, {
+			0x30, 0x20, 0x30, 0x0c, 0x06, 0x08, 0x2a, 0x86,
+			0x48, 0x86, 0xf7, 0x0d, 0x02, 0x05, 0x05, 0x00,
+			0x04, 0x10
+		}
+	},
+	{
+		"SHA-1", 20, 15, {
+			0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2b, 0x0e,
+			0x03, 0x02, 0x1a, 0x05, 0x00, 0x04, 0x14
+		}
+	},
+	{
+		"RIPEMD-160", 20, 15, {
+			0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2b, 0x24,
+			0x03, 0x02, 0x01, 0x05, 0x00, 0x04, 0x14
+		}
+	},
+	{
+		NULL, 0, 0, {}
+	},
+	{
+		"MD2", 16, 18, {
+			0x30, 0x20, 0x30, 0x0c, 0x06, 0x08, 0x2a, 0x86,
+			0x48, 0x86, 0xf7, 0x0d, 0x02, 0x02, 0x05, 0x00,
+			0x04, 0x10
+		}
+	},
+	{
+		"Tiger", 24, 0, {}
+	},
+	{
+		NULL, 0, 0, {}
+	},
+	{
+		"SHA-256", 32, 19, {
+			0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86,
+			0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05,
+			0x00, 0x04, 0x20
+		}
+	},
+	{
+		"SHA-384", 32, 19, {
+			0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86,
+			0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, 0x05,
+			0x00, 0x04, 0x30
+		}
+	},
+	{
+		"SHA-512", 64, 19, {
+			0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86,
+			0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x05,
+			0x00, 0x04, 0x40
+		}
+	},
+	{
+		"SHA-224", 28, 19, {
+			0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86,
+			0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x04, 0x05,
+			0x00, 0x04, 0x1c
+		}
+	}
+};
+
+// TODO: limit the algorithms based on the standards specified in ctx.
+int drew_opgp_algo_hash_lookup(drew_opgp_t ctx, int algo,
+		drew_hash_t *hash, const char **name, size_t *len,
+		const uint8_t **prefix, size_t *prefixlen)
+{
+	if (algo == -1)
+		return DIM(hashes);
+	else if (algo < 0)
+		return -DREW_ERR_INVALID;
+	else if (algo >= DIM(hashes))
+		return -DREW_ERR_INVALID;
+
+	if (!hashes[algo].algoname)
+		return -DREW_ERR_INVALID;
+	if (!hashes[algo].prefixlen)
+		return -DREW_ERR_NOT_IMPL;
+
+	if (name)
+		*name = hashes[algo].algoname;
+	if (len)
+		*len = hashes[algo].len;
+	if (prefix)
+		*prefix = hashes[algo].prefix;
+	if (prefixlen)
+		*prefixlen = hashes[algo].prefixlen;
+	if (hash) {
+		int id = 0, res = 0;
+		const void *tbl = NULL;
+		const drew_loader_t *ldr = ctx->ldr;
+
+		hash->ctx = NULL;
+	
+		id = drew_loader_lookup_by_name(ldr, hashes[algo].algoname, 0, -1);
+		if (id == -DREW_ERR_NONEXISTENT)
+			return -DREW_OPGP_ERR_NO_SUCH_ALGO;
+		else if (id < 0)
+			return id;	
+		res = drew_loader_get_functbl(ldr, id, &tbl);
+		if (res < 0)
+			return res;
+		hash->functbl = (const drew_hash_functbl_t *)tbl;
+		RETFAIL(hash->functbl->init(hash, 0, ldr, NULL));
+	}
+	return 0;
+}

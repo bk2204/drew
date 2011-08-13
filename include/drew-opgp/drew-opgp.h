@@ -1,6 +1,10 @@
 #ifndef DREW_OPGP_H
 #define DREW_OPGP_H
 
+#include <stdint.h>
+
+#include <drew/hash.h>
+
 // The header information is corrupt.
 #define DREW_OPGP_ERR_INVALID_HEADER	0x20001
 #define DREW_OPGP_ERR_INVALID			0x20001
@@ -53,7 +57,7 @@ struct drew_opgp_s;
 typedef struct drew_opgp_s *drew_opgp_t;
 
 int drew_opgp_algo_hash_lookup(drew_opgp_t ctx, int algo,
-		drew_hash_t *hash, const char **name, size_t *len, uint8_t *prefix,
-		size_t *prefixlen);
+		drew_hash_t *hash, const char **name, size_t *len,
+		const uint8_t **prefix, size_t *prefixlen);
 
 #endif

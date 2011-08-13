@@ -5,6 +5,7 @@
 
 #include <drew/drew.h>
 #include <drew/hash.h>
+#include <drew/prng.h>
 #include <drew/plugin.h>
 
 #include <drew-opgp/drew-opgp.h>

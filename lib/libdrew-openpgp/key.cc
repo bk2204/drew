@@ -235,7 +235,7 @@ inline static void hash_u32(drew_hash_t *hash, uint32_t x)
 drew::Hash::Hash(const drew_loader_t *l, int algoid)
 {
 	drew_opgp_s ctx;
-	ctx->ldr = l;
+	ctx.ldr = l;
 
 	NTHROWFAIL(drew_opgp_algo_hash_lookup(&ctx, algoid, &hash, 0, 0, 0, 0));
 }
@@ -272,30 +272,38 @@ void drew::Hash::Final(uint8_t *digest)
 }
 const char *drew::Hash::GetAlgorithmName(int algo)
 {
-	if (algo < 0 || algo > int(DIM(hashes)))
-		throw DREW_ERR_INVALID;
-	return hashes[algo].algoname;
+	drew_opgp_s ctx;
+	const char *p;
+	
+	NTHROWFAIL(drew_opgp_algo_hash_lookup(&ctx, algo, 0, &p, 0, 0, 0));
+	return p;
 }
 
 size_t drew::Hash::GetAlgorithmLength(int algo)
 {
-	if (algo < 0 || algo > int(DIM(hashes)))
-		throw DREW_ERR_INVALID;
-	return hashes[algo].len;
+	drew_opgp_s ctx;
+	size_t sz;
+
+	NTHROWFAIL(drew_opgp_algo_hash_lookup(&ctx, algo, 0, 0, &sz, 0, 0));
+	return sz;
 }
 
 size_t drew::Hash::GetAlgorithmPrefixLength(int algo)
 {
-	if (algo < 0 || algo > int(DIM(hashes)))
-		throw DREW_ERR_INVALID;
-	return hashes[algo].prefixlen;
+	drew_opgp_s ctx;
+	size_t sz;
+
+	NTHROWFAIL(drew_opgp_algo_hash_lookup(&ctx, algo, 0, 0, 0, 0, &sz));
+	return sz;
 }
 
 const uint8_t *drew::Hash::GetAlgorithmPrefix(int algo)
 {
-	if (algo < 0 || algo > int(DIM(hashes)))
-		throw DREW_ERR_INVALID;
-	return hashes[algo].prefix;
+	drew_opgp_s ctx;
+	const uint8_t *prefix;
+
+	NTHROWFAIL(drew_opgp_algo_hash_lookup(&ctx, algo, 0, 0, 0, &prefix, 0));
+	return prefix;
 }
 
 drew::MPI::MPI()

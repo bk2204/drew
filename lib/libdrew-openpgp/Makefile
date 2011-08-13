@@ -3,6 +3,7 @@ DREW_OPGP_SONAME	:= libdrew-openpgp.so.0
 DREW_OPGP_SYMLINK	:= $(basename $(DREW_OPGP_SONAME))
 
 DREW_OPGP_OBJS		+= parser.o
+DREW_OPGP_OBJS		+= algo.o
 DREW_OPGP_OBJS		+= key.o
 DREW_OPGP_OBJS		+= sig.o
 DREW_OPGP_OBJS		+= keystore.o
