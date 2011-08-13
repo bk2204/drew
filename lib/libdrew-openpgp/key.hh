@@ -43,6 +43,10 @@ struct InternalID
 	{
 		memcpy(this->id, idp, sizeof(this->id));
 	}
+	InternalID(const InternalID &idp)
+	{
+		memcpy(this->id, idp.id, sizeof(this->id));
+	}
 	bool operator <(const InternalID & kid) const
 	{
 		return memcmp(this->id, kid.id, sizeof(this->id)) < 0;
@@ -112,6 +116,11 @@ class Identifiable
 		Identifiable(const Identifiable &other)
 		{
 			SetInternalID(other.id);
+		}
+		Identifiable &operator=(const Identifiable &other)
+		{
+			SetInternalID(other.id);
+			return *this;
 		}
 		const InternalID &GetInternalID() const
 		{
@@ -192,6 +201,7 @@ struct drew_opgp_sig_s : public Identifiable, public ContainsLoader
 		drew_opgp_sig_s();
 		drew_opgp_sig_s(const drew_opgp_sig_s &);
 		~drew_opgp_sig_s();
+		drew_opgp_sig_s &operator=(const drew_opgp_sig_s &);
 		void SetCreationTime(time_t);
 		time_t GetCreationTime() const;
 		void SetExpirationTime(time_t);
@@ -281,6 +291,9 @@ struct drew_opgp_pubkey_s : public Identifiable, public ContainsLoader
 		drew_opgp_pubkey_s();
 		drew_opgp_pubkey_s(bool is_main);
 		drew_opgp_pubkey_s(const drew_opgp_pubkey_s &);
+		drew_opgp_pubkey_s &operator=(const drew_opgp_pubkey_s &);
+		void SetIsMainPublicKey(bool);
+		bool IsMainPublicKey() const;
 		void AddUserID(const UserID &);
 		void AddSignature(const Signature &);
 		void Merge(const PublicKey &);

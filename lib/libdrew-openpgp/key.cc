@@ -376,6 +376,7 @@ void drew::MPI::GenerateID()
 	hash.Update(mpi.len);
 	hash.Update(mpi.data, GetByteLength());
 	hash.Final(id);
+	memcpy(&mpi.id, id, sizeof(mpi.id));
 }
 
 void clone_subpackets(drew_opgp_subpacket_group_t *nu,
@@ -413,8 +414,17 @@ drew::Signature::drew_opgp_sig_s()
 	memset(&selfsig, 0, sizeof(selfsig));
 	memset(&hashed, 0, sizeof(hashed));
 	memset(&unhashed, 0, sizeof(unhashed));
-	etime = -1;
 	flags = 0;
+	ver = 0;
+	type = 0;
+	pkalgo = 0;
+	mdalgo = 0;
+	ctime = 0;
+	etime = -1;
+	memset(&keyid, 0, sizeof(keyid));
+	memset(&left, 0, sizeof(left));
+	memset(&hash, 0, sizeof(hash));
+	ldr = 0;
 }
 
 drew::Signature::drew_opgp_sig_s(const drew_opgp_sig_s &other)
@@ -433,6 +443,7 @@ drew::Signature::drew_opgp_sig_s(const drew_opgp_sig_s &other)
 	etime = other.etime;
 	memcpy(&keyid, &other.keyid, sizeof(keyid));
 	memcpy(&left, other.left, sizeof(left));
+	memcpy(&hash, other.hash, sizeof(hash));
 	ldr = other.ldr;
 }
 
@@ -440,6 +451,26 @@ drew::Signature::~drew_opgp_sig_s()
 {
 	free_subpackets(&hashed);
 	free_subpackets(&unhashed);
+}
+
+drew::Signature &drew::Signature::operator=(const Signature &other)
+{
+	memcpy(&selfsig, &other.selfsig, sizeof(selfsig));
+	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++)
+		mpi[i] = other.mpi[i];
+	clone_subpackets(&hashed, &other.hashed);
+	clone_subpackets(&unhashed, &other.unhashed);
+	flags = other.flags;
+	ver = other.ver;
+	type = other.type;
+	pkalgo = other.pkalgo;
+	mdalgo = other.mdalgo;
+	ctime = other.ctime;
+	etime = other.etime;
+	memcpy(&keyid, &other.keyid, sizeof(keyid));
+	memcpy(&left, other.left, sizeof(left));
+	ldr = other.ldr;
+	return *this;
 }
 
 void drew::Signature::SetCreationTime(time_t t)
@@ -817,6 +848,7 @@ drew::PublicKey::drew_opgp_pubkey_s(bool is_main) : main(is_main), flags(0)
 
 drew::PublicKey::drew_opgp_pubkey_s(const drew_opgp_pubkey_s &pub)
 {
+	main = pub.main;
 	ldr = pub.ldr;
 	flags = pub.flags;
 	ver = pub.ver;
@@ -832,6 +864,25 @@ drew::PublicKey::drew_opgp_pubkey_s(const drew_opgp_pubkey_s &pub)
 	sigs = pub.sigs;
 }
 
+drew::PublicKey &drew::PublicKey::operator=(const PublicKey &pub)
+{
+	main = pub.main;
+	ldr = pub.ldr;
+	flags = pub.flags;
+	ver = pub.ver;
+	algo = pub.algo;
+	ctime = pub.ctime;
+	etime = pub.etime;
+	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++)
+		mpi[i] = pub.mpi[i];
+	memcpy(&keyid, &pub.keyid, sizeof(keyid));
+	memcpy(&fp, &pub.fp, sizeof(fp));
+	theuid = pub.theuid;
+	uids = pub.uids;
+	sigs = pub.sigs;
+	return *this;
+}
+
 void drew::PublicKey::AddUserID(const UserID &uid)
 {
 	uids[uid.GetInternalID()] = uid;
@@ -840,6 +891,16 @@ void drew::PublicKey::AddUserID(const UserID &uid)
 void drew::PublicKey::AddSignature(const Signature &sig)
 {
 	sigs[sig.GetInternalID()] = sig;
+}
+
+void drew::PublicKey::SetIsMainPublicKey(bool is_main)
+{
+	main = is_main;
+}
+
+bool drew::PublicKey::IsMainPublicKey() const
+{
+	return main;
 }
 
 void drew::PublicKey::Merge(const PublicKey &pub)
@@ -1310,6 +1371,7 @@ static int public_load_public(drew::PublicKey &pub,
 	using namespace drew;
 	int ver;
 	pub.SetVersion(ver = pkt->data.pubkey.ver);
+	pub.SetIsMainPublicKey(true);
 	if (ver < 2)
 		return -DREW_OPGP_ERR_BAD_KEY_FORMAT;
 	else if (ver < 4) {
@@ -1317,16 +1379,20 @@ static int public_load_public(drew::PublicKey &pub,
 		pub.SetCreationTime(pk->ctime);
 		pub.SetAlgorithm(pk->pkalgo);
 		pub.SetExpirationTime(pk->valid_days * 86400 + pk->ctime);
-		for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++)
+		for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++) {
 			pub.GetMPIs()[i] = MPI(pk->mpi[i]);
+			pub.GetMPIs()[i].SetLoader(pub.GetLoader());
+		}
 	}
 	else {
 		const drew_opgp_packet_pubkeyv4_t *pk = &pkt->data.pubkey.data.pubkeyv4;
 		pub.SetCreationTime(pk->ctime);
 		pub.SetAlgorithm(pk->pkalgo);
 		pub.SetExpirationTime(-1);
-		for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++)
+		for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++) {
 			pub.GetMPIs()[i] = MPI(pk->mpi[i]);
+			pub.GetMPIs()[i].SetLoader(pub.GetLoader());
+		}
 	}
 	return 0;
 }
@@ -1356,16 +1422,20 @@ static int public_load_sig(drew::Signature &sig,
 		sig.SetCreationTime(s3->ctime);
 		memcpy(sig.GetKeyID(), s3->keyid, 8);
 		memcpy(sig.GetLeft2(), s3->left, 2);
-		for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++)
+		for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++) {
 			sig.GetMPIs()[i] = MPI(s3->mpi[i]);
+			sig.GetMPIs()[i].SetLoader(sig.GetLoader());
+		}
 	}
 	else {
 		const drew_opgp_packet_sigv4_t *s4 = &s->data.sigv4;
 		sig.SetType(s4->type);
 		sig.SetPublicKeyAlgorithm(s4->pkalgo);
 		sig.SetDigestAlgorithm(s4->mdalgo);
-		for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++)
+		for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++) {
 			sig.GetMPIs()[i] = MPI(s4->mpi[i]);
+			sig.GetMPIs()[i].SetLoader(sig.GetLoader());
+		}
 		clone_subpackets(&sig.GetHashedSubpackets(), &s4->hashed);
 		clone_subpackets(&sig.GetUnhashedSubpackets(), &s4->unhashed);
 		memcpy(sig.GetLeft2(), s4->left, 2);
@@ -1457,6 +1527,7 @@ static int public_load_subkey(drew::Key &key, const drew_opgp_packet_t *pkt)
 
 	pub.SetLoader(key.GetLoader());
 	RETFAIL(public_load_public(pub, pkt));
+	pub.SetIsMainPublicKey(false);
 	key.GetPublicKeys().push_back(pub);
 	return 0;
 }

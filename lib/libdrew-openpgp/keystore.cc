@@ -783,6 +783,7 @@ static int load_key(drew_opgp_keystore_t ks, const Chunk &kchunk,
 	key->SetLoader(ks->ldr);
 	pub.SetLoader(ks->ldr);
 	RETFAIL(load_pubkey(ks, &pub, key, kchunk, c, nchunks, missingid));
+	pub.SetIsMainPublicKey(true);
 	ks->items[pub.GetInternalID()] = Item(key);
 	return 0;
 }
@@ -793,6 +794,7 @@ static int load_subkey(drew_opgp_keystore_t ks, const Chunk &key,
 	PublicKey *pub = new PublicKey;
 	pub->SetLoader(ks->ldr);
 	RETFAIL(load_pubkey(ks, pub, 0, key, c, nchunks, missingid));
+	pub->SetIsMainPublicKey(false);
 	ks->items[pub->GetInternalID()] = Item(pub);
 	return 0;
 }
