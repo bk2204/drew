@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <drew/drew.h>
 #include <drew/hash.h>
 #include <drew/plugin.h>
 

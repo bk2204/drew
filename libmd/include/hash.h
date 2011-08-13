@@ -14,6 +14,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <drew/drew.h>
+
 /* This structure is only here for size purposes.  Do not access its members. */
 #define DREW_LIBMD_HASH_STRUCT(name, quant, dlen, blen) \
 typedef struct name { \

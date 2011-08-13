@@ -4,6 +4,7 @@
  * it.  However, a credit in the documentation, although not required, would be
  * appreciated.
  */
+#include <drew/drew.h>
 #include <drew/plugin.h>
 
 #include <errno.h>

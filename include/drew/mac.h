@@ -25,8 +25,9 @@
 #include <errno.h>
 #include <stdint.h>
 
-#include "param.h"
-#include "plugin.h"
+#include <drew/drew.h>
+#include <drew/param.h>
+#include <drew/plugin.h>
 
 /* The ABI version of the hash interface. */
 #define DREW_MAC_VERSION 0 /* Not implemented. */

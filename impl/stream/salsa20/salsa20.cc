@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include <internal.h>
+#include <drew/drew.h>
 #include <drew/plugin.h>
 #include <drew/stream.h>
 #include "salsa20.hh"

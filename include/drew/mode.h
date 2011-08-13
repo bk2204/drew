@@ -25,9 +25,10 @@
 #include <errno.h>
 #include <stdint.h>
 
-#include "block.h"
-#include "param.h"
-#include "plugin.h"
+#include <drew/block.h>
+#include <drew/drew.h>
+#include <drew/param.h>
+#include <drew/plugin.h>
 
 #define DREW_MODE_ALIGNMENT 16
 #if DREW_BLOCK_ALIGNMENT != DREW_MODE_ALIGNMENT

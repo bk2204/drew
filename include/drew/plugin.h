@@ -22,6 +22,8 @@
 #ifndef DREW_PLUGIN_H
 #define DREW_PLUGIN_H
 
+#include <drew/drew.h>
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
