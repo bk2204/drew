@@ -358,7 +358,7 @@ void drew::MPI::SetMPI(const drew_opgp_mpi_t &other)
 {
 	mpi.len = other.len;
 	mpi.data = (uint8_t *)((other.data) ?
-			drew_mem_memdup(other.data, other.len) : 0);
+			drew_mem_memdup(other.data, (other.len + 7) / 8) : 0);
 	memcpy(&mpi.id, &other.id, sizeof(mpi.id));
 	SetInternalID(other.id);
 }
