@@ -280,7 +280,6 @@ struct drew_opgp_pubkey_s : public Identifiable, public ContainsLoader
 		drew_opgp_pubkey_s();
 		drew_opgp_pubkey_s(bool is_main);
 		drew_opgp_pubkey_s(const drew_opgp_pubkey_s &);
-		~drew_opgp_pubkey_s();
 		void AddUserID(const UserID &);
 		void AddSignature(const Signature &);
 		void Merge(const PublicKey &);
