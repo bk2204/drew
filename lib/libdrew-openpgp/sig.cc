@@ -16,6 +16,7 @@
 #include <drew-opgp/drew-opgp.h>
 #include <drew-opgp/key.h>
 #include <drew-opgp/parser.h>
+#include <drew-opgp/sig.h>
 
 #include "key.hh"
 
