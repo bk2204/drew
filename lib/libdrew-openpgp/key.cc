@@ -910,7 +910,17 @@ const uint8_t *drew::PublicKey::GetKeyID() const
 	return keyid;
 }
 
+uint8_t *drew::PublicKey::GetKeyID()
+{
+	return keyid;
+}
+
 const uint8_t *drew::PublicKey::GetFingerprint() const
+{
+	return fp;
+}
+
+uint8_t *drew::PublicKey::GetFingerprint()
 {
 	return fp;
 }
@@ -944,6 +954,11 @@ void drew::PublicKey::CalculateFingerprintV4()
 }
 
 const drew::MPI *drew::PublicKey::GetMPIs() const
+{
+	return mpi;
+}
+
+drew::MPI *drew::PublicKey::GetMPIs()
 {
 	return mpi;
 }
