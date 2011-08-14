@@ -660,6 +660,7 @@ int drew::Signature::ValidateSignature(const PublicKey &pub, bool is_selfsig)
 void drew::Signature::SynchronizeUserIDSignature(const PublicKey &pub,
 		const UserID &uid, int f)
 {
+	GenerateID();
 	if (ver < 2 || ver > 4)
 		flags |= DREW_OPGP_SIGNATURE_IGNORED;
 	if (type == 0x30) {
@@ -686,7 +687,6 @@ void drew::Signature::SynchronizeUserIDSignature(const PublicKey &pub,
 		mpi[i].SetLoader(ldr);
 		mpi[i].GenerateID();
 	}
-	GenerateID();
 }
 
 void drew::Signature::Synchronize(int f)
@@ -1424,8 +1424,8 @@ static int public_load_uid(drew::PublicKey &pub, const drew_opgp_packet_t *pkt)
 	const drew_opgp_packet_data_t *d = &pkt->data.data;
 
 	uid.SetLoader(pub.GetLoader());
-	uid.GenerateID(pub);
 	uid.SetText(d->data, d->len);
+	uid.GenerateID(pub);
 	pub.GetUserIDs()[uid.GetInternalID()]= uid;
 	return 0;
 }
@@ -1511,6 +1511,7 @@ static int public_load_direct_sig(drew::PublicKey &pub,
 
 	sig.SetLoader(pub.GetLoader());
 	RETFAIL(public_load_sig(sig, s));
+	sig.GenerateID();
 	pub.AddSignature(sig);
 	return 0;
 }
@@ -1528,6 +1529,7 @@ static int public_load_uid_sig(drew::PublicKey &pub,
 
 	sig.SetLoader(pub.GetLoader());
 	RETFAIL(public_load_sig(sig, s));
+	sig.GenerateID();
 	uid.AddSignature(sig);
 	return 0;
 }
