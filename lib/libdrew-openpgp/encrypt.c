@@ -13,9 +13,6 @@
 
 #include "structs.h"
 
-struct drew_opgp_s;
-typedef struct drew_opgp_s *drew_opgp_t;
-
 static int get_key_length(int skalgo)
 {
 	switch (skalgo) {
