@@ -71,6 +71,13 @@ struct InternalID
 	{
 		return memcmp(this->id, kid.id, sizeof(this->id));
 	}
+	operator bool() const
+	{
+		for (size_t i = 0; i < sizeof(id); i++)
+			if (!id[i])
+				return true;
+		return false;
+	}
 	void Reset()
 	{
 		memset(id, 0, sizeof(id));

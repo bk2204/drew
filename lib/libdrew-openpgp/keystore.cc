@@ -391,7 +391,7 @@ static void store_pubkey(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 	typedef PublicKey::UserIDStore::const_iterator uidit_t;
 	typedef PublicKey::SignatureStore::const_iterator sigit_t;
 	// Write the primary UID ID first, followed by the others.
-	if (uidstore.size())
+	if (uidstore.size() && pub.GetPrimaryUserID())
 		idc.Add(pub.GetPrimaryUserID());
 	for (uidit_t it = uidstore.begin(); it != uidstore.end(); it++)
 		if (pub.GetPrimaryUserID() != it->first)
@@ -607,7 +607,7 @@ static void store_uid(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 
 	IDConverter idc;
 	const InternalID &theselfsig = uid->GetPrimarySelfSignature();
-	if (sigstore.size())
+	if (theselfsig && sigstore.size())
 		idc.Add(theselfsig);
 
 	for (ssigit_t it = selfsigstore.begin(); it != selfsigstore.end(); it++)
