@@ -87,6 +87,9 @@ CFG_DCT_XSLT	= n
 CFG_SEARCH_PATH	= /lib/drew/plugins /usr/lib/drew/plugins /usr/local/lib/drew/plugins
 CFG_INSTALL_DIR	= ./install
 
+# OpenPGP keystore backends.
+CFG_OPGPBK_BDB	= n
+
 ## Global build configuration.
 CFG_THREAD_SAFE	= y
 CFG_FORTIFY		= n
