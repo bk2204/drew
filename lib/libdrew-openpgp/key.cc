@@ -1598,6 +1598,13 @@ int drew_opgp_key_load_public(drew_opgp_key_t k,
 		else if (state == 4 && pkts[i].type == 2) {
 			res = public_load_subkey_sig(*key, pkts+i);
 		}
+		else if (pkts[i].type == 12) {
+			// GnuPG emits trust packets in the keyring.  This is generally
+			// undesirable, but we'll accept it.  Note that just exiting when a
+			// trust packet is encountered means that we never read subkeys,
+			// which is also undesirable.
+			res = 0;
+		}
 		else
 			break;	// Done with this key.
 		if (res < 0)
