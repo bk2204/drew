@@ -629,7 +629,6 @@ void drew::Signature::GenerateID()
 void drew::Signature::HashUserIDSignature(const PublicKey &pub,
 		const UserID &uid)
 {
-	memset(hash, 0, sizeof(hash));
 	Hash h(ldr, mdalgo);
 	pub.HashData(h);
 	uid.HashData(h);
