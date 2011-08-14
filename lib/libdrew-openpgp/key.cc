@@ -469,6 +469,7 @@ drew::Signature &drew::Signature::operator=(const Signature &other)
 	etime = other.etime;
 	memcpy(&keyid, &other.keyid, sizeof(keyid));
 	memcpy(&left, other.left, sizeof(left));
+	memcpy(&hash, other.hash, sizeof(hash));
 	ldr = other.ldr;
 	return *this;
 }
@@ -876,6 +877,7 @@ drew::PublicKey::drew_opgp_pubkey_s(const drew_opgp_pubkey_s &pub)
 	theuid = pub.theuid;
 	uids = pub.uids;
 	sigs = pub.sigs;
+	id = id;
 }
 
 drew::PublicKey &drew::PublicKey::operator=(const PublicKey &pub)
@@ -894,6 +896,7 @@ drew::PublicKey &drew::PublicKey::operator=(const PublicKey &pub)
 	theuid = pub.theuid;
 	uids = pub.uids;
 	sigs = pub.sigs;
+	id = id;
 	return *this;
 }
 
