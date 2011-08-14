@@ -622,8 +622,10 @@ static void store_uid(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 		bool found = false;
 		for (ssigit_t sit = selfsigstore.begin(); sit != selfsigstore.end();
 				sit++)
-			if (it->first == *sit)
+			if (it->first == *sit) {
 				found = true;
+				break;
+			}
 		if (!found)
 			idc.Add(it->first);
 	}
