@@ -879,7 +879,7 @@ drew::PublicKey::drew_opgp_pubkey_s(const drew_opgp_pubkey_s &pub)
 	theuid = pub.theuid;
 	uids = pub.uids;
 	sigs = pub.sigs;
-	id = id;
+	id = pub.id;
 }
 
 drew::PublicKey &drew::PublicKey::operator=(const PublicKey &pub)
@@ -898,7 +898,7 @@ drew::PublicKey &drew::PublicKey::operator=(const PublicKey &pub)
 	theuid = pub.theuid;
 	uids = pub.uids;
 	sigs = pub.sigs;
-	id = id;
+	id = pub.id;
 	return *this;
 }
 
