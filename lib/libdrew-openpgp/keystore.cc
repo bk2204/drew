@@ -1220,7 +1220,7 @@ int drew_opgp_keystore_lookup_by_keyid(drew_opgp_keystore_t ks,
 			if (memcmp(k->GetPublicMainKey().GetKeyID(), keyid, 8))
 				continue;
 			if (key && nitems < nkeys)
-				key[nitems] = new Key(*it->second.key);
+				key[nitems] = it->second.key;
 			nitems++;
 		}
 	}
@@ -1237,7 +1237,7 @@ int drew_opgp_keystore_get_keys(drew_opgp_keystore_t ks, drew_opgp_key_t *key,
 	for (it_t it = ks->items.begin(); it != ks->items.end(); it++) {
 		if (it->second.key) {
 			if (key && nitems < nkeys)
-				key[nitems] = new Key(*it->second.key);
+				key[nitems] = it->second.key;
 			nitems++;
 		}
 	}
