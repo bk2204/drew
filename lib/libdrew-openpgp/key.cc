@@ -445,6 +445,7 @@ drew::Signature::drew_opgp_sig_s(const drew_opgp_sig_s &other)
 	memcpy(&left, other.left, sizeof(left));
 	memcpy(&hash, other.hash, sizeof(hash));
 	ldr = other.ldr;
+	id = other.id;
 }
 
 drew::Signature::~drew_opgp_sig_s()
@@ -471,6 +472,7 @@ drew::Signature &drew::Signature::operator=(const Signature &other)
 	memcpy(&left, other.left, sizeof(left));
 	memcpy(&hash, other.hash, sizeof(hash));
 	ldr = other.ldr;
+	id = other.id;
 	return *this;
 }
 
