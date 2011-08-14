@@ -617,7 +617,7 @@ static void store_uid(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 	for (sigit_t it = sigstore.begin(); it != sigstore.end(); it++) {
 		bool found = false;
 		for (ssigit_t sit = selfsigstore.begin(); sit != selfsigstore.end();
-				it++)
+				sit++)
 			if (it->first == *sit)
 				found = true;
 		if (!found)
