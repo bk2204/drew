@@ -824,7 +824,7 @@ static int load_uid(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 			offset = 0x00;
 		}
 		DrewID id(c[off]+offset);
-		Item item = ks->items[id];
+		Item &item = ks->items[id];
 		if (!item.sig) {
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
 			return -DREW_ERR_MORE_INFO;
@@ -948,7 +948,7 @@ static int load_sig(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 			offset = 0x00;
 		}
 		DrewID id(c[off]+offset);
-		Item item = ks->items[id];
+		Item &item = ks->items[id];
 		if (!item.mpi) {
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
 			return -DREW_ERR_MORE_INFO;
