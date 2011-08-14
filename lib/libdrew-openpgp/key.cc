@@ -1386,7 +1386,7 @@ static int public_load_public(drew::PublicKey &pub,
 	int ver;
 	pub.SetVersion(ver = pkt->data.pubkey.ver);
 	pub.SetIsMainPublicKey(true);
-	if (ver < 2)
+	if (ver < 2 || ver > 4)
 		return -DREW_OPGP_ERR_BAD_KEY_FORMAT;
 	else if (ver < 4) {
 		const drew_opgp_packet_pubkeyv3_t *pk = &pkt->data.pubkey.data.pubkeyv3;
