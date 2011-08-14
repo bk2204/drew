@@ -47,6 +47,11 @@ struct InternalID
 	{
 		memcpy(this->id, idp.id, sizeof(this->id));
 	}
+	InternalID &operator=(const InternalID &idp)
+	{
+		memcpy(this->id, idp.id, sizeof(this->id));
+		return *this;
+	}
 	bool operator <(const InternalID & kid) const
 	{
 		return memcmp(this->id, kid.id, sizeof(this->id)) < 0;
