@@ -176,6 +176,10 @@ class IDConverter
 				memcpy(c[j]+0x20, ids[i+1], 0x20);
 			}
 		}
+		size_t GetSize() const
+		{
+			return ids.size();
+		}
 	protected:
 	private:
 		std::vector<DrewID> ids;
