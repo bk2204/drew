@@ -50,19 +50,19 @@ using namespace drew;
 struct Item
 {
 	Item() : type(TYPE_NIL), key(0), sig(0), uid(0), pub(0), mpi(0), flags(0) {}
-	Item(const Key &keyp) :
+	explicit Item(const Key &keyp) :
 		type(TYPE_KEY), key(new Key(keyp)), sig(0), uid(0), pub(0), mpi(0),
 		flags(0) {}
-	Item(const Signature &sigp) :
+	explicit Item(const Signature &sigp) :
 		type(TYPE_SIG), key(0), sig(new Signature(sigp)), uid(0), pub(0),
 		mpi(0), flags(0) {}
-	Item(const UserID &uidp) :
+	explicit Item(const UserID &uidp) :
 		type(TYPE_UID), key(0), sig(0), uid(new UserID(uidp)), pub(0), mpi(0),
 		flags(0) {}
-	Item(const PublicKey &pubp) :
+	explicit Item(const PublicKey &pubp) :
 		type(TYPE_SUB), key(0), sig(0), uid(0), pub(new PublicKey(pubp)),
 		mpi(0), flags(0) {}
-	Item(const MPI &mpip) :
+	explicit Item(const MPI &mpip) :
 		type(TYPE_MPI), key(0), sig(0), uid(0), pub(0), mpi(new MPI(mpip)),
 		flags(0) {}
 	Item(const Item &other)
@@ -1142,7 +1142,7 @@ UNEXPORT()
 
 static void update_pubkeys(drew_opgp_keystore_t ks, PublicKey *pub, int flags)
 {
-	ks->items[pub->GetInternalID()] = Item(pub);
+	ks->items[pub->GetInternalID()] = Item(*pub);
 	MPI *mpi = pub->GetMPIs();
 	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && mpi[i].GetByteLength(); i++)
 		ks->items[mpi[i].GetInternalID()] = Item(mpi[i]);
