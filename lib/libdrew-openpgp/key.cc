@@ -840,10 +840,24 @@ void drew::UserID::HashData(Hash &hash) const
 
 drew::PublicKey::drew_opgp_pubkey_s() : main(true), flags(0)
 {
+	ldr = 0;
+	ver = 0;
+	algo = 0;
+	ctime = 0;
+	etime = -1;
+	memset(&keyid, 0, sizeof(keyid));
+	memset(&fp, 0, sizeof(fp));
 }
 
 drew::PublicKey::drew_opgp_pubkey_s(bool is_main) : main(is_main), flags(0)
 {
+	ldr = 0;
+	ver = 0;
+	algo = 0;
+	ctime = 0;
+	etime = -1;
+	memset(&keyid, 0, sizeof(keyid));
+	memset(&fp, 0, sizeof(fp));
 }
 
 drew::PublicKey::drew_opgp_pubkey_s(const drew_opgp_pubkey_s &pub)
