@@ -335,7 +335,6 @@ int import(struct file *f, struct util *util, size_t pktbufsz,
 		memset(pkts+rem, 0, nused * sizeof(*pkts));
 		fill = rem;
 	}
-out:
 	drew_opgp_keystore_set_backend(ks, "file");
 	if (validate) {
 		printf("Validating keys...");
@@ -349,6 +348,7 @@ out:
 		return print_error(23, res, "keystore failure");
 	drew_opgp_keystore_free(&ks);
 	printf("done.\n");
+out:
 	free(pkts);
 	return res;
 }
