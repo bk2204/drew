@@ -380,8 +380,8 @@ static void store_pubkey(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 	// Number of subsequent chunks.
 	E::Convert(c[0], nchunks);
 	E::Convert<uint16_t>(c[0]+0x04, pub.GetFlags());
-	c[0][0x05] = pub.GetVersion();
-	c[0][0x06] = pub.GetAlgorithm();
+	c[0][0x06] = pub.GetVersion();
+	c[0][0x07] = pub.GetAlgorithm();
 	E::Convert<uint32_t>(c[0]+0x08, pub.GetCreationTime());
 	E::Convert<uint32_t>(c[0]+0x0c, pub.GetExpirationTime());
 	E::Convert<uint32_t>(c[0]+0x10, uidstore.size());
@@ -695,8 +695,8 @@ static int load_pubkey(drew_opgp_keystore_t ks, PublicKey *pub,
 
 	uint32_t nmpis = 0, npubsubs = 0, nuids = 0, nsigs = 0;
 	pub->GetFlags() = E::Convert<uint16_t>(c[0]+0x04);
-	pub->SetVersion(c[0][0x05]);
-	pub->SetAlgorithm(c[0][0x06]);
+	pub->SetVersion(c[0][0x06]);
+	pub->SetAlgorithm(c[0][0x07]);
 	pub->SetCreationTime(E::Convert<uint32_t>(c[0]+0x08));
 	pub->SetExpirationTime(E::Convert<uint32_t>(c[0]+0x0c));
 	nuids = E::Convert<uint32_t>(c[0]+0x10);
