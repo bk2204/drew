@@ -243,7 +243,7 @@ struct drew_opgp_sig_s : public Identifiable, public ContainsLoader
 		bool IsSelfSignature() const;
 		void HashUserIDSignature(const PublicKey &pub, const UserID &uid);
 		int ValidateSignature(const PublicKey &pub, bool is_selfsig);
-		void SynchronizeUserIDSignature(const Key &key, const UserID &uid,
+		void SynchronizeUserIDSignature(const PublicKey &pub, const UserID &uid,
 				int f);
 	protected:
 	private:
@@ -280,7 +280,7 @@ struct drew_opgp_uid_s : public Identifiable, public ContainsLoader
 		SelfSignatureStore &GetSelfSignatures();
 		void AddSignature(const Signature &);
 		void GenerateID(const PublicKey &);
-		void Synchronize(int);
+		void Synchronize(const PublicKey &pub, int);
 		void HashData(Hash &) const;
 	protected:
 	private:

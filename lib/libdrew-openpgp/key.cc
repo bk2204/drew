@@ -655,10 +655,9 @@ int drew::Signature::ValidateSignature(const PublicKey &pub, bool is_selfsig)
 	return res;
 }
 
-void drew::Signature::SynchronizeUserIDSignature(const Key &key,
+void drew::Signature::SynchronizeUserIDSignature(const PublicKey &pub,
 		const UserID &uid, int f)
 {
-	const PublicKey &pub = key.GetPublicMainKey();
 	if (ver < 2 || ver > 4)
 		flags |= DREW_OPGP_SIGNATURE_IGNORED;
 	if (type == 0x30) {
@@ -676,7 +675,7 @@ void drew::Signature::SynchronizeUserIDSignature(const Key &key,
 			flags |= DREW_OPGP_SIGNATURE_HASH_CHECK;
 		if (!memcmp(keyid, keyid, sizeof(keyid))) {
 			if (f & DREW_OPGP_SYNCHRONIZE_VALIDATE_SELF_SIGNATURES)
-				ValidateSignature(key.GetPublicMainKey(), true);
+				ValidateSignature(pub, true);
 		}
 		if (!(flags & DREW_OPGP_SIGNATURE_SELF_SIG))
 			memset(&selfsig, 0, sizeof(selfsig));
@@ -776,15 +775,19 @@ void drew::UserID::GenerateID(const PublicKey &pub)
 	hash.Final(id);
 }
 
-void drew::UserID::Synchronize(int flags)
+void drew::UserID::Synchronize(const PublicKey &pub, int flags)
 {
 	time_t latest = 0;
 
 	selfsigs.clear();
 
+	GenerateID(pub);
+
 	typedef SignatureStore::iterator it_t;
 	for (it_t it = sigs.begin(); it != sigs.end(); it++) {
 		it->second.SetLoader(ldr);
+		it->second.GenerateID();
+		it->second.SynchronizeUserIDSignature(pub, *this, flags);
 		if (it->second.IsSelfSignature()) {
 			selfsigs.push_back(it->first);
 			if (it->second.GetCreationTime() > latest) {
@@ -954,7 +957,7 @@ void drew::PublicKey::Synchronize(int flags)
 	for (uidit_t it = uids.begin(); it != uids.end(); it++) {
 		it->second.SetLoader(ldr);
 		it->second.GenerateID(*this);
-		it->second.Synchronize(flags);
+		it->second.Synchronize(*this, flags);
 	}
 	typedef SignatureStore::iterator sigit_t;
 	for (sigit_t it = sigs.begin(); it != sigs.end(); it++) {
