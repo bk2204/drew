@@ -74,7 +74,7 @@ struct InternalID
 	operator bool() const
 	{
 		for (size_t i = 0; i < sizeof(id); i++)
-			if (!id[i])
+			if (id[i])
 				return true;
 		return false;
 	}
