@@ -617,7 +617,7 @@ void drew::Signature::GenerateID()
 	/* We include the unhashed data here because our interest is providing a
 	 * unique ID for this signature and we want to distinguish between
 	 * signatures that have different unhashed data (where the issuer key ID is
-	 * usually placed.
+	 * usually placed).
 	 */
 	hash.Update<uint16_t>(unhashed.len);
 	hash.Update(unhashed.data, unhashed.len);
