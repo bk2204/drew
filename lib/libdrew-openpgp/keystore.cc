@@ -776,17 +776,19 @@ static int load_pubkey(drew_opgp_keystore_t ks, PublicKey *pub,
 		}
 		pub->GetMPIs()[i] = *item.mpi;
 	}
+
+	pub->SetInternalID(kchunk);
 	return 0;
 }
 
 static int load_key(drew_opgp_keystore_t ks, const Chunk &kchunk,
 		const Chunk *c, size_t nchunks, drew_opgp_id_t missingid)
 {
-	Key *key = new Key;
-	PublicKey &pub = key->GetPublicMainKey();
-	key->SetLoader(ks->ldr);
+	Key key;
+	PublicKey &pub = key.GetPublicMainKey();
+	key.SetLoader(ks->ldr);
 	pub.SetLoader(ks->ldr);
-	RETFAIL(load_pubkey(ks, &pub, key, kchunk, c, nchunks, missingid));
+	RETFAIL(load_pubkey(ks, &pub, &key, kchunk, c, nchunks, missingid));
 	pub.SetIsMainPublicKey(true);
 	ks->items[pub.GetInternalID()] = Item(key);
 	return 0;
@@ -795,21 +797,21 @@ static int load_key(drew_opgp_keystore_t ks, const Chunk &kchunk,
 static int load_subkey(drew_opgp_keystore_t ks, const Chunk &key,
 		const Chunk *c, size_t nchunks, drew_opgp_id_t missingid)
 {
-	PublicKey *pub = new PublicKey;
-	pub->SetLoader(ks->ldr);
-	RETFAIL(load_pubkey(ks, pub, 0, key, c, nchunks, missingid));
-	pub->SetIsMainPublicKey(false);
-	ks->items[pub->GetInternalID()] = Item(pub);
+	PublicKey pub;
+	pub.SetLoader(ks->ldr);
+	RETFAIL(load_pubkey(ks, &pub, 0, key, c, nchunks, missingid));
+	pub.SetIsMainPublicKey(false);
+	ks->items[pub.GetInternalID()] = Item(pub);
 	return 0;
 }
 
 static int load_uid(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 		size_t nchunks, drew_opgp_id_t missingid)
 {
-	UserID *uid = new UserID();
+	UserID uid;
 
-	uid->SetLoader(ks->ldr);
-	uid->SetInternalID(key);
+	uid.SetLoader(ks->ldr);
+	uid.SetInternalID(key);
 
 	uint32_t nsigs = E::Convert<uint32_t>(c[0]+0x04);
 	uint32_t nselfsigs = E::Convert<uint32_t>(c[0]+0x08);
@@ -828,10 +830,10 @@ static int load_uid(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 			return -DREW_ERR_MORE_INFO;
 		}
 		if (!i)
-			uid->SetPrimarySelfSignature(id);
+			uid.SetPrimarySelfSignature(id);
 		if (i < nselfsigs)
-			uid->GetSelfSignatures().push_back(id);
-		uid->GetSignatures()[id] = *item.sig;
+			uid.GetSelfSignatures().push_back(id);
+		uid.GetSignatures()[id] = *item.sig;
 	}
 	if (offset)
 		off++;
@@ -843,7 +845,7 @@ static int load_uid(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 				std::min<size_t>(0x40, (len+1)-offset));
 	text.erase(text.size()-1);
 
-	ks->items[uid->GetInternalID()] = Item(uid);
+	ks->items[uid.GetInternalID()] = Item(uid);
 	return 0;
 }
 
@@ -892,29 +894,29 @@ static void load_subpackets3(drew_opgp_subpacket_group_t *spg, const Chunk *c,
 static int load_sig(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 		size_t nchunks, drew_opgp_id_t missingid)
 {
-	Signature *sig = new Signature;
+	Signature sig;
 
-	sig->SetLoader(ks->ldr);
-	sig->SetInternalID(key);
+	sig.SetLoader(ks->ldr);
+	sig.SetInternalID(key);
 
-	selfsig_t &selfsig = sig->GetSelfSignature();
-	drew_opgp_subpacket_group_t &hashed = sig->GetHashedSubpackets();
-	drew_opgp_subpacket_group_t &unhashed = sig->GetUnhashedSubpackets();
+	selfsig_t &selfsig = sig.GetSelfSignature();
+	drew_opgp_subpacket_group_t &hashed = sig.GetHashedSubpackets();
+	drew_opgp_subpacket_group_t &unhashed = sig.GetUnhashedSubpackets();
 
 	uint32_t nmpis = 0;
 	// Number of subsequent chunks.
-	sig->SetVersion(c[0][0x04]);
-	sig->SetType(c[0][0x05]);
-	sig->SetPublicKeyAlgorithm(c[0][0x06]);
-	sig->SetDigestAlgorithm(c[0][0x07]);
-	sig->SetCreationTime(E::Convert<uint32_t>(c[0]+0x08));
-	sig->SetExpirationTime(E::Convert<uint32_t>(c[0]+0x0c));
-	memcpy(sig->GetKeyID(), c[0]+0x10, 8);
-	sig->GetFlags() = E::Convert<uint32_t>(c[0]+0x18);
+	sig.SetVersion(c[0][0x04]);
+	sig.SetType(c[0][0x05]);
+	sig.SetPublicKeyAlgorithm(c[0][0x06]);
+	sig.SetDigestAlgorithm(c[0][0x07]);
+	sig.SetCreationTime(E::Convert<uint32_t>(c[0]+0x08));
+	sig.SetExpirationTime(E::Convert<uint32_t>(c[0]+0x0c));
+	memcpy(sig.GetKeyID(), c[0]+0x10, 8);
+	sig.GetFlags() = E::Convert<uint32_t>(c[0]+0x18);
 	selfsig.keyflags = E::Convert<uint32_t>(c[0]+0x20);
 	selfsig.keyexp = E::Convert<uint32_t>(c[0]+0x24);
-	sig->GetLeft2()[0] = c[0][0x28];
-	sig->GetLeft2()[1] = c[0][0x29];
+	sig.GetLeft2()[0] = c[0][0x28];
+	sig.GetLeft2()[1] = c[0][0x29];
 	// Two empty bytes.
 	selfsig.prefs[0].len = c[0][0x2c];
 	selfsig.prefs[1].len = c[0][0x2d];
@@ -925,7 +927,7 @@ static int load_sig(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 	hashed.len = E::Convert<uint32_t>(c[0]+0x38);
 	unhashed.len = E::Convert<uint32_t>(c[0]+0x3c);
 
-	memcpy(sig->GetHash(), c[1], 0x40);
+	memcpy(sig.GetHash(), c[1], 0x40);
 
 	size_t off = 2, offset = 0;
 	load_subpackets1(&hashed, c, off, offset);
@@ -951,21 +953,20 @@ static int load_sig(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
 			return -DREW_ERR_MORE_INFO;
 		}
-		sig->GetMPIs()[i] = *item.mpi;
+		sig.GetMPIs()[i] = *item.mpi;
 	}
-	ks->items[sig->GetInternalID()] = Item(sig);
+	ks->items[sig.GetInternalID()] = Item(sig);
 	return 0;
 }
 
 static int load_mpi(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 		size_t nchunks)
 {
-	MPI *mpio = new MPI;
+	MPI mpio;
 	drew_opgp_mpi_t mpi;
 	size_t nbytes = 0;
 
-	mpio->SetLoader(ks->ldr);
-	mpio->SetInternalID(key);
+	mpio.SetLoader(ks->ldr);
 	mpi.len = E::Convert<uint32_t>(c[0]+0x04);
 	nbytes = E::Convert<uint32_t>(c[0]+0x08);
 	mpi.data = (uint8_t *)drew_mem_malloc(nbytes);
@@ -973,8 +974,9 @@ static int load_mpi(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 		return -ENOMEM;
 	for (size_t i = 1, off = 0; i < nchunks; i++, off += 0x40)
 		memcpy(mpi.data+off, c[i], std::min<size_t>(0x40, nbytes-off));
-	mpio->SetMPI(mpi);
-	ks->items[mpio->GetInternalID()] = Item(mpio);
+	mpio.SetMPI(mpi);
+	mpio.SetInternalID(key);
+	ks->items[mpio.GetInternalID()] = Item(mpio);
 	return 0;
 }
 
