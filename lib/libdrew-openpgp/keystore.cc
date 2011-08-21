@@ -64,6 +64,10 @@ class FileBackend : public Backend
 				read(fd, cp[i], sizeof(cp[i].chunk));
 			return cp;
 		}
+		virtual Chunk *LoadChunks(const KeyChunk &, size_t &)
+		{
+			return 0;
+		}
 	protected:
 		int fd;
 		int error;
@@ -118,6 +122,8 @@ int drew_opgp_keystore_set_backend(drew_opgp_keystore_t ks, const char *backend)
 UNEXPORT()
 
 #define ROUND(x) (DivideAndRoundUp(x, 2))
+static int force_load_item(drew_opgp_keystore_t ks, const InternalID &id,
+		uint8_t type);
 
 template<class T>
 size_t GetNumberOfMPIs(const T &x)
@@ -499,6 +505,7 @@ static int load_pubkey(drew_opgp_keystore_t ks, PublicKey *pub,
 			offset = 0x00;
 		}
 		DrewID id(c[off]+offset);
+		force_load_item(ks, id, CHUNK_ID_UID);
 		Item &item = ks->items[id];
 		if (!item.uid) {
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
@@ -519,6 +526,7 @@ static int load_pubkey(drew_opgp_keystore_t ks, PublicKey *pub,
 			offset = 0x00;
 		}
 		DrewID id(c[off]+offset);
+		force_load_item(ks, id, CHUNK_ID_SIG);
 		Item &item = ks->items[id];
 		if (!item.sig) {
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
@@ -537,6 +545,7 @@ static int load_pubkey(drew_opgp_keystore_t ks, PublicKey *pub,
 			offset = 0x00;
 		}
 		DrewID id(c[off]+offset);
+		force_load_item(ks, id, CHUNK_ID_PUBSUBKEY);
 		Item &item = ks->items[id];
 		if (!item.pub) {
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
@@ -555,6 +564,7 @@ static int load_pubkey(drew_opgp_keystore_t ks, PublicKey *pub,
 			offset = 0x00;
 		}
 		DrewID id(c[off]+offset);
+		force_load_item(ks, id, CHUNK_ID_MPI);
 		Item &item = ks->items[id];
 		if (!item.mpi) {
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
@@ -734,6 +744,7 @@ static int load_sig(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 			offset = 0x00;
 		}
 		DrewID id(c[off]+offset);
+		force_load_item(ks, id, CHUNK_ID_MPI);
 		Item &item = ks->items[id];
 		if (!item.mpi) {
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
@@ -787,6 +798,33 @@ static int load_item(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 	}
 }
 
+static int force_load_item(drew_opgp_keystore_t ks, const InternalID &id,
+		uint8_t type)
+{
+	if (ks->items.count(id))
+		return 0;
+	if (!ks->b)
+		return -DREW_ERR_MORE_INFO;
+	if (!ks->b->IsRandomAccess())
+		return -DREW_ERR_MORE_INFO;
+
+	KeyChunk kchunk;
+	drew_opgp_id_t dummy;
+	size_t nchunks;
+	Chunk *c;
+
+	memcpy(kchunk, id, 32);
+	kchunk[0x20] = CHUNK_TYPE_ID;
+	kchunk[0x21] = type;
+	kchunk[0x22] = ks->major;
+	kchunk[0x23] = ks->minor;
+	
+	c = ks->b->LoadChunks(kchunk, nchunks);
+	if (!c)
+		return -DREW_ERR_MORE_INFO;
+	return load_item(ks, kchunk, c, nchunks, dummy);
+}
+
 EXPORT()
 extern "C"
 int drew_opgp_keystore_load(drew_opgp_keystore_t ks, const char *filename,
@@ -799,8 +837,9 @@ int drew_opgp_keystore_load(drew_opgp_keystore_t ks, const char *filename,
 	if (!ks->b->IsOpen())
 		return ks->b->GetError();
 
-	RETFAIL(load_header(ks));
 	if (!ks->b->IsRandomAccess()) {
+		RETFAIL(load_header(ks));
+	}
 		for (;;) {
 			KeyChunk key;
 			Chunk *c = 0;
@@ -816,7 +855,8 @@ int drew_opgp_keystore_load(drew_opgp_keystore_t ks, const char *filename,
 					delete[] c;
 					return res;
 				}
-				delete[] c;	
+				delete[] c;
+				c = 0;
 			}
 			catch (int e) {
 				if (c)
@@ -826,17 +866,18 @@ int drew_opgp_keystore_load(drew_opgp_keystore_t ks, const char *filename,
 				return e;
 			}
 		}
-	}
-	else {
-		return -DREW_ERR_NOT_IMPL;
-	}
+	//else {
+	//	// Nothing to do; we do it all on demand.
+	//	return 0;
+	//}
 	return 0;
 }
 
 extern "C"
 int drew_opgp_keystore_store(drew_opgp_keystore_t ks, const char *filename)
 {
-	ks->b->Open(filename, true);
+	if (!ks->b->IsOpen())
+		ks->b->Open(filename, true);
 
 	if (!ks->b->IsOpen())
 		return ks->b->GetError();
@@ -993,8 +1034,10 @@ int drew_opgp_keystore_lookup_by_id(drew_opgp_keystore_t ks,
 		drew_opgp_key_t *key, drew_opgp_id_t id)
 {
 	ItemStore::iterator it;
+	DrewID ido(id);
 
-	it = ks->items.find(DrewID(id));
+	force_load_item(ks, ido, CHUNK_ID_PUBKEY);
+	it = ks->items.find(ido);
 	if (it == ks->items.end())
 		return 0;
 	if (key)

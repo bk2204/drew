@@ -24,6 +24,10 @@ UNEXPORT()
 
 struct drew_opgp_keystore_s;
 EXPORT()
+#ifdef DREW_OPGP_BACKEND_BDB
+#include <db.h>
+#endif
+
 #include <drew/drew.h>
 #include <drew/mem.h>
 #include <drew/plugin.h>
@@ -33,9 +37,6 @@ EXPORT()
 #include <drew-opgp/keystore.h>
 UNEXPORT()
 
-#ifdef DREW_OPGP_BACKEND_BDB
-#include <db.h>
-#endif
 
 #include "structs.h"
 #include "key.hh"
@@ -203,8 +204,15 @@ class Backend
 		virtual int GetError() const = 0;
 		virtual bool IsOpen() const = 0;
 		virtual void WriteChunks(const KeyChunk &, const Chunk *, size_t) = 0;
+		// If this backend is not random-access, read the next key chunk.
+		// Otherwise, do nothing.
 		virtual void ReadKeyChunk(KeyChunk &) = 0;
+		// Given the specified key chunk, read its data.  The key chunk must
+		// have just been read by ReadKeyChunk.
 		virtual Chunk *ReadChunks(const KeyChunk &, size_t &) = 0;
+		// Given the specified key chunk, read its data.  If the backend is not
+		// random-access, do nothing and return NULL.
+		virtual Chunk *LoadChunks(const KeyChunk &, size_t &) = 0;
 	protected:
 	private:
 };
@@ -245,8 +253,10 @@ class BerkeleyDBBackend : public Backend
 				size_t nchunks);
 		virtual void ReadKeyChunk(KeyChunk &k);
 		virtual Chunk *ReadChunks(const KeyChunk &k, size_t &nchunks);
+		virtual Chunk *LoadChunks(const KeyChunk &k, size_t &nchunks);
 	protected:
 		DB *dbp;
+		DBC *dbc;
 		int error;
 	private:	
 };
