@@ -581,7 +581,7 @@ int drew::Serpent::Decrypt(uint8_t *out, const uint8_t *in) const
 	return 0;
 }
 
-static void drew::Serpent::Serpent1(uint32_t *blk)
+void drew::Serpent::Serpent1(uint32_t *blk)
 {
 	s2(blk);
 }
@@ -622,7 +622,5 @@ void drew::Serpent::Serpent24(uint32_t *out, const uint8_t *in)
 	for (size_t i = 0; i < 4; i++)
 		b[i] ^= k[96+i];
 	memcpy(out+8, b, sizeof(b));
-
-	return 0;
 }
 UNHIDE()
