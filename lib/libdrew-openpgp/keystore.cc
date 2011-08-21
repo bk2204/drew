@@ -872,6 +872,14 @@ int drew_opgp_keystore_store(drew_opgp_keystore_t ks, const char *filename)
 }
 
 extern "C"
+int drew_opgp_keystore_flush(drew_opgp_keystore_t ks, const char *filename)
+{
+	RETFAIL(drew_opgp_keystore_store(ks, filename));
+	ks->items.clear();
+	return 0;
+}
+
+extern "C"
 int drew_opgp_keystore_update_sigs(drew_opgp_keystore_t ks,
 		drew_opgp_sig_t *sigs, size_t nsigs, int flags)
 {

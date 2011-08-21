@@ -44,6 +44,7 @@ int drew_opgp_keystore_lookup_by_keyid(drew_opgp_keystore_t ks,
 		drew_opgp_key_t *key, size_t nkeys, drew_opgp_keyid_t keyid);
 int drew_opgp_keystore_get_keys(drew_opgp_keystore_t ks,
 		drew_opgp_key_t *key, size_t nkeys);
+int drew_opgp_keystore_flush(drew_opgp_keystore_t ks, const char *filename);
 
 int drew_opgp_key_validate_signatures(drew_opgp_key_t key,
 		drew_opgp_keystore_t ks);
