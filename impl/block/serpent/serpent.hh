@@ -38,6 +38,9 @@ class Serpent : public BlockCipher<16>
 		int SetKey(const uint8_t *key, size_t sz);
 		int Encrypt(uint8_t *out, const uint8_t *in) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
+		// This functionality is exposed for Sosemanuk.
+		static void Serpent1(uint32_t *blk);
+		void Serpent24(uint32_t *out, const uint8_t *in);
 	protected:
 	private:
 		uint32_t m_keybuf[140];

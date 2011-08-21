@@ -657,4 +657,49 @@ int drew::Serpent::Decrypt(uint8_t *out, const uint8_t *in) const
 	E::Copy(out, b, sizeof(b));
 	return 0;
 }
+
+static void drew::Serpent::Serpent1(uint32_t *blk)
+{
+	s2(blk);
+}
+
+void drew::Serpent::Serpent24(uint32_t *out, const uint8_t *in)
+{
+	uint32_t b[4];
+
+	E::Copy(b, in, sizeof(b));
+
+	const uint32_t *k = m_key;
+	eround(b, k+ 0, s0);
+	eround(b, k+ 4, s1);
+	eround(b, k+ 8, s2);
+	eround(b, k+12, s3);
+	eround(b, k+16, s4);
+	eround(b, k+20, s5);
+	eround(b, k+24, s6);
+	eround(b, k+28, s7);
+	eround(b, k+32, s0);
+	eround(b, k+36, s1);
+	eround(b, k+40, s2);
+	eround(b, k+44, s3);
+	memcpy(out+0, b, sizeof(b));
+	eround(b, k+48, s4);
+	eround(b, k+52, s5);
+	eround(b, k+56, s6);
+	eround(b, k+60, s7);
+	eround(b, k+64, s0);
+	eround(b, k+68, s1);
+	memcpy(out+4, b, sizeof(b));
+	eround(b, k+72, s2);
+	eround(b, k+76, s3);
+	eround(b, k+80, s4);
+	eround(b, k+84, s5);
+	eround(b, k+88, s6);
+	eround(b, k+92, s7);
+	for (size_t i = 0; i < 4; i++)
+		b[i] ^= k[96+i];
+	memcpy(out+8, b, sizeof(b));
+
+	return 0;
+}
 UNHIDE()
