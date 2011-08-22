@@ -468,10 +468,9 @@ int drew::Serpent::SetKey(const uint8_t *key, size_t len)
 {
 	uint32_t *w = m_key = m_keybuf + 8;
 	memset(m_keybuf, 0, sizeof(m_keybuf));
-	E::Copy(m_keybuf, key, len);
-	// FIXME: allow for len such that len&3 != 0.
+	E::CopyCarefully(m_keybuf, key, len);
 	if (len < 32)
-		m_keybuf[len >> 2] = 0x1;
+		m_keybuf[len >> 2] |= 0x1 << ((len & 3) * 8);
 	const uint32_t phi = 0x9e3779b9;
 	for (int32_t i = 0; i < 132; i++)
 		w[i] = RotateLeft(w[i-8] ^ w[i-5] ^ w[i-3] ^ w[i-1] ^ phi ^ i, 11);
