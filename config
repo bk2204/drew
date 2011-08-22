@@ -40,6 +40,7 @@ CFG_SEED		= y
 CFG_IDEA		= No, thanks.  I'm patented.
 CFG_ARIABYTE	= y
 CFG_ARIA128		= y
+CFG_SOSEMANUK	= y
 
 # Modes.
 CFG_CFB			= y

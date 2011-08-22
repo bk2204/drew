@@ -3,6 +3,7 @@ PLUGINS_STREAM-${CFG_SALSA20}	+= salsa20/salsa20
 PLUGINS_STREAM-${CFG_HC128}		+= hc/hc128
 PLUGINS_STREAM-${CFG_HC256}		+= hc/hc256
 PLUGINS_STREAM-${CFG_RABBIT}	+= rabbit/rabbit
+PLUGINS_STREAM-${CFG_SOSEMANUK}	+= sosemanuk/sosemanuk
 
 STREAM_DIR		:= impl/stream
 STREAM_PLUGINS	:= $(patsubst %,${STREAM_DIR}/%,$(PLUGINS_STREAM-m))
@@ -10,5 +11,12 @@ STREAM_MODULES	:= $(patsubst %,${STREAM_DIR}/%.o,$(PLUGINS_STREAM-y))
 PLUGINS			+= $(STREAM_PLUGINS)
 MODULES			+= $(STREAM_MODULES)
 
+${STREAM_DIR}/sosemanuk/sosemanuk.so:	${BLOCK_DIR}/serpent/serpent-impl.o
+
+EXTRA_OBJECTS-${CFG_SOSEMANUK}	+= ${BLOCK_DIR}/serpent/serpent-impl.o
+
+${STREAM_DIR}/sosemanuk/sosemanuk.o: CPPFLAGS += -I${BLOCK_DIR}
+
+$(EXTRA_OBJECTS-y): CPPFLAGS += -I$(STREAM_DIR) -DDREW_AS_MODULE
 $(STREAM_PLUGINS): CPPFLAGS += -I$(STREAM_DIR) -DDREW_AS_PLUGIN
 $(STREAM_MODULES): CPPFLAGS += -I$(STREAM_DIR) -DDREW_AS_MODULE
