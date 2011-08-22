@@ -27,7 +27,9 @@
 #include <new>
 
 #include <drew/block.h>
+#ifndef BLOCK_NO_MACROS
 #include "block-plugin.h"
+#endif
 #include "util.hh"
 
 HIDE()
