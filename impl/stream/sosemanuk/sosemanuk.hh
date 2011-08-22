@@ -43,7 +43,7 @@ class SosemanukKeystream
 	protected:
 	private:
 		Serpent m_serpent;
-		uint32_t m_s[10], m_r1, m_r2;
+		uint32_t m_s[20], m_r1, m_r2;
 		static const uint32_t tablea[], tableainv[];
 };
 
@@ -62,7 +62,7 @@ class Sosemanuk
 		SosemanukKeystream m_ks;
 		uint8_t m_k[32];
 		uint8_t m_iv[16];
-		uint8_t m_buf[16] ALIGNED_T;
+		uint8_t m_buf[160] ALIGNED_T;
 		size_t m_keysz;
 		size_t m_nbytes;
 };

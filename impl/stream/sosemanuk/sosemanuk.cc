@@ -255,10 +255,10 @@ void drew::SosemanukKeystream::SetNonce(const uint8_t *iv, size_t sz)
 /* TODO: consider processing 160 bytes at a time; that is, one full LFSR at a
  * time.
  */
-void drew::SosemanukKeystream::FillBuffer(uint8_t buf[16])
+void drew::SosemanukKeystream::FillBuffer(uint8_t buf[160])
 {
-	uint32_t f[4] ALIGNED_T, s[4] ALIGNED_T, z[4] ALIGNED_T;
-	for (size_t i = 0; i < 4; i++) {
+	uint32_t f[40] ALIGNED_T, s[40] ALIGNED_T, z[40] ALIGNED_T;
+	for (size_t i = 0; i < 40; i++) {
 		uint32_t r1 = m_r2 + ((m_r1 & 1) ? m_s[1] ^ m_s[8] : m_s[1]);
 		uint32_t r2 = RotateLeft(m_r1 * 0x54655307, 7);
 		m_r1 = r1;
@@ -271,11 +271,12 @@ void drew::SosemanukKeystream::FillBuffer(uint8_t buf[16])
 		m_s[9] = m_s[8] ^ s0a ^ s2i;
 		s[i] = s0;
 	}
-	m_serpent.Serpent1(f);
+	for (size_t i = 0; i < 10; i++)
+		m_serpent.Serpent1(f+(i*4));
 	if (E::GetEndianness() == NativeEndian::GetEndianness())
-		XorAligned(reinterpret_cast<uint32_t *>(buf), f, s, 16);
+		XorAligned(reinterpret_cast<uint32_t *>(buf), f, s, 160);
 	else {
-		XorAligned(z, f, s, 16);
+		XorAligned(z, f, s, 160);
 		E::Copy(buf, z, sizeof(z));
 	}
 }
