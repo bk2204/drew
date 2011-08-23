@@ -39,6 +39,7 @@ class Salsa20Keystream
 		void Reset();
 		void FillBuffer(uint8_t *);
 		void FillBufferAligned(uint8_t *);
+		void SetRounds(size_t rounds);
 	protected:
 	private:
 		struct AlignedData
@@ -48,6 +49,7 @@ class Salsa20Keystream
 		virtual void DoHash(AlignedData &cur);
 		AlignedData state;
 		size_t keysz;
+		size_t nrounds;
 		uint64_t ctr;
 };
 
@@ -55,6 +57,7 @@ class Salsa20
 {
 	public:
 		Salsa20();
+		Salsa20(size_t);
 		~Salsa20() {}
 		void Reset();
 		void SetNonce(const uint8_t *, size_t sz);
