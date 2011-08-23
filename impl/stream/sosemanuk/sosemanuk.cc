@@ -101,7 +101,7 @@ static int sosemanuk_info(int op, void *p)
 		case DREW_STREAM_INTSIZE:
 			return sizeof(drew::Sosemanuk);
 		case DREW_STREAM_BLKSIZE:
-			return 4;
+			return 160;
 		default:
 			return -EINVAL;
 	}
