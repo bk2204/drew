@@ -241,7 +241,15 @@ void drew::SosemanukKeystream::SetKey(const uint8_t *key, size_t sz)
 void drew::SosemanukKeystream::SetNonce(const uint8_t *iv, size_t sz)
 {
 	uint32_t vals[12];
-	m_serpent.Serpent24(vals, iv);
+	if (sz == 16)
+		m_serpent.Serpent24(vals, iv);
+	else {
+		uint8_t ivbuf[16];
+		memset(ivbuf, 0, sizeof(ivbuf));
+		memcpy(ivbuf, iv, sz);
+		m_serpent.Serpent24(vals, ivbuf);
+		memset(ivbuf, 0, sizeof(ivbuf));
+	}
 	for (size_t i = 0; i < 4; i++) {
 		m_s[i] = vals[11-i];
 		m_s[9-i] = vals[i];
