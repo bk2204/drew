@@ -258,21 +258,26 @@ void drew::SosemanukKeystream::SetNonce(const uint8_t *iv, size_t sz)
 void drew::SosemanukKeystream::FillBuffer(uint8_t buf[160])
 {
 	uint32_t f[40] ALIGNED_T, s[40] ALIGNED_T, z[40] ALIGNED_T;
+	uint32_t or1 = m_r1, or2 = m_r2;
+	uint32_t *ls = m_s;
 	for (size_t i = 0; i < 40; i++) {
-		uint32_t r1 = m_r2 + ((m_r1 & 1) ? m_s[1] ^ m_s[8] : m_s[1]);
-		uint32_t r2 = RotateLeft(m_r1 * 0x54655307, 7);
-		m_r1 = r1;
-		m_r2 = r2;
-		f[i] = (m_s[9] + r1) ^ r2;
-		uint32_t s0 = m_s[0];
-		memmove(m_s, m_s+1, 9 * 4);
+		uint32_t r1 = or2 + ((or1 & 1) ? ls[1] ^ ls[8] : ls[1]);
+		uint32_t r2 = RotateLeft(or1 * 0x54655307, 7);
+		or1 = r1;
+		or2 = r2;
+		f[i] = (ls[9] + r1) ^ r2;
+		uint32_t s0 = ls[0];
+		ls++;
 		uint32_t s0a = (s0 << 8) ^ tablea[s0 >> 24];
-		uint32_t s2i = (m_s[2] >> 8) ^ tableainv[uint8_t(m_s[2])];
-		m_s[9] = m_s[8] ^ s0a ^ s2i;
+		uint32_t s2i = (ls[2] >> 8) ^ tableainv[uint8_t(ls[2])];
+		ls[9] = ls[8] ^ s0a ^ s2i;
 		s[i] = s0;
 	}
 	for (size_t i = 0; i < 10; i++)
 		m_serpent.Serpent1(f+(i*4));
+	memcpy(m_s, ls, 40);
+	m_r1 = or1;
+	m_r2 = or2;
 	if (E::GetEndianness() == NativeEndian::GetEndianness())
 		XorAligned(reinterpret_cast<uint32_t *>(buf), f, s, 160);
 	else {
