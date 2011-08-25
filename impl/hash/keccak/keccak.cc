@@ -177,14 +177,14 @@ inline static void dump(const char *s, uint64_t a[5][5])
 
 inline static void theta(uint64_t a[5][5])
 {
-	uint64_t c[5], d[5];
+	uint64_t c[5], d;
 
 	for (size_t i = 0; i < 5; i++)
 		c[i] = a[i][0] ^ a[i][1] ^ a[i][2] ^ a[i][3] ^ a[i][4];
 	for (size_t i = 0; i < 5; i++) {
-		d[i] = c[(i+4) % 5] ^ RotateLeft(c[(i+1) % 5], 1);
+		d = c[(i+4) % 5] ^ RotateLeft(c[(i+1) % 5], 1);
 		for (size_t j = 0; j < 5; j++)
-			a[i][j] ^= d[i];
+			a[i][j] ^= d;
 	}
 }
 
