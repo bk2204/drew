@@ -107,11 +107,12 @@ int test_external_cleanup(struct test_external *tes)
 int test_external_parse(const drew_loader_t *ldr, const char *filename,
 		struct test_external *tes)
 {
-	char buf[2048];
+	char *buf = NULL;
 	char *saveptr;
 	FILE *fp;
 	int ret = 0;
 	size_t chunkidx = 0;
+	const size_t bufsz = 1024 * 1024;
 
 	if (!filename)
 		filename = test_get_filename();
@@ -137,7 +138,8 @@ int test_external_parse(const drew_loader_t *ldr, const char *filename,
 	if (!(fp = fopen(filename, "r")))
 		return tes->results = -errno;
 
-	while (fgets(buf, sizeof(buf), fp)) {
+	buf = drew_mem_malloc(bufsz);
+	while (fgets(buf, bufsz, fp)) {
 		char *p = buf, *tok;
 		size_t off = strlen(buf);
 
@@ -177,6 +179,7 @@ int test_external_parse(const drew_loader_t *ldr, const char *filename,
 	tes->data[chunkidx+1] = NULL;
 
 out:
+	free(buf);
 	fclose(fp);
 	if (TEST_CODE(ret) == TEST_CORRUPT)
 		tes->results = -DREW_ERR_INVALID;
