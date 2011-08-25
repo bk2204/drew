@@ -387,7 +387,9 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 
 	ctx.functbl = tbl;
 	blksize = ctx.functbl->info(DREW_HASH_BLKSIZE, NULL);
-	if (blksize <= 0)
+	if (blksize == -DREW_ERR_MORE_INFO)
+		blksize = chunk + 1;
+	else if (blksize <= 0)
 		return -DREW_ERR_INVALID;
 
 	fwdata = framework_setup();
