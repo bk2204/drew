@@ -141,6 +141,7 @@ int process_bytes(ssize_t len, uint8_t **buf, const char *data)
 {
 	uint8_t *p;
 	drew_mem_free(*buf);
+	*buf = 0;
 	if (len < 0)
 		return TEST_CORRUPT;
 	if (strlen(data) != len * 2) {
