@@ -74,9 +74,9 @@ int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
 		if (TEST_CODE(ret) == TEST_CORRUPT)
 			break;
 	}
-out:
 	if (!tes->ntests)
 		tes->results = -DREW_ERR_NOT_IMPL;
+out:
 	if (TEST_CODE(ret) == TEST_CORRUPT || tes->results == -DREW_ERR_INVALID) {
 		printf("corrupt test (type %#02x) at line %zu\n", ret & 0xff, tes->lineno);
 		tes->results = -DREW_ERR_INVALID;

@@ -269,9 +269,8 @@ int main(int argc, char **argv)
 	nplugins = drew_loader_get_nplugins(ldr, -1);
 	type = test_get_type();
 
-	if (mode == MODE_TEST &&
-			(retval = test_external_parse(ldr, resource, &tes)))
-		tes.results = -DREW_ERR_NOT_IMPL;
+	if (mode == MODE_TEST)
+		test_external_parse(ldr, resource, &tes);
 
 	for (i = 0; i < nplugins; i++) {
 		const void *functbl;
