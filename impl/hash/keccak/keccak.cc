@@ -196,10 +196,8 @@ static const unsigned rr[5][5] = {
 	{27, 20, 39, 8, 14}
 };
 
-inline static void chirhopi(uint64_t a[5][5])
+inline static void rhopi(uint64_t b[5][5], const uint64_t a[5][5])
 {
-	uint64_t b[5][5];
-
 	b[0][((2*0)+(3*0))%5] = a[0][0];
 	b[0][((2*1)+(3*0))%5] = RotateLeft(a[1][0],  1);
 	b[0][((2*2)+(3*0))%5] = RotateLeft(a[2][0], 62);
@@ -229,10 +227,20 @@ inline static void chirhopi(uint64_t a[5][5])
 	b[4][((2*2)+(3*4))%5] = RotateLeft(a[2][4], 61);
 	b[4][((2*3)+(3*4))%5] = RotateLeft(a[3][4], 56);
 	b[4][((2*4)+(3*4))%5] = RotateLeft(a[4][4], 14);
+}
 
+inline static void chi(uint64_t a[5][5], const uint64_t b[5][5])
+{
 	for (size_t i = 0; i < 5; i++)
 		for (size_t j = 0; j < 5; j++)
 			a[i][j] = b[i][j] ^ ((~b[(i+1)%5][j]) & b[(i+2)%5][j]);
+}
+
+inline static void chirhopi(uint64_t a[5][5])
+{
+	uint64_t b[5][5];
+	rhopi(b, a);
+	chi(a, b);
 }
 
 inline static void iota(uint64_t a[5][5], uint64_t k)
@@ -265,8 +273,14 @@ static const uint64_t rc[] = {
 static void keccak_f(uint64_t state[5][5])
 {
 	dump("s", state);
-	for (size_t i = 0; i < 24; i++)
-		round(state, rc[i]);
+	for (size_t i = 0; i < 24; i += 6) {
+		round(state, rc[i+0]);
+		round(state, rc[i+1]);
+		round(state, rc[i+2]);
+		round(state, rc[i+3]);
+		round(state, rc[i+4]);
+		round(state, rc[i+5]);
+	}
 	dump("e", state);
 }
 
