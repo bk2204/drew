@@ -231,9 +231,16 @@ inline static void rhopi(uint64_t b[5][5], const uint64_t a[5][5])
 
 inline static void chi(uint64_t a[5][5], const uint64_t b[5][5])
 {
-	for (size_t i = 0; i < 5; i++)
-		for (size_t j = 0; j < 5; j++)
-			a[i][j] = b[i][j] ^ ((~b[(i+1)%5][j]) & b[(i+2)%5][j]);
+	for (size_t j = 0; j < 5; j++) {
+		// If the processor has an and-not instruction, such as SPARC or ARM,
+		// then the compiler will adjust this appropriately to use that
+		// instruction.  (We hope.)
+		a[0][j] = b[0][j] ^ ((~b[1][j]) & b[2][j]);
+		a[1][j] = b[1][j] ^ ((~b[2][j]) & b[3][j]);
+		a[2][j] = b[2][j] ^ ((~b[3][j]) & b[4][j]);
+		a[3][j] = b[3][j] ^ ((~b[4][j]) & b[0][j]);
+		a[4][j] = b[4][j] ^ ((~b[0][j]) & b[1][j]);
+	}
 }
 
 inline static void chirhopi(uint64_t a[5][5])
