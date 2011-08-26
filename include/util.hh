@@ -536,6 +536,10 @@ typedef LittleEndian NativeEndian;
 
 #if defined(__i386__) || defined(__x86_64__)
 #include "util-i386.hh"
+#elif defined(__sparc__)
+#define FEATURE_ANDNOT
+#elif defined(__arm__)
+#define FEATURE_ANDNOT
 #endif
 
 #endif
