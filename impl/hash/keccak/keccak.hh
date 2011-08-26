@@ -40,7 +40,7 @@ class Keccak
 			memset(m_buf, 0, sizeof(m_buf));
 			memset(m_hash, 0, sizeof(m_hash));
 		}
-		void Reset()
+		virtual void Reset()
 		{
 			m_len = 0;
 			memset(m_buf, 0, sizeof(m_buf));
@@ -93,6 +93,7 @@ class Keccak
 		}
 		static inline void Transform(uint64_t [5][5], const uint8_t *data);
 	protected:
+		Keccak() {}
 		static inline void Transform(uint64_t [5][5], const uint8_t *data,
 				size_t);
 		virtual void Transform(const uint8_t *data)
@@ -103,6 +104,23 @@ class Keccak
 		size_t m_len;
 		uint64_t m_hash[5][5];
 		uint8_t m_buf[1152 / 8];
+	private:
+};
+
+class KeccakWithLimitedNots : public Keccak
+{
+	public:
+		KeccakWithLimitedNots(size_t);
+		virtual void Reset();
+		static inline void Transform(uint64_t [5][5], const uint8_t *data);
+		virtual void GetDigest(uint8_t *digest, bool nopad);
+	protected:
+		static inline void Transform(uint64_t [5][5], const uint8_t *data,
+				size_t);
+		virtual void Transform(const uint8_t *data)
+		{
+			return Transform(m_hash, data, m_r);
+		}
 	private:
 };
 

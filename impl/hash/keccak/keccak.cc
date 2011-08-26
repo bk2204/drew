@@ -28,86 +28,16 @@
 #include "hash-plugin.hh"
 
 HIDE()
-extern "C" {
-PLUGIN_STRUCTURE2(keccak, Keccak)
-PLUGIN_DATA_START()
-PLUGIN_DATA(keccak, "Keccak")
-PLUGIN_DATA_END()
-PLUGIN_INTERFACE(keccak)
-
-static int keccak_get_digest_size(const drew_param_t *param)
-{
-	size_t digestsizeval = 0, result = 0;
-
-	for (const drew_param_t *p = param; p; p = p->next) {
-		if (!p->name)
-			continue;
-		// This is in bytes.
-		if (!digestsizeval && !strcmp(p->name, "digestSize"))
-			digestsizeval = p->param.number;
-	}
-	if (digestsizeval)
-		result = digestsizeval;
-	if (!result)
-		return -DREW_ERR_MORE_INFO;
-	return result;
-}
-
-static int keccakinfo(int op, void *p)
-{
-	using namespace drew;
-	const drew_param_t *param = reinterpret_cast<const drew_param_t *>(p);
-	const drew_hash_t *ctx = reinterpret_cast<const drew_hash_t *>(p);
-	switch (op) {
-		case DREW_HASH_VERSION:
-			return 2;
-		case DREW_HASH_QUANTUM:
-			return sizeof(Keccak::quantum_t);
-		case DREW_HASH_SIZE:
-			return keccak_get_digest_size(param);
-		case DREW_HASH_BLKSIZE:
-			if (p)
-				return ((const Keccak *)ctx->ctx)->GetBlockSize();
-			return -DREW_ERR_MORE_INFO;
-		case DREW_HASH_BUFSIZE:
-			if (p)
-				return ((const Keccak *)ctx->ctx)->GetBlockSize();
-			return -DREW_ERR_MORE_INFO;
-		case DREW_HASH_INTSIZE:
-			return sizeof(Keccak);
-		case DREW_HASH_ENDIAN:
-			return Keccak::endian_t::GetEndianness();
-		default:
-			return -DREW_ERR_INVALID;
-	}
-}
-
-static int keccakinit(drew_hash_t *ctx, int flags, const drew_loader_t *,
-		const drew_param_t *param)
-{
-	using namespace drew;
-	Keccak *p;
-	int size = keccak_get_digest_size(param);
-	if (size <= 0)
-		return size;
-	if (flags & DREW_HASH_FIXED)
-		p = new (ctx->ctx) Keccak(size);
-	else
-		p = new Keccak(size);
-	ctx->ctx = p;
-	ctx->functbl = &keccakfunctbl;
-	return 0;
-}
-
-static int keccaktest(void *, const drew_loader_t *)
+template<class T>
+static int keccak_test(void *, const drew_loader_t *)
 {
 	int res = 0;
 
 	using namespace drew;
-	typedef VariableSizedHashTestCase<Keccak, 224/8> TestCase224;
-	typedef VariableSizedHashTestCase<Keccak, 256/8> TestCase256;
-	typedef VariableSizedHashTestCase<Keccak, 384/8> TestCase384;
-	typedef VariableSizedHashTestCase<Keccak, 512/8> TestCase512;
+	typedef VariableSizedHashTestCase<T, 224/8> TestCase224;
+	typedef VariableSizedHashTestCase<T, 256/8> TestCase256;
+	typedef VariableSizedHashTestCase<T, 384/8> TestCase384;
+	typedef VariableSizedHashTestCase<T, 512/8> TestCase512;
 
 	static const uint8_t test[] = {
 		0x83, 0xaf, 0x34, 0x27, 0x9c, 0xcb, 0x54, 0x30,
@@ -157,12 +87,126 @@ static int keccaktest(void *, const drew_loader_t *)
 	return res;
 }
 
+static int keccak_get_digest_size(const drew_param_t *param)
+{
+	size_t digestsizeval = 0, result = 0;
+
+	for (const drew_param_t *p = param; p; p = p->next) {
+		if (!p->name)
+			continue;
+		// This is in bytes.
+		if (!digestsizeval && !strcmp(p->name, "digestSize"))
+			digestsizeval = p->param.number;
+	}
+	if (digestsizeval)
+		result = digestsizeval;
+	if (!result)
+		return -DREW_ERR_MORE_INFO;
+	return result;
+}
+
+template<class T>
+static int keccak_info(int op, void *p)
+{
+	using namespace drew;
+	const drew_param_t *param = reinterpret_cast<const drew_param_t *>(p);
+	const drew_hash_t *ctx = reinterpret_cast<const drew_hash_t *>(p);
+	switch (op) {
+		case DREW_HASH_VERSION:
+			return 2;
+		case DREW_HASH_QUANTUM:
+			return sizeof(typename T::quantum_t);
+		case DREW_HASH_SIZE:
+			return keccak_get_digest_size(param);
+		case DREW_HASH_BLKSIZE:
+			if (p)
+				return ((const T *)ctx->ctx)->GetBlockSize();
+			return -DREW_ERR_MORE_INFO;
+		case DREW_HASH_BUFSIZE:
+			if (p)
+				return ((const T *)ctx->ctx)->GetBlockSize();
+			return -DREW_ERR_MORE_INFO;
+		case DREW_HASH_INTSIZE:
+			return sizeof(T);
+		case DREW_HASH_ENDIAN:
+			return T::endian_t::GetEndianness();
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
+template<class T>
+static int keccak_init(drew_hash_t *ctx, int flags, const drew_loader_t *,
+		const drew_param_t *param, const drew_hash_functbl_t *tbl)
+{
+	T *p;
+	int size = keccak_get_digest_size(param);
+	if (size <= 0)
+		return size;
+	if (flags & DREW_HASH_FIXED)
+		p = new (ctx->ctx) T(size);
+	else
+		p = new T(size);
+	ctx->ctx = p;
+	ctx->functbl = tbl;
+	return 0;
+}
+
+extern "C" {
+PLUGIN_STRUCTURE2(keccak, Keccak)
+PLUGIN_STRUCTURE2(keccakwln, KeccakWithLimitedNots)
+PLUGIN_DATA_START()
+PLUGIN_DATA(keccak, "Keccak")
+PLUGIN_DATA(keccakwln, "Keccak")
+PLUGIN_DATA_END()
+PLUGIN_INTERFACE(keccak)
+
+static int keccakinfo(int op, void *p)
+{
+	return keccak_info<drew::Keccak>(op, p);
+}
+
+static int keccakinit(drew_hash_t *ctx, int flags, const drew_loader_t *ldr,
+		const drew_param_t *param)
+{
+	return keccak_init<drew::Keccak>(ctx, flags, ldr, param, &keccakfunctbl);
+}
+
+static int keccaktest(void *p, const drew_loader_t *ldr)
+{
+	return keccak_test<drew::Keccak>(p, ldr);
+}
+
+static int keccakwlninfo(int op, void *p)
+{
+	return keccak_info<drew::KeccakWithLimitedNots>(op, p);
+}
+
+static int keccakwlninit(drew_hash_t *ctx, int flags, const drew_loader_t *ldr,
+		const drew_param_t *param)
+{
+	return keccak_init<drew::KeccakWithLimitedNots>(ctx, flags, ldr, param,
+			&keccakwlnfunctbl);
+}
+
+static int keccakwlntest(void *p, const drew_loader_t *ldr)
+{
+	return keccak_test<drew::KeccakWithLimitedNots>(p, ldr);
+}
+
 }
 
 typedef drew::Keccak::endian_t E;
 
 drew::Keccak::Keccak(size_t t_) : m_c(t_*2), m_r(200-m_c)
 {
+	Reset();
+}
+
+drew::KeccakWithLimitedNots::KeccakWithLimitedNots(size_t t_)
+{
+	m_c = t_ * 2;
+	m_r = 200 - m_c;
 	Reset();
 }
 
@@ -229,6 +273,7 @@ inline static void rhopi(uint64_t b[5][5], const uint64_t a[5][5])
 	b[4][((2*4)+(3*4))%5] = RotateLeft(a[4][4], 14);
 }
 
+template<int T>
 inline static void chi(uint64_t a[5][5], const uint64_t b[5][5])
 {
 	for (size_t j = 0; j < 5; j++) {
@@ -243,11 +288,49 @@ inline static void chi(uint64_t a[5][5], const uint64_t b[5][5])
 	}
 }
 
+template<>
+inline void chi<1>(uint64_t a[5][5], const uint64_t b[5][5])
+{
+	// This version is used when the processor does not have an and-not
+	// instruction; it reduces the number of nots used by using the lane
+	// complementation technique.
+	a[0][0] =  b[0][0] ^ ( b[1][0] |  b[2][0]);
+	a[0][1] =  b[0][1] ^ ( b[1][1] |  b[2][1]);
+	a[0][2] =  b[0][2] ^ ( b[1][2] |  b[2][2]);
+	a[0][3] =  b[0][3] ^ ( b[1][3] &  b[2][3]);
+	a[0][4] =  b[0][4] ^ (~b[1][4] &  b[2][4]);
+	
+	a[1][0] =  b[1][0] ^ (~b[2][0] |  b[3][0]);
+	a[1][1] =  b[1][1] ^ ( b[2][1] &  b[3][1]);
+	a[1][2] =  b[1][2] ^ ( b[2][2] &  b[3][2]);
+	a[1][3] =  b[1][3] ^ ( b[2][3] |  b[3][3]);
+	a[1][4] = ~b[1][4] ^ ( b[2][4] |  b[3][4]);
+
+	a[2][0] =  b[2][0] ^ ( b[3][0] &  b[4][0]);
+	a[2][1] =  b[2][1] ^ ( b[3][1] | ~b[4][1]);
+	a[2][2] =  b[2][2] ^ (~b[3][2] &  b[4][2]);
+	a[2][3] =  b[2][3] ^ (~b[3][3] |  b[4][3]);
+	a[2][4] =  b[2][4] ^ ( b[3][4] &  b[4][4]);
+
+	a[3][0] =  b[3][0] ^ ( b[4][0] |  b[0][0]);
+	a[3][1] =  b[3][1] ^ ( b[4][1] |  b[0][1]);
+	a[3][2] = ~b[3][2] ^ ( b[4][2] |  b[0][2]);
+	a[3][3] = ~b[3][3] ^ ( b[4][3] &  b[0][3]);
+	a[3][4] =  b[3][4] ^ ( b[4][4] |  b[0][4]);
+
+	a[4][0] =  b[4][0] ^ ( b[0][0] &  b[1][0]);
+	a[4][1] =  b[4][1] ^ ( b[0][1] &  b[1][1]);
+	a[4][2] =  b[4][2] ^ ( b[0][2] &  b[1][2]);
+	a[4][3] =  b[4][3] ^ ( b[0][3] |  b[1][3]);
+	a[4][4] =  b[4][4] ^ ( b[0][4] &  b[1][4]);
+}
+
+template<int T>
 inline static void chirhopi(uint64_t a[5][5])
 {
 	uint64_t b[5][5];
 	rhopi(b, a);
-	chi(a, b);
+	chi<T>(a, b);
 }
 
 inline static void iota(uint64_t a[5][5], uint64_t k)
@@ -255,10 +338,11 @@ inline static void iota(uint64_t a[5][5], uint64_t k)
 	a[0][0] ^= k;
 }
 
+template<int T>
 inline static void round(uint64_t a[5][5], uint64_t k)
 {
 	theta(a);
-	chirhopi(a);
+	chirhopi<T>(a);
 	iota(a, k);
 }
 
@@ -277,22 +361,29 @@ static const uint64_t rc[] = {
 	0x0000000080000001, 0x8000000080008008
 };
 
+template<int T>
 static void keccak_f(uint64_t state[5][5])
 {
 	dump("s", state);
 	for (size_t i = 0; i < 24; i += 6) {
-		round(state, rc[i+0]);
-		round(state, rc[i+1]);
-		round(state, rc[i+2]);
-		round(state, rc[i+3]);
-		round(state, rc[i+4]);
-		round(state, rc[i+5]);
+		round<T>(state, rc[i+0]);
+		round<T>(state, rc[i+1]);
+		round<T>(state, rc[i+2]);
+		round<T>(state, rc[i+3]);
+		round<T>(state, rc[i+4]);
+		round<T>(state, rc[i+5]);
 	}
 	dump("e", state);
 }
 
 // This is not very useful, but is required for the API.
 void drew::Keccak::Transform(uint64_t state[5][5], const uint8_t *block)
+{
+	return Transform(state, block, (1600 - 576) / 8);
+}
+
+void drew::KeccakWithLimitedNots::Transform(uint64_t state[5][5],
+		const uint8_t *block)
 {
 	return Transform(state, block, (1600 - 576) / 8);
 }
@@ -307,7 +398,33 @@ void drew::Keccak::Transform(uint64_t state[5][5], const uint8_t *block,
 	for (size_t y = 0; y < DivideAndRoundUp(nwords, 5); y++)
 		for (size_t x = 0; x < 5 && (x+(5*y)) < nwords; x++)
 			state[x][y] ^= b[x + (5*y)];
-	keccak_f(state);
+	keccak_f<0>(state);
+}
+
+void drew::KeccakWithLimitedNots::Reset()
+{
+	m_len = 0;
+	memset(m_buf, 0, sizeof(m_buf));
+	memset(m_hash, 0, sizeof(m_buf));
+	m_hash[1][0] = ~0;
+	m_hash[2][0] = ~0;
+	m_hash[3][1] = ~0;
+	m_hash[2][2] = ~0;
+	m_hash[2][3] = ~0;
+	m_hash[0][4] = ~0;
+}
+
+void drew::KeccakWithLimitedNots::Transform(uint64_t state[5][5],
+		const uint8_t *block, size_t r)
+{
+	uint64_t blk[1152/64];
+	const uint64_t *b;
+	const size_t nwords = r / sizeof(uint64_t);
+	b = E::CopyIfNeeded(blk, block, r);
+	for (size_t y = 0; y < DivideAndRoundUp(nwords, 5); y++)
+		for (size_t x = 0; x < 5 && (x+(5*y)) < nwords; x++)
+			state[x][y] ^= b[x + (5*y)];
+	keccak_f<1>(state);
 }
 
 void drew::Keccak::GetDigest(uint8_t *digest, bool nopad)
@@ -315,6 +432,29 @@ void drew::Keccak::GetDigest(uint8_t *digest, bool nopad)
 	if (!nopad)
 		Pad();
 
+	const size_t nwords = m_r / sizeof(uint64_t);
+	const size_t len = m_c / 2;
+	uint8_t *d = digest;
+	for (size_t i = 0; i < len; i += m_r, d += m_r) {
+		uint64_t b[1152/64];
+		for (size_t y = 0; y < DivideAndRoundUp(nwords, 5); y++)
+			for (size_t x = 0; x < 5 && (x+(5*y)) < nwords; x++)
+				b[x + (5*y)] = m_hash[x][y];
+		E::CopyCarefully(d, b, std::min(m_r, len - i));
+	}
+}
+
+void drew::KeccakWithLimitedNots::GetDigest(uint8_t *digest, bool nopad)
+{
+	if (!nopad)
+		Pad();
+
+	m_hash[1][0] = ~m_hash[1][0];
+	m_hash[2][0] = ~m_hash[2][0];
+	m_hash[3][1] = ~m_hash[3][1];
+	m_hash[2][2] = ~m_hash[2][2];
+	m_hash[2][3] = ~m_hash[2][3];
+	m_hash[0][4] = ~m_hash[0][4];
 	const size_t nwords = m_r / sizeof(uint64_t);
 	const size_t len = m_c / 2;
 	uint8_t *d = digest;
