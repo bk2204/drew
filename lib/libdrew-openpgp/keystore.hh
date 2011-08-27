@@ -255,6 +255,7 @@ class BerkeleyDBBackend : public Backend
 		virtual Chunk *ReadChunks(const KeyChunk &k, size_t &nchunks);
 		virtual Chunk *LoadChunks(const KeyChunk &k, size_t &nchunks);
 	protected:
+		DB_ENV *dbenv;
 		DB *dbp;
 		DBC *dbc;
 		int error;
