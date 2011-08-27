@@ -620,6 +620,7 @@ static int load_uid(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 			offset = 0x00;
 		}
 		DrewID id(c[off]+offset);
+		force_load_item(ks, id, CHUNK_ID_SIG);
 		Item &item = ks->items[id];
 		if (!item.sig) {
 			memcpy(missingid, c[off]+offset, sizeof(drew_opgp_id_t));
@@ -640,6 +641,7 @@ static int load_uid(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 		text.append((const char *)(const uint8_t *)c[i],
 				std::min<size_t>(0x40, (len+1)-offset));
 	text.erase(text.size()-1);
+	uid.SetText(text);
 
 	ks->items[uid.GetInternalID()] = Item(uid);
 	return 0;
