@@ -245,8 +245,9 @@ int print_fingerprint(struct util *util, const char *keystorefile)
 	drew_opgp_id_t missingid;
 
 	drew_opgp_keystore_new(&ks, util->ldr);
-	drew_opgp_keystore_set_backend(ks, "file");
-	if ((res = drew_opgp_keystore_load(ks, keystorefile, missingid))) {
+	drew_opgp_keystore_set_backend(ks, "bdb");
+	if ((res = drew_opgp_keystore_open(ks, keystorefile, false)) ||
+			(res = drew_opgp_keystore_load(ks, missingid))) {
 		if (res == -DREW_ERR_MORE_INFO)
 			return print_error(23, res, "missing ID: %02x%02x%02x%02x",
 					missingid[0], missingid[1], missingid[2], missingid[3]);
@@ -335,19 +336,21 @@ int import(struct file *f, struct util *util, size_t pktbufsz,
 		memset(pkts+rem, 0, nused * sizeof(*pkts));
 		fill = rem;
 	}
-	drew_opgp_keystore_set_backend(ks, "file");
+	drew_opgp_keystore_set_backend(ks, "bdb");
+	if ((res = drew_opgp_keystore_open(ks, keystorefile, true)))
+		return print_error(23, res, "error opening keystore");
 	if (validate) {
-		printf("Validating keys...");
+		drew_opgp_keystore_store(ks);
+		printf("Validating keys...\n");
 		validate_keys(ks, 1);
 		fflush(stdout);
-		printf("done.\n");
+		printf("ok, done.\n");
 	}
-	printf("Saving keystore...");
-	fflush(stdout);
-	if ((res = drew_opgp_keystore_store(ks, keystorefile)))
+	printf("Saving keystore...\n");
+	if ((res = drew_opgp_keystore_store(ks)))
 		return print_error(23, res, "keystore failure");
 	drew_opgp_keystore_free(&ks);
-	printf("done.\n");
+	printf("ok, done.\n");
 out:
 	free(pkts);
 	return res;
