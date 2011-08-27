@@ -407,7 +407,7 @@ static struct plugin plugin_data[] = {
 };
 
 EXPORT()
-int DREW_PLUGIN_NAME(tommath)(void *ldr, int op, int id, void *p)
+int DREW_PLUGIN_NAME(openssl_bn)(void *ldr, int op, int id, void *p)
 {
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 

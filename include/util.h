@@ -87,6 +87,8 @@
  */
 #define VECTOR_T
 #define BRANCH_PREDICTION
+/* If we have features from C++ TR1, use them where they are more efficient. */
+#define FEATURE_TR1
 #if defined(__SIZEOF_INT128__) && __SIZEOF_INT128__ == 16
 #define FEATURE_128_BIT_INTEGERS
 typedef __int128_t int128_t;
