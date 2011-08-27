@@ -829,15 +829,9 @@ static int force_load_item(drew_opgp_keystore_t ks, const InternalID &id,
 
 EXPORT()
 extern "C"
-int drew_opgp_keystore_load(drew_opgp_keystore_t ks, const char *filename,
-		drew_opgp_id_t missingid)
+int drew_opgp_keystore_load(drew_opgp_keystore_t ks, drew_opgp_id_t missingid)
 {
 	int res = 0;
-
-	ks->b->Open(filename, false);
-
-	if (!ks->b->IsOpen())
-		return ks->b->GetError();
 
 	if (!ks->b->IsRandomAccess()) {
 		RETFAIL(load_header(ks));
@@ -876,14 +870,35 @@ int drew_opgp_keystore_load(drew_opgp_keystore_t ks, const char *filename,
 }
 
 extern "C"
-int drew_opgp_keystore_store(drew_opgp_keystore_t ks, const char *filename)
+int drew_opgp_keystore_open(drew_opgp_keystore_t ks, const char *filename,
+		bool write)
 {
+	if (!ks->b)
+		return -DREW_ERR_INVALID;
+
 	if (!ks->b->IsOpen())
-		ks->b->Open(filename, true);
+		ks->b->Open(filename, write);
 
 	if (!ks->b->IsOpen())
 		return ks->b->GetError();
 
+	return 0;
+}
+
+extern "C"
+int drew_opgp_keystore_close(drew_opgp_keystore_t ks)
+{
+	if (!ks->b)
+		return -DREW_ERR_INVALID;
+
+	ks->b->Close();
+
+	return 0;
+}
+
+extern "C"
+int drew_opgp_keystore_store(drew_opgp_keystore_t ks)
+{
 	store_header(ks);
 	typedef ItemStore::iterator it_t;
 	if (!ks->b->IsRandomAccess()) {
@@ -915,9 +930,9 @@ int drew_opgp_keystore_store(drew_opgp_keystore_t ks, const char *filename)
 }
 
 extern "C"
-int drew_opgp_keystore_flush(drew_opgp_keystore_t ks, const char *filename)
+int drew_opgp_keystore_flush(drew_opgp_keystore_t ks)
 {
-	RETFAIL(drew_opgp_keystore_store(ks, filename));
+	RETFAIL(drew_opgp_keystore_store(ks));
 	ks->items.clear();
 	return 0;
 }
