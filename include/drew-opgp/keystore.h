@@ -5,6 +5,8 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
+
 #include <drew/drew.h>
 #include <drew/plugin.h>
 
@@ -18,9 +20,11 @@ int drew_opgp_keystore_new(drew_opgp_keystore_t *ksp, const drew_loader_t *ldr);
 int drew_opgp_keystore_free(drew_opgp_keystore_t *ksp);
 int drew_opgp_keystore_set_backend(drew_opgp_keystore_t ks,
 		const char *backend);
-int drew_opgp_keystore_load(drew_opgp_keystore_t ks, const char *filename,
-		drew_opgp_id_t missingid);
-int drew_opgp_keystore_store(drew_opgp_keystore_t ks, const char *filename);
+int drew_opgp_keystore_load(drew_opgp_keystore_t ks, drew_opgp_id_t missingid);
+int drew_opgp_keystore_store(drew_opgp_keystore_t ks);
+int drew_opgp_keystore_open(drew_opgp_keystore_t ks, const char *filename,
+		bool write);
+int drew_opgp_keystore_close(drew_opgp_keystore_t ks);
 int drew_opgp_keystore_update_sigs(drew_opgp_keystore_t ks,
 		drew_opgp_sig_t *sigs, size_t nsigs, int flags);
 int drew_opgp_keystore_update_sig(drew_opgp_keystore_t ks, drew_opgp_sig_t sig,
@@ -44,7 +48,7 @@ int drew_opgp_keystore_lookup_by_keyid(drew_opgp_keystore_t ks,
 		drew_opgp_key_t *key, size_t nkeys, drew_opgp_keyid_t keyid);
 int drew_opgp_keystore_get_keys(drew_opgp_keystore_t ks,
 		drew_opgp_key_t *key, size_t nkeys);
-int drew_opgp_keystore_flush(drew_opgp_keystore_t ks, const char *filename);
+int drew_opgp_keystore_flush(drew_opgp_keystore_t ks);
 
 int drew_opgp_key_validate_signatures(drew_opgp_key_t key,
 		drew_opgp_keystore_t ks);
