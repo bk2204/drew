@@ -69,7 +69,7 @@ class SHA512t : public SHA512
 			if (!nopad)
 				Pad();
 
-			endian_t::Copy(digest, m_hash, t);
+			endian_t::CopyCarefully(digest, m_hash, t);
 		}
 		size_t GetDigestSize() const
 		{
