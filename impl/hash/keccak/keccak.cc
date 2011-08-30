@@ -401,6 +401,13 @@ void drew::Keccak::Transform(uint64_t state[5][5], const uint8_t *block,
 	keccak_f<0>(state);
 }
 
+void drew::Keccak::Reset()
+{
+	m_len = 0;
+	memset(m_buf, 0, sizeof(m_buf));
+	memset(m_hash, 0, sizeof(m_buf));
+}
+
 void drew::KeccakWithLimitedNots::Reset()
 {
 	m_len = 0;

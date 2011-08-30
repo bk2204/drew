@@ -40,12 +40,7 @@ class Keccak
 			memset(m_buf, 0, sizeof(m_buf));
 			memset(m_hash, 0, sizeof(m_hash));
 		}
-		virtual void Reset()
-		{
-			m_len = 0;
-			memset(m_buf, 0, sizeof(m_buf));
-			memset(m_hash, 0, sizeof(m_buf));
-		}
+		virtual void Reset();
 		inline void Update(const uint8_t *data, size_t len)
 		{
 			const size_t off = m_len % m_r;
