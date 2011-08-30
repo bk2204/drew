@@ -405,14 +405,14 @@ void drew::Keccak::Reset()
 {
 	m_len = 0;
 	memset(m_buf, 0, sizeof(m_buf));
-	memset(m_hash, 0, sizeof(m_buf));
+	memset(m_hash, 0, sizeof(m_hash));
 }
 
 void drew::KeccakWithLimitedNots::Reset()
 {
 	m_len = 0;
 	memset(m_buf, 0, sizeof(m_buf));
-	memset(m_hash, 0, sizeof(m_buf));
+	memset(m_hash, 0, sizeof(m_hash));
 	m_hash[1][0] = ~0;
 	m_hash[2][0] = ~0;
 	m_hash[3][1] = ~0;
