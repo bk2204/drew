@@ -932,12 +932,18 @@ int drew_opgp_keystore_store(drew_opgp_keystore_t ks)
 		// algorithm.
 		RandomAccessBackend *rsb = static_cast<RandomAccessBackend *>(ks->b);
 		rsb->StartTransaction();
-		for (it_t it = ks->items.begin(); it != ks->items.end(); it++) {
+		int cnt = 0;
+		for (it_t it = ks->items.begin(); it != ks->items.end(); it++, cnt++) {
 			store_mpi(ks, it->first.id, it->second.mpi);
 			store_sig(ks, it->first.id, it->second.sig);
 			store_uid(ks, it->first.id, it->second.uid);
 			store_subkey(ks, it->first.id, it->second.pub);
 			store_key(ks, it->first.id, it->second.key);
+			if (!(cnt & 0x7f)) {
+				rsb->CommitTransaction();
+				rsb->EndTransaction();
+				rsb->StartTransaction();
+			}
 		}
 		rsb->CommitTransaction();
 		rsb->EndTransaction();
