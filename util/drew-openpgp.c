@@ -157,44 +157,30 @@ void print_key_signature_info(drew_opgp_sig_t sig)
 {
 	drew_opgp_keyid_t keyid;
 	int flags;
-	char c, rev = ' ', exp = ' ', loc = ' ', self = ' ';
+	char cflags[8];
+	memset(cflags, ' ', sizeof(cflags));
+	cflags[sizeof(cflags)-1] = 0;
 	drew_opgp_sig_get_flags(sig, &flags, 1);
 	drew_opgp_sig_get_issuer(sig, keyid);
 	if (flags & DREW_OPGP_SIGNATURE_CORRUPT)
-		c = '-';
+		cflags[0] = 'c';
 	else if (flags & DREW_OPGP_SIGNATURE_INCOMPLETE)
-		c = '-';
-	else if (flags & DREW_OPGP_SIGNATURE_CHECKED)
-		switch (flags & (DREW_OPGP_SIGNATURE_HASH_CHECK | 
-					DREW_OPGP_SIGNATURE_VALIDATED))
-		{
-			case 0:
-				c = 'x';
-				break;
-			case DREW_OPGP_SIGNATURE_HASH_CHECK:
-				c = 'h';
-				break;
-			case DREW_OPGP_SIGNATURE_VALIDATED:
-				c = 'V';
-				break;
-			default:
-				c = 'v';
-				break;
-		}
-	else if (flags & DREW_OPGP_SIGNATURE_HASH_CHECK)
-		c = 'p';
-	else
-		c = '?';
+		cflags[0] = 'i';
+	else {
+		cflags[0] = flags & DREW_OPGP_SIGNATURE_CHECKED ?
+			(flags & DREW_OPGP_SIGNATURE_VALIDATED ? 'v' : 'x') : '?';
+		cflags[1] = flags & DREW_OPGP_SIGNATURE_HASH_CHECK ? 'h' : 'x';
+	}
 
 	if (flags & DREW_OPGP_SIGNATURE_IRREVOCABLE)
-		rev = '!';
+		cflags[2] = '!';
 	else if (flags & DREW_OPGP_SIGNATURE_REVOKED)
-		rev = 'x';
+		cflags[2] = 'x';
 	if (flags & DREW_OPGP_SIGNATURE_EXPIRED)
-		exp = 't';
+		cflags[3] = 't';
 	if (flags & DREW_OPGP_SIGNATURE_LOCAL)
-		loc = 'p';
-	printf("        Signature: %c%c%c%c%c ", c, self, rev, exp, loc);
+		cflags[4] = 'p';
+	printf("        Signature: %s ", cflags);
 	for (size_t i = 0; i < sizeof(keyid); i++)
 		printf("%02x", keyid[i]);
 	printf("\n");
