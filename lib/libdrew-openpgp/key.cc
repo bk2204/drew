@@ -676,7 +676,7 @@ void drew::Signature::SynchronizeUserIDSignature(const PublicKey &pub,
 		HashUserIDSignature(pub, uid);
 		if (!memcmp(left, hash, 2))
 			flags |= DREW_OPGP_SIGNATURE_HASH_CHECK;
-		if (!memcmp(keyid, keyid, sizeof(keyid))) {
+		if (!memcmp(pub.GetKeyID(), keyid, sizeof(keyid))) {
 			if (f & DREW_OPGP_SYNCHRONIZE_VALIDATE_SELF_SIGNATURES)
 				ValidateSignature(pub, true);
 		}
