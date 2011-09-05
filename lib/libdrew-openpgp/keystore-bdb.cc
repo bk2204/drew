@@ -34,7 +34,7 @@ void BerkeleyDBBackend::Open(const char *filename, bool write)
 	if (error)
 		return Close();
 	db_create(&dbp, dbenv, 0);
-	error = dbp->open(dbp, NULL, "openpgp", "openpgp", DB_BTREE, flags,
+	error = dbp->open(dbp, NULL, "openpgp", NULL, DB_BTREE, flags,
 			0600);
 	if (error)
 		return Close();
