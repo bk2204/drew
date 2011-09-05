@@ -293,9 +293,6 @@ int import(struct file *f, struct util *util, size_t pktbufsz,
 
 	memset(pkts, 0, sizeof(*pkts) * pktbufsz);
 	drew_opgp_keystore_new(&ks, util->ldr);
-	drew_opgp_keystore_set_backend(ks, "bdb");
-	if ((res = drew_opgp_keystore_open(ks, keystorefile, true)))
-		return print_error(23, res, "error opening keystore");
 	printf("Importing keys...\n");
 	while (off < f->size || nparsed || pkts[0].type) {
 		npkts = pktbufsz - fill;
@@ -330,8 +327,6 @@ int import(struct file *f, struct util *util, size_t pktbufsz,
 					"packet buffer (%zu packets) is too small", pktbufsz);
 		drew_opgp_keystore_update_key(ks, key, 0);
 		print_key_info(key, 0);
-		if (!validate)
-			drew_opgp_keystore_flush(ks);
 		drew_opgp_key_free(&key);
 		res = 0;
 		for (size_t i = nused; i < pktbufsz && pkts[i].type &&
@@ -341,6 +336,9 @@ int import(struct file *f, struct util *util, size_t pktbufsz,
 		memset(pkts+rem, 0, nused * sizeof(*pkts));
 		fill = rem;
 	}
+	drew_opgp_keystore_set_backend(ks, "bdb");
+	if ((res = drew_opgp_keystore_open(ks, keystorefile, true)))
+		return print_error(23, res, "error opening keystore");
 	if (validate) {
 		drew_opgp_keystore_store(ks);
 		printf("Validating keys...\n");
