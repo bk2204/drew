@@ -342,6 +342,9 @@ out:
 	return res;
 }
 
+#define CMD_LIST_PACKETS	1
+#define CMD_FINGERPRINT		2
+#define CMD_IMPORT			3
 int main(int argc, char **argv)
 {
 	int res = 0, cmd = 0, pktbufsz = 20000, validate = 0;
@@ -349,9 +352,9 @@ int main(int argc, char **argv)
 	struct util util;
 	const char *keystorefile = NULL;
 	struct poptOption optsargs[] = {
-		{"list-packets", 0, POPT_ARG_VAL, &cmd, 1, NULL, NULL},
-		{"fingerprint", 0, POPT_ARG_VAL, &cmd, 2, NULL, NULL},
-		{"import", 0, POPT_ARG_VAL, &cmd, 3, NULL, NULL},
+		{"list-packets", 0, POPT_ARG_VAL, &cmd, CMD_LIST_PACKETS, NULL, NULL},
+		{"fingerprint", 0, POPT_ARG_VAL, &cmd, CMD_FINGERPRINT, NULL, NULL},
+		{"import", 0, POPT_ARG_VAL, &cmd, CMD_IMPORT, NULL, NULL},
 		{"validate", 0, POPT_ARG_NONE, &validate, 1, NULL, NULL},
 		{"keystore", 0, POPT_ARG_STRING, &keystorefile, 1, NULL, NULL},
 		{"packet-buffer-size", 0, POPT_ARG_INT, &pktbufsz, 0, NULL, NULL},
@@ -373,21 +376,21 @@ int main(int argc, char **argv)
 	if (filename)
 		if ((res = open_file(&f, filename)))
 			return res;
-	if (cmd == 1) {
+	if (cmd == CMD_LIST_PACKETS) {
 		if (!filename) {
 			res = 5;
 			goto out;
 		}
 		res = list_packets(&f, &util);
 	}
-	else if (cmd == 2) {
+	else if (cmd == CMD_FINGERPRINT) {
 		if (!keystorefile) {
 			res = 32;
 			goto out;
 		}
 		res = print_fingerprint(&util, keystorefile);
 	}
-	else if (cmd == 3) {
+	else if (cmd == CMD_IMPORT) {
 		if (!keystorefile) {
 			res = 32;
 			goto out;
