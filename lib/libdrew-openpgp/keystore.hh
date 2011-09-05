@@ -56,6 +56,7 @@ typedef BigEndian E;
 
 using namespace drew;
 
+#define ITEM_FLAG_MODIFIED	1
 struct Item
 {
 	Item() : type(TYPE_NIL), key(0), sig(0), uid(0), pub(0), mpi(0), flags(0) {}
@@ -74,6 +75,21 @@ struct Item
 	explicit Item(const MPI &mpip) :
 		type(TYPE_MPI), key(0), sig(0), uid(0), pub(0), mpi(new MPI(mpip)),
 		flags(0) {}
+	Item(const Key &keyp, int f) :
+		type(TYPE_KEY), key(new Key(keyp)), sig(0), uid(0), pub(0), mpi(0),
+		flags(f) {}
+	Item(const Signature &sigp, int f) :
+		type(TYPE_SIG), key(0), sig(new Signature(sigp)), uid(0), pub(0),
+		mpi(0), flags(f) {}
+	Item(const UserID &uidp, int f) :
+		type(TYPE_UID), key(0), sig(0), uid(new UserID(uidp)), pub(0), mpi(0),
+		flags(f) {}
+	Item(const PublicKey &pubp, int f) :
+		type(TYPE_SUB), key(0), sig(0), uid(0), pub(new PublicKey(pubp)),
+		mpi(0), flags(f) {}
+	Item(const MPI &mpip, int f) :
+		type(TYPE_MPI), key(0), sig(0), uid(0), pub(0), mpi(new MPI(mpip)),
+		flags(f) {}
 	Item(const Item &other)
 	{
 		type = other.type;

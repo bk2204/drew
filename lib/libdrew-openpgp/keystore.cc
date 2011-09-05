@@ -933,7 +933,9 @@ int drew_opgp_keystore_store(drew_opgp_keystore_t ks)
 		RandomAccessBackend *rsb = static_cast<RandomAccessBackend *>(ks->b);
 		rsb->StartTransaction();
 		int cnt = 0;
-		for (it_t it = ks->items.begin(); it != ks->items.end(); it++, cnt++) {
+		for (it_t it = ks->items.begin(); it != ks->items.end(); it++) {
+			if (!(it->second.flags & ITEM_FLAG_MODIFIED))
+				continue;
 			store_mpi(ks, it->first.id, it->second.mpi);
 			store_sig(ks, it->first.id, it->second.sig);
 			store_uid(ks, it->first.id, it->second.uid);
@@ -944,6 +946,7 @@ int drew_opgp_keystore_store(drew_opgp_keystore_t ks)
 				rsb->EndTransaction();
 				rsb->StartTransaction();
 			}
+			cnt++;
 		}
 		rsb->CommitTransaction();
 		rsb->EndTransaction();
@@ -965,11 +968,12 @@ int drew_opgp_keystore_update_sigs(drew_opgp_keystore_t ks,
 {
 	for (size_t i = 0; i < nsigs; i++) {
 		Signature *sig = reinterpret_cast<Signature *>(sigs[i]);
-		ks->items[sig->GetInternalID()] = Item(*sig);
+		ks->items[sig->GetInternalID()] = Item(*sig, ITEM_FLAG_MODIFIED);
 		MPI *mpi = sig->GetMPIs();
 		for (size_t j = 0; j < DREW_OPGP_MAX_MPIS && mpi[j].GetByteLength();
 				j++)
-			ks->items[mpi[j].GetInternalID()] = Item(mpi[j]);
+			ks->items[mpi[j].GetInternalID()] =
+				Item(mpi[j], ITEM_FLAG_MODIFIED);
 	}
 	return 0;
 }
@@ -987,7 +991,7 @@ int drew_opgp_keystore_update_user_ids(drew_opgp_keystore_t ks,
 {
 	for (size_t i = 0; i < nuids; i++) {
 		UserID *uid = reinterpret_cast<UserID *>(uids[i]);
-		ks->items[uid->GetInternalID()] = Item(*uid);
+		ks->items[uid->GetInternalID()] = Item(*uid, ITEM_FLAG_MODIFIED);
 		UserID::SignatureStore &sigs = uid->GetSignatures();
 		typedef UserID::SignatureStore::iterator sigit_t;
 		for (sigit_t it = sigs.begin(); it != sigs.end(); it++)
@@ -1008,7 +1012,7 @@ int drew_opgp_keystore_add_keys(drew_opgp_keystore_t ks,
 		drew_opgp_key_t *keys, size_t nkeys, int flags)
 {
 	for (size_t i = 0; i < nkeys; i++)
-		ks->items.insert(std::pair<DrewID, Item>(keys[i]->GetPublicMainKey().GetInternalID(), Item(*keys[i])));
+		ks->items.insert(std::pair<DrewID, Item>(keys[i]->GetPublicMainKey().GetInternalID(), Item(*keys[i], ITEM_FLAG_MODIFIED)));
 	return 0;
 }
 
@@ -1022,10 +1026,10 @@ UNEXPORT()
 
 static void update_pubkeys(drew_opgp_keystore_t ks, PublicKey *pub, int flags)
 {
-	ks->items[pub->GetInternalID()] = Item(*pub);
+	ks->items[pub->GetInternalID()] = Item(*pub, ITEM_FLAG_MODIFIED);
 	MPI *mpi = pub->GetMPIs();
 	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && mpi[i].GetByteLength(); i++)
-		ks->items[mpi[i].GetInternalID()] = Item(mpi[i]);
+		ks->items[mpi[i].GetInternalID()] = Item(mpi[i], ITEM_FLAG_MODIFIED);
 	PublicKey::SignatureStore &sigs = pub->GetSignatures();
 	typedef PublicKey::SignatureStore::iterator sigit_t;
 	for (sigit_t it = sigs.begin(); it != sigs.end(); it++)
@@ -1040,7 +1044,7 @@ int drew_opgp_keystore_update_keys(drew_opgp_keystore_t ks,
 	for (size_t i = 0; i < nkeys; i++) {
 		Key *key = keys[i];
 		PublicKey &pub = key->GetPublicMainKey();
-		ks->items[pub.GetInternalID()] = Item(*key);
+		ks->items[pub.GetInternalID()] = Item(*key, ITEM_FLAG_MODIFIED);
 		std::vector<PublicKey> &pubs = key->GetPublicKeys();
 		size_t npubsubs = pubs.size();
 		size_t nmpis = GetNumberOfMPIs(pub);
@@ -1056,7 +1060,8 @@ int drew_opgp_keystore_update_keys(drew_opgp_keystore_t ks,
 				it != sigstore.end(); it++)
 			drew_opgp_keystore_update_sig(ks, &it->second, flags);
 		for (size_t j = 0; j < nmpis; j++)
-			ks->items[mpi[j].GetInternalID()] = Item(mpi[j]);
+			ks->items[mpi[j].GetInternalID()] =
+				Item(mpi[j], ITEM_FLAG_MODIFIED);
 	}
 	return 0;
 }
