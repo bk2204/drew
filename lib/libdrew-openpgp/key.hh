@@ -253,19 +253,19 @@ struct drew_opgp_sig_s : public Identifiable, public ContainsLoader
 	protected:
 	private:
 		int flags;
-		int ver;
-		int type;
-		int pkalgo;
-		int mdalgo;
+		uint8_t ver;
+		uint8_t type;
+		uint8_t pkalgo;
+		uint8_t mdalgo;
+		uint8_t left[2];
 		time_t ctime;
 		time_t etime;
 		drew_opgp_keyid_t keyid;
 		drew_opgp_subpacket_group_t hashed;
 		drew_opgp_subpacket_group_t unhashed;
-		uint8_t left[2];
-		selfsig_t selfsig;
 		MPI mpi[DREW_OPGP_MAX_MPIS];
 		drew_opgp_hash_t hash;
+		selfsig_t selfsig;
 };
 
 struct drew_opgp_uid_s : public Identifiable, public ContainsLoader
@@ -339,10 +339,9 @@ struct drew_opgp_pubkey_s : public Identifiable, public ContainsLoader
 		void CalculateFingerprintV3();
 		void CalculateFingerprintV4();
 	private:
-		bool main;
 		int flags;
-		int ver;
-		int algo;
+		uint8_t ver;
+		uint8_t algo;
 		time_t ctime;
 		time_t etime;
 		MPI mpi[DREW_OPGP_MAX_MPIS];

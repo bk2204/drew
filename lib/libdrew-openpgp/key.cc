@@ -359,15 +359,12 @@ void drew::MPI::SetMPI(const drew_opgp_mpi_t &other)
 	mpi.len = other.len;
 	mpi.data = (uint8_t *)((other.data) ?
 			drew_mem_memdup(other.data, (other.len + 7) / 8) : 0);
-	memcpy(&mpi.id, &other.id, sizeof(mpi.id));
-	SetInternalID(other.id);
 }
 
 void drew::MPI::SetMPI(const uint8_t *p, size_t len)
 {
 	mpi.len = len;
 	mpi.data = (uint8_t *)drew_mem_memdup(p, (len + 7) / 8);
-	memset(&mpi.id, 0, sizeof(mpi.id));
 }
 
 void drew::MPI::GenerateID()
@@ -376,7 +373,6 @@ void drew::MPI::GenerateID()
 	hash.Update(mpi.len);
 	hash.Update(mpi.data, GetByteLength());
 	hash.Final(id);
-	memcpy(&mpi.id, id, sizeof(mpi.id));
 }
 
 void clone_subpackets(drew_opgp_subpacket_group_t *nu,
@@ -842,8 +838,8 @@ void drew::UserID::HashData(Hash &hash) const
 	hash.Update((const uint8_t *)text.data(), text.size());
 }
 
-
-drew::PublicKey::drew_opgp_pubkey_s() : main(true), flags(0)
+#define PUBKEY_FLAG_MAIN	0x40000000
+drew::PublicKey::drew_opgp_pubkey_s() : flags(PUBKEY_FLAG_MAIN)
 {
 	ldr = 0;
 	ver = 0;
@@ -854,7 +850,8 @@ drew::PublicKey::drew_opgp_pubkey_s() : main(true), flags(0)
 	memset(&fp, 0, sizeof(fp));
 }
 
-drew::PublicKey::drew_opgp_pubkey_s(bool is_main) : main(is_main), flags(0)
+drew::PublicKey::drew_opgp_pubkey_s(bool is_main) :
+	flags(is_main ? PUBKEY_FLAG_MAIN : 0)
 {
 	ldr = 0;
 	ver = 0;
@@ -867,7 +864,6 @@ drew::PublicKey::drew_opgp_pubkey_s(bool is_main) : main(is_main), flags(0)
 
 drew::PublicKey::drew_opgp_pubkey_s(const drew_opgp_pubkey_s &pub)
 {
-	main = pub.main;
 	ldr = pub.ldr;
 	flags = pub.flags;
 	ver = pub.ver;
@@ -886,7 +882,6 @@ drew::PublicKey::drew_opgp_pubkey_s(const drew_opgp_pubkey_s &pub)
 
 drew::PublicKey &drew::PublicKey::operator=(const PublicKey &pub)
 {
-	main = pub.main;
 	ldr = pub.ldr;
 	flags = pub.flags;
 	ver = pub.ver;
@@ -916,12 +911,13 @@ void drew::PublicKey::AddSignature(const Signature &sig)
 
 void drew::PublicKey::SetIsMainPublicKey(bool is_main)
 {
-	main = is_main;
+	flags &= ~PUBKEY_FLAG_MAIN;
+	flags |= is_main ? PUBKEY_FLAG_MAIN : 0;
 }
 
 bool drew::PublicKey::IsMainPublicKey() const
 {
-	return main;
+	return flags & PUBKEY_FLAG_MAIN;
 }
 
 void drew::PublicKey::Merge(const PublicKey &pub)
@@ -949,7 +945,7 @@ void drew::PublicKey::Synchronize(int flags)
 	}
 	else
 		memcpy(keyid, fp+20-8, 8);
-	if (!main && uids.size())
+	if (!(flags & PUBKEY_FLAG_MAIN) && uids.size())
 		throw DREW_OPGP_ERR_BAD_KEY_FORMAT;
 	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && mpi[i].GetByteLength(); i++) {
 		mpi[i].SetLoader(ldr);

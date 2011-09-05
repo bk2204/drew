@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#define DREW_OPGP_MAX_MPIS 10
+#define DREW_OPGP_MAX_MPIS 4
 #define DREW_OPGP_MAX_MPIS_ENCRYPT DREW_OPGP_MAX_MPIS
 #define DREW_OPGP_MAX_MPIS_SIGN DREW_OPGP_MAX_MPIS
 #define DREW_OPGP_MAX_MPIS_PUBKEY DREW_OPGP_MAX_MPIS
@@ -31,7 +31,6 @@ typedef struct drew_opgp_parser_s *drew_opgp_parser_t;
 typedef struct {
 	uint16_t len;
 	uint8_t *data;
-	drew_opgp_id_t id;
 } drew_opgp_mpi_t;
 
 typedef struct {
@@ -69,8 +68,8 @@ typedef struct {
 
 typedef struct {
 	uint16_t len;
+	uint16_t nsubpkts;
 	uint8_t *data;
-	size_t nsubpkts;
 	drew_opgp_subpacket_t *subpkts;
 } drew_opgp_subpacket_group_t;
 
