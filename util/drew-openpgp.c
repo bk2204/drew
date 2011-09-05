@@ -254,14 +254,59 @@ int print_fingerprint(struct util *util, const char *keystorefile)
 static void validate_keys(drew_opgp_keystore_t ks, int print)
 {
 	int nkeys = drew_opgp_keystore_get_keys(ks, NULL, 0);
-	drew_opgp_key_t *keys;
+	drew_opgp_key_t *keys, key;
 	keys = malloc(nkeys * sizeof(*keys));
 	drew_opgp_keystore_get_keys(ks, keys, nkeys);
 	for (int i = 0; i < nkeys; i++) {
-		drew_opgp_key_validate_signatures(keys[i], ks);
+		drew_opgp_key_clone(&key, keys[i]);
+		drew_opgp_key_validate_signatures(key, ks);
+		drew_opgp_keystore_update_key(ks, key, 0);
+		drew_opgp_key_free(&key);
 		if (print)
 			print_key_info(keys[i], 0);
 	}
+}
+
+/* Process the keystore in some way.  Right now, all that can be done is
+ * validating.
+ */
+int process(struct util *util, const char *keystorefile, int validate)
+{
+	int res = 0;
+	drew_opgp_keystore_t ks;
+	drew_opgp_id_t missingid;
+
+	drew_opgp_keystore_new(&ks, util->ldr);
+	drew_opgp_keystore_set_backend(ks, "bdb");
+	if ((res = drew_opgp_keystore_open(ks, keystorefile, false)))
+		return print_error(23, res, "error opening keystore");
+	printf("Loading keys...");
+	fflush(stdout);
+	if ((res = drew_opgp_keystore_load(ks, missingid))) {
+		if (res == -DREW_ERR_MORE_INFO)
+			return print_error(23, res, "missing ID: %02x%02x%02x%02x",
+					missingid[0], missingid[1], missingid[2], missingid[3]);
+		return print_error(23, res, "keystore failure");
+	}
+	drew_opgp_keystore_close(ks);
+	printf("ok, done.\n");
+
+	if (validate) {
+		printf("Validating keys...\n");
+		validate_keys(ks, 1);
+		fflush(stdout);
+		printf("ok, done.\n");
+	}
+
+	printf("Storing keys...");
+	fflush(stdout);
+	if ((res = drew_opgp_keystore_open(ks, keystorefile, true)))
+		return print_error(23, res, "error opening keystore");
+	drew_opgp_keystore_store(ks);
+	printf("ok, done.\n");
+	drew_opgp_keystore_close(ks);
+
+	return 0;
 }
 
 int import(struct file *f, struct util *util, size_t pktbufsz,
@@ -345,6 +390,7 @@ out:
 #define CMD_LIST_PACKETS	1
 #define CMD_FINGERPRINT		2
 #define CMD_IMPORT			3
+#define CMD_PROCESS			4
 int main(int argc, char **argv)
 {
 	int res = 0, cmd = 0, pktbufsz = 20000, validate = 0;
@@ -355,6 +401,7 @@ int main(int argc, char **argv)
 		{"list-packets", 0, POPT_ARG_VAL, &cmd, CMD_LIST_PACKETS, NULL, NULL},
 		{"fingerprint", 0, POPT_ARG_VAL, &cmd, CMD_FINGERPRINT, NULL, NULL},
 		{"import", 0, POPT_ARG_VAL, &cmd, CMD_IMPORT, NULL, NULL},
+		{"process", 0, POPT_ARG_VAL, &cmd, CMD_PROCESS, NULL, NULL},
 		{"validate", 0, POPT_ARG_NONE, &validate, 1, NULL, NULL},
 		{"keystore", 0, POPT_ARG_STRING, &keystorefile, 1, NULL, NULL},
 		{"packet-buffer-size", 0, POPT_ARG_INT, &pktbufsz, 0, NULL, NULL},
@@ -396,6 +443,13 @@ int main(int argc, char **argv)
 			goto out;
 		}
 		res = import(&f, &util, pktbufsz, keystorefile, validate);
+	}
+	else if (cmd == CMD_PROCESS) {
+		if (!keystorefile) {
+			res = 32;
+			goto out;
+		}
+		res = process(&util, keystorefile, validate);
 	}
 	else {
 		fprintf(stderr, "%s: need a valid command\n", argv[0]);
