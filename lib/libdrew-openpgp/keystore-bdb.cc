@@ -9,7 +9,8 @@ UNEXPORT()
 
 #define CHUNKSZ	64
 
-BerkeleyDBBackend::BerkeleyDBBackend() : dbenv(0), dbp(0), dbc(0), error(0)
+BerkeleyDBBackend::BerkeleyDBBackend() :
+	dbenv(0), dbp(0), dbc(0), txn(0), error(0)
 {
 }
 
@@ -77,7 +78,7 @@ void BerkeleyDBBackend::WriteChunks(const KeyChunk &k, const Chunk *c,
 	key.data = (void *)k.chunk;
 	key.size = sizeof(k.chunk);
 	key.flags = 0;
-	dbp->put(dbp, NULL, &key, &data, 0);
+	dbp->put(dbp, txn, &key, &data, 0);
 	delete[] buf;
 }
 
@@ -121,4 +122,23 @@ Chunk *BerkeleyDBBackend::LoadChunks(const KeyChunk &k, size_t &nchunks)
 	for (size_t i = 0, off = 0; i < nchunks; i++, off += sizeof(c->chunk))
 		memcpy(c[i], p+off, sizeof(c->chunk));
 	return c;
+}
+
+void BerkeleyDBBackend::StartTransaction()
+{
+	dbenv->txn_begin(dbenv, NULL, &txn, DB_TXN_BULK);
+}
+
+void BerkeleyDBBackend::CommitTransaction()
+{
+	if (txn)
+		txn->commit(txn, 0);
+	txn = 0;
+}
+
+void BerkeleyDBBackend::EndTransaction()
+{
+	if (txn)
+		txn->abort(txn);
+	txn = 0;
 }

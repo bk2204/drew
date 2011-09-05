@@ -918,6 +918,8 @@ int drew_opgp_keystore_store(drew_opgp_keystore_t ks)
 	else {
 		// We can efficiently access any arbitrary record, so use a one-pass
 		// algorithm.
+		RandomAccessBackend *rsb = static_cast<RandomAccessBackend *>(ks->b);
+		rsb->StartTransaction();
 		for (it_t it = ks->items.begin(); it != ks->items.end(); it++) {
 			store_mpi(ks, it->first.id, it->second.mpi);
 			store_sig(ks, it->first.id, it->second.sig);
@@ -925,6 +927,8 @@ int drew_opgp_keystore_store(drew_opgp_keystore_t ks)
 			store_subkey(ks, it->first.id, it->second.pub);
 			store_key(ks, it->first.id, it->second.key);
 		}
+		rsb->CommitTransaction();
+		rsb->EndTransaction();
 	}
 	return 0;
 }

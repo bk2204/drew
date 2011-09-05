@@ -217,6 +217,29 @@ class Backend
 	private:
 };
 
+class RandomAccessBackend : public Backend
+{
+	public:
+		virtual bool IsRandomAccess() const
+		{
+			return true;
+		}
+		// Create a new transaction.
+		virtual void StartTransaction()
+		{
+		}
+		// Commit the current transaction.
+		virtual void CommitTransaction()
+		{
+		}
+		// Destroy the current transaction.
+		virtual void EndTransaction()
+		{
+		}
+	protected:
+	private:
+};
+
 struct drew_opgp_keystore_s {
 	int major, minor;
 	int flags;
@@ -239,7 +262,7 @@ struct drew_opgp_keystore_s {
 #define CHUNK_ID_MPI				0x6d
 
 #ifdef DREW_OPGP_BACKEND_BDB
-class BerkeleyDBBackend : public Backend
+class BerkeleyDBBackend : public RandomAccessBackend
 {
 	public:
 		BerkeleyDBBackend();
@@ -254,10 +277,14 @@ class BerkeleyDBBackend : public Backend
 		virtual void ReadKeyChunk(KeyChunk &k);
 		virtual Chunk *ReadChunks(const KeyChunk &k, size_t &nchunks);
 		virtual Chunk *LoadChunks(const KeyChunk &k, size_t &nchunks);
+		virtual void StartTransaction();
+		virtual void CommitTransaction();
+		virtual void EndTransaction();
 	protected:
 		DB_ENV *dbenv;
 		DB *dbp;
 		DBC *dbc;
+		DB_TXN *txn;
 		int error;
 	private:	
 };
