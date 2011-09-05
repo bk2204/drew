@@ -102,6 +102,15 @@ int drew_opgp_keystore_free(drew_opgp_keystore_t *ksp)
 }
 
 extern "C"
+int drew_opgp_keystore_set_backend_options(drew_opgp_keystore_t ks,
+		const char *opturi, void *val)
+{
+	if (!ks->b)
+		return -DREW_ERR_INVALID;
+	return ks->b->SetOption(opturi, val) ? 0 : -DREW_ERR_INVALID;
+}
+
+extern "C"
 int drew_opgp_keystore_set_backend(drew_opgp_keystore_t ks, const char *backend)
 {
 	delete ks->b;
@@ -848,8 +857,11 @@ int drew_opgp_keystore_load(drew_opgp_keystore_t ks, drew_opgp_id_t missingid)
 					continue;
 				}
 				if ((res = load_item(ks, key, c, nchunks, missingid))) {
-					delete[] c;
-					return res;
+					if (res != -DREW_ERR_MORE_INFO ||
+							!(ks->b->GetFlags() & 1)) {
+						delete[] c;
+						return res;
+					}
 				}
 				delete[] c;
 				c = 0;

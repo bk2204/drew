@@ -213,7 +213,23 @@ class Backend
 		// Given the specified key chunk, read its data.  If the backend is not
 		// random-access, do nothing and return NULL.
 		virtual Chunk *LoadChunks(const KeyChunk &, size_t &) = 0;
+		virtual bool SetOption(const char *opturi, void *optval)
+		{
+			if (!strcmp(opturi,
+						"http://ns.crustytoothpaste.net/drew/openpgp/backend/recovery")) {
+				flags &= ~1;
+				flags |= !!*static_cast<int *>(optval);
+				return true;
+			}
+			return false;
+		}
+		virtual int GetFlags()
+		{
+			return flags;
+		}
 	protected:
+		Backend() : flags(0) {}
+		int flags;
 	private:
 };
 
