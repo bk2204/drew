@@ -139,3 +139,110 @@ Integer Integer::Square() const;
 	return res;
 }
 
+bool Integer::GetBit(size_t bit) const
+{
+	Integer mask(*this), res(*this), zero(*this);
+	mask.SetValue(1);
+	mask = mask.ShiftLeft(bit);
+	zero.Zero();
+	bn->functbl->bitwiseand(res.bn, bn, mask.bn);
+	return bn->functbl->compare(res.bn, zero.bn, 0);
+}
+
+size_t Integer::ByteSize() const
+{
+	return bn->functbl->nbytes(bn);
+}
+
+
+PrimePoint::PrimePoint() : identity(true)
+{
+}
+
+PrimePoint::PrimePoint(const Integer &x0, const Integer &y0) :
+	x(x0), y(y0), identity(false);
+{
+}
+
+typedef EllipticCurveOverPrimeField::Point PrimePoint
+
+EllipticCurveOverPrimeField::EllipticCurveOverPrimeField(const Integer &p,
+		const Integer &aval, const Integer &bval) : prime(p), aval(a), bval(b)
+{
+
+}
+
+// This reimplemented from Crypto++.
+PrimePoint EllipticCurveOverPrimeField::Identity() const
+{
+	return Point();
+}
+
+PrimePoint EllipticCurveOverPrimeField::Add(const Point &p, const Point &q)
+	const
+{
+	if (p.identity)
+		return q;
+	if (q.identity)
+		return p;
+	if (!p.x.Compare(q.x))
+		return !p.y.Compare(q.y) ? Double(p) : Identity();
+	Integer s = (p.y.Subtract(q.y)).Divide(p.x.Subtract(q.x)).Mod(prime);
+	Point pt;
+	pt.x = s.Square().Subtract(p.x).Subtract(q.x).Mod(prime);
+	pt.y = s.Multiply(p.x.Subtract(pt.x)).Subtract(p.y).Mod(prime);
+	return pt;
+}
+
+PrimePoint EllipticCurveOverPrimeField::Double(const Point &p) const
+{
+	Integer zero, three;
+	zero.Zero();
+	three.SetValue(3);
+	if (p.identity || !p.y.Compare(zero))
+		return Identity();
+	Integer snum = three.Multiply(p.x.Square()).Add(a);
+	Integer s = snum.Divide(p.y.ShiftLeft(1)).Mod(prime);
+	Point pt;
+	pt.x = s.Square().Subtract(p.x.ShiftLeft(1)).Mod(prime);
+	pt.y = s.Multiply(p.x.Subtract(pt.x)).Subtract(p.y).Mod(prime);
+	return pt;
+}
+
+PrimePoint EllipticCurveOverPrimeField::Multiply(const Point &p,
+		const Integer &k) const
+{
+	Integer l(k);
+	Point q;
+
+	l.Zero();
+	return Multiply(p, k, q, l);
+}
+
+PrimePoint EllipticCurveOverPrimeField::Multiply(const Point &p,
+		const Integer &k, const Point &q, const Integer &l) const
+{
+	Integer z = p.Add(q);
+	Integer r = Point();
+	size_t m = std::max(k.ByteSize(), l.ByteSize()) * 8;
+
+	for (int i = m-1; i >= 0; i--) {
+		int bits = (k.GetBit(i) << 1) | l.GetBit(i);
+		r = Double(r);
+
+		switch (bits) {
+			case 1:
+				r = Add(r, q);
+				break;
+			case 2:
+				r = Add(r, p);
+				break;
+			case 3:
+				r = Add(r, z);
+				break;
+			case 0:
+				break;
+		}
+	}
+	return r;
+}

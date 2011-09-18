@@ -1,6 +1,8 @@
 #ifndef PUBKEY_HH
 #define PUBKEY_HH
 
+#include <drew/bignum.h>
+
 class Integer
 {
 	public:
@@ -26,9 +28,45 @@ class Integer
 		Integer InverseMod(const Integer &m) const;
 		Integer MultiplyMod(const Integer &mul, const Integer &m) const;
 		Integer Square() const;
+		bool GetBit(size_t bit) const;
+		size_t ByteSize() const;
 	protected:
 	private:
 		drew_bignum_t *bn;
+};
+
+class EllipticCurvePoint
+{
+};
+
+class PrimePoint : public EllipticCurvePoint
+{
+	public:
+		PrimePoint();
+		PrimePoint(const Integer &x, const Integer &y);
+		Integer x;
+		Integer y;
+		bool identity;
+	protected:
+	private:
+};
+
+class EllipticCurve
+{
+};
+
+class EllipticCurveOverPrimeField : public EllipticCurve
+{
+	public:
+		typedef PrimePoint Point;
+		EllipticCurveOverPrimeField(const Integer &p, const Integer &a,
+				const Integer &b);
+		Point Identity() const;
+		Point Add(const Point &p, const Point &q) const;
+		Point Double(const Point &p) const;
+		Point Multiply(const Point &p, const Integer &k) const;
+	protected:
+	private:
 };
 
 #endif
