@@ -52,6 +52,12 @@ files, type "make uninstall".
 Some documentation on the interface is provided; type "make doc" to build it.
 You will need Apache FOP and the DocBook XSL-NS Stylesheets.
 
+Please be aware that the entire project is in and assumes UTF-8 (except for
+wchar_t, where it assumes UCS-4).  Files and filenames are presumed to be in
+UTF-8 and some algorithm and symbol names take advantage of this.  Functions
+accepting possibly-const-qualified pointers to char are UTF-8 strings.  This is
+not always checked and things may break if you do not ensure this.
+
 Please report bugs and wishlist requests on the github issue tracker.  Until a
 mailing list is set up, please send email to brian m. carlson at
 <sandals@crustytoothpaste.net>.
