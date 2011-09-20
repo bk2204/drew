@@ -39,23 +39,10 @@ static int gr\u00f8stl_get_digest_size(const drew_param_t *param)
 		if (!strcmp(q->name, "digestSize"))
 			sz = q->param.number;
 	if (!sz)
+		return -DREW_ERR_MORE_INFO;
+	if (sz > (512/8) || sz < 1)
 		return -DREW_ERR_INVALID;
 	return sz;
-}
-
-drew::Gr\u00f8stl *init(drew_hash_t *ctx, int flags,
-		const drew_param_t *param)
-{
-	using namespace drew;
-	int sz = gr\u00f8stl_get_digest_size(param);
-
-	if (sz < 0)
-		return 0;
-
-	if (flags & DREW_HASH_FIXED)
-		return new (ctx->ctx) Gr\u00f8stl(sz);
-	else
-		return new Gr\u00f8stl(sz);
 }
 
 extern "C" {
@@ -99,10 +86,15 @@ static int gr\u00f8stlinit(drew_hash_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *param)
 {
 	using namespace drew;
-	Gr\u00f8stl *p = init(ctx, flags, param);
-	if (!p)
-		return -DREW_ERR_INVALID;
-	ctx->ctx = p;
+	int sz = gr\u00f8stl_get_digest_size(param);
+
+	if (sz < 0)
+		return sz;
+
+	if (flags & DREW_HASH_FIXED)
+		ctx->ctx = new (ctx->ctx) Gr\u00f8stl(sz);
+	else
+		ctx->ctx = new Gr\u00f8stl(sz);
 	ctx->functbl = &gr\u00f8stlfunctbl;
 	return 0;
 }
