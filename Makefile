@@ -31,7 +31,9 @@ CLIKEFLAGS		+= -fstack-protector
 endif
 
 CPPFLAGS		+= -Iinclude
-CLIKEFLAGS		+= -Wall -fPIC -O3 -g -pipe -D_POSIX_SOURCE=200112L -D_XOPEN_SOURCE=600
+CLIKEFLAGS		+= -Wall -fPIC -O3 -g -pipe
+CLIKEFLAGS		+= -D_POSIX_SOURCE=200112L -D_XOPEN_SOURCE=600
+CLIKEFLAGS		+= -fextended-identifiers
 CLIKEFLAGS		+= -floop-interchange -floop-block
 CLIKEFLAGS		+= -fvisibility=hidden
 CLIKEFLAGS		+= ${CFLAGS-y}
