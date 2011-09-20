@@ -1155,11 +1155,6 @@ static const uint64_t table[8*256] =  {
 	0x0c61d661dad66d6d, 0x624e3a4e583a2c2c
 };
 
-void drew::Gr\u00f8stl::Transform(uint64_t *state, const uint8_t *data)
-{
-	drew::Gr\u00f8stl512::Transform(state, data);
-}
-
 #ifdef __GNUC__
 static inline uint64_t ComputeColumn(const uint64_t *x, int c0, int c1, int c2,
 		int c3, int c4, int c5, int c6, int c7) __attribute__((always_inline));

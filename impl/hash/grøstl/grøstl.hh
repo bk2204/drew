@@ -162,19 +162,20 @@ class Gr\u00f8stl512: public Gr\u00f8stlImplementation
 	private:
 };
 
-class Gr\u00f8stl
+template<class T256, class T512>
+class Gr\u00f8stlHash
 {
 	public:
 		typedef uint64_t quantum_t;
-		Gr\u00f8stl(size_t sz)
+		Gr\u00f8stlHash(size_t sz)
 		{
 			m_impl = 0;
 			if (sz <= (256 / 8))
-				m_impl = new Gr\u00f8stl256(sz);
+				m_impl = new T256(sz);
 			else
-				m_impl = new Gr\u00f8stl512(sz);
+				m_impl = new T512(sz);
 		}
-		virtual ~Gr\u00f8stl()
+		virtual ~Gr\u00f8stlHash()
 		{
 			delete m_impl;
 		}
@@ -214,11 +215,16 @@ class Gr\u00f8stl
 		{
 			return m_impl->UpdateFast(data, len);
 		}
-		static void Transform(uint64_t *state, const uint8_t *data);
+		static void Transform(uint64_t *state, const uint8_t *data)
+		{
+			drew::Gr\u00f8stl512::Transform(state, data);
+		}
 	protected:
 	private:
 		Gr\u00f8stlImplementation *m_impl;
 };
+
+typedef Gr\u00f8stlHash<Gr\u00f8stl256, Gr\u00f8stl512> Gr\u00f8stl;
 }
 UNHIDE()
 
