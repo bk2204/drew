@@ -74,7 +74,7 @@ static int gr\u00f8stlinfo(int op, void *p)
 				return ((const Gr\u00f8stl *)ctx->ctx)->GetBufferSize();
 			return -DREW_ERR_MORE_INFO;
 		case DREW_HASH_INTSIZE:
-			return sizeof(Gr\u00f8stl *);
+			return sizeof(Gr\u00f8stl);
 		case DREW_HASH_ENDIAN:
 			return BigEndian::GetEndianness();
 		default:
