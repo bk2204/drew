@@ -1160,6 +1160,11 @@ void drew::Gr\u00f8stl::Transform(uint64_t *state, const uint8_t *data)
 	drew::Gr\u00f8stl512::Transform(state, data);
 }
 
+#ifdef __GNUC__
+static inline uint64_t ComputeColumn(const uint64_t *x, int c0, int c1, int c2,
+		int c3, int c4, int c5, int c6, int c7) __attribute__((always_inline));
+#endif
+
 static inline uint64_t ComputeColumn(const uint64_t *x, int c0, int c1, int c2,
 		int c3, int c4, int c5, int c6, int c7)
 {
