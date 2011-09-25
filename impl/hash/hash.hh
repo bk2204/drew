@@ -132,9 +132,9 @@ class Hash
 		static inline void Transform(T *, const uint8_t *data);
 	protected:
 		virtual void Transform(const uint8_t *data) = 0;
-		T m_len[2];
-		T m_hash[BufSize/sizeof(T)];
+		T m_hash[BufSize/sizeof(T)] ALIGNED_T;
 		uint8_t m_buf[BlkSize];
+		T m_len[2];
 	private:
 };
 
