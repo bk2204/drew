@@ -35,8 +35,8 @@ class BLAKE256Transform
 				const uint32_t *len);
 	protected:
 		inline static void G(uint32_t &a, uint32_t &b, uint32_t &c, uint32_t &d,
-				int r, int i, const uint32_t *m);
-		inline static void Round(uint32_t *v, int r, const uint32_t *m);
+				const int *r, const uint32_t *m);
+		inline static void Round(uint32_t *v, const int *r, const uint32_t *m);
 };
 
 class BLAKE512Transform
@@ -47,8 +47,8 @@ class BLAKE512Transform
 				const uint64_t *len);
 	protected:
 		inline static void G(uint64_t &a, uint64_t &b, uint64_t &c, uint64_t &d,
-				int r, int i, const uint64_t *m);
-		inline static void Round(uint64_t *v, int r, const uint64_t *m);
+				const int *r, const uint64_t *m);
+		inline static void Round(uint64_t *v, const int *r, const uint64_t *m);
 };
 
 template<class T, int Size, int BlkSize, class U>

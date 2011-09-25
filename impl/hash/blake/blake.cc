@@ -168,30 +168,32 @@ void drew::BLAKE224::Reset()
 }
 
 inline void drew::BLAKE256Transform::G(uint32_t &a, uint32_t &b, uint32_t &c,
-		uint32_t &d, int r, int i, const uint32_t *m)
+		uint32_t &d, const int *r, const uint32_t *m)
 {
-	a += b + (m[sigma[r][i]] ^ k256[sigma[r][i+1]]);
+	const int ri0 = r[0];
+	const int ri1 = r[1];
+	a += b + (m[ri0] ^ k256[ri1]);
 	d = RotateRight(d ^ a, 16);
 	c += d;
 	b = RotateRight(b ^ c, 12);
-	a += b + (m[sigma[r][i+1]] ^ k256[sigma[r][i]]);
+	a += b + (m[ri1] ^ k256[ri0]);
 	d = RotateRight(d ^ a, 8);
 	c += d;
 	b = RotateRight(b ^ c, 7);
 }
 
-inline void drew::BLAKE256Transform::Round(uint32_t *v, int r,
+inline void drew::BLAKE256Transform::Round(uint32_t *v, const int *r,
 		const uint32_t *m)
 {
-	G(v[ 0], v[ 4], v[ 8], v[12], r,  0, m);
-	G(v[ 1], v[ 5], v[ 9], v[13], r,  2, m);
-	G(v[ 2], v[ 6], v[10], v[14], r,  4, m);
-	G(v[ 3], v[ 7], v[11], v[15], r,  6, m);
+	G(v[ 0], v[ 4], v[ 8], v[12], r+ 0, m);
+	G(v[ 1], v[ 5], v[ 9], v[13], r+ 2, m);
+	G(v[ 2], v[ 6], v[10], v[14], r+ 4, m);
+	G(v[ 3], v[ 7], v[11], v[15], r+ 6, m);
 
-	G(v[ 0], v[ 5], v[10], v[15], r,  8, m);
-	G(v[ 1], v[ 6], v[11], v[12], r, 10, m);
-	G(v[ 2], v[ 7], v[ 8], v[13], r, 12, m);
-	G(v[ 3], v[ 4], v[ 9], v[14], r, 14, m);
+	G(v[ 0], v[ 5], v[10], v[15], r+ 8, m);
+	G(v[ 1], v[ 6], v[11], v[12], r+10, m);
+	G(v[ 2], v[ 7], v[ 8], v[13], r+12, m);
+	G(v[ 3], v[ 4], v[ 9], v[14], r+14, m);
 }
 
 void drew::BLAKE256Transform::Transform(uint32_t *state, const uint8_t *block,
@@ -216,20 +218,20 @@ void drew::BLAKE256Transform::Transform(uint32_t *state, const uint8_t *block,
 	v[14] = 0x082efa98 ^ len[1];
 	v[15] = 0xec4e6c89 ^ len[1];
 
-	Round(v, 0, m);
-	Round(v, 1, m);
-	Round(v, 2, m);
-	Round(v, 3, m);
-	Round(v, 4, m);
-	Round(v, 5, m);
-	Round(v, 6, m);
-	Round(v, 7, m);
-	Round(v, 8, m);
-	Round(v, 9, m);
-	Round(v, 0, m);
-	Round(v, 1, m);
-	Round(v, 2, m);
-	Round(v, 3, m);
+	Round(v, sigma[0], m);
+	Round(v, sigma[1], m);
+	Round(v, sigma[2], m);
+	Round(v, sigma[3], m);
+	Round(v, sigma[4], m);
+	Round(v, sigma[5], m);
+	Round(v, sigma[6], m);
+	Round(v, sigma[7], m);
+	Round(v, sigma[8], m);
+	Round(v, sigma[9], m);
+	Round(v, sigma[0], m);
+	Round(v, sigma[1], m);
+	Round(v, sigma[2], m);
+	Round(v, sigma[3], m);
 
 	XorAligned(v, v+8, sizeof(*v)*8);
 	XorAligned(state, v, sizeof(*v)*8);
@@ -283,30 +285,32 @@ void drew::BLAKE384::Reset()
 }
 
 inline void drew::BLAKE512Transform::G(uint64_t &a, uint64_t &b, uint64_t &c,
-		uint64_t &d, int r, int i, const uint64_t *m)
+		uint64_t &d, const int *r, const uint64_t *m)
 {
-	a += b + (m[sigma[r][i]] ^ k512[sigma[r][i+1]]);
+	const int ri0 = r[0];
+	const int ri1 = r[1];
+	a += b + (m[ri0] ^ k512[ri1]);
 	d = RotateRight(d ^ a, 32);
 	c += d;
 	b = RotateRight(b ^ c, 25);
-	a += b + (m[sigma[r][i+1]] ^ k512[sigma[r][i]]);
+	a += b + (m[ri1] ^ k512[ri0]);
 	d = RotateRight(d ^ a, 16);
 	c += d;
 	b = RotateRight(b ^ c, 11);
 }
 
-inline void drew::BLAKE512Transform::Round(uint64_t *v, int r,
+inline void drew::BLAKE512Transform::Round(uint64_t *v, const int *r,
 		const uint64_t *m)
 {
-	G(v[ 0], v[ 4], v[ 8], v[12], r,  0, m);
-	G(v[ 1], v[ 5], v[ 9], v[13], r,  2, m);
-	G(v[ 2], v[ 6], v[10], v[14], r,  4, m);
-	G(v[ 3], v[ 7], v[11], v[15], r,  6, m);
+	G(v[ 0], v[ 4], v[ 8], v[12], r+ 0, m);
+	G(v[ 1], v[ 5], v[ 9], v[13], r+ 2, m);
+	G(v[ 2], v[ 6], v[10], v[14], r+ 4, m);
+	G(v[ 3], v[ 7], v[11], v[15], r+ 6, m);
 
-	G(v[ 0], v[ 5], v[10], v[15], r,  8, m);
-	G(v[ 1], v[ 6], v[11], v[12], r, 10, m);
-	G(v[ 2], v[ 7], v[ 8], v[13], r, 12, m);
-	G(v[ 3], v[ 4], v[ 9], v[14], r, 14, m);
+	G(v[ 0], v[ 5], v[10], v[15], r+ 8, m);
+	G(v[ 1], v[ 6], v[11], v[12], r+10, m);
+	G(v[ 2], v[ 7], v[ 8], v[13], r+12, m);
+	G(v[ 3], v[ 4], v[ 9], v[14], r+14, m);
 }
 
 void drew::BLAKE512Transform::Transform(uint64_t *state, const uint8_t *block,
@@ -331,22 +335,22 @@ void drew::BLAKE512Transform::Transform(uint64_t *state, const uint8_t *block,
 	v[14] = 0xc0ac29b7c97c50dd ^ len[1];
 	v[15] = 0x3f84d5b5b5470917 ^ len[1];
 
-	Round(v, 0, m);
-	Round(v, 1, m);
-	Round(v, 2, m);
-	Round(v, 3, m);
-	Round(v, 4, m);
-	Round(v, 5, m);
-	Round(v, 6, m);
-	Round(v, 7, m);
-	Round(v, 8, m);
-	Round(v, 9, m);
-	Round(v, 0, m);
-	Round(v, 1, m);
-	Round(v, 2, m);
-	Round(v, 3, m);
-	Round(v, 4, m);
-	Round(v, 5, m);
+	Round(v, sigma[0], m);
+	Round(v, sigma[1], m);
+	Round(v, sigma[2], m);
+	Round(v, sigma[3], m);
+	Round(v, sigma[4], m);
+	Round(v, sigma[5], m);
+	Round(v, sigma[6], m);
+	Round(v, sigma[7], m);
+	Round(v, sigma[8], m);
+	Round(v, sigma[9], m);
+	Round(v, sigma[0], m);
+	Round(v, sigma[1], m);
+	Round(v, sigma[2], m);
+	Round(v, sigma[3], m);
+	Round(v, sigma[4], m);
+	Round(v, sigma[5], m);
 
 	XorAligned(v, v+8, sizeof(*v)*8);
 	XorAligned(state, v, sizeof(*v)*8);
