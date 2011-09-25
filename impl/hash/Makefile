@@ -9,6 +9,7 @@ PLUGINS_HASH-${CFG_TIGER}	+= tiger/tiger
 PLUGINS_HASH-${CFG_KECCAK}	+= keccak/keccak
 PLUGINS_HASH-${CFG_WHIRLPOOL}	+= whirlpool/whirlpool
 PLUGINS_HASH-${CFG_GRØSTL}	+= grøstl/grøstl
+PLUGINS_HASH-${CFG_BLAKE}	+= blake/blake
 
 HASH_DIR		:= impl/hash
 HASH_PLUGINS	:= $(patsubst %,${HASH_DIR}/%,$(PLUGINS_HASH-m))
