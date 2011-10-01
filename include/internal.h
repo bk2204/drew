@@ -30,6 +30,7 @@
 #endif
 #define _BSD_SOURCE 1
 #define DREW_IN_BUILD 1
+#define CURRENT_ABI	3
 
 #define CURRENT_ABI	3
 
