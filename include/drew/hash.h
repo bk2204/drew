@@ -105,6 +105,21 @@ typedef struct {
 	int (*test)(void *, const drew_loader_t *);
 } drew_hash_functbl2_t;
 
+typedef struct {
+	int (*info)(int op, void *p);
+	int (*infonew)(int op, void *out, const void *in);
+	int (*init)(drew_hash_t *, int, const drew_loader_t *,
+			const drew_param_t *);
+	int (*clone)(drew_hash_t *, const drew_hash_t *, int);
+	int (*reset)(drew_hash_t *);
+	int (*fini)(drew_hash_t *, int);
+	int (*update)(drew_hash_t *, const uint8_t *, size_t);
+	int (*updatefast)(drew_hash_t *, const uint8_t *, size_t);
+	int (*pad)(drew_hash_t *);
+	int (*final)(drew_hash_t *, uint8_t *, int);
+	int (*test)(void *, const drew_loader_t *);
+} drew_hash_functbl3_t;
+
 typedef drew_hash_functbl2_t drew_hash_functbl_t;
 
 struct drew_hash_s {
