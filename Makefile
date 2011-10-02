@@ -62,7 +62,14 @@ include util/Makefile
 include libmd/Makefile
 include doc/manual/Makefile
 
+OBJECTS			+= $(PLUGINS:=.o) $(MODULES)
+OBJECTS			+= $(EXTRA_OBJECTS-y) $(EXTRA_OBJECTS-m)
+
+DEPFILES		:= $(OBJECTS:.o=.d)
+
 all: ${PLUG_EXE} ${DREW_SONAME} standard
+
+depend: $(DEPFILES)
 
 standard: ${DREW_SONAME} ${MD_SONAME} plugins libmd/testsuite
 standard: $(TEST_BINARIES) $(UTILITIES)
@@ -78,6 +85,12 @@ ${PLUG_EXE}: ${PLUG_OBJ} ${DREW_SONAME} ${DREW_IMPL_SONAME}
 
 .cc.o:
 	${CXX} ${CPPFLAGS} ${CXXFLAGS} -c -o ${.TARGET} ${.IMPSRC}
+
+%.d: %.c
+	$(CC) $(CPPFLAGS) -MM $< | sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
+
+%.d: %.cc
+	$(CC) $(CPPFLAGS) -MM $< | sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
 
 ${PLUGINS:=.o}: CPPFLAGS += ${PLUGINCFLAGS}
 
@@ -102,6 +115,7 @@ clean:
 	${RM} -fr ${PLUGINS} plugins/
 	${RM} -r install
 	find -name '*.o' | xargs -r rm
+	find -name '*.d' | xargs -r rm
 	find -name '*.so' | xargs -r rm
 	find -name '*.so.*' | xargs -r rm
 	find -name '*.pdf' | xargs -r rm
@@ -162,3 +176,7 @@ uninstall:
 		done
 	$(RMDIR) $(INSTDIR)/lib/drew/plugins || true
 	$(RMDIR) $(INSTDIR)/lib/drew || true
+
+ifneq "$(MAKECMDGOALS)" "clean"
+-include $(DEPFILES)
+endif
