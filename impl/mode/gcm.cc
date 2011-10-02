@@ -118,6 +118,7 @@ static int gcm_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 
 	if (!(flags & DREW_MODE_FIXED))
 		newctx = (struct gcm *)drew_mem_smalloc(sizeof(*newctx));
+	memset(newctx, 0, sizeof(*newctx));
 	newctx->ldr = ldr;
 	newctx->algo = NULL;
 	newctx->boff = 0;
@@ -564,6 +565,7 @@ static int gcm_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags)
 {
 	if (!(flags & DREW_MODE_FIXED))
 		newctx->ctx = (struct gcm *)drew_mem_smalloc(sizeof(struct gcm));
+	memset(newctx->ctx, 0, sizeof(struct gcm));
 	memcpy(newctx->ctx, oldctx->ctx, sizeof(struct gcm));
 	newctx->functbl = oldctx->functbl;
 	return 0;
