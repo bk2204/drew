@@ -660,6 +660,7 @@ static int gcm_fini(drew_mode_t *ctx, int flags)
 	struct gcm *c = (struct gcm *)ctx->ctx;
 
 	drew_mem_sfree(c->iv);
+	drew_mem_sfree(c->table);
 	if (!(flags & DREW_MODE_FIXED))
 		drew_mem_sfree(c);
 
