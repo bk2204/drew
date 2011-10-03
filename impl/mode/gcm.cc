@@ -38,6 +38,8 @@ typedef BigEndian E;
 
 extern "C" {
 
+struct gcm;
+
 struct gcm {
 	const drew_loader_t *ldr;
 	const drew_block_t *algo;
@@ -48,6 +50,8 @@ struct gcm {
 	uint8_t buf[16] ALIGNED_T;
 	uint8_t cbuf[16] ALIGNED_T;
 	uint8_t *iv;
+	uint8_t *table;
+	void (*mul)(struct gcm *, uint8_t *);
 	size_t ivlen;
 	size_t blksize;
 	size_t boff;
@@ -58,6 +62,8 @@ struct gcm {
 
 static int gcm_info(int op, void *p);
 static int gcm_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
+		const drew_param_t *param);
+static int gcmfl_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param);
 static int gcm_reset(drew_mode_t *ctx);
 static int gcm_setpad(drew_mode_t *ctx, const drew_pad_t *pad);
@@ -76,8 +82,15 @@ static int gcm_encryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 static int gcm_decryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 		const uint8_t *in, size_t inlen);
 
+/* The slow implementation. */
 static const drew_mode_functbl_t gcm_functbl = {
 	gcm_info, gcm_init, gcm_clone, gcm_reset, gcm_fini, gcm_setpad,
+	gcm_setblock, gcm_setiv, gcm_encrypt, gcm_decrypt, gcm_encrypt, gcm_decrypt,
+	gcm_setdata, gcm_encryptfinal, gcm_decryptfinal, gcm_test
+};
+/* The fastest implementation which uses large tables. */
+static const drew_mode_functbl_t gcmfl_functbl = {
+	gcm_info, gcmfl_init, gcm_clone, gcm_reset, gcm_fini, gcm_setpad,
 	gcm_setblock, gcm_setiv, gcm_encrypt, gcm_decrypt, gcm_encrypt, gcm_decrypt,
 	gcm_setdata, gcm_encryptfinal, gcm_decryptfinal, gcm_test
 };
@@ -111,6 +124,10 @@ static int gcm_reset(drew_mode_t *ctx)
 	return 0;
 }
 
+static inline void mul(struct gcm *ctx, uint8_t *buf);
+static inline void mul_fl(struct gcm *ctx, uint8_t *buf);
+static void gen_table_fl(struct gcm *ctx);
+
 static int gcm_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param)
 {
@@ -123,6 +140,7 @@ static int gcm_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	newctx->algo = NULL;
 	newctx->boff = 0;
 	newctx->taglen = 16;
+	newctx->mul = mul;
 
 	for (const drew_param_t *p = param; p; p = p->next)
 		if (!strcmp(p->name, "tagLength"))
@@ -130,6 +148,31 @@ static int gcm_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 
 	ctx->ctx = newctx;
 	ctx->functbl = &gcm_functbl;
+
+	return 0;
+}
+
+static int gcmfl_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
+		const drew_param_t *param)
+{
+	struct gcm *newctx = (struct gcm *)ctx->ctx;
+
+	if (!(flags & DREW_MODE_FIXED))
+		newctx = (struct gcm *)drew_mem_smalloc(sizeof(*newctx));
+	memset(newctx, 0, sizeof(*newctx));
+	newctx->ldr = ldr;
+	newctx->algo = NULL;
+	newctx->boff = 0;
+	newctx->taglen = 16;
+	newctx->table = (uint8_t *)drew_mem_smalloc(64 * 1024);
+	newctx->mul = mul_fl;
+
+	for (const drew_param_t *p = param; p; p = p->next)
+		if (!strcmp(p->name, "tagLength"))
+			newctx->taglen = p->param.number;
+
+	ctx->ctx = newctx;
+	ctx->functbl = &gcmfl_functbl;
 
 	return 0;
 }
@@ -155,6 +198,9 @@ static int gcm_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 	memset(c->h, 0, sizeof(c->h));
 	algoctx->functbl->encryptfast(algoctx, c->h, c->h, 1);
 
+	if (c->mul == mul_fl)
+		gen_table_fl(c);
+
 	return 0;
 }
 
@@ -178,11 +224,71 @@ static inline void mul(struct gcm *ctx, uint8_t *buf)
 	E::Copy(c, z, 16);
 }
 
+/* The 64k table implementation is derived from Crypto++. */
+static inline void mul_fl(struct gcm *ctx, uint8_t *buf)
+{
+	uint64_t x[2], a[2];
+
+	memcpy(x, buf, 16);
+#define READ_COMMON(a, c, d) (*(uint64_t *)(ctx->table+(a)*256*16+(c)+(d)*8))
+#if DREW_BYTE_ORDER == DREW_LITTLE_ENDIAN
+#define READ_WORD(b, c, d, e) READ_COMMON(c*4+d, ((d+4*(c%2))?(x[b]>>(((d+4*(c%2))?(d+4*(c%2)):1)*8-4))&0xff0:(x[b]&0xff)<<4), e)
+#else
+#define READ_WORD(b, c, d, e) READ_COMMON(c*4+d, ((7-d-4*(c%2))?(x[b]>>(((7-d-4*(c%2))?(7-d-4*(c%2)):1)*8-4))&0xff0:(x[b]&0xff)<<4), e)
+#endif
+#define MUL_8BY128(op, b, c, d) \
+	a[0] op READ_WORD(b, c, d, 0); \
+	a[1] op READ_WORD(b, c, d, 1);
+
+	MUL_8BY128(=, 0, 0, 0);
+	MUL_8BY128(^=, 0, 0, 1);
+	MUL_8BY128(^=, 0, 0, 2);
+	MUL_8BY128(^=, 0, 0, 3);
+	MUL_8BY128(^=, 0, 1, 0);
+	MUL_8BY128(^=, 0, 1, 1);
+	MUL_8BY128(^=, 0, 1, 2);
+	MUL_8BY128(^=, 0, 1, 3);
+	MUL_8BY128(^=, 1, 2, 0);
+	MUL_8BY128(^=, 1, 2, 1);
+	MUL_8BY128(^=, 1, 2, 2);
+	MUL_8BY128(^=, 1, 2, 3);
+	MUL_8BY128(^=, 1, 3, 0);
+	MUL_8BY128(^=, 1, 3, 1);
+	MUL_8BY128(^=, 1, 3, 2);
+	MUL_8BY128(^=, 1, 3, 3);
+	memcpy(buf, a, 16);
+}
+
+static void gen_table_fl(struct gcm *ctx)
+{
+	uint64_t v[2];
+	uint8_t *table = ctx->table;
+
+	E::Copy(v, ctx->h, 16);
+
+	for (int i = 0; i < 128; i++) {
+		int k = i & 7;
+		E::Copy(table+(i/8)*256*16+(size_t(1)<<(11-k)), v, 16);
+
+		int x = v[1] & 1;
+		v[1] = (v[1] >> 1) | (v[0] << 63);
+		v[0] = (v[0] >> 1) ^ (x ? uint64_t(0xe1) << 56 : 0);
+	}
+
+	for (int i = 0; i < 16; i++) {
+		memset(table+i*256*16, 0, 16);
+		for (int j = 2; j <= 0x80; j *= 2)
+			for (int k = 1; k < j; k++)
+				XorAligned(table+i*256*16+(j+k)*16, table+i*256*16+j*16,
+						table+i*256*16+k*16, 16);
+	}
+}
+
 // buf is aligned but block need not be.
 static inline void hash(struct gcm *c, uint8_t *buf, const uint8_t *block)
 {
 	XorBuffers(buf, block, c->blksize);
-	mul(c, buf);
+	c->mul(c, buf);
 }
 
 static int gcm_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len)
@@ -577,6 +683,7 @@ struct plugin {
 };
 
 static struct plugin plugin_data[] = {
+	{ "GCM", &gcmfl_functbl },
 	{ "GCM", &gcm_functbl },
 };
 
