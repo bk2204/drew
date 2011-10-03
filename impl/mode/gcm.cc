@@ -166,11 +166,16 @@ static int gcmfl_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	if (!(flags & DREW_MODE_FIXED))
 		newctx = (struct gcm *)drew_mem_smalloc(sizeof(*newctx));
 	memset(newctx, 0, sizeof(*newctx));
+	newctx->table = (uint64_t *)drew_mem_smalloc(64 * 1024);
+	if (!newctx->table) {
+		if (!(flags & DREW_MODE_FIXED))
+			drew_mem_sfree(newctx);
+		return -ENOMEM;
+	}
 	newctx->ldr = ldr;
 	newctx->algo = NULL;
 	newctx->boff = 0;
 	newctx->taglen = 16;
-	newctx->table = (uint64_t *)drew_mem_smalloc(64 * 1024);
 	newctx->mul = mul_fl;
 
 	for (const drew_param_t *p = param; p; p = p->next)
