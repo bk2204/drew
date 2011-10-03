@@ -71,7 +71,11 @@ static int gcm_setblock(drew_mode_t *ctx, const drew_block_t *algoctx);
 static int gcm_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len);
 static int gcm_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
+static int gcm_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len);
 static int gcm_decrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len);
+static int gcm_decryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
 static int gcm_fini(drew_mode_t *ctx, int flags);
 static int gcm_test(void *p, const drew_loader_t *ldr);
@@ -85,14 +89,16 @@ static int gcm_decryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 /* The slow implementation. */
 static const drew_mode_functbl_t gcm_functbl = {
 	gcm_info, gcm_init, gcm_clone, gcm_reset, gcm_fini, gcm_setpad,
-	gcm_setblock, gcm_setiv, gcm_encrypt, gcm_decrypt, gcm_encrypt, gcm_decrypt,
-	gcm_setdata, gcm_encryptfinal, gcm_decryptfinal, gcm_test
+	gcm_setblock, gcm_setiv, gcm_encrypt, gcm_decrypt,
+	gcm_encryptfast, gcm_decryptfast, gcm_setdata,
+	gcm_encryptfinal, gcm_decryptfinal, gcm_test
 };
 /* The fastest implementation which uses large tables. */
 static const drew_mode_functbl_t gcmfl_functbl = {
 	gcm_info, gcmfl_init, gcm_clone, gcm_reset, gcm_fini, gcm_setpad,
-	gcm_setblock, gcm_setiv, gcm_encrypt, gcm_decrypt, gcm_encrypt, gcm_decrypt,
-	gcm_setdata, gcm_encryptfinal, gcm_decryptfinal, gcm_test
+	gcm_setblock, gcm_setiv, gcm_encrypt, gcm_decrypt,
+	gcm_encryptfast, gcm_decryptfast, gcm_setdata,
+	gcm_encryptfinal, gcm_decryptfinal, gcm_test
 };
 
 static int gcm_info(int op, void *p)
@@ -289,6 +295,12 @@ static inline void hash(struct gcm *c, uint8_t *buf, const uint8_t *block)
 	c->mul(c, buf);
 }
 
+static inline void hash_fast(struct gcm *c, uint8_t *buf, const uint8_t *block)
+{
+	XorAligned(buf, block, 16);
+	c->mul(c, buf);
+}
+
 static int gcm_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len)
 {
 	struct gcm *c = (struct gcm *)ctx->ctx;
@@ -377,6 +389,29 @@ static int gcm_encrypt(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 	return 0;
 }
 
+static int gcm_encryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
+		size_t len)
+{
+	struct gcm *c = (struct gcm *)ctx->ctx;
+	uint8_t *out = outp;
+	const uint8_t *in = inp;
+	const size_t blksize = 16;
+
+	c->clen += len;
+
+	while (len >= blksize) {
+		increment_counter(c->y, blksize);
+		c->algo->functbl->encrypt(c->algo, c->buf, c->y);
+		XorAligned(out, c->buf, in, blksize);
+		hash_fast(c, c->x, out);
+		len -= blksize;
+		out += blksize;
+		in += blksize;
+	}
+
+	return 0;
+}
+
 static int gcm_decrypt(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 		size_t len)
 {
@@ -415,6 +450,29 @@ static int gcm_decrypt(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 		for (size_t i = 0; i < len; i++)
 			out[i] = c->buf[i] ^ (c->cbuf[i] = in[i]);
 		c->boff = len;
+	}
+
+	return 0;
+}
+
+static int gcm_decryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
+		size_t len)
+{
+	struct gcm *c = (struct gcm *)ctx->ctx;
+	uint8_t *out = outp;
+	const uint8_t *in = inp;
+	const size_t blksize = 16;
+
+	c->clen += len;
+
+	while (len >= blksize) {
+		increment_counter(c->y, blksize);
+		c->algo->functbl->encrypt(c->algo, c->buf, c->y);
+		hash_fast(c, c->x, in);
+		XorAligned(out, c->buf, in, blksize);
+		len -= blksize;
+		out += blksize;
+		in += blksize;
 	}
 
 	return 0;
