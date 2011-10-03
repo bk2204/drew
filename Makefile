@@ -74,12 +74,9 @@ all: ${PLUG_EXE} ${DREW_SONAME} standard
 depend: $(DEPFILES)
 
 standard: ${DREW_SONAME} ${MD_SONAME} plugins libmd/testsuite
-<<<<<<< HEAD
 standard: $(TEST_BINARIES)
 standard: $(DREW_TLS_SONAME) $(DREW_GNUTLS_SONAME)
-=======
 standard: $(TEST_BINARIES) $(UTILITIES)
->>>>>>> 131441bf30bbdd4a59103a45c22e774a69a91dfc
 
 ${TEST_EXE}: ${TEST_SRC} ${MD_SONAME} ${DREW_SONAME} ${DREW_IMPL_SONAME}
 	${CC} -Ilibmd/include ${CPPFLAGS} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
