@@ -1,4 +1,24 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include "internal.h"
+#include "util.h"
 
 #include <errno.h>
 #include <stddef.h>
@@ -8,6 +28,7 @@
 #include <string.h>
 
 #include <drew/bignum.h>
+#include <drew/mem.h>
 #include <drew/pksig.h>
 #include <drew/plugin.h>
 
@@ -152,7 +173,7 @@ static int rsa_init(drew_pksig_t *ctx, int flags, const drew_loader_t *ldr,
 	int res = 0;
 
 	if (!(flags & DREW_PKSIG_FIXED))
-		newctx = malloc(sizeof(*newctx));
+		newctx = drew_mem_malloc(sizeof(*newctx));
 
 	if ((res = init(newctx, flags, ldr, param)))
 		return res;
@@ -169,7 +190,7 @@ static int rsa_fini(drew_pksig_t *ctx, int flags)
 
 	fini(c, flags);
 	if (!(flags & DREW_PKSIG_FIXED))
-		free(c);
+		drew_mem_free(c);
 
 	ctx->ctx = NULL;
 	return 0;
@@ -182,7 +203,7 @@ static int rsa_clone(drew_pksig_t *newctx, const drew_pksig_t *oldctx,
 		int flags)
 {
 	if (!(flags & DREW_PKSIG_FIXED))
-		newctx->ctx = malloc(sizeof(struct rsa));
+		newctx->ctx = drew_mem_malloc(sizeof(struct rsa));
 
 	memset(newctx->ctx, 0, sizeof(struct rsa));
 
@@ -250,6 +271,7 @@ static struct plugin plugin_data[] = {
 	{ "RSASignature", &rsa_functbl },
 };
 
+EXPORT()
 int DREW_PLUGIN_NAME(rsasig)(void *ldr, int op, int id, void *p)
 {
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
@@ -278,3 +300,4 @@ int DREW_PLUGIN_NAME(rsasig)(void *ldr, int op, int id, void *p)
 			return -EINVAL;
 	}
 }
+UNEXPORT()

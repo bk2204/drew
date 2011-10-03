@@ -8,9 +8,13 @@ test/test-prng
 test/test-bignum
 test/test-pkenc
 test/test-pksig
+test/test-kdf
+test/test-mem
 test/plugin-main
 util/*sum
 util/drew-x509
+util/daniel
+*.d
 *.o
 *.gen
 *.so*

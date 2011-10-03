@@ -1,3 +1,9 @@
+/*-
+ * brian m. carlson <sandals@crustytoothpaste.net> wrote this source code.
+ * This source code is in the public domain; you may do whatever you please with
+ * it.  However, a credit in the documentation, although not required, would be
+ * appreciated.
+ */
 #ifndef MD4_HH
 #define MD4_HH
 
@@ -5,6 +11,7 @@
 #include "util.hh"
 #include <stdint.h>
 
+HIDE()
 namespace drew {
 
 class MD4 : public Hash<uint32_t, 16, 16, 64, LittleEndian>
@@ -23,5 +30,6 @@ class MD4 : public Hash<uint32_t, 16, 16, 64, LittleEndian>
 };
 
 }
+UNHIDE()
 
 #endif

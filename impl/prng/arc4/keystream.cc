@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include "keystream.hh"
 
 #include <string.h>
@@ -5,6 +24,7 @@
 #include <algorithm>
 #include <utility>
 
+HIDE()
 drew::KeystreamGenerator::KeystreamGenerator(int index)
 {
 	static const uint8_t *table[4] = {
@@ -182,3 +202,4 @@ const uint8_t drew::KeystreamGenerator::ariatable2[256] = {
 	0xed, 0x14, 0xe0, 0xa5, 0x3d, 0x22, 0xb3, 0xf8, 
 	0x89, 0xde, 0x71, 0x1a, 0xaf, 0xba, 0xb5, 0x81
 };
+UNHIDE()

@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include "internal.h"
 
 #include <errno.h>
@@ -8,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <drew/mem.h>
 #include <drew/mode.h>
 #include <drew/block.h>
 #include <drew/plugin.h>
@@ -91,7 +111,7 @@ static int ctr_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	struct ctr *newctx = ctx->ctx;
 
 	if (!(flags & DREW_MODE_FIXED))
-		newctx = malloc(sizeof(*newctx));
+		newctx = drew_mem_smalloc(sizeof(*newctx));
 	newctx->ldr = ldr;
 	newctx->algo = NULL;
 	newctx->boff = 0;
@@ -353,11 +373,8 @@ static int ctr_fini(drew_mode_t *ctx, int flags)
 {
 	struct ctr *c = ctx->ctx;
 
-	memset(c->buf, 0, c->blksize);
-	memset(c->ctr, 0, c->blksize);
-	memset(c, 0, sizeof(*c));
 	if (!(flags & DREW_MODE_FIXED))
-		free(c);
+		drew_mem_sfree(c);
 
 	ctx->ctx = NULL;
 	return 0;
@@ -366,7 +383,7 @@ static int ctr_fini(drew_mode_t *ctx, int flags)
 static int ctr_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags)
 {
 	if (!(flags & DREW_MODE_FIXED))
-		newctx->ctx = malloc(sizeof(struct ctr));
+		newctx->ctx = drew_mem_smalloc(sizeof(struct ctr));
 	memcpy(newctx->ctx, oldctx->ctx, sizeof(struct ctr));
 	newctx->functbl = oldctx->functbl;
 	return 0;
@@ -382,6 +399,7 @@ static struct plugin plugin_data[] = {
 	{ "Counter-BE", &ctr_functbl }
 };
 
+EXPORT()
 int DREW_PLUGIN_NAME(ctr)(void *ldr, int op, int id, void *p)
 {
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
@@ -410,3 +428,4 @@ int DREW_PLUGIN_NAME(ctr)(void *ldr, int op, int id, void *p)
 			return -EINVAL;
 	}
 }
+UNEXPORT()

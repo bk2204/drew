@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include "arc4stir.hh"
 
 #include <fcntl.h>
@@ -46,6 +65,7 @@
 // This is a non-blocking random device.  If you don't have one, use /dev/null.
 #define DEVICE "/dev/urandom"
 
+HIDE()
 extern "C" {
 
 static int a4s_info(int op, void *p);
@@ -226,3 +246,4 @@ void drew::ARC4Stir::Stir(const uint8_t *k)
 {
 	m_ks->Stir(k, InternalGetByte());
 }
+UNHIDE()

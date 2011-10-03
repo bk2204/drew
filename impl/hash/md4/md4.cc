@@ -1,5 +1,5 @@
 /*-
- * brian m. carlson <sandals@crustytoothpaste.ath.cx> wrote this source code.
+ * brian m. carlson <sandals@crustytoothpaste.net> wrote this source code.
  * This source code is in the public domain; you may do whatever you please with
  * it.  However, a credit in the documentation, although not required, would be
  * appreciated.
@@ -17,6 +17,7 @@
 #include "testcase.hh"
 #include "hash-plugin.hh"
 
+HIDE()
 extern "C" {
 PLUGIN_STRUCTURE(md4, MD4)
 PLUGIN_DATA_START()
@@ -117,3 +118,4 @@ void drew::MD4::Transform(quantum_t *state, const uint8_t *block)
 	state[2] += c;
 	state[3] += d;
 }
+UNHIDE()

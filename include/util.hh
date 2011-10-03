@@ -1,17 +1,45 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 #ifndef ENDIAN_HH
 #define ENDIAN_HH
 
 #include <algorithm>
 #include "util.h"
 
-#define DREW_BIG_ENDIAN		4321
-#define DREW_LITTLE_ENDIAN	1234
-#if BYTE_ORDER == BIG_ENDIAN
+#define DREW_BIG_ENDIAN		4321U
+#define DREW_LITTLE_ENDIAN	1234U
+#if !defined(BYTE_ORDER) && defined(__BYTE_ORDER__)
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define DREW_BYTE_ORDER		DREW_BIG_ENDIAN
+#else
+#define DREW_BYTE_ORDER		DREW_LITTLE_ENDIAN
+#endif
+#elif BYTE_ORDER == BIG_ENDIAN
 #define DREW_BYTE_ORDER		DREW_BIG_ENDIAN
 #else
 #define DREW_BYTE_ORDER		DREW_LITTLE_ENDIAN
 #endif
 
+HIDE()
 template<class T, size_t N>
 struct AlignedBlock
 {
@@ -162,10 +190,24 @@ inline void XorAligned(T *outp, const T *inp, const T *xorp, size_t len)
 }
 
 template<class T>
+inline void XorAligned(T *outp, const T *xorp, size_t len)
+{
+	return xor_aligned2(reinterpret_cast<uint8_t *>(outp),
+			reinterpret_cast<const uint8_t *>(xorp), len);
+}
+
+template<class T>
 inline void XorBuffers(T *outp, const T *inp, const T *xorp, size_t len)
 {
 	for (size_t i = 0; i < len / sizeof(T); i++)
 		outp[i] = inp[i] ^ xorp[i];
+}
+
+template<class T>
+inline void XorBuffers(T *outp, const T *xorp, size_t len)
+{
+	for (size_t i = 0; i < len / sizeof(T); i++)
+		outp[i] ^= xorp[i];
 }
 
 // This is like CopyAndXor, but we're always working with bufsz-sized chunks.
@@ -484,6 +526,7 @@ inline void BigEndian::Convert(uint8_t *buf, uint16_t p)
 	uint16_t x = ntohs(p);
 	memcpy(buf, &x, sizeof(x));
 }
+UNHIDE()
 
 #if BYTE_ORDER == BIG_ENDIAN
 typedef BigEndian NativeEndian;
@@ -493,6 +536,10 @@ typedef LittleEndian NativeEndian;
 
 #if defined(__i386__) || defined(__x86_64__)
 #include "util-i386.hh"
+#elif defined(__sparc__)
+#define FEATURE_ANDNOT
+#elif defined(__arm__)
+#define FEATURE_ANDNOT
 #endif
 
 #endif

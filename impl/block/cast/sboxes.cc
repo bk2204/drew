@@ -1,5 +1,9 @@
+/*-
+ * This file is in the public domain since it consists of nothing original.
+ */
 #include "cast.hh"
 
+HIDE()
 const uint32_t drew::CAST::m_s[8][256] = {
 	{
 		0x30fb40d4, 0x9fa0ff0b, 0x6beccd2f, 0x3f258c7a,
@@ -530,3 +534,4 @@ const uint32_t drew::CAST::m_s[8][256] = {
 		0x50b2ad80, 0xeaee6801, 0x8db2a283, 0xea8bf59e
 	}
 };
+UNHIDE()
