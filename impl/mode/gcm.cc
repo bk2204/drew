@@ -50,7 +50,7 @@ struct gcm {
 	uint8_t buf[16] ALIGNED_T;
 	uint8_t cbuf[16] ALIGNED_T;
 	uint8_t *iv;
-	uint8_t *table;
+	uint64_t *table;
 	void (*mul)(struct gcm *, uint8_t *);
 	size_t ivlen;
 	size_t blksize;
@@ -170,7 +170,7 @@ static int gcmfl_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	newctx->algo = NULL;
 	newctx->boff = 0;
 	newctx->taglen = 16;
-	newctx->table = (uint8_t *)drew_mem_smalloc(64 * 1024);
+	newctx->table = (uint64_t *)drew_mem_smalloc(64 * 1024);
 	newctx->mul = mul_fl;
 
 	for (const drew_param_t *p = param; p; p = p->next)
@@ -236,13 +236,13 @@ static inline void mul_fl(struct gcm *ctx, uint8_t *buf)
 	uint64_t x[2], a[2] ALIGNED_T = {0, 0};
 
 	memcpy(x, buf, 16);
-#define PTR_COMMON(a, c) ((uint64_t *)(ctx->table+(a)*256*16+(c)))
+#define PTR_COMMON(a, c) (ctx->table+(a)*256*2+(c))
 #if DREW_BYTE_ORDER == DREW_LITTLE_ENDIAN
 #define RE(c, d) (d+4*(c%2))
 #else
 #define RE(c, d) (7-d-4*(c%2))
 #endif
-#define PTR_WORD(b, c, d) PTR_COMMON(c*4+d, (RE(c, d)?(x[b]>>((RE(c, d)?RE(c, d):1)*8-4))&0xff0:(x[b]&0xff)<<4))
+#define PTR_WORD(b, c, d) PTR_COMMON(c*4+d, (RE(c, d)?(x[b]>>((RE(c, d)?RE(c, d):1)*8-4))&0xff0:(x[b]&0xff)<<4)>>3)
 
 	XorAligned(a, PTR_WORD(0, 0, 0), 16);
 	XorAligned(a, PTR_WORD(0, 0, 1), 16);
@@ -266,13 +266,14 @@ static inline void mul_fl(struct gcm *ctx, uint8_t *buf)
 static void gen_table_fl(struct gcm *ctx)
 {
 	uint64_t v[2];
-	uint8_t *table = ctx->table;
+	uint64_t *table = ctx->table;
 
 	E::Copy(v, ctx->h, 16);
 
 	for (int i = 0; i < 128; i++) {
 		int k = i & 7;
-		E::Copy(table+(i/8)*256*16+(size_t(1)<<(11-k)), v, 16);
+		uint8_t *stable = (uint8_t *)table;
+		E::Copy(stable+(i/8)*256*16+(size_t(1)<<(11-k)), v, 16);
 
 		int x = v[1] & 1;
 		v[1] = (v[1] >> 1) | (v[0] << 63);
@@ -280,11 +281,11 @@ static void gen_table_fl(struct gcm *ctx)
 	}
 
 	for (int i = 0; i < 16; i++) {
-		memset(table+i*256*16, 0, 16);
+		memset(table+i*256*2, 0, 16);
 		for (int j = 2; j <= 0x80; j *= 2)
 			for (int k = 1; k < j; k++)
-				XorAligned(table+i*256*16+(j+k)*16, table+i*256*16+j*16,
-						table+i*256*16+k*16, 16);
+				XorAligned(table+i*256*2+(j+k)*2, table+i*256*2+j*2,
+						table+i*256*2+k*2, 16);
 	}
 }
 
