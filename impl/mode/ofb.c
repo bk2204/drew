@@ -1,9 +1,31 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
+#include "internal.h"
+
 #include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include <drew/mem.h>
 #include <drew/mode.h>
 #include <drew/block.h>
 #include <drew/plugin.h>
@@ -85,7 +107,7 @@ static int ofb_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	struct ofb *newctx = ctx->ctx;
 
 	if (!(flags & DREW_MODE_FIXED))
-		newctx = malloc(sizeof(*newctx));
+		newctx = drew_mem_smalloc(sizeof(*newctx));
 	newctx->ldr = ldr;
 	newctx->algo = NULL;
 	newctx->boff = 0;
@@ -190,17 +212,7 @@ static int ofb_encryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 	len /= DREW_MODE_ALIGNMENT;
 	for (size_t iters = 0; iters < len; iters++, in++, out++) {
 		c->algo->functbl->encryptfast(c->algo, c->buf, c->buf, c->chunks);
-#ifdef VECTOR_T
-		typedef int vector_t __attribute__ ((vector_size (16)));
-		vector_t bufv, inv;
-		memcpy(&bufv, c->buf, sizeof(vector_t));
-		memcpy(&inv, in->data, sizeof(vector_t));
-		bufv ^= inv;
-		memcpy(out->data, &bufv, sizeof(vector_t));
-#else
-		for (int i = 0; i < DREW_MODE_ALIGNMENT; i++)
-			out->data[i] = c->buf[i] ^ in->data[i];
-#endif
+		xor_aligned(out->data, c->buf, in->data, DREW_MODE_ALIGNMENT);
 	}
 	return 0;
 }
@@ -360,9 +372,8 @@ static int ofb_fini(drew_mode_t *ctx, int flags)
 {
 	struct ofb *c = ctx->ctx;
 
-	memset(c, 0, sizeof(*c));
 	if (!(flags & DREW_MODE_FIXED))
-		free(c);
+		drew_mem_sfree(c);
 
 	ctx->ctx = NULL;
 	return 0;
@@ -371,7 +382,7 @@ static int ofb_fini(drew_mode_t *ctx, int flags)
 static int ofb_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags)
 {
 	if (!(flags & DREW_MODE_FIXED))
-		newctx->ctx = malloc(sizeof(struct ofb));
+		newctx->ctx = drew_mem_smalloc(sizeof(struct ofb));
 	memcpy(newctx->ctx, oldctx->ctx, sizeof(struct ofb));
 	newctx->functbl = oldctx->functbl;
 	return 0;
@@ -387,7 +398,8 @@ static struct plugin plugin_data[] = {
 	{ "OFB", &ofb_functbl }
 };
 
-int drew_plugin_info(void *ldr, int op, int id, void *p)
+EXPORT()
+int DREW_PLUGIN_NAME(ofb)(void *ldr, int op, int id, void *p)
 {
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 
@@ -415,3 +427,4 @@ int drew_plugin_info(void *ldr, int op, int id, void *p)
 			return -EINVAL;
 	}
 }
+UNEXPORT()

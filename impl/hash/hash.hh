@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #ifndef HASH_HH
 #define HASH_HH
 
@@ -11,6 +30,7 @@
 
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 template<class T, unsigned Size, unsigned BufSize, unsigned BlkSize, class E>
@@ -30,19 +50,19 @@ class Hash
 			memset(m_buf, 0, sizeof(m_buf));
 			memset(m_hash, 0, sizeof(m_hash));
 		}
-		virtual void Initialize()
+		void Initialize()
 		{
 			memset(m_len, 0, sizeof(m_len));
 			memset(m_buf, 0, sizeof(m_buf));
 		}
 		virtual void Reset() = 0;
-		virtual void Update(const uint8_t *data, size_t len)
+		inline void Update(const uint8_t *data, size_t len)
 		{
 			const T t = m_len[0];
 			const T off = t % BlkSize;
 			uint8_t *buf = m_buf;
 		
-			if ((m_len[0] += len) < t)
+			if (unlikely((m_len[0] += len) < t))
 				m_len[1]++;
 
 			if (off) {
@@ -60,11 +80,11 @@ class Hash
 				Transform(data);
 			memcpy(buf, data, len);
 		}
-		virtual void UpdateFast(const uint8_t *data, size_t len)
+		inline void UpdateFast(const uint8_t *data, size_t len)
 		{
 			const T t = m_len[0];
 
-			if ((m_len[0] += len) < t)
+			if (unlikely((m_len[0] += len) < t))
 				m_len[1]++;
 
 			len /= BlkSize;
@@ -103,21 +123,22 @@ class Hash
 			if (!nopad)
 				Pad();
 
-			E::Copy(digest, m_hash, Size);
+			E::CopyCarefully(digest, m_hash, Size);
 		}
 		virtual size_t GetDigestSize() const
 		{
 			return Size;
 		}
-		static void Transform(T *, const uint8_t *data);
+		static inline void Transform(T *, const uint8_t *data);
 	protected:
 		virtual void Transform(const uint8_t *data) = 0;
-		T m_len[2];
-		T m_hash[BufSize/sizeof(T)];
+		T m_hash[BufSize/sizeof(T)] ALIGNED_T;
 		uint8_t m_buf[BlkSize];
+		T m_len[2];
 	private:
 };
 
 }
+UNHIDE()
 
 #endif

@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #ifndef SALSA20_HH
 #define SALSA20_HH
 
@@ -6,6 +25,7 @@
 
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 class Salsa20Keystream
@@ -19,6 +39,7 @@ class Salsa20Keystream
 		void Reset();
 		void FillBuffer(uint8_t *);
 		void FillBufferAligned(uint8_t *);
+		void SetRounds(size_t rounds);
 	protected:
 	private:
 		struct AlignedData
@@ -26,13 +47,9 @@ class Salsa20Keystream
 			uint32_t buf[16] ALIGNED_T;
 		};
 		virtual void DoHash(AlignedData &cur);
-		static void DoQuarterRound(uint32_t &, uint32_t &, uint32_t &,
-				uint32_t &);
-		static void DoRowRound(uint32_t *);
-		static void DoColumnRound(uint32_t *);
-		static void DoDoubleRound(uint32_t *);
 		AlignedData state;
 		size_t keysz;
+		size_t nrounds;
 		uint64_t ctr;
 };
 
@@ -40,6 +57,7 @@ class Salsa20
 {
 	public:
 		Salsa20();
+		Salsa20(size_t);
 		~Salsa20() {}
 		void Reset();
 		void SetNonce(const uint8_t *, size_t sz);
@@ -55,5 +73,6 @@ class Salsa20
 };
 
 }
+UNHIDE()
 
 #endif

@@ -1,5 +1,5 @@
 /*-
- * brian m. carlson <sandals@crustytoothpaste.ath.cx> wrote this source code.
+ * brian m. carlson <sandals@crustytoothpaste.net> wrote this source code.
  * This source code is in the public domain; you may do whatever you please with
  * it.  However, a credit in the documentation, although not required, would be
  * appreciated.
@@ -24,15 +24,24 @@
 
 DREW_LIBMD_HASH_STRUCT(MD4_CTX, uint32_t, MD4_DIGEST_LENGTH, MD4_BLOCK_LENGTH);
 
+DREW_SYM_PUBLIC
 void MD4Init(MD4_CTX *ctx);
+DREW_SYM_PUBLIC
 void MD4Update(MD4_CTX *ctx, const uint8_t *data, size_t len);
+DREW_SYM_PUBLIC
 void MD4Pad(MD4_CTX *ctx);
+DREW_SYM_PUBLIC
 void MD4Final(uint8_t digest[MD4_DIGEST_LENGTH], MD4_CTX *ctx);
+DREW_SYM_PUBLIC
 void MD4Transform(uint32_t state[4], const uint8_t block[MD4_BLOCK_LENGTH]);
 
+DREW_SYM_PUBLIC
 char *MD4End(MD4_CTX *ctx, char *buf);
+DREW_SYM_PUBLIC
 char *MD4File(const char *filename, char *buf);
+DREW_SYM_PUBLIC
 char *MD4FileChunk(const char *filename, char *buf, off_t off, off_t len);
+DREW_SYM_PUBLIC
 char *MD4Data(const uint8_t *data, size_t len, char *buf);
 
 #endif

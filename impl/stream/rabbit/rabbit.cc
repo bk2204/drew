@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include <utility>
 
 #include <stdio.h>
@@ -10,6 +29,7 @@
 #include "stream-plugin.h"
 #include "testcase.hh"
 
+HIDE()
 extern "C" {
 
 static int rabbit_test(void *, const drew_loader_t *)
@@ -139,7 +159,7 @@ PLUGIN_FUNCTBL(rabbit, rabbit_info, rabbit_init, rabbit_setiv, rabbit_setkey, ra
 PLUGIN_DATA_START()
 PLUGIN_DATA(rabbit, "Rabbit")
 PLUGIN_DATA_END()
-PLUGIN_INTERFACE()
+PLUGIN_INTERFACE(rabbit)
 
 static int rabbit_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *)
@@ -199,38 +219,32 @@ drew::RabbitKeystream::RabbitKeystream()
 	Reset();
 }
 
-void drew::RabbitKeystream::CounterUpdate()
+uint64_t drew::RabbitKeystream::square(uint32_t term) const
+{
+	return uint64_t(term) * term;
+}
+
+uint32_t drew::RabbitKeystream::g(uint32_t u, uint32_t v) const
+{
+	uint64_t res = square(u+v);
+	return (res >> 32) ^ uint32_t(res);
+}
+
+void drew::RabbitKeystream::Iterate()
 {
 	static const uint64_t a[8] = {
 		0x4d34d34d, 0xd34d34d3, 0x34d34d34, 0x4d34d34d,
 		0xd34d34d3, 0x34d34d34, 0x4d34d34d, 0xd34d34d3
 	};
+	uint32_t g[8] ALIGNED_T;
 	// Really, all we need b to do here is reflect the carry bit for the
 	// addition.  There is probably a simpler yet equally portable way to do
 	// this.
 	for (size_t i = 0; i < 8; i++) {
 		uint64_t temp = c[i] + a[i] + b;
 		b = temp >> 32;
-		c[i] = uint32_t(temp);
+		g[i] = this->g(x[i], (c[i] = uint32_t(temp)));
 	}
-}
-
-inline uint64_t drew::RabbitKeystream::square(uint32_t term)
-{
-	return uint64_t(term) * term;
-}
-
-inline uint32_t drew::RabbitKeystream::g(uint32_t u, uint32_t v)
-{
-	uint64_t res = square(u+v);
-	return (res >> 32) ^ uint32_t(res);
-}
-
-void drew::RabbitKeystream::NextState()
-{
-	uint32_t g[8] ALIGNED_T;
-	for (size_t i = 0; i < 8; i++)
-		g[i] = this->g(x[i], c[i]);
 	x[0] = g[0] + RotateLeft(g[7], 16) + RotateLeft(g[6], 16);
 	x[1] = g[1] + RotateLeft(g[0],  8) + g[7];
 	x[2] = g[2] + RotateLeft(g[1], 16) + RotateLeft(g[0], 16);
@@ -252,10 +266,8 @@ void drew::RabbitKeystream::SetKey(const uint8_t *key, size_t sz)
 		x[i+1] = (uint32_t(k[(i+6)&7]) << 16) | k[(i+5)&7];
 		c[i+1] = (uint32_t(k[(i+1)&7]) << 16) | k[(i+2)&7];
 	}
-	for (size_t i = 0; i < 4; i++) {
-		CounterUpdate();
-		NextState();
-	}
+	for (size_t i = 0; i < 4; i++)
+		Iterate();
 	for (size_t i = 0; i < 8; i++)
 		c[i] ^= x[(i+4)&7];
 }
@@ -275,10 +287,8 @@ void drew::RabbitKeystream::SetNonce(const uint8_t *ivin, size_t sz)
 	c[6] ^= iv[1];
 	c[7] ^= (iv[1] << 16) | uint16_t(iv[0]);
 
-	for (size_t i = 0; i < 4; i++) {
-		CounterUpdate();
-		NextState();
-	}
+	for (size_t i = 0; i < 4; i++)
+		Iterate();
 }
 
 void drew::RabbitKeystream::Reset()
@@ -288,8 +298,7 @@ void drew::RabbitKeystream::Reset()
 
 void drew::RabbitKeystream::GetValue(uint32_t s[4])
 {
-	CounterUpdate();
-	NextState();
+	Iterate();
 
 	s[0] = x[0] ^ (x[5] >> 16) ^ (x[3] << 16);
 	s[1] = x[2] ^ (x[7] >> 16) ^ (x[5] << 16);
@@ -303,3 +312,4 @@ void drew::RabbitKeystream::FillBuffer(uint8_t buf[16])
 	GetValue(s);
 	E::Copy(buf, s, sizeof(s));
 }
+UNHIDE()

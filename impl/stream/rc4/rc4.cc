@@ -1,15 +1,36 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include <utility>
 
 #include <stdio.h>
 #include <string.h>
 
 #include <internal.h>
+#include <drew/drew.h>
 #include <drew/plugin.h>
 #include <drew/stream.h>
 #include "rc4.hh"
 #include "stream-plugin.h"
 #include "testcase.hh"
 
+HIDE()
 extern "C" {
 
 static int rc4_test(void *, const drew_loader_t *);
@@ -171,7 +192,7 @@ static int rc4_fini(drew_stream_t *ctx, int flags)
 PLUGIN_DATA_START()
 PLUGIN_DATA(rc4, "RC4")
 PLUGIN_DATA_END()
-PLUGIN_INTERFACE()
+PLUGIN_INTERFACE(rc4)
 
 }
 
@@ -212,3 +233,4 @@ void drew::RC4::Decrypt(uint8_t *out, const uint8_t *in, size_t len)
 {
 	return Encrypt(out, in, len);
 }
+UNHIDE()

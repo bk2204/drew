@@ -1,11 +1,33 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 #ifndef DREW_BIGNUM_INTERFACE_H
 #define DREW_BIGNUM_INTERFACE_H
 
 #include <errno.h>
 #include <stdint.h>
 
-#include "param.h"
-#include "plugin.h"
+#include <drew/drew.h>
+#include <drew/param.h>
+#include <drew/plugin.h>
 
 /* The ABI version of the hash interface. */
 #define DREW_BIGNUM_VERSION 0 /* Not implemented. */
@@ -68,19 +90,6 @@ typedef struct {
 			const drew_bignum_t *);
 	int (*invmod)(drew_bignum_t *, const drew_bignum_t *,
 			const drew_bignum_t *);
-	// Barrett Reduction.
-	int (*breduceinit)(drew_bignum_t *, const drew_bignum_t *);
-	int (*breduce)(drew_bignum_t *, const drew_bignum_t *,
-			const drew_bignum_t *, const drew_bignum_t *);
-	// Montgomery Reduction.
-	int (*mreduceinit)(drew_bignum_t *, const drew_bignum_t *);
-	int (*mreduce)(drew_bignum_t *, const drew_bignum_t *,
-			const drew_bignum_t *, const drew_bignum_t *);
-	int (*mreduceconst)(drew_bignum_t *, const drew_bignum_t *);
-	// Diminished Radix Reduction.
-	int (*drreduceinit)(drew_bignum_t *, const drew_bignum_t *);
-	int (*drreduce)(drew_bignum_t *, const drew_bignum_t *,
-			const drew_bignum_t *, const drew_bignum_t *);
 	int (*test)(void *, const drew_loader_t *);
 } drew_bignum_functbl2_t;
 

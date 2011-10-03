@@ -1,5 +1,5 @@
 /*-
- * brian m. carlson <sandals@crustytoothpaste.ath.cx> wrote this source code.
+ * brian m. carlson <sandals@crustytoothpaste.net> wrote this source code.
  * This source code is in the public domain; you may do whatever you please with
  * it.  However, a credit in the documentation, although not required, would be
  * appreciated.
@@ -83,6 +83,24 @@ void test_reset_data(void *p, int flags)
 	}
 	if (flags & TEST_RESET_ZERO)
 		memset(p, 0, sizeof(struct testcase));
+}
+
+void *test_clone_data(void *tc, int flags)
+{
+	struct testcase *q = test_create_data();
+	struct testcase *p = tc;
+
+	q->id = NULL;
+	q->algo = strdup(p->algo);
+	q->nrepeats = p->nrepeats;
+	q->insize = p->insize;
+	q->in = malloc(q->insize);
+	memcpy(q->in, p->in, q->insize);
+	q->digestsize = p->digestsize;
+	q->digest = malloc(q->digestsize);
+	memcpy(q->digest, p->digest, q->digestsize);
+
+	return q;
 }
 
 void *test_create_data()
@@ -369,7 +387,9 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 
 	ctx.functbl = tbl;
 	blksize = ctx.functbl->info(DREW_HASH_BLKSIZE, NULL);
-	if (blksize <= 0)
+	if (blksize == -DREW_ERR_MORE_INFO)
+		blksize = chunk + 1;
+	else if (blksize <= 0)
 		return -DREW_ERR_INVALID;
 
 	fwdata = framework_setup();

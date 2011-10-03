@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<article
+	xmlns="http://docbook.org/ns/docbook"
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:cc="http://creativecommons.org/ns#"
+	xmlns:xi="http://www.w3.org/2001/XInclude"
+	xml:lang="en"
+	xml:id="block"
+	version="5.0">
+	<title>The Block Cipher Interface</title>
+	<para>
+		The drew block cipher interface provides a quick and efficient interface
+		based around the <type>drew_block_t</type>.
+	</para>
+	<!--{{{ drew_block_t -->
+	<classsynopsis language="C">
+		<ooclass>
+			<classname>drew_block_t</classname>
+		</ooclass>
+		<fieldsynopsis>
+			<type>void *</type><varname>ctx</varname>
+		</fieldsynopsis>
+		<fieldsynopsis>
+			<modifier>const</modifier>
+			<type>drew_block_functbl_t *</type><varname>functbl</varname>
+		</fieldsynopsis>
+		<fieldsynopsis>
+			<type>void *</type><varname>priv</varname>
+		</fieldsynopsis>
+	</classsynopsis><!--}}}-->
+	<!--{{{ info-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>info</function></funcdef>
+			<paramdef>int <parameter>op</parameter></paramdef>
+			<paramdef>void *<parameter>p</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function provides information about the algorithm in question.  The
+		type of information depends on the <parameter>op</parameter> parameter.
+	</para>
+	<para>
+		To determine the <acronym>ABI</acronym> version of the plugin, which
+		affects the layout of the function table, which entry points are
+		available, and the arguments and return values of those entry points,
+		use the <constant>DREW_BLOCK_VERSION</constant> operation with
+		<constant>NULL</constant> as <parameter>p</parameter>; the
+		<acronym>ABI</acronym> version will be returned.  It is guaranteed
+		that regardless of the <acronym>ABI</acronym>, this interface will be
+		present as the first function pointer in the table and that it will be
+		present with this prototype.
+	</para>
+	<para>
+		The following table indicates the valid values for
+		<parameter>op</parameter> and <parameter>p</parameter>, as well as the
+		expected return value.  If <parameter>p</parameter> is specified as
+		taking either <constant>NULL</constant> or a block cipher context,
+		<constant>NULL</constant> is acceptable unless the function returns
+		<constant>-DREW_ERR_MORE_INFO</constant>, in which case a block cipher
+		context is required.
+	</para>
+	<table>
+		<title>drew Block Cipher Info Operations</title>
+		<tgroup cols="3">
+			<thead>
+				<row>
+					<entry><parameter>op</parameter></entry>
+					<entry><parameter>p</parameter></entry>
+					<entry>Return Value</entry>
+				</row>
+			</thead>
+			<tbody>
+				<row>
+					<entry><constant>DREW_BLOCK_BLKSIZE</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry>the number of bytes processed by each iteration of
+						this block cipher</entry>
+				</row>
+				<row>
+					<entry><constant>DREW_BLOCK_ENDIAN</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry>4321 if the algorithm is big-endian, 1234 if the
+						algorithm is little-endian, and 0 if the algorithm is
+						completely endian-neutral (byte-oriented)</entry>
+				</row>
+				<row>
+					<entry><constant>DREW_BLOCK_INTSIZE</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry>the size of the implementation context</entry>
+				</row>
+				<row>
+					<entry><constant>DREW_BLOCK_KEYSIZE</constant></entry>
+					<entry>a pointer to int</entry>
+					<entry>the size of the key for this implementation (see
+						below)</entry>
+				</row>
+				<row>
+					<entry><constant>DREW_BLOCK_QUANTUM</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry>the number of bytes per quantum (4 for block ciphers
+						using 32-bit integers and 8 for those using 64-bit
+						integers)</entry>
+				</row>
+				<row>
+					<entry><constant>DREW_BLOCK_VERSION</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry>the current <acronym>ABI</acronym> version (currently
+						2)</entry>
+				</row>
+			</tbody>
+		</tgroup>
+	</table>
+	<para xml:id="block-keysize">
+		The <constant>DREW_BLOCK_KEYSIZE</constant> operation requires a bit of
+		explanation.  <parameter>p</parameter> should initially be a pointer to
+		an int.  The <function>info</function> function implementation will
+		return the next-largest key size greater than the value of the
+		pointed-to int, or zero if no larger key size exists.  Thus, starting
+		with p pointing to zero and repeatedly calling <function>info</function>
+		with the previous returned value will enumerate all of the available key
+		sizes.
+	</para><!--}}}-->
+	<!--{{{ init-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>init</function></funcdef>
+			<paramdef>drew_block_t *<parameter>ctx</parameter></paramdef>
+			<paramdef>int <parameter>flags</parameter></paramdef>
+			<paramdef>const drew_loader_t *<parameter>ldr</parameter></paramdef>
+			<paramdef>const drew_param_t *<parameter>param</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		To call <function>init</function>, the block cipher context must be in
+		the <constant>UNINITIALIZED</constant> state.  Upon successful
+		completion, the context will be in the <constant>UNKEYED</constant>
+		state.  The function initializes the block cipher context
+		<parameter>ctx</parameter>.  If the <parameter>flags</parameter>
+		parameter contains the bit <constant>DREW_BLOCK_FIXED</constant>, then
+		the <varname>ctx</varname> field of the <parameter>ctx</parameter>
+		parameter is presumed to point to a suitably-aligned allocation of
+		memory of at least the value returned by a call to the
+		<function>info</function> function with <parameter>op</parameter> set to
+		<constant>DREW_BLOCK_INTSIZE</constant>.  Otherwise, memory will be
+		allocated for the implementation context.
+	</para>
+	<para>
+		It is suggested that a valid loader context be passed as
+		<parameter>ldr</parameter>, so that an implementation may create its own
+		libdrew contexts if it needs them internally.  This is optional,
+		however; if no loader context is available, simply pass
+		<constant>NULL</constant>.  If it is non-<constant>NULL</constant>,
+		<parameter>param</parameter> should be a linked list of parameters.
+	</para><!--}}}-->
+	<!--{{{ clone-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>clone</function></funcdef>
+			<paramdef>drew_block_t *<parameter>newctx</parameter></paramdef>
+			<paramdef>drew_block_t *<parameter>ctx</parameter></paramdef>
+			<paramdef>int <parameter>flags</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		The <function>clone</function> may be called at any time.  It copies
+		the context specified in <parameter>ctx</parameter> (in any state other
+		than <constant>UNINITIALIZED</constant>) to a
+		new context in <parameter>newctx</parameter> that is currently in the
+		<constant>UNINITIALIZED</constant> state.  After a successful call, the
+		<parameter>newctx</parameter> will acquire a separate but otherwise
+		identical state from <parameter>ctx</parameter>.
+		The <parameter>flags</parameter> parameter has the same meaning as for
+		<function>init</function>.
+	</para><!--}}}-->
+	<!--{{{ reset-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>reset</function></funcdef>
+			<paramdef>drew_block_t *<parameter>ctx</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		The <function>reset</function> function may be called in any state other
+		than <constant>UNINITIALIZED</constant>; after a successful call, the
+		block context will be in the <constant>UNKEYED</constant> state if the
+		context was previously in that state, and in the
+		<constant>READY</constant> state otherwise.  The
+		result is as if the <function>fini</function> function were called,
+		followed by a call to the <function>init</function> function with the
+		same parameters as used in the original call, and (if it was previously
+		in the <constant>READY</constant> state) as if the
+		<function>setkey</function> function was just called, again with the
+		same parameters as used originally.
+	</para><!--}}}-->
+	<!--{{{ fini-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>fini</function></funcdef>
+			<paramdef>drew_block_t *<parameter>ctx</parameter></paramdef>
+			<paramdef>int <parameter>flags</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		The <function>fini</function> takes a context and frees any resources
+		used by it.  The context must be in a state other than
+		<constant>UNINITIALIZED</constant> when <function>fini</function> is
+		called; upon successful completion, the context will be in the
+		<constant>UNINITIALIZED</constant> state.  The
+		<varname>functbl</varname> field of the context is not modified.  If
+		<parameter>flags</parameter> contains the bit
+		<constant>DREW_BLOCK_FIXED</constant>, the <varname>ctx</varname> field
+		of the context is unmodified; otherwise, it is set to
+		<constant>NULL</constant>.
+	</para><!--}}}-->
+	<!--{{{ setkey-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>setkey</function></funcdef>
+			<paramdef>drew_block_t *<parameter>ctx</parameter></paramdef>
+			<paramdef>const uint8_t *<parameter>data</parameter></paramdef>
+			<paramdef>size_t <parameter>len</parameter></paramdef>
+			<paramdef>int <parameter>flags</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function sets the key for the block cipher. The
+		<parameter>data</parameter> parameter contains key material of
+		<parameter>len</parameter> bytes.It may be called in any state other
+		than <constant>UNINITIALIZED</constant> and upon successful completion
+		leaves the context in the <constant>READY</constant> (if flags is zero),
+		<constant>READY-ENCRYPT</constant>, or
+		<constant>READY-DECRYPT</constant> state. 
+	</para>
+	<para xml:id="block-setkey-flags">
+		Normally, the
+		<parameter>flags</parameter> will be zero
+		(<constant>DREW_BLOCK_MODE_BOTH</constant>).  If operation in only one
+		direction is required, such as for some block cipher modes, either
+		<constant>DREW_BLOCK_MODE_ENCRYPT</constant> (for encryption only) or
+		<constant>DREW_BLOCK_MODE_DECRYPT</constant> (for decryption only) can
+		be used.
+	</para><!--}}}-->
+	<!--{{{ encrypt-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>encrypt</function></funcdef>
+			<paramdef>const drew_block_t *<parameter>ctx</parameter></paramdef>
+			<paramdef>uint8_t *<parameter>out</parameter></paramdef>
+			<paramdef>const uint8_t *<parameter>in</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function encrypts a fixed number of bytes (the number of which must
+		be equal to the result of the <constant>DREW_BLOCK_BLKSIZE</constant>
+		<function>info</function> operation) from <parameter>in</parameter> and
+		puts the encrypted data in <parameter>out</parameter>.
+		<parameter>in</parameter> and <parameter>out</parameter> may overlap.
+		It may be called in the <constant>READY</constant> or
+		<constant>READY-ENCRYPT</constant> states only.
+	</para><!--}}}-->
+	<!--{{{ decrypt-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>decrypt</function></funcdef>
+			<paramdef>const drew_block_t *<parameter>ctx</parameter></paramdef>
+			<paramdef>uint8_t *<parameter>out</parameter></paramdef>
+			<paramdef>const uint8_t *<parameter>in</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function decrypts a fixed number of bytes (the number of which must
+		be equal to the result of the <constant>DREW_BLOCK_BLKSIZE</constant>
+		<function>info</function> operation) from <parameter>in</parameter> and
+		puts the encrypted data in <parameter>out</parameter>.
+		<parameter>in</parameter> and <parameter>out</parameter> may overlap.
+		It may be called in the <constant>READY</constant> or
+		<constant>READY-DECRYPT</constant> states only.
+	</para><!--}}}-->
+	<!--{{{ encryptfast-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>encryptfast</function></funcdef>
+			<paramdef>const drew_block_t *<parameter>ctx</parameter></paramdef>
+			<paramdef>uint8_t *<parameter>out</parameter></paramdef>
+			<paramdef>const uint8_t *<parameter>in</parameter></paramdef>
+			<paramdef>size_t <parameter>blocks</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function encrypts <parameter>blocks</parameter> blocks (which have
+		size in bytes equal to the result of the
+		<constant>DREW_BLOCK_BLKSIZE</constant> <function>info</function>
+		operation) from <parameter>in</parameter> and puts the encrypted data in
+		<parameter>out</parameter>.  <parameter>in</parameter> and
+		<parameter>out</parameter> may overlap, but must be 16-byte aligned.
+		Additionally, the total number of bytes encrypted must be a multiple of
+		16.  It may be called in the <constant>READY</constant> or
+		<constant>READY-ENCRYPT</constant> states only.
+	</para><!--}}}-->
+	<!--{{{ decryptfast-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>decryptfast</function></funcdef>
+			<paramdef>const drew_block_t *<parameter>ctx</parameter></paramdef>
+			<paramdef>uint8_t *<parameter>out</parameter></paramdef>
+			<paramdef>const uint8_t *<parameter>in</parameter></paramdef>
+			<paramdef>size_t <parameter>blocks</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function decrypts <parameter>blocks</parameter> blocks (which have
+		size in bytes equal to the result of the
+		<constant>DREW_BLOCK_BLKSIZE</constant> <function>info</function>
+		operation) from <parameter>in</parameter> and puts the encrypted data in
+		<parameter>out</parameter>.  <parameter>in</parameter> and
+		<parameter>out</parameter> may overlap, but must be 16-byte aligned.
+		Additionally, the total number of bytes decrypted must be a multiple of
+		16.  It may be called in the <constant>READY</constant> or
+		<constant>READY-DECRYPT</constant> states only.
+	</para><!--}}}-->
+	<!--{{{ test-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>test</function></funcdef>
+			<paramdef>void *<parameter>p</parameter></paramdef>
+			<paramdef>const drew_loader_t *<parameter>ldr</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function may be called at any time because it does not require a
+		context parameter.  It performs a series of tests on the implementation
+		and returns 0 on success.  If one or more of the tests fail, the
+		appropriate bits will be set in the return value to indicate which test
+		failed.  Because some tests contain a large number of tests, each bit
+		may not correspond to exactly one test.
+	</para>
+	<para>
+		If the return value is negative, it represents an error code in the
+		standard format.
+	</para><!--}}}-->
+</article>
+<!-- vim: set ft=docbkxml: -->

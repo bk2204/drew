@@ -1,3 +1,24 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
+#include "internal.h"
+
 #include <errno.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -6,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <drew/mem.h>
 #include <drew/mode.h>
 #include <drew/block.h>
 #include <drew/plugin.h>
@@ -33,6 +55,8 @@ static int ctr_setblock(drew_mode_t *ctx, const drew_block_t *algoctx);
 static int ctr_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len);
 static int ctr_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
+static int ctr_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len);
 static int ctr_fini(drew_mode_t *ctx, int flags);
 static int ctr_test(void *p, const drew_loader_t *ldr);
 static int ctr_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags);
@@ -46,6 +70,12 @@ static const drew_mode_functbl_t ctr_functbl = {
 	ctr_info, ctr_init, ctr_clone, ctr_reset, ctr_fini, ctr_setpad,
 	ctr_setblock, ctr_setiv, ctr_encrypt, ctr_encrypt, ctr_encrypt, ctr_encrypt,
 	ctr_setdata, ctr_encryptfinal, ctr_decryptfinal, ctr_test
+};
+
+static const drew_mode_functbl_t ctr_functbl_aligned = {
+	ctr_info, ctr_init, ctr_clone, ctr_reset, ctr_fini, ctr_setpad,
+	ctr_setblock, ctr_setiv, ctr_encrypt, ctr_encrypt, ctr_encryptfast,
+	ctr_encryptfast, ctr_setdata, ctr_encryptfinal, ctr_decryptfinal, ctr_test
 };
 
 static int ctr_info(int op, void *p)
@@ -81,7 +111,7 @@ static int ctr_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	struct ctr *newctx = ctx->ctx;
 
 	if (!(flags & DREW_MODE_FIXED))
-		newctx = malloc(sizeof(*newctx));
+		newctx = drew_mem_smalloc(sizeof(*newctx));
 	newctx->ldr = ldr;
 	newctx->algo = NULL;
 	newctx->boff = 0;
@@ -110,6 +140,8 @@ static int ctr_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 
 	c->algo = algoctx;
 	c->blksize = c->algo->functbl->info(DREW_BLOCK_BLKSIZE, NULL);
+	if (c->blksize == FAST_ALIGNMENT)
+		ctx->functbl = &ctr_functbl_aligned;
 
 	return 0;
 }
@@ -174,6 +206,21 @@ static int ctr_encrypt(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 		for (size_t i = 0; i < len; i++)
 			out[i] = c->buf[i] ^ in[i];
 		c->boff = len;
+	}
+
+	return 0;
+}
+
+static int ctr_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len)
+{
+	struct ctr *c = ctx->ctx;
+
+	for (size_t i = 0; i < len; i += FAST_ALIGNMENT, out += FAST_ALIGNMENT,
+			in += FAST_ALIGNMENT) {
+		c->algo->functbl->encrypt(c->algo, c->buf, c->ctr);
+		increment_counter(c->ctr, c->blksize);
+		xor_aligned(out, c->buf, in, FAST_ALIGNMENT);
 	}
 
 	return 0;
@@ -326,11 +373,8 @@ static int ctr_fini(drew_mode_t *ctx, int flags)
 {
 	struct ctr *c = ctx->ctx;
 
-	memset(c->buf, 0, c->blksize);
-	memset(c->ctr, 0, c->blksize);
-	memset(c, 0, sizeof(*c));
 	if (!(flags & DREW_MODE_FIXED))
-		free(c);
+		drew_mem_sfree(c);
 
 	ctx->ctx = NULL;
 	return 0;
@@ -339,7 +383,7 @@ static int ctr_fini(drew_mode_t *ctx, int flags)
 static int ctr_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags)
 {
 	if (!(flags & DREW_MODE_FIXED))
-		newctx->ctx = malloc(sizeof(struct ctr));
+		newctx->ctx = drew_mem_smalloc(sizeof(struct ctr));
 	memcpy(newctx->ctx, oldctx->ctx, sizeof(struct ctr));
 	newctx->functbl = oldctx->functbl;
 	return 0;
@@ -355,7 +399,8 @@ static struct plugin plugin_data[] = {
 	{ "Counter-BE", &ctr_functbl }
 };
 
-int drew_plugin_info(void *ldr, int op, int id, void *p)
+EXPORT()
+int DREW_PLUGIN_NAME(ctr)(void *ldr, int op, int id, void *p)
 {
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 
@@ -383,3 +428,4 @@ int drew_plugin_info(void *ldr, int op, int id, void *p)
 			return -EINVAL;
 	}
 }
+UNEXPORT()

@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -8,6 +27,7 @@
 #include "testcase.hh"
 #include "hash-plugin.hh"
 
+HIDE()
 extern "C" {
 PLUGIN_STRUCTURE(sha512, SHA512)
 PLUGIN_STRUCTURE(sha384, SHA384)
@@ -332,7 +352,7 @@ void drew::SHA384::Reset()
 	h+=S0(a)+Maj(a, b, c)
 
 #define ROUND2(a, b, c, d, e, f, g, h, k, i) \
-	blk[i] = s1(blk[i-2]) + blk[i-7] + s0(blk[i-15]) + blk[i-16]; \
+	blk[i] += s1(blk[(i-2)&15]) + blk[(i-7)&15] + s0(blk[(i-15)&15]); \
 	ROUND(a, b, c, d, e, f, g, h, k, blk[i]); \
 
 void drew::SHA512Transform::Transform(uint64_t *state, const uint8_t *block)
@@ -340,7 +360,7 @@ void drew::SHA512Transform::Transform(uint64_t *state, const uint8_t *block)
 	// This is normally defined automatically by Hash.
 	const size_t block_size = 128;
 	const size_t words = block_size / sizeof(uint64_t);
-	uint64_t blk[80];
+	uint64_t blk[words];
 	size_t i;
 	uint64_t a, b, c, d, e, f, g, h;
 
@@ -365,15 +385,23 @@ void drew::SHA512Transform::Transform(uint64_t *state, const uint8_t *block)
 		ROUND(c, d, e, f, g, h, a, b, k[i+6], blk[i+6]);
 		ROUND(b, c, d, e, f, g, h, a, k[i+7], blk[i+7]);
 	}
-	for (i = words; i < 80; i += 8) {
-		ROUND2(a, b, c, d, e, f, g, h, k[i  ], i  );
-		ROUND2(h, a, b, c, d, e, f, g, k[i+1], i+1);
-		ROUND2(g, h, a, b, c, d, e, f, k[i+2], i+2);
-		ROUND2(f, g, h, a, b, c, d, e, k[i+3], i+3);
-		ROUND2(e, f, g, h, a, b, c, d, k[i+4], i+4);
-		ROUND2(d, e, f, g, h, a, b, c, k[i+5], i+5);
-		ROUND2(c, d, e, f, g, h, a, b, k[i+6], i+6);
-		ROUND2(b, c, d, e, f, g, h, a, k[i+7], i+7);
+	for (i = words; i < 80; i += 16) {
+		ROUND2(a, b, c, d, e, f, g, h, k[i   ],  0);
+		ROUND2(h, a, b, c, d, e, f, g, k[i+ 1],  1);
+		ROUND2(g, h, a, b, c, d, e, f, k[i+ 2],  2);
+		ROUND2(f, g, h, a, b, c, d, e, k[i+ 3],  3);
+		ROUND2(e, f, g, h, a, b, c, d, k[i+ 4],  4);
+		ROUND2(d, e, f, g, h, a, b, c, k[i+ 5],  5);
+		ROUND2(c, d, e, f, g, h, a, b, k[i+ 6],  6);
+		ROUND2(b, c, d, e, f, g, h, a, k[i+ 7],  7);
+		ROUND2(a, b, c, d, e, f, g, h, k[i+ 8],  8);
+		ROUND2(h, a, b, c, d, e, f, g, k[i+ 9],  9);
+		ROUND2(g, h, a, b, c, d, e, f, k[i+10], 10);
+		ROUND2(f, g, h, a, b, c, d, e, k[i+11], 11);
+		ROUND2(e, f, g, h, a, b, c, d, k[i+12], 12);
+		ROUND2(d, e, f, g, h, a, b, c, k[i+13], 13);
+		ROUND2(c, d, e, f, g, h, a, b, k[i+14], 14);
+		ROUND2(b, c, d, e, f, g, h, a, k[i+15], 15);
 	}
 
 	state[0] += a;
@@ -385,3 +413,4 @@ void drew::SHA512Transform::Transform(uint64_t *state, const uint8_t *block)
 	state[6] += g;
 	state[7] += h;
 }
+UNHIDE()

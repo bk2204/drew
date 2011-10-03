@@ -1,5 +1,5 @@
 /*-
- * brian m. carlson <sandals@crustytoothpaste.ath.cx> wrote this source code.
+ * brian m. carlson <sandals@crustytoothpaste.net> wrote this source code.
  * This source code is in the public domain; you may do whatever you please with
  * it.  However, a credit in the documentation, although not required, would be
  * appreciated.
@@ -18,6 +18,7 @@
 #include "testcase.hh"
 #include "hash-plugin.hh"
 
+HIDE()
 extern "C" {
 PLUGIN_STRUCTURE(sha1, SHA1)
 PLUGIN_STRUCTURE(sha0, SHA0)
@@ -90,7 +91,7 @@ static inline uint32_t gg(uint32_t x, uint32_t y, uint32_t z)
 }
 static inline uint32_t hh(uint32_t x, uint32_t y, uint32_t z)
 {
-	return ((x&y)|(z&(x|y)))+0x8f1bbcdc;
+	return (x&y)+(z&(x^y))+0x8f1bbcdc;
 }
 static inline uint32_t ii(uint32_t x, uint32_t y, uint32_t z)
 {
@@ -117,7 +118,10 @@ void drew::SHA<Rotate>::Reset()
 #define OP(f, g, a, b, c, d, e) \
 	e+=RotateLeft(a, 5)+f(b, c, d)+g; b=RotateLeft(b, 30);
 #define EXPANSION(i) \
-	(blk[(i)&15]=RotateLeft(blk[((i)+13)&15]^blk[((i)+8)&15]^blk[((i)+2)&15]^blk[(i)&15],Rotate))
+	(Rotate ? \
+	(blk[(i)&15]=RotateLeft(blk[((i)+13)&15]^blk[((i)+8)&15]^blk[((i)+2)&15]^blk[(i)&15],Rotate)) : \
+	(blk[(i)&15]^=blk[((i)+13)&15]^blk[((i)+8)&15]^blk[((i)+2)&15]))
+	
 
 /* This implementation uses a circular buffer to create the expansions of blk.
  * While it appears that this would be slower, it instead is significantly
@@ -186,3 +190,4 @@ void drew::SHA<Rotate>::Transform(quantum_t *state, const uint8_t *block)
 	state[3] += d;
 	state[4] += e;
 }
+UNHIDE()

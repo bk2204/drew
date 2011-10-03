@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include <utility>
 
 #include <stdio.h>
@@ -10,6 +29,7 @@
 #include "stream-plugin.h"
 #include "testcase.hh"
 
+HIDE()
 extern "C" {
 
 static int hc256_test(void *, const drew_loader_t *);
@@ -114,8 +134,6 @@ static int hc256_test(void *, const drew_loader_t *)
 	return res;
 }
 
-#define DIM(x) (sizeof(x)/sizeof(x[0]))
-
 static const int hc256_keysz[] = {32};
 
 static int hc256_info(int op, void *p)
@@ -209,7 +227,7 @@ static int hc256_fini(drew_stream_t *ctx, int flags)
 PLUGIN_DATA_START()
 PLUGIN_DATA(hc256, "HC256")
 PLUGIN_DATA_END()
-PLUGIN_INTERFACE()
+PLUGIN_INTERFACE(hc256)
 
 }
 
@@ -257,7 +275,6 @@ drew::HC256Keystream::HC256Keystream()
 
 void drew::HC256Keystream::Reset()
 {
-	ctr = 0;
 }
 
 uint32_t drew::HC256Keystream::f1(uint32_t x)
@@ -311,25 +328,22 @@ void drew::HC256Keystream::SetNonce(const uint8_t *iv, size_t sz)
 	memcpy(P, w+ 512, 1024*sizeof(*w));
 	memcpy(Q, w+1536, 1024*sizeof(*w));
 
-	uint8_t dummy[4];
-	for (size_t i = 0; i < 4096; i++)
-		FillBuffer(dummy);
-	ctr = 0;
+	uint8_t dummy[8192];
+	FillBuffer(dummy);
+	FillBuffer(dummy);
 }
 
-void drew::HC256Keystream::FillBuffer(uint8_t buf[4])
+void drew::HC256Keystream::FillBuffer(uint8_t buf[8192])
 {
-	size_t j = ctr % 1024;
-	uint32_t s;
-
-	if (!(ctr & 0x400)) {
+	uint32_t tbuf[2048], *t = tbuf;
+	for (size_t j = 0; j < 1024; j++) {
 		P[j] += P[M(j, 10)] + g1(P[M(j, 3)], P[M(j, 1023)]);
-		s = h1(P[M(j, 12)]) ^ P[j];
+		*t++ = h1(P[M(j, 12)]) ^ P[j];
 	}
-	else {
+	for (size_t j = 0; j < 1024; j++) {
 		Q[j] += Q[M(j, 10)] + g2(Q[M(j, 3)], Q[M(j, 1023)]);
-		s = h2(Q[M(j, 12)]) ^ Q[j];
+		*t++ = h2(Q[M(j, 12)]) ^ Q[j];
 	}
-	ctr++;
-	E::Copy(buf, &s, sizeof(s));
+	E::Copy(buf, tbuf, sizeof(tbuf));
 }
+UNHIDE()
