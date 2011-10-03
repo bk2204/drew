@@ -9,6 +9,8 @@ DREW_TLS_OBJS			+= priority.o
 
 DREW_TLS_DIROBJS		:= $(patsubst %,$(DREW_TLS_DIR)/%,$(DREW_TLS_OBJS))
 
+OBJECTS					+= $(DREW_TLS_DIROBJS)
+
 ifeq ($(CFG_THREAD_SAFE),y)
 $(DREW_TLS_DIR)/$(DREW_TLS_SONAME): CPPFLAGS += -DDREW_TLS_THREAD_SAFE
 endif
