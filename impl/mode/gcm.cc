@@ -227,20 +227,21 @@ static inline void mul(struct gcm *ctx, uint8_t *buf)
 /* The 64k table implementation is derived from Crypto++. */
 static inline void mul_fl(struct gcm *ctx, uint8_t *buf)
 {
-	uint64_t x[2], a[2];
+	uint64_t x[2], a[2] = {0, 0};
 
 	memcpy(x, buf, 16);
 #define READ_COMMON(a, c, d) (*(uint64_t *)(ctx->table+(a)*256*16+(c)+(d)*8))
 #if DREW_BYTE_ORDER == DREW_LITTLE_ENDIAN
-#define READ_WORD(b, c, d, e) READ_COMMON(c*4+d, ((d+4*(c%2))?(x[b]>>(((d+4*(c%2))?(d+4*(c%2)):1)*8-4))&0xff0:(x[b]&0xff)<<4), e)
+#define RE(c, d) (d+4*(c%2))
 #else
-#define READ_WORD(b, c, d, e) READ_COMMON(c*4+d, ((7-d-4*(c%2))?(x[b]>>(((7-d-4*(c%2))?(7-d-4*(c%2)):1)*8-4))&0xff0:(x[b]&0xff)<<4), e)
+#define RE(c, d) (7-d-4*(c%2))
 #endif
+#define READ_WORD(b, c, d, e) READ_COMMON(c*4+d, (RE(c, d)?(x[b]>>((RE(c, d)?RE(c, d):1)*8-4))&0xff0:(x[b]&0xff)<<4), e)
 #define MUL_8BY128(op, b, c, d) \
 	a[0] op READ_WORD(b, c, d, 0); \
 	a[1] op READ_WORD(b, c, d, 1);
 
-	MUL_8BY128(=, 0, 0, 0);
+	MUL_8BY128(^=, 0, 0, 0);
 	MUL_8BY128(^=, 0, 0, 1);
 	MUL_8BY128(^=, 0, 0, 2);
 	MUL_8BY128(^=, 0, 0, 3);
