@@ -4,6 +4,7 @@ DREW_UTIL_SYMLINK		:= $(basename $(DREW_UTIL_SONAME))
 
 DREW_UTIL_OBJS			+= asn1.o
 DREW_UTIL_OBJS			+= x509.o
+DREW_UTIL_OBJS			+= codec.o
 
 DREW_UTIL_DIROBJS		:= $(patsubst %,$(DREW_UTIL_DIR)/%,$(DREW_UTIL_OBJS))
 OBJECTS					+= $(DREW_UTIL_DIROBJS)
