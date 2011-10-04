@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <drew/drew.h>
 #include <drew/param.h>
 #include <drew-util/asn1.h>
 
@@ -30,6 +31,7 @@ typedef struct drew_util_x509_cert_s {
 #define DREW_UTIL_X509_CERT_MISPARSE_VERSION		(1 << 0)
 #define DREW_UTIL_X509_CERT_DEFAULT_VERSION			(1 << 1)
 
+DREW_SYM_PUBLIC
 int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 		const uint8_t *data, size_t len, drew_util_x509_cert_t *cert);
 
