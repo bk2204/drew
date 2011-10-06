@@ -1,6 +1,7 @@
 #include "internal.h"
 
 #include <errno.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -46,8 +47,8 @@ int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 {
 	int res = 0;
 	uint8_t *p;
-	size_t ncertvals, nvals, nsigvals;
-	drew_util_asn1_value_t certificate, *certvals, *sigvals, *vals;
+	size_t ncertvals, nvals, nsigvals, nissuer;
+	drew_util_asn1_value_t certificate, *certvals, *sigvals, *vals, *issuer;
 
 	memset(cert, 0, sizeof(*cert));
 
@@ -63,12 +64,29 @@ int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 
 	// FIXME: parse the entire certificate.
 	RETFAIL(drew_util_asn1_parse_sequence(asn, &certvals[0], &vals, &nvals));
+	if (nvals < 7)
+		return -DREW_ERR_INVALID;
 	RETFAIL(drew_util_x509_parse_version(asn, &vals[0], &cert->version));
 	if (vals[0].tagclass == DREW_UTIL_ASN1_TC_UNIVERSAL && vals[0].tag == 2) {
 		if (cert->version >= 3)
 			cert->flags[0] |= DREW_UTIL_X509_CERT_MISPARSE_VERSION;
 		else if (cert->version == 1 && vals[0].length > 1)
 			cert->flags[0] |= DREW_UTIL_X509_CERT_DEFAULT_VERSION;
+	}
+	RETFAIL(drew_util_asn1_parse_sequence(asn, &vals[3], &issuer, &nissuer));
+	cert->issuer_len = nissuer;
+	cert->issuer = malloc(nissuer * sizeof(*cert->issuer));
+	for (size_t i = 0; i < nissuer; i++) {
+		drew_util_asn1_value_t *set, *seq;
+		size_t nitems;
+		RETFAIL(drew_util_asn1_parse_set(asn, &issuer[i], &set, &nitems));
+		RETFAIL(drew_util_asn1_parse_sequence(asn, set, &seq, &nitems));
+		if (nitems != 2)
+			return -DREW_ERR_INVALID;
+		RETFAIL(drew_util_asn1_parse_oid(asn, &seq[0], &cert->issuer[i].type));
+		printf("value: %d %d\n", seq[1].tagclass, seq[1].tag);
+		RETFAIL(drew_util_asn1_parse_string_utf8(asn, &seq[1],
+					&cert->issuer[i].string, &cert->issuer[i].len));
 	}
 
 	RETFAIL(drew_util_asn1_parse_sequence(asn, &certvals[1], &sigvals,

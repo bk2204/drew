@@ -19,9 +19,19 @@ typedef struct drew_util_x509_sig_s {
 	drew_util_asn1_bitstring_t value;
 } drew_util_x509_sig_t;
 
+typedef struct drew_util_x509_rdn_s {
+	drew_util_asn1_oid_t type;
+	uint8_t *string;
+	size_t len;
+} drew_util_x509_rdn_t;
+
 typedef struct drew_util_x509_cert_s {
 	int version;
 	drew_util_x509_sig_t sig;
+	drew_util_asn1_bigint_t serial_number;
+	drew_util_asn1_oid_t algo;
+	drew_util_x509_rdn_t *issuer;
+	size_t issuer_len;
 	int64_t not_before;
 	int64_t not_after;
 	int flags[8];
