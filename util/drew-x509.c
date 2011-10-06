@@ -5,7 +5,9 @@
 #include <sys/mman.h>
 
 #include <drew/drew.h>
+#include <drew/mem.h>
 #include <drew-util/asn1.h>
+#include <drew-util/codec.h>
 #include <drew-util/x509.h>
 
 #define DIM(x) (sizeof(x)/sizeof(x[0]))
@@ -60,8 +62,11 @@ int main(int argc, char **argv)
 {
 	drew_util_asn1_t parser;
 	drew_util_x509_cert_t cert;
-	uint8_t *p;
+	drew_util_codec_t codec;
+	uint8_t *p, *decdata = NULL;
 	int fd;
+	int ret = 0;
+	size_t len = 0;
 	struct stat st;
 
 	if ((fd = open(argv[1], O_RDONLY)) < 0)
@@ -74,9 +79,27 @@ int main(int argc, char **argv)
 
 	printf("Parsing certificate from %s.\n", argv[1]);
 	FAILCODE(5, drew_util_asn1_init(&parser));
+	FAILCODE(5, drew_util_codec_init(&codec));
 	FAILCODE(6, drew_util_asn1_set_encoding(parser, DREW_UTIL_ASN1_ENC_DER));
 	FAILCODE(7, drew_util_asn1_set_flags(parser, 0));
-	FAILCODE(8, drew_util_x509_parse_certificate(parser, p, st.st_size, &cert));
+	ret = drew_util_codec_detect(codec, NULL, NULL, NULL, p, st.st_size);
+	if (ret < 0)
+		FAILCODE(10, ret);
+	else if (ret) {
+		/* Probably unencoded. */
+		decdata = p;
+		len = st.st_size;
+	}
+	else {
+		decdata = drew_mem_malloc(st.st_size);
+		if ((ret = drew_util_codec_decode_all(codec, decdata, st.st_size, p,
+						st.st_size)) < 0) {
+			drew_mem_free(decdata);
+			FAILCODE(11, ret);
+		}
+		len = ret;
+	}
+	FAILCODE(8, drew_util_x509_parse_certificate(parser, decdata, len, &cert));
 	printf("Certificate is version %d.\nSignature OID is ", cert.version);
 	for (size_t i = 0; i < cert.sig.algo.algo.length; i++)
 		printf("%zu%s", cert.sig.algo.algo.values[i],
@@ -89,6 +112,9 @@ int main(int argc, char **argv)
 		if (cert.flags[0] & DREW_UTIL_X509_CERT_DEFAULT_VERSION)
 			printf("\tVersion was omitted.\n");
 	}
+	if (decdata != p)
+		drew_mem_free(decdata);
 	printf("Bye.\n");
 	FAILCODE(9, drew_util_asn1_fini(&parser));
+	FAILCODE(9, drew_util_codec_fini(&codec));
 }
