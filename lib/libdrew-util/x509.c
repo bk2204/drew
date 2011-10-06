@@ -9,7 +9,7 @@
 #include <drew-util/asn1.h>
 #include <drew-util/x509.h>
 
-int drew_util_asn1_x509_parse_version(drew_util_asn1_t asn,
+int drew_util_x509_parse_version(drew_util_asn1_t asn,
 		const drew_util_asn1_value_t *val, int *version)
 {
 	int res = 0;
@@ -63,7 +63,7 @@ int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 
 	// FIXME: parse the entire certificate.
 	RETFAIL(drew_util_asn1_parse_sequence(asn, &certvals[0], &vals, &nvals));
-	RETFAIL(drew_util_asn1_x509_parse_version(asn, &vals[0], &cert->version));
+	RETFAIL(drew_util_x509_parse_version(asn, &vals[0], &cert->version));
 	if (vals[0].tagclass == DREW_UTIL_ASN1_TC_UNIVERSAL && vals[0].tag == 2) {
 		if (cert->version >= 3)
 			cert->flags[0] |= DREW_UTIL_X509_CERT_MISPARSE_VERSION;
