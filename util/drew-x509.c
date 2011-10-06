@@ -46,16 +46,38 @@ struct oids {
 	{"ecdsa-with-SHA512", 7, {1, 2, 840, 10045, 4, 3, 4}},
 };
 
-const char *get_signame(const drew_util_asn1_oid_t *oid)
-{
+struct oids attr_types[] = {
+	{"emailAddress", 7, {1, 2, 840, 113549, 1, 9, 1}},
+	{"cn", 4, {2, 5, 4, 3}},
+	{"serialNumber", 4, {2, 5, 4, 5}},
+	{"c", 4, {2, 5, 4, 6}},
+	{"l", 4, {2, 5, 4, 7}},
+	{"st", 4, {2, 5, 4, 8}},
+	{"o", 4, {2, 5, 4, 10}},
+	{"u", 4, {2, 5, 4, 11}},
+};
 
-	for (size_t i = 0; i < DIM(oids); i++) {
-		if (oid->length != oids[i].nvals)
+const char *get_oidname(const struct oids *oidp, size_t noids,
+		const drew_util_asn1_oid_t *oid)
+{
+	for (size_t i = 0; i < noids; i++) {
+		if (oid->length != oidp[i].nvals)
 			continue;
-		if (!memcmp(oids[i].vals, oid->values, oid->length * sizeof(size_t)))
-			return oids[i].name;
+		if (!memcmp(oidp[i].vals, oid->values, oid->length * sizeof(size_t)))
+			return oidp[i].name;
 	}
 	return "unknown";
+}
+
+const char *get_signame(const drew_util_asn1_oid_t *oid)
+{
+	return get_oidname(oids, DIM(oids), oid);
+}
+
+const char *get_attrname(const drew_util_asn1_oid_t *oid)
+{
+
+	return get_oidname(attr_types, DIM(attr_types), oid);
 }
 
 int main(int argc, char **argv)
@@ -105,6 +127,15 @@ int main(int argc, char **argv)
 		printf("%zu%s", cert.sig.algo.algo.values[i],
 				(i == cert.sig.algo.algo.length-1) ? "" : ".");
 	printf(" (%s).\n", get_signame(&cert.sig.algo.algo));
+	printf("Issuer is:\n");
+	for (size_t i = 0; i < cert.issuer_len; i++) {
+		printf("\t");
+		for (size_t j = 0; j < cert.issuer[i].type.length; j++)
+			printf("%zu%s", cert.issuer[i].type.values[j],
+					(j == cert.issuer[i].type.length-1) ? "" : ".");
+		printf(" (%s): %s\n", get_attrname(&cert.issuer[i].type),
+				cert.issuer[i].string);
+	}
 	if (cert.flags[0]) {
 		printf("Certificate has the following peculiarities:\n");
 		if (cert.flags[0] & DREW_UTIL_X509_CERT_MISPARSE_VERSION)
