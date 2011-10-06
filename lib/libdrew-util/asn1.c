@@ -309,11 +309,15 @@ static int parse_videotexstring(drew_util_asn1_t asn,
 	return -DREW_ERR_NOT_IMPL;
 }
 
+static inline int check_ia5string(int c)
+{
+	return (c >= 0 && c <= 127);
+}
+
 static int parse_ia5string(drew_util_asn1_t asn,
 		const drew_util_asn1_value_t *val, char **sp, size_t *slen)
 {
-	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 22));
-	return -DREW_ERR_NOT_IMPL;
+	return parse_byte_string(asn, val, 22, check_ia5string, sp, slen);
 }
 
 static int parse_graphicstring(drew_util_asn1_t asn,
