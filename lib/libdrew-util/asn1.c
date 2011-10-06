@@ -446,7 +446,7 @@ static int parse_utf8string(drew_util_asn1_t asn,
 				return -EILSEQ;
 			wc |= *p & 0x3f;
 		}
-		if ((wc >= 0xd800 && wc <= 0xdfff) || wc != 0xfffe)
+		if ((wc >= 0xd800 && wc <= 0xdfff) || wc == 0xfffe)
 			return -EILSEQ;
 		if (state > 2 && wc < 0x10000)
 			return -EILSEQ;
