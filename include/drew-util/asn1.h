@@ -121,6 +121,10 @@ DREW_SYM_PUBLIC
 int drew_util_asn1_parse_sequence(drew_util_asn1_t asn,
 		const drew_util_asn1_value_t *val, drew_util_asn1_value_t **encp,
 		size_t *nencp);
+DREW_SYM_PUBLIC
+int drew_util_asn1_parse_set(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, drew_util_asn1_value_t **encp,
+		size_t *nencp);
 
 DREW_SYM_PUBLIC
 int drew_util_asn1_parse(drew_util_asn1_t asn, const uint8_t *data,

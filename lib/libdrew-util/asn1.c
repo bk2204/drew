@@ -750,12 +750,10 @@ int drew_util_asn1_parse(drew_util_asn1_t asn, const uint8_t *data,
 	return off + enc->length;
 }
 
-int drew_util_asn1_parse_sequence(drew_util_asn1_t asn,
+static int parse_compound(drew_util_asn1_t asn,
 		const drew_util_asn1_value_t *val, drew_util_asn1_value_t **encp,
 		size_t *nencp)
 {
-	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, true, 16));
-
 	int chunksz = 4; // must be power of 2.
 	size_t nenc = 0, off = 0;
 	drew_util_asn1_value_t *p = NULL, *q;
@@ -785,4 +783,22 @@ int drew_util_asn1_parse_sequence(drew_util_asn1_t asn,
 	*nencp = nenc;
 
 	return 0;
+}
+
+int drew_util_asn1_parse_sequence(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, drew_util_asn1_value_t **encp,
+		size_t *nencp)
+{
+	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, true, 16));
+
+	return parse_compound(asn, val, encp, nencp);
+}
+
+int drew_util_asn1_parse_set(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, drew_util_asn1_value_t **encp,
+		size_t *nencp)
+{
+	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, true, 17));
+
+	return parse_compound(asn, val, encp, nencp);
 }
