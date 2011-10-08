@@ -309,16 +309,22 @@ int test_api_context(drew_block_t *ctx, const drew_loader_t *ldr,
 	// Now decrypt that area.
 	if (clone[1].functbl->decryptfast(&clone[1], buf+2048, buf+2048, niters))
 		retval |= BLOCK_BAD_DECRYPTFAST;
-	
+
 	// Buffer: NN.
+	if (clone[1].functbl->fini(&clone[1], 0))
+		retval |= BLOCK_BAD_FINI;
+
 	if (clone[0].functbl->clone(&clone[2], &clone[0], 0) ||
 		clone[2].functbl != clone[0].functbl || clone[2].ctx == clone[0].ctx)
 		retval |= BLOCK_BAD_CLONE;
 
+	if (clone[0].functbl->fini(&clone[0], 0))
+		retval |= BLOCK_BAD_FINI;
+
 	if (clone[2].functbl->reset(ctx))
 		retval |= BLOCK_BAD_RESET;
 
-	if (clone[2].functbl->encryptfast(ctx, buf, buf, niters))
+	if (clone[2].functbl->encryptfast(&clone[2], buf, buf, niters))
 		retval |= BLOCK_BAD_ENCRYPTFAST;
 
 	if (ctx->functbl->decryptfast(ctx, buf, buf, niters))
@@ -328,12 +334,6 @@ int test_api_context(drew_block_t *ctx, const drew_loader_t *ldr,
 		retval |= BLOCK_BAD_CRACK;
 
 	if (clone[2].functbl->fini(&clone[2], 0))
-		retval |= BLOCK_BAD_FINI;
-
-	if (clone[1].functbl->fini(&clone[1], 0))
-		retval |= BLOCK_BAD_FINI;
-
-	if (clone[0].functbl->fini(&clone[0], 0))
 		retval |= BLOCK_BAD_FINI;
 
 	if (ctx->functbl->fini(ctx, flag))
