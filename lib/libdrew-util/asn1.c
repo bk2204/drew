@@ -1,5 +1,6 @@
 #include "internal.h"
 
+#include <ctype.h>
 #include <errno.h>
 #include <netinet/in.h>
 #include <stddef.h>
@@ -295,11 +296,18 @@ static int parse_printablestring(drew_util_asn1_t asn,
 	return parse_byte_string(asn, val, 19, check_printablestring, sp, slen);
 }
 
+/* This is underspecified and X.680 §B.5.1 specifies that there is no value
+ * mapping between TeletexString and Unicode-compatible strings.  Unfortunately,
+ * the PKIX working group allowed this as part of certificates, and some people
+ * actually use it.  We won't be smoking any of their stuff, I can guarantee you
+ * that.  Anyway, to get things to work, we accept a restricted subset of values
+ * (those that isprint accepts) in the hopes that we can make some use of
+ * it.
+ */
 static int parse_teletexstring(drew_util_asn1_t asn,
 		const drew_util_asn1_value_t *val, char **sp, size_t *slen)
 {
-	RETFAIL(validate(val, DREW_UTIL_ASN1_TC_UNIVERSAL, false, 20));
-	return -DREW_ERR_NOT_IMPL;
+	return parse_byte_string(asn, val, 20, isprint, sp, slen);
 }
 
 static int parse_videotexstring(drew_util_asn1_t asn,
