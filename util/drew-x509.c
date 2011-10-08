@@ -145,6 +145,17 @@ int main(int argc, char **argv)
 		printf(" (%s): %s\n", get_attrname(&cert.subject[i].type),
 				cert.subject[i].string);
 	}
+	time_t tt;
+	char *tp;
+	// Two printf statements because of static buffer.
+	tt = cert.not_before;
+	tp = asctime(gmtime(&tt));
+	tp[24] = 0;
+	printf("Subject is:\n\tNot Before: %s UTC\n", tp);
+	tt = cert.not_after;
+	tp = asctime(gmtime(&tt));
+	tp[24] = 0;
+	printf("\tNot After: %s UTC\n", tp);
 	if (cert.flags[0]) {
 		printf("Certificate has the following peculiarities:\n");
 		if (cert.flags[0] & DREW_UTIL_X509_CERT_MISPARSE_VERSION)
