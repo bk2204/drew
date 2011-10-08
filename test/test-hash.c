@@ -301,10 +301,13 @@ int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
 	res = ctx->functbl->info(DREW_HASH_QUANTUM, NULL);
 	if (is_forbidden_errno(res))
 		retval |= HASH_BAD_ERRNO;
-	if (res < 0 || (res & (res-1)))
+	if (res < 0)
 		retval |= HASH_BAD_QUANTUM;
-	else
+	else {
+		if (res & (res-1))
+			retval |= HASH_BAD_QUANTUM;
 		quantum = res;
+	}
 
 	res = ctx->functbl->info(DREW_HASH_SIZE, NULL);
 	if (is_forbidden_errno(res))
@@ -358,6 +361,9 @@ int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
 		retval |= HASH_BAD_ERRNO;
 	if (res != -DREW_ERR_INVALID)
 		retval |= HASH_BAD_ERROR;
+
+	//if (retval)
+	//	return retval;
 
 	ctx->ctx = NULL;
 	retval |= test_api_context(ctx, ldr, &param, intsize, hashsize);
