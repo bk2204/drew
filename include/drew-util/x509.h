@@ -9,6 +9,8 @@
 #include <drew/param.h>
 #include <drew-util/asn1.h>
 
+#define DREW_UTIL_X509_MAX_MPIS	4
+
 typedef struct {
 	drew_util_asn1_oid_t algo;
 	drew_param_t *param;
@@ -24,6 +26,17 @@ typedef struct drew_util_x509_rdn_s {
 	uint8_t *string;
 	size_t len;
 } drew_util_x509_rdn_t;
+
+/* This is intentionally exactly the same as the drew_opgp_mpi_t type. */
+typedef struct drew_util_x509_mpi_s {
+	uint16_t len;
+	uint8_t *data;
+} drew_util_x509_mpi_t;
+
+typedef struct drew_util_x509_pubkey_s {
+	drew_util_x509_mpi_t mpis[DREW_UTIL_X509_MAX_MPIS];
+	drew_util_asn1_oid_t curve;
+} drew_util_x509_pubkey_t;
 
 typedef struct drew_util_x509_cert_s {
 	int version;
