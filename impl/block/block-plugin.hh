@@ -112,7 +112,7 @@ static int prefix ## info(int op, void *p) \
 		case DREW_BLOCK_INTSIZE: \
 			return sizeof(bname); \
 		default: \
-			return -EINVAL; \
+			return -DREW_ERR_INVALID; \
 	} \
 } \
 static int prefix ## init(drew_block_t *ctx, int flags, \
