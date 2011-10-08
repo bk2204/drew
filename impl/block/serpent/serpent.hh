@@ -34,6 +34,7 @@ class Serpent : public BlockCipher<16>
 	public:
 		typedef LittleEndian endian_t;
 		Serpent();
+		Serpent(const Serpent &);
 		~Serpent() {};
 		int SetKey(const uint8_t *key, size_t sz);
 		int Encrypt(uint8_t *out, const uint8_t *in) const;

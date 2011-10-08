@@ -35,6 +35,12 @@ drew::Serpent::Serpent()
 {
 }
 
+drew::Serpent::Serpent(const Serpent &other)
+{
+	m_key = m_keybuf + 8;
+	memcpy(m_keybuf, other.m_keybuf, sizeof(m_keybuf));
+}
+
 #define SBOX_OUT(a, b, c, d) \
 	do { x[0] = r##a; x[1] = r##b; x[2] = r##c; x[3] = r##d; } while (0)
 
