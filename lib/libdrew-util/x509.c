@@ -106,6 +106,8 @@ int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 	if (nvals < (6 + valoff))
 		return -DREW_ERR_INVALID;
 	RETFAIL(parse_name(asn, &vals[2+valoff], &cert->issuer, &cert->issuer_len));
+	RETFAIL(parse_name(asn, &vals[4+valoff], &cert->subject,
+				&cert->subject_len));
 
 	RETFAIL(drew_util_asn1_parse_sequence(asn, &certvals[1], &sigvals,
 				&nsigvals));

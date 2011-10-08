@@ -32,6 +32,8 @@ typedef struct drew_util_x509_cert_s {
 	drew_util_asn1_oid_t algo;
 	drew_util_x509_rdn_t *issuer;
 	size_t issuer_len;
+	drew_util_x509_rdn_t *subject;
+	size_t subject_len;
 	int64_t not_before;
 	int64_t not_after;
 	int flags[8];
