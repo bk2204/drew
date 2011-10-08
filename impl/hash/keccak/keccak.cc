@@ -102,6 +102,8 @@ static int keccak_get_digest_size(const drew_param_t *param)
 		result = digestsizeval;
 	if (!result)
 		return -DREW_ERR_MORE_INFO;
+	if (result > (512/8))
+		return -DREW_ERR_INVALID;
 	return result;
 }
 
