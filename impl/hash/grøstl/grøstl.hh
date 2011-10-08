@@ -175,6 +175,13 @@ class Gr\u00f8stlHash
 			else
 				m_impl = new T512(sz);
 		}
+		Gr\u00f8stlHash(const Gr\u00f8stlHash &ctx)
+		{
+			if (ctx.m_impl->GetBufferSize() == (512/8))
+				m_impl = new T256((const T256 &)*ctx.m_impl);
+			else
+				m_impl = new T512((const T512 &)*ctx.m_impl);
+		}
 		virtual ~Gr\u00f8stlHash()
 		{
 			delete m_impl;
