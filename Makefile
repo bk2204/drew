@@ -144,6 +144,13 @@ testx-scripts: $(TEST_BINARIES) plugins
 		xargs env LD_LIBRARY_PATH=. test/test-$$i -t; \
 		done
 
+test-api: $(TEST_BINARIES) plugins
+	set -e; for i in $(CATEGORIES); do \
+		find plugins -type f | sed -e 's,.*/,,g' | \
+		sort | grep -vE '.rdf$$' | \
+		xargs env LD_LIBRARY_PATH=. test/test-$$i -p; \
+		done
+
 speed-scripts: $(TEST_BINARIES) plugins
 	for i in $(CATEGORIES); do \
 		find plugins -type f | sed -e 's,.*/,,g' | \
