@@ -109,7 +109,7 @@ int drew::Camellia::SetKey(const uint8_t *key, size_t sz)
 	else if (sz == 32)
 		SetKey256(ko);
 	else
-		return DREW_ERR_INVALID;
+		return -DREW_ERR_INVALID;
 	return 0;
 }
 
