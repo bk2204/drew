@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include <drew/drew.h>
 #include <drew-util/drew-util.h>
@@ -71,6 +72,32 @@ static int parse_name(drew_util_asn1_t asn, const drew_util_asn1_value_t *val,
 	return 0;
 }
 
+static int parse_time(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, int64_t *t)
+{
+	struct tm tms;
+	int secoff;
+
+	RETFAIL(drew_util_asn1_parse_time(asn, val, &tms, &secoff));
+	if ((*t = mktime(&tms)) == (time_t)-1)
+		return -DREW_UTIL_ERR_BAD_TIME;
+	return 0;
+}
+
+static int parse_validity(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, drew_util_x509_cert_t *cert)
+{
+	drew_util_asn1_value_t *sequence;
+	size_t len;
+
+	RETFAIL(drew_util_asn1_parse_sequence(asn, val, &sequence, &len));
+	if (len != 2)
+		return -DREW_ERR_INVALID;
+	RETFAIL(parse_time(asn, &sequence[0], &cert->not_before));
+	RETFAIL(parse_time(asn, &sequence[1], &cert->not_after));
+	return 0;
+}
+
 int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 		const uint8_t *data, size_t len, drew_util_x509_cert_t *cert)
 {
@@ -106,6 +133,7 @@ int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 	if (nvals < (6 + valoff))
 		return -DREW_ERR_INVALID;
 	RETFAIL(parse_name(asn, &vals[2+valoff], &cert->issuer, &cert->issuer_len));
+	RETFAIL(parse_validity(asn, &vals[3+valoff], cert));
 	RETFAIL(parse_name(asn, &vals[4+valoff], &cert->subject,
 				&cert->subject_len));
 
