@@ -74,7 +74,7 @@ static int xteainfo(int op, void *p)
 		case DREW_BLOCK_INTSIZE:
 			return sizeof(XTEA);
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
 
