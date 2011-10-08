@@ -11,7 +11,7 @@
 #include <drew-util/x509.h>
 
 int drew_util_x509_parse_version(drew_util_asn1_t asn,
-		const drew_util_asn1_value_t *val, int *version)
+		const drew_util_asn1_value_t *val, int *version, int *flags)
 {
 	int res = 0;
 	ssize_t ver = 0;
@@ -21,12 +21,13 @@ int drew_util_x509_parse_version(drew_util_asn1_t asn,
 	if (val->tagclass == DREW_UTIL_ASN1_TC_UNIVERSAL && val->tag == 2) {
 		old = true;
 		p = val;
+		flags[0] |= DREW_UTIL_X509_CERT_DEFAULT_VERSION;
 	}
 	else if (val->tagclass != DREW_UTIL_ASN1_TC_CONTEXT || val->tag != 0)
 		return -DREW_ERR_INVALID;
 	else if ((res = drew_util_asn1_parse(asn, val->data, val->length, &tmp)) < 0)
 		return res;
-	if (old && val->length > 1) {
+	if (old) {
 		/* Version 1 certificates make the version field optional, for some
 		 * idiotic reason.  In this case, we presume it's omitted, knowing that
 		 * things will implode in an orderly fashion later if the certificate is
@@ -39,6 +40,9 @@ int drew_util_x509_parse_version(drew_util_asn1_t asn,
 	if (ver < 0)
 		return -DREW_ERR_INVALID;
 	*version = ver + 1;
+	if (val->tagclass == DREW_UTIL_ASN1_TC_UNIVERSAL && val->tag == 2 &&
+			*version >= 3)
+		flags[0] |= DREW_UTIL_X509_CERT_MISPARSE_VERSION;
 	return 0;
 }
 
@@ -64,16 +68,20 @@ int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 
 	// FIXME: parse the entire certificate.
 	RETFAIL(drew_util_asn1_parse_sequence(asn, &certvals[0], &vals, &nvals));
-	if (nvals < 7)
+	// Check to make sure that the sequence contains at least one field so we
+	// can determine the version number.
+	if (!nvals)
 		return -DREW_ERR_INVALID;
-	RETFAIL(drew_util_x509_parse_version(asn, &vals[0], &cert->version));
-	if (vals[0].tagclass == DREW_UTIL_ASN1_TC_UNIVERSAL && vals[0].tag == 2) {
-		if (cert->version >= 3)
-			cert->flags[0] |= DREW_UTIL_X509_CERT_MISPARSE_VERSION;
-		else if (cert->version == 1 && vals[0].length > 1)
-			cert->flags[0] |= DREW_UTIL_X509_CERT_DEFAULT_VERSION;
-	}
-	RETFAIL(drew_util_asn1_parse_sequence(asn, &vals[3], &issuer, &nissuer));
+	RETFAIL(drew_util_x509_parse_version(asn, &vals[0], &cert->version,
+				cert->flags));
+	size_t valoff = 1;
+	if (cert->flags[0] & DREW_UTIL_X509_CERT_DEFAULT_VERSION)
+		valoff = 0;
+	// A certificate has six fields excluding the version number.
+	if (nvals < (6 + valoff))
+		return -DREW_ERR_INVALID;
+	RETFAIL(drew_util_asn1_parse_sequence(asn, &vals[2+valoff], &issuer,
+				&nissuer));
 	cert->issuer_len = nissuer;
 	cert->issuer = malloc(nissuer * sizeof(*cert->issuer));
 	for (size_t i = 0; i < nissuer; i++) {
