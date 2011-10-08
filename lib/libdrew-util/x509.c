@@ -84,7 +84,6 @@ int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 		if (nitems != 2)
 			return -DREW_ERR_INVALID;
 		RETFAIL(drew_util_asn1_parse_oid(asn, &seq[0], &cert->issuer[i].type));
-		printf("value: %d %d\n", seq[1].tagclass, seq[1].tag);
 		RETFAIL(drew_util_asn1_parse_string_utf8(asn, &seq[1],
 					&cert->issuer[i].string, &cert->issuer[i].len));
 	}
