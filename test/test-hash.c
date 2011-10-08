@@ -230,7 +230,7 @@ int test_api_context(drew_hash_t *ctx, const drew_loader_t *ldr,
 
 	// One page, please.
 	posix_memalign((void **)&buf, 16, page);
-	memset(buf, 0, page);
+	memset(buf, 0xe1, page);
 
 	if (ctx->functbl->init(ctx, flag, ldr, param)) {
 		retval |= HASH_BAD_INIT;
