@@ -342,7 +342,7 @@ int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
 	res = ctx->functbl->info(DREW_HASH_ENDIAN, NULL);
 	if (is_forbidden_errno(res))
 		retval |= HASH_BAD_ERRNO;
-	if (res != 4321 && res != 1234)
+	if (res && res != 4321 && res != 1234)
 		retval |= HASH_BAD_ENDIAN;
 
 	res = ctx->functbl->info(DREW_HASH_INTSIZE, NULL);
