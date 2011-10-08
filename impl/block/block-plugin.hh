@@ -52,7 +52,7 @@ namespace drew {
 			{
 				// This takes minimal, if any, advantage of the alignment.
 				if (BlockSize == 8) {
-					for (size_t i = 0; i < n; i++, bout++, bin++) {
+					for (size_t i = 0; i < n/2; i++, bout++, bin++) {
 						Encrypt(bout->data, bin->data);
 						Encrypt(bout->data+8, bin->data+8);
 					}
@@ -71,7 +71,7 @@ namespace drew {
 					size_t n) const
 			{
 				if (BlockSize == 8) {
-					for (size_t i = 0; i < n; i++, bout++, bin++) {
+					for (size_t i = 0; i < n/2; i++, bout++, bin++) {
 						Decrypt(bout->data, bin->data);
 						Decrypt(bout->data+8, bin->data+8);
 					}
