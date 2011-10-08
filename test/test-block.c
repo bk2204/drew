@@ -348,7 +348,8 @@ int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
 		const void *tbl)
 {
 	int res = 0, retval = 0, quantum = 1;
-	size_t intsize = 0, blocksize = 0, keysize = 0;
+	size_t intsize = 0, blocksize = 0;
+	int keysize = 0;
 	drew_block_t c, *ctx = &c;
 	void *mem;
 
