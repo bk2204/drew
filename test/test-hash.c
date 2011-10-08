@@ -218,11 +218,12 @@ int test_process_testcase(void *data, int type, const char *item,
 #define HASH_BAD_ERROR		(1 << 18)
 
 int test_api_context(drew_hash_t *ctx, const drew_loader_t *ldr,
-		const drew_param_t *paramp, size_t intsize, size_t hashsize)
+		const drew_param_t *paramp, size_t intsize, size_t hashsize,
+		size_t quantum)
 {
 	int flag = ctx->ctx ? DREW_HASH_FIXED : 0;
 	const drew_param_t *param = paramp->name ? paramp : NULL;
-	int retval = 0;
+	int retval = 0, res;
 	uint8_t *buf;
 	const size_t page = 4096;
 	drew_hash_t newc, *newctx = &newc;
@@ -235,6 +236,18 @@ int test_api_context(drew_hash_t *ctx, const drew_loader_t *ldr,
 		retval |= HASH_BAD_INIT;
 		return retval;
 	}
+
+	res = ctx->functbl->info(DREW_HASH_BLKSIZE, ctx);
+	if (is_forbidden_errno(res))
+		retval |= HASH_BAD_ERRNO;
+	if (res < 0 || res > (4096/8))
+		retval |= HASH_BAD_BLKSIZE;
+
+	res = ctx->functbl->info(DREW_HASH_BUFSIZE, ctx);
+	if (is_forbidden_errno(res))
+		retval |= HASH_BAD_ERRNO;
+	if (res < 0 || res > (4096/8) || res % quantum)
+		retval |= HASH_BAD_BUFSIZE;
 
 	if (ctx->functbl->updatefast(ctx, buf, page))
 		retval |= HASH_BAD_UPDATEFAST;
@@ -333,13 +346,14 @@ int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
 	res = ctx->functbl->info(DREW_HASH_BLKSIZE, NULL);
 	if (is_forbidden_errno(res))
 		retval |= HASH_BAD_ERRNO;
-	if (res < 0 || res > (4096/8))
+	if ((res < 0 && res != -DREW_ERR_MORE_INFO) || res > (4096/8))
 		retval |= HASH_BAD_BLKSIZE;
 
 	res = ctx->functbl->info(DREW_HASH_BUFSIZE, NULL);
 	if (is_forbidden_errno(res))
 		retval |= HASH_BAD_ERRNO;
-	if (res < 0 || res > (4096/8) || res % quantum)
+	if ((res < 0 && res != -DREW_ERR_MORE_INFO) || res > (4096/8) ||
+			((res > 0) && (res % quantum)))
 		retval |= HASH_BAD_BUFSIZE;
 
 	res = ctx->functbl->info(DREW_HASH_ENDIAN, NULL);
@@ -362,15 +376,12 @@ int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
 	if (res != -DREW_ERR_INVALID)
 		retval |= HASH_BAD_ERROR;
 
-	//if (retval)
-	//	return retval;
-
 	ctx->ctx = NULL;
-	retval |= test_api_context(ctx, ldr, &param, intsize, hashsize);
+	retval |= test_api_context(ctx, ldr, &param, intsize, hashsize, quantum);
 	if (ctx->ctx)
 		retval |= HASH_BAD_NULLIFY;
 	ctx->ctx = mem = malloc(intsize);
-	retval |= test_api_context(ctx, ldr, &param, intsize, hashsize);
+	retval |= test_api_context(ctx, ldr, &param, intsize, hashsize, quantum);
 	if (ctx->ctx != mem)
 		retval |= HASH_BAD_NULLIFY;
 	free(mem);
