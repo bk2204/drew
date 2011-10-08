@@ -56,7 +56,7 @@ static int rc2info(int op, void *p)
 		case DREW_BLOCK_INTSIZE:
 			return sizeof(drew::RC2);
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
 
