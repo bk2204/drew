@@ -226,7 +226,7 @@ int test_api_context(drew_hash_t *ctx, const drew_loader_t *ldr,
 	int retval = 0, res;
 	uint8_t *buf;
 	const size_t page = 4096;
-	drew_hash_t newc, *newctx = &newc;
+	drew_hash_t clone[2], *newctx = clone;
 
 	// One page, please.
 	posix_memalign((void **)&buf, 16, page);
@@ -259,7 +259,26 @@ int test_api_context(drew_hash_t *ctx, const drew_loader_t *ldr,
 	if (ctx->functbl->updatefast(ctx, buf, page))
 		retval |= HASH_BAD_UPDATEFAST;
 
+	if (ctx->functbl->update(ctx, buf, (page/2)+1))
+		retval |= HASH_BAD_UPDATE;
+
 	if (newctx->functbl->update(newctx, buf, page))
+		retval |= HASH_BAD_UPDATE;
+
+	if (newctx->functbl->update(newctx, buf, (page/2)+1))
+		retval |= HASH_BAD_UPDATE;
+
+	if (ctx->functbl->clone(&clone[1], ctx, 0) ||
+		clone[1].functbl != ctx->functbl || clone[1].ctx == ctx->ctx)
+		retval |= HASH_BAD_CLONE;
+
+	if (ctx->functbl->update(ctx, buf, page))
+		retval |= HASH_BAD_UPDATE;
+
+	if (newctx->functbl->update(newctx, buf, page))
+		retval |= HASH_BAD_UPDATE;
+
+	if (clone[1].functbl->update(&clone[1], buf, page))
 		retval |= HASH_BAD_UPDATE;
 
 	if (ctx->functbl->pad(ctx))
@@ -271,8 +290,17 @@ int test_api_context(drew_hash_t *ctx, const drew_loader_t *ldr,
 	if (newctx->functbl->final(newctx, buf+hashsize, 0))
 		retval |= HASH_BAD_FINAL;
 
+	if (clone[1].functbl->final(&clone[1], buf+(hashsize*2), 0))
+		retval |= HASH_BAD_FINAL;
+
 	if (memcmp(buf, buf+hashsize, hashsize))
 		retval |= HASH_BAD_CRACK;
+
+	if (memcmp(buf, buf+(hashsize*2), hashsize))
+		retval |= HASH_BAD_CRACK;
+
+	if (clone[1].functbl->fini(&clone[1], 0))
+		retval |= HASH_BAD_FINI;
 
 	if (newctx->functbl->fini(newctx, 0))
 		retval |= HASH_BAD_FINI;
