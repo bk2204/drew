@@ -254,7 +254,7 @@ int test_api_context(drew_block_t *ctx, const drew_loader_t *ldr,
 		size_t keysize)
 {
 	int flag = ctx->ctx ? DREW_BLOCK_FIXED : 0;
-	const drew_param_t *param = paramp->name ? paramp : NULL;
+	const drew_param_t *param = paramp && paramp->name ? paramp : NULL;
 	int retval = 0;
 	uint8_t *buf;
 	const size_t page = 4096, niters = 4;
