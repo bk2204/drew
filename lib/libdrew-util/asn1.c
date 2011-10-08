@@ -688,7 +688,7 @@ int drew_util_asn1_parse_utctime(drew_util_asn1_t asn,
 
 	if (parse_time(asn, val->data, val->length, t, secoff, 2, true))
 		return -DREW_UTIL_ERR_BAD_TIME;
-	if (val->data[14] != 'Z')
+	if (val->data[12] != 'Z')
 		return -DREW_UTIL_ERR_BAD_TIME;
 	// This interpretation is from RFC 5280.
 	t->tm_year += (t->tm_year >= 50) ? 0 : 100;
