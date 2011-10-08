@@ -136,6 +136,15 @@ int main(int argc, char **argv)
 		printf(" (%s): %s\n", get_attrname(&cert.issuer[i].type),
 				cert.issuer[i].string);
 	}
+	printf("Subject is:\n");
+	for (size_t i = 0; i < cert.subject_len; i++) {
+		printf("\t");
+		for (size_t j = 0; j < cert.subject[i].type.length; j++)
+			printf("%zu%s", cert.subject[i].type.values[j],
+					(j == cert.subject[i].type.length-1) ? "" : ".");
+		printf(" (%s): %s\n", get_attrname(&cert.subject[i].type),
+				cert.subject[i].string);
+	}
 	if (cert.flags[0]) {
 		printf("Certificate has the following peculiarities:\n");
 		if (cert.flags[0] & DREW_UTIL_X509_CERT_MISPARSE_VERSION)
