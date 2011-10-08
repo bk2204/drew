@@ -19,7 +19,7 @@
 			fprintf(stderr, "Failed with error %d (%d with offset).\n" \
 					"Exiting with code %d.\n", \
 					-result_code, (-result_code) >= 0x10000 ? \
-					(-result_code - 0x10000) : (-result_code), code); \
+					(-result_code % 0x10000) : (-result_code), code); \
 			return code; \
 		} \
 	} while (0)
