@@ -324,19 +324,19 @@ int test_api_context(drew_block_t *ctx, const drew_loader_t *ldr,
 	if (clone[2].functbl->reset(ctx))
 		retval |= BLOCK_BAD_RESET;
 
-	if (clone[2].functbl->encryptfast(&clone[2], buf, buf, niters))
+	if (ctx->functbl->encryptfast(ctx, buf, buf, niters))
 		retval |= BLOCK_BAD_ENCRYPTFAST;
 
-	if (ctx->functbl->decryptfast(ctx, buf, buf, niters))
+	if (ctx->functbl->fini(ctx, flag))
+		retval |= BLOCK_BAD_FINI;
+
+	if (clone[2].functbl->decryptfast(&clone[2], buf, buf, niters))
 		retval |= BLOCK_BAD_DECRYPTFAST;
 
 	if (memcmp(buf, buf+page, page))
 		retval |= BLOCK_BAD_CRACK;
 
 	if (clone[2].functbl->fini(&clone[2], 0))
-		retval |= BLOCK_BAD_FINI;
-
-	if (ctx->functbl->fini(ctx, flag))
 		retval |= BLOCK_BAD_FINI;
 
 	free(buf);
