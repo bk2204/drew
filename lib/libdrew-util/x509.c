@@ -46,13 +46,38 @@ int drew_util_x509_parse_version(drew_util_asn1_t asn,
 	return 0;
 }
 
+static int parse_name(drew_util_asn1_t asn, const drew_util_asn1_value_t *val,
+		drew_util_x509_rdn_t **rdnp, size_t *rdnlenp)
+{
+	drew_util_asn1_value_t *sequence;
+	drew_util_x509_rdn_t *rdn;
+	size_t rdnlen;
+
+	RETFAIL(drew_util_asn1_parse_sequence(asn, val, &sequence, &rdnlen));
+	rdn = malloc(rdnlen * sizeof(*rdn));
+	for (size_t i = 0; i < rdnlen; i++) {
+		drew_util_asn1_value_t *set, *seq;
+		size_t nitems;
+		RETFAIL(drew_util_asn1_parse_set(asn, &sequence[i], &set, &nitems));
+		RETFAIL(drew_util_asn1_parse_sequence(asn, set, &seq, &nitems));
+		if (nitems != 2)
+			return -DREW_ERR_INVALID;
+		RETFAIL(drew_util_asn1_parse_oid(asn, &seq[0], &rdn[i].type));
+		RETFAIL(drew_util_asn1_parse_string_utf8(asn, &seq[1], &rdn[i].string,
+					&rdn[i].len));
+	}
+	*rdnp = rdn;
+	*rdnlenp = rdnlen;
+	return 0;
+}
+
 int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 		const uint8_t *data, size_t len, drew_util_x509_cert_t *cert)
 {
 	int res = 0;
 	uint8_t *p;
-	size_t ncertvals, nvals, nsigvals, nissuer;
-	drew_util_asn1_value_t certificate, *certvals, *sigvals, *vals, *issuer;
+	size_t ncertvals, nvals, nsigvals;
+	drew_util_asn1_value_t certificate, *certvals, *sigvals, *vals;
 
 	memset(cert, 0, sizeof(*cert));
 
@@ -80,21 +105,7 @@ int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 	// A certificate has six fields excluding the version number.
 	if (nvals < (6 + valoff))
 		return -DREW_ERR_INVALID;
-	RETFAIL(drew_util_asn1_parse_sequence(asn, &vals[2+valoff], &issuer,
-				&nissuer));
-	cert->issuer_len = nissuer;
-	cert->issuer = malloc(nissuer * sizeof(*cert->issuer));
-	for (size_t i = 0; i < nissuer; i++) {
-		drew_util_asn1_value_t *set, *seq;
-		size_t nitems;
-		RETFAIL(drew_util_asn1_parse_set(asn, &issuer[i], &set, &nitems));
-		RETFAIL(drew_util_asn1_parse_sequence(asn, set, &seq, &nitems));
-		if (nitems != 2)
-			return -DREW_ERR_INVALID;
-		RETFAIL(drew_util_asn1_parse_oid(asn, &seq[0], &cert->issuer[i].type));
-		RETFAIL(drew_util_asn1_parse_string_utf8(asn, &seq[1],
-					&cert->issuer[i].string, &cert->issuer[i].len));
-	}
+	RETFAIL(parse_name(asn, &vals[2+valoff], &cert->issuer, &cert->issuer_len));
 
 	RETFAIL(drew_util_asn1_parse_sequence(asn, &certvals[1], &sigvals,
 				&nsigvals));
