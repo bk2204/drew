@@ -1,5 +1,11 @@
-#ifndef RIJNDAEL_HH
-#define RIJNDAEL_HH
+/*-
+ * This code (which is in the public domain) comes from libcrypto++ 5.6.0.  The
+ * original code was written by Phil Karn and Wei Dei, with contributions from
+ * Jim Gillogly and Richard Outerbridge.  brian m. carlson converted it to a
+ * drew block cipher plugin.
+ */
+#ifndef DES_HH
+#define DES_HH
 
 #include <stddef.h>
 #include <stdint.h>
@@ -7,6 +13,7 @@
 #include "block-plugin.hh"
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 class TripleDES;
@@ -44,5 +51,6 @@ class TripleDES : public BlockCipher<8>
 };
 
 }
+UNHIDE()
 
 #endif

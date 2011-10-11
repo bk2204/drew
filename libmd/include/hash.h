@@ -1,5 +1,5 @@
 /*-
- * brian m. carlson <sandals@crustytoothpaste.ath.cx> wrote this source code.
+ * brian m. carlson <sandals@crustytoothpaste.net> wrote this source code.
  * This source code is in the public domain; you may do whatever you please with
  * it.  However, a credit in the documentation, although not required, would be
  * appreciated.
@@ -13,6 +13,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
+
+#include <drew/drew.h>
 
 /* This structure is only here for size purposes.  Do not access its members. */
 #define DREW_LIBMD_HASH_STRUCT(name, quant, dlen, blen) \

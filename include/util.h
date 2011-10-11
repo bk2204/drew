@@ -1,3 +1,24 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 #ifndef UTIL_H
 #define UTIL_H
 
@@ -87,9 +108,25 @@
  */
 #define VECTOR_T
 #define BRANCH_PREDICTION
+/* If we have features from C++ TR1, use them where they are more efficient. */
+#define FEATURE_TR1
 #if defined(__SIZEOF_INT128__) && __SIZEOF_INT128__ == 16
 #define FEATURE_128_BIT_INTEGERS
+typedef __int128_t int128_t;
+typedef __uint128_t uint128_t; 
 #endif
+#endif
+
+#ifdef __GNUC__
+#define HIDE() _Pragma("GCC visibility push(hidden)")
+#define UNHIDE() _Pragma("GCC visibility pop")
+#define EXPORT() _Pragma("GCC visibility push(default)")
+#define UNEXPORT() _Pragma("GCC visibility pop")
+#else
+#define HIDE()
+#define UNHIDE()
+#define EXPORT()
+#define UNEXPORT()
 #endif
 
 #if !defined(__STDC_ISO_10646__)
@@ -104,6 +141,7 @@
 
 #define STATIC_ASSERT(e) ((void)sizeof(char[1 - 2*!(e)]))
 
+HIDE()
 inline void xor_aligned(uint8_t *outp, const uint8_t *inp, const uint8_t *xorp, size_t len)
 {
 	struct aligned_data {
@@ -156,6 +194,20 @@ inline void xor_aligned2(uint8_t *outp, const uint8_t *xorp, size_t len)
 #endif
 	}
 }
+
+inline void xor_buffers(uint8_t *outp, const uint8_t *inp, const uint8_t *xorp,
+		size_t len)
+{
+	for (size_t i = 0; i < len; i++)
+		*outp++ = *inp++ ^ *xorp++;
+}
+
+inline void xor_buffers2(uint8_t *outp, const uint8_t *xorp, size_t len)
+{
+	for (size_t i = 0; i < len; i++)
+		*outp++ ^= *xorp++;
+}
+UNHIDE()
 
 #ifdef BRANCH_PREDICTION
 #define likely(x)	__builtin_expect(!!(x), 1)

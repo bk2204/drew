@@ -1,15 +1,38 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 #ifndef UTIL_I386_HH
 #define UTIL_I386_HH
 
-/* This file simply contains specializations for i386 and amd64 machines.  No
- * extra functionality is available here, only performance optimizations.  For
- * cleanliness reasons only, this file is split out of the main util.hh.
+/* This file simply contains specializations for i386 and amd64 machines.  Most
+ * of this file provides no extra functionality, only performance optimizations.
+ * The sole exception is the GetCpuid function, which is used to determine if
+ * certain cryptographic operations are available on the processor.
  */
 
 #if !(defined(__i386__) || defined(__x86_64__))
 #error "util-i386.hh is only for i386 and amd64 machines!"
 #endif
 
+HIDE()
 #if defined(__GNUC__)
 /* GCC does a crappy job in optimizing non-constant rotates (see PR45216).  As a
  * consequence, we have to help it out.  Do note, though, that unconditionally
@@ -39,6 +62,19 @@ ROTATE(64, Right, q, r, >>, <<)
 #endif
 #undef ROTATE
 #endif
+
+inline int GetCpuid(uint32_t func, uint32_t &a, uint32_t &b, uint32_t &c,
+		uint32_t &d)
+{
+#if defined(__GNUC__)
+	__asm__ __volatile__("cpuid"
+			: "=a"(a), "=b"(b), "=c"(c), "=d"(d)
+			: "a"(func));
+	return 0;
+#else
+	return -DREW_ERR_NOT_IMPL;
+#endif
+}
 
 template<>
 inline uint8_t EndianBase::GetArrayByte(const uint64_t *arr, size_t n)
@@ -85,5 +121,6 @@ inline uint32_t *Endian<DREW_BIG_ENDIAN>::Copy<uint32_t>(uint32_t *dest, const u
 		return CopyByConvert(dest, src, len);
 }
 #endif
+UNHIDE()
 
 #endif

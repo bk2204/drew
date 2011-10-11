@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include <utility>
 
 #include <stdio.h>
@@ -7,6 +26,7 @@
 #include "blowfish.hh"
 #include "block-plugin.hh"
 
+HIDE()
 extern "C" {
 
 static const int blowfishkeysz[] =
@@ -411,4 +431,4 @@ const uint32_t drew::Blowfish::m_parray[] = {
 	0xc0ac29b7L, 0xc97c50ddL, 0x3f84d5b5L, 0xb5470917L,
 	0x9216d5d9L, 0x8979fb1bL
 };
-
+UNHIDE()

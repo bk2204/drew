@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #ifndef ARIA_HH
 #define ARIA_HH
 
@@ -11,6 +30,7 @@
 #include "btestcase.hh"
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 class ARIA : public BlockCipher<16>
@@ -184,6 +204,6 @@ static const int ariakeysz[] =
 	16, 24, 32
 };
 }
-
+UNHIDE()
 
 #endif

@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 struct mapping {
 	const char *name;
 	size_t index;
@@ -41,7 +60,7 @@ static int index_to_name(drew_param_t *p, size_t nentries,
 static drew_bignum_t *init_bignum(const drew_loader_t *ldr,
 		const drew_param_t *param, const void *functbl)
 {
-	drew_bignum_t *ctx = malloc(sizeof(*ctx));
+	drew_bignum_t *ctx = drew_mem_malloc(sizeof(*ctx));
 
 	ctx->functbl = functbl;
 	ctx->functbl->init(ctx, 0, ldr, param);
@@ -70,7 +89,7 @@ static int init(struct rsa *newctx, int flags, const drew_loader_t *ldr,
 	memset(newctx, 0, sizeof(*newctx));
 
 	// This is a way to avoid having to keep the loader around until later.
-	if (!(newctx->n = malloc(sizeof(*newctx->n))))
+	if (!(newctx->n = drew_mem_malloc(sizeof(*newctx->n))))
 		return -ENOMEM;
 	newctx->p = init_bignum(ldr, param, functbl);
 	newctx->q = init_bignum(ldr, param, functbl);
@@ -85,7 +104,7 @@ static int init(struct rsa *newctx, int flags, const drew_loader_t *ldr,
 static void free_bignum(drew_bignum_t *ctx)
 {
 	ctx->functbl->fini(ctx, 0);
-	free(ctx);
+	drew_mem_free(ctx);
 }
 
 static int fini(struct rsa *c, int flags)

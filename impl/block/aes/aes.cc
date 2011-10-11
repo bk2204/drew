@@ -39,7 +39,7 @@
 #include "block-plugin.h"
 #include "aes.hh"
 
-
+HIDE()
 extern "C" {
 
 static const int rijndaelkeysz[] =
@@ -1159,3 +1159,4 @@ const uint32_t drew::AES::rcon[] = {
 	0x10000000, 0x20000000, 0x40000000, 0x80000000,
 	0x1B000000, 0x36000000, /* for 128-bit blocks, AES never uses more than 10 rcon values */
 };
+UNHIDE()

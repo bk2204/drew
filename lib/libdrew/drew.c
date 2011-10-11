@@ -1,3 +1,25 @@
+/*-
+ * Copyright © 2010-2011 brian m. carlson
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include "internal.h"
 #include <drew/drew.h>
 
@@ -11,6 +33,8 @@
 
 // Set if the plugin has been properly loaded.
 #define FLAG_PLUGIN_OK		1
+// Set if the plugin contains no implementations.
+#define FLAG_PLUGIN_DUMMY	2
 
 typedef int (*plugin_api_t)(void *, int, int, void *);
 
@@ -81,6 +105,7 @@ static int load_library(drew_loader_t *ldr, const char *library,
 		return -ENOMEM;
 	ldr->lib = p;
 	lib = &ldr->lib[ldr->nlibs];
+	memset(lib, 0, sizeof(*lib));
 	ldr->nlibs++;
 
 	if (!library) {
@@ -128,18 +153,26 @@ static int load_library_info(drew_loader_t *ldr, library_t *lib)
 {
 	int err = -DREW_ERR_ENUMERATION;
 	int offset = ldr->nplugins;
+	int extra = 0;
 	plugin_t *p = NULL;
 
 	lib->nplugins = lib->api(ldr, DREW_LOADER_GET_NPLUGINS, 0, NULL);
 	if (lib->nplugins < 0)
 		goto out;
 
+	if (!lib->nplugins)
+		extra = 1;
+
 	err = -ENOMEM;
 	p = realloc(ldr->plugin, sizeof(*p) * (ldr->nplugins + lib->nplugins + 1));
 	if (!p)
 		goto out;
-	ldr->nplugins += lib->nplugins;
+	memset(p+ldr->nplugins, 0, sizeof(*p) * (lib->nplugins + 1));
+	ldr->nplugins += lib->nplugins + extra;
 	ldr->plugin = p;
+
+	if (!lib->nplugins)
+		p[ldr->nplugins-1].flags = FLAG_PLUGIN_DUMMY;
 
 	p += offset;
 	for (int i = 0; i < lib->nplugins; i++, p++) {
@@ -275,15 +308,16 @@ int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
 	return load_library_info(ldr, lib);
 }
 
-static inline bool is_valid_id(const drew_loader_t *ldr, int id)
+static inline bool is_valid_id(const drew_loader_t *ldr, int id, int dummyok)
 {
+	int mask = FLAG_PLUGIN_OK | (dummyok ? FLAG_PLUGIN_DUMMY : 0);
 	if (!ldr)
 		return false;
 	if (id < 0)
 		return false;
 	if (id >= ldr->nplugins)
 		return false;
-	if (!(ldr->plugin[id].flags & FLAG_PLUGIN_OK))
+	if (!(ldr->plugin[id].flags & mask))
 		return false;
 	return true;
 }
@@ -298,8 +332,12 @@ int drew_loader_get_nplugins(const drew_loader_t *ldr, int id)
 		return -DREW_ERR_INVALID;
 	if (id == -1)
 		return ldr->nplugins;
-	if (!is_valid_id(ldr, id))
-		return -DREW_ERR_INVALID;
+	if (!is_valid_id(ldr, id, 0)) {
+		if (is_valid_id(ldr, id, 1))
+			return 0;
+		else
+			return -DREW_ERR_INVALID;
+	}
 
 	return ldr->plugin[id].lib->nplugins;
 }
@@ -308,7 +346,7 @@ int drew_loader_get_type(const drew_loader_t *ldr, int id)
 {
 	if (!ldr)
 		return -DREW_ERR_INVALID;
-	if (!is_valid_id(ldr, id))
+	if (!is_valid_id(ldr, id, 0))
 		return -DREW_ERR_INVALID;
 
 	return ldr->plugin[id].type;
@@ -318,7 +356,7 @@ int drew_loader_get_functbl(const drew_loader_t *ldr, int id, const void **tbl)
 {
 	if (!ldr)
 		return -DREW_ERR_INVALID;
-	if (!is_valid_id(ldr, id))
+	if (!is_valid_id(ldr, id, 0))
 		return -DREW_ERR_INVALID;
 
 	if (tbl)
@@ -331,7 +369,7 @@ int drew_loader_get_algo_name(const drew_loader_t *ldr, int id,
 {
 	if (!ldr)
 		return -DREW_ERR_INVALID;
-	if (!is_valid_id(ldr, id))
+	if (!is_valid_id(ldr, id, 0))
 		return -DREW_ERR_INVALID;
 
 	*namep = ldr->plugin[id].name;
@@ -347,7 +385,7 @@ int drew_loader_lookup_by_name(const drew_loader_t *ldr, const char *name,
 		end = ldr->nplugins;
 
 	for (int i = start; i < end; i++) {
-		if (!is_valid_id(ldr, i))
+		if (!is_valid_id(ldr, i, 0))
 			continue;
 		if (!strcmp(ldr->plugin[i].name, name))
 			return i;
@@ -365,7 +403,7 @@ int drew_loader_lookup_by_type(const drew_loader_t *ldr, int type, int start,
 		end = ldr->nplugins;
 
 	for (int i = start; i < end; i++) {
-		if (!is_valid_id(ldr, i))
+		if (!is_valid_id(ldr, i, 0))
 			continue;
 		if (ldr->plugin[i].type == type)
 			return i;
@@ -442,7 +480,7 @@ int drew_loader_get_metadata(const drew_loader_t *ldr, int id, int item,
 	if (!ldr)
 		return -DREW_ERR_INVALID;
 
-	if (!is_valid_id(ldr, id))
+	if (!is_valid_id(ldr, id, 0))
 		return -DREW_ERR_NONEXISTENT;
 
 	if (item == -1) {

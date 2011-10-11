@@ -1,11 +1,11 @@
-SUMS			:= md5 sha1 sha224 sha256 sha384 sha512
+SUMS					:= md5 sha1 sha224 sha256 sha384 sha512
+SUMS_PROGS				:= $(patsubst %,util/%sum,$(SUMS))
 
-UTILS			+= $(patsubst %,%sum,$(SUMS))
+UTILS					+= daniel
+UTILITIES				:= $(patsubst %,util/%,$(UTILS))
+UTILITIES				+= $(SUMS_PROGS)
 
-UTILITIES		:= $(patsubst %,util/%,$(UTILS))
-
-# FIXME: only for SUMS, not all future utilities.
-$(UTILITIES:=.o): util/sum.c
+$(SUMS_PROGS:=.o): util/sum.c
 
 util/%: util/%.o $(DREW_SONAME) $(DREW_IMPL_SONAME)
 	$(CC) $(CFLAGS) -o $(.TARGET) $(.ALLSRC) $(LIBS)
