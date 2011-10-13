@@ -54,6 +54,7 @@ struct hmac {
 	size_t keybufsz;
 	size_t blksz;
 	size_t digestsz;
+	size_t taglen;
 };
 
 static int hmac_info(int op, void *p)
@@ -65,11 +66,14 @@ static int hmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param)
 {
 	drew_hash_t *algo = NULL;
+	size_t taglen = 0;
 
-	for (; param; param = param->next)
-		if (!strcmp(param->name, "digest")) {
+	for (; param; param = param->next) {
+		if (!strcmp(param->name, "digest"))
 			algo = param->param.value;
-		}
+		if (!strcmp(param->name, "tagLength"))
+			taglen = param->param.number;
+	}
 
 	if (!algo)
 		return -DREW_ERR_INVALID;
@@ -87,6 +91,7 @@ static int hmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
 	p->outside.functbl->reset(&p->outside);
 	p->inside.functbl->clone(&p->inside, algo, 0);
 	p->inside.functbl->reset(&p->inside);
+	p->taglen = taglen ? taglen : p->digestsz;
 
 	if (p->blksz > BUFFER_SIZE || p->digestsz > BUFFER_SIZE) {
 		drew_mem_sfree(p);
@@ -200,9 +205,11 @@ static int hmac_final(drew_mac_t *ctx, uint8_t *digest, int flags)
 
 	c->inside.functbl->final(&c->inside, buf, 0);
 	c->outside.functbl->update(&c->outside, buf, c->digestsz);
-	c->outside.functbl->final(&c->outside, digest, 0);
+	c->outside.functbl->final(&c->outside, buf, 0);
 	c->inside.functbl->reset(&c->inside);
 	c->outside.functbl->reset(&c->outside);
+
+	memcpy(digest, buf, c->taglen);
 
 	memset(buf, 0, sizeof(buf));
 

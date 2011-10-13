@@ -53,6 +53,7 @@ struct cmac {
 	uint8_t k2[BUFFER_SIZE] ALIGNED_T;
 	size_t blksize;
 	size_t boff;
+	size_t taglen;
 	drew_block_t block;
 	bool nonzero_len;
 };
@@ -66,11 +67,14 @@ static int cmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param)
 {
 	drew_block_t *algo = NULL;
+	size_t taglen = 0;
 
-	for (; param; param = param->next)
-		if (!strcmp(param->name, "cipher")) {
+	for (; param; param = param->next) {
+		if (!strcmp(param->name, "cipher"))
 			algo = param->param.value;
-		}
+		if (!strcmp(param->name, "tagLength"))
+			taglen = param->param.number;
+	}
 
 	if (!algo)
 		return -DREW_ERR_INVALID;
@@ -85,6 +89,7 @@ static int cmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
 	p->block.functbl->clone(&p->block, algo, 0);
 	p->block.functbl->reset(&p->block);
 	p->nonzero_len = false;
+	p->taglen = taglen ? taglen : p->blksize;
 
 	if (p->blksize > sizeof(p->k1) || p->blksize > sizeof(p->k2) ||
 			(p->blksize != 8 && p->blksize != 16)) {
@@ -237,7 +242,7 @@ static int cmac_final(drew_mac_t *ctx, uint8_t *digest, int flags)
 		xor_aligned2(c->buf, c->k2, BUFFER_SIZE);
 	}
 	process_block(c, c->buf);
-	memcpy(digest, c->hash, c->blksize);
+	memcpy(digest, c->hash, c->taglen);
 
 	return 0;
 }
