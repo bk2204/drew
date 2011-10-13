@@ -54,6 +54,7 @@ CFG_GCM			= y
 
 # MACs.
 CFG_HMAC		= y
+CFG_CMAC		= y
 
 ## Stream ciphers.
 CFG_RC4			= y
