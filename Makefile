@@ -52,6 +52,8 @@ LIBS			+= ${LDFLAGS} -lrt -ldl
 .ALLSRC			= $^
 .IMPSRC			= $<
 
+SONAME			= -Wl,-soname,$(@F)
+
 all:
 
 include lib/libdrew/Makefile
