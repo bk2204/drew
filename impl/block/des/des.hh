@@ -18,10 +18,9 @@ namespace drew {
 
 class TripleDES;
 
-class DES : public BlockCipher<8>
+class DES : public BlockCipher<8, BigEndian>
 {
 	public:
-		typedef BigEndian endian_t;
 		DES();
 		~DES() {};
 		int SetKey(const uint8_t *key, size_t sz);
@@ -35,10 +34,9 @@ class DES : public BlockCipher<8>
 		friend class TripleDES;
 };
 
-class TripleDES : public BlockCipher<8>
+class TripleDES : public BlockCipher<8, BigEndian>
 {
 	public:
-		typedef BigEndian endian_t;
 		TripleDES();
 		~TripleDES() {};
 		int SetKey(const uint8_t *key, size_t sz);

@@ -16,10 +16,9 @@
 HIDE()
 namespace drew {
 
-class AES : public BlockCipher<16>
+class AES : public BlockCipher<16, BigEndian>
 {
 	public:
-		typedef BigEndian endian_t;
 		AES();
 		~AES() {};
 		int SetKey(const uint8_t *key, size_t sz);

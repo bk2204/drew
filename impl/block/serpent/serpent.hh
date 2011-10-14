@@ -29,10 +29,9 @@
 HIDE()
 namespace drew {
 
-class Serpent : public BlockCipher<16>
+class Serpent : public BlockCipher<16, LittleEndian>
 {
 	public:
-		typedef LittleEndian endian_t;
 		Serpent();
 		Serpent(const Serpent &);
 		~Serpent() {};

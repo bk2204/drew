@@ -29,10 +29,9 @@
 HIDE()
 namespace drew {
 
-class Blowfish : public BlockCipher<8>
+class Blowfish : public BlockCipher<8, BigEndian>
 {
 	public:
-		typedef BigEndian endian_t;
 		Blowfish();
 		~Blowfish() {};
 		int SetKey(const uint8_t *key, size_t sz);

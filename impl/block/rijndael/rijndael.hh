@@ -38,7 +38,6 @@ namespace drew {
 class Rijndael
 {
 	public:
-		typedef BigEndian endian_t;
 		Rijndael();
 		~Rijndael() {};
 		virtual int SetKey(const uint8_t *key, size_t sz) = 0;
@@ -76,7 +75,8 @@ class Rijndael
 };
 
 template<unsigned BlockSize>
-class GenericRijndael : public Rijndael, public BlockCipher<BlockSize/8>
+class GenericRijndael : public Rijndael,
+	public BlockCipher<BlockSize/8, BigEndian>
 {
 	public:
 		static const size_t block_size = BlockSize / 8;

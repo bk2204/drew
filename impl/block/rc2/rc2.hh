@@ -29,10 +29,9 @@
 HIDE()
 namespace drew {
 
-class RC2 : public BlockCipher<8>
+class RC2 : public BlockCipher<8, LittleEndian>
 {
 	public:
-		typedef LittleEndian endian_t;
 		RC2();
 		~RC2() {};
 		int SetKey(const uint8_t *key, size_t sz);

@@ -38,7 +38,7 @@
 HIDE()
 namespace drew {
 
-class AESNative : public BlockCipher<16>
+class AESNative : public BlockCipher<16, BigEndian>
 {
 	public:
 		AESNative() {}

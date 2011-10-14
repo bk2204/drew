@@ -270,7 +270,7 @@ static int aes256test(void *p, const drew_loader_t *ldr)
 	PLUGIN_INTERFACE(rijndael)
 }
 
-typedef drew::Rijndael::endian_t E;
+typedef BigEndian E;
 
 drew::Rijndael::Rijndael()
 {

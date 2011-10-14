@@ -29,10 +29,9 @@
 HIDE()
 namespace drew {
 
-class TEA : public BlockCipher<8>
+class TEA : public BlockCipher<8, BigEndian>
 {
 	public:
-		typedef BigEndian endian_t;
 		TEA();
 		~TEA() {};
 		int SetKey(const uint8_t *key, size_t sz);

@@ -29,10 +29,9 @@
 HIDE()
 namespace drew {
 
-class Twofish : public BlockCipher<16>
+class Twofish : public BlockCipher<16, LittleEndian>
 {
 	public:
-		typedef LittleEndian endian_t;
 		Twofish();
 		~Twofish() {};
 		int SetKey(const uint8_t *key, size_t sz);

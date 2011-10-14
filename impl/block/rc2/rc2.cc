@@ -46,6 +46,8 @@ static int rc2info(int op, void *p)
 			return 2;
 		case DREW_BLOCK_BLKSIZE:
 			return 8;
+		case DREW_BLOCK_ENDIAN:
+			return drew::RC2::endian_t::GetEndianness();
 		case DREW_BLOCK_KEYSIZE:
 			{
 				const int *x = reinterpret_cast<int *>(p);

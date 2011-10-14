@@ -30,10 +30,9 @@
 HIDE()
 namespace drew {
 
-class CAST6 : public CAST, public BlockCipher<16>
+class CAST6 : public CAST, public BlockCipher<16, BigEndian>
 {
 	public:
-		typedef BigEndian endian_t;
 		CAST6();
 		~CAST6() {};
 		int SetKey(const uint8_t *key, size_t sz);

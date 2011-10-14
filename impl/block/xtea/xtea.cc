@@ -64,6 +64,8 @@ static int xteainfo(int op, void *p)
 			return 2;
 		case DREW_BLOCK_BLKSIZE:
 			return XTEA::block_size;
+		case DREW_BLOCK_ENDIAN:
+			return XTEA::endian_t::GetEndianness();
 		case DREW_BLOCK_KEYSIZE:
 			for (size_t i = 0; i < DIM(xteakeysz); i++) {
 				const int *x = reinterpret_cast<int *>(p);

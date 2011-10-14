@@ -29,10 +29,9 @@
 HIDE()
 namespace drew {
 
-class Camellia : public BlockCipher<16>
+class Camellia : public BlockCipher<16, BigEndian>
 {
 	public:
-		typedef BigEndian endian_t;
 		Camellia();
 		~Camellia() {};
 		int SetKey(const uint8_t *key, size_t sz);

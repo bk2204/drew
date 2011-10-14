@@ -34,10 +34,11 @@
 
 HIDE()
 namespace drew {
-	template<size_t BlockSize>
+	template<size_t BlockSize, class E>
 	class BlockCipher {
 		public:
 			static const size_t block_size = BlockSize;
+			typedef E endian_t;
 			typedef AlignedBlock<uint8_t, BlockSize> FastBlock;
 			virtual ~BlockCipher() {}
 			virtual int Reset()
@@ -102,6 +103,8 @@ static int prefix ## info(int op, void *p) \
 			return 2; \
 		case DREW_BLOCK_BLKSIZE: \
 			return bname::block_size; \
+		case DREW_BLOCK_ENDIAN: \
+			return bname::endian_t::GetEndianness(); \
 		case DREW_BLOCK_KEYSIZE: \
 			for (size_t i = 0; i < DIM(prefix ## keysz); i++) { \
 				const int *x = reinterpret_cast<int *>(p); \

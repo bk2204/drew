@@ -33,10 +33,9 @@
 HIDE()
 namespace drew {
 
-class ARIA : public BlockCipher<16>
+class ARIA : public BlockCipher<16, BigEndian>
 {
 	public:
-		typedef BigEndian endian_t;
 		ARIA();
 		~ARIA() {};
 		virtual int SetKey(const uint8_t *key, size_t sz) = 0;

@@ -29,10 +29,9 @@
 HIDE()
 namespace drew {
 
-class SEED : public BlockCipher<16>
+class SEED : public BlockCipher<16, BigEndian>
 {
 	public:
-		typedef BigEndian endian_t;
 		SEED();
 		~SEED() {};
 		int SetKey(const uint8_t *key, size_t sz);

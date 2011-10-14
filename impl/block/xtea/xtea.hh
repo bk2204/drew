@@ -29,10 +29,9 @@
 HIDE()
 namespace drew {
 
-class XTEA : public BlockCipher<8>
+class XTEA : public BlockCipher<8, BigEndian>
 {
 	public:
-		typedef BigEndian endian_t;
 		XTEA() : rounds(32) {}
 		XTEA(size_t r) : rounds(r) {}
 		~XTEA() {};
