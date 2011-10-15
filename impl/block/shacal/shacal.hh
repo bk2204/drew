@@ -30,6 +30,20 @@ class SHACAL1 : public BlockCipher<20>
 		uint32_t m_words[80];
 };
 
+class SHACAL2 : public BlockCipher<32>
+{
+	public:
+		typedef BigEndian endian_t;
+		SHACAL2();
+		~SHACAL2() {};
+		int SetKey(const uint8_t *key, size_t sz);
+		int Encrypt(uint8_t *out, const uint8_t *in) const;
+		int Decrypt(uint8_t *out, const uint8_t *in) const;
+	protected:
+	private:
+		uint32_t m_words[64];
+};
+
 }
 UNHIDE()
 
