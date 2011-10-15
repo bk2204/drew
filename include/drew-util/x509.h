@@ -38,6 +38,13 @@ typedef struct drew_util_x509_pubkey_s {
 	drew_util_asn1_oid_t curve;
 } drew_util_x509_pubkey_t;
 
+typedef struct drew_util_x509_extension_s {
+	drew_util_asn1_oid_t oid;
+	uint8_t *value;
+	size_t len;
+	bool critical;
+} drew_util_x509_extension_t;
+
 typedef struct drew_util_x509_cert_s {
 	int version;
 	drew_util_x509_sig_t sig;
@@ -49,6 +56,8 @@ typedef struct drew_util_x509_cert_s {
 	size_t subject_len;
 	int64_t not_before;
 	int64_t not_after;
+	drew_util_x509_extension_t *extensions;
+	size_t extensions_len;
 	int flags[8];
 } drew_util_x509_cert_t;
 
