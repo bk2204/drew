@@ -163,6 +163,18 @@ int main(int argc, char **argv)
 		if (cert.flags[0] & DREW_UTIL_X509_CERT_DEFAULT_VERSION)
 			printf("\tVersion was omitted.\n");
 	}
+	printf("Extensions are%s\n", cert.extensions_len ? ":" : "absent.");
+	for (size_t i = 0; i < cert.extensions_len; i++) {
+		drew_util_x509_extension_t *ext = cert.extensions + i;
+		printf("\t");
+		for (size_t j = 0; j < ext->oid.length; j++)
+			printf("%zu%s", ext->oid.values[j],
+					(j == ext->oid.length-1) ? "" : ".");
+		printf(" (%scritical): ", ext->critical ? "" : "not ");
+		for (size_t j = 0; j < ext->len; j++)
+			printf("%02x", ext->value[j]);
+		printf("\n");
+	}
 	if (decdata != p)
 		drew_mem_free(decdata);
 	printf("Bye.\n");
