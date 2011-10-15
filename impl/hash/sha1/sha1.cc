@@ -128,19 +128,19 @@ void drew::SHA<Rotate>::Reset()
  * faster (174 MiB/s vs. 195 MiB/s).
  */
 template<int Rotate>
-void drew::SHA<Rotate>::Transform(quantum_t *state, const uint8_t *block)
+void drew::SHA<Rotate>::ForwardTransform(uint32_t *state, const uint32_t *block)
 {
-	uint32_t blk[block_size/sizeof(uint32_t)];
 	size_t i;
 	uint32_t a, b, c, d, e;
+	uint32_t blk[16];
+
+	memcpy(blk, block, sizeof(blk));
 
 	a = state[0];
 	b = state[1];
 	c = state[2];
 	d = state[3];
 	e = state[4];
-
-	endian_t::Copy(blk, block, block_size);
 
 	OP(ff, blk[ 0], a, b, c, d, e);
 	OP(ff, blk[ 1], e, a, b, c, d);
@@ -184,10 +184,80 @@ void drew::SHA<Rotate>::Transform(quantum_t *state, const uint8_t *block)
 		OP(ii, EXPANSION(i+4), b, c, d, e, a);
 	}
 
-	state[0] += a;
-	state[1] += b;
-	state[2] += c;
-	state[3] += d;
-	state[4] += e;
+	state[0] = a;
+	state[1] = b;
+	state[2] = c;
+	state[3] = d;
+	state[4] = e;
 }
+
+#define INVOP(f, g, a, b, c, d, e) \
+	 b=RotateRight(b, 30); e-=RotateLeft(a, 5)+f(b, c, d)+g;
+
+template<int Rotate>
+void drew::SHA<Rotate>::InverseTransform(uint32_t *state, const uint32_t *blk)
+{
+	ssize_t i;
+	uint32_t a, b, c, d, e;
+
+	a = state[0];
+	b = state[1];
+	c = state[2];
+	d = state[3];
+	e = state[4];
+
+	for (i = 79; i > 60; i -= 5) {
+		INVOP(ii, blk[i  ], b, c, d, e, a);
+		INVOP(ii, blk[i-1], c, d, e, a, b);
+		INVOP(ii, blk[i-2], d, e, a, b, c);
+		INVOP(ii, blk[i-3], e, a, b, c, d);
+		INVOP(ii, blk[i-4], a, b, c, d, e);
+	}
+	for (i = 59; i > 40; i -= 5) {
+		INVOP(hh, blk[i  ], b, c, d, e, a);
+		INVOP(hh, blk[i-1], c, d, e, a, b);
+		INVOP(hh, blk[i-2], d, e, a, b, c);
+		INVOP(hh, blk[i-3], e, a, b, c, d);
+		INVOP(hh, blk[i-4], a, b, c, d, e);
+	}
+	for (i = 39; i > 20; i -= 5) {
+		INVOP(gg, blk[i  ], b, c, d, e, a);
+		INVOP(gg, blk[i-1], c, d, e, a, b);
+		INVOP(gg, blk[i-2], d, e, a, b, c);
+		INVOP(gg, blk[i-3], e, a, b, c, d);
+		INVOP(gg, blk[i-4], a, b, c, d, e);
+	}
+	for (i = 19; i > 0; i -= 5) {
+		INVOP(ff, blk[i  ], b, c, d, e, a);
+		INVOP(ff, blk[i-1], c, d, e, a, b);
+		INVOP(ff, blk[i-2], d, e, a, b, c);
+		INVOP(ff, blk[i-3], e, a, b, c, d);
+		INVOP(ff, blk[i-4], a, b, c, d, e);
+	}
+
+	state[0] = a;
+	state[1] = b;
+	state[2] = c;
+	state[3] = d;
+	state[4] = e;
+}
+
+template<int Rotate>
+void drew::SHA<Rotate>::Transform(quantum_t *state, const uint8_t *block)
+{
+	uint32_t b[5];
+	uint32_t blk[16];
+	memcpy(b, state, sizeof(b));
+
+	endian_t::Copy(blk, block, block_size);
+	ForwardTransform(b, blk);
+
+	state[0] += b[0];
+	state[1] += b[1];
+	state[2] += b[2];
+	state[3] += b[3];
+	state[4] += b[4];
+}
+
+template class drew::SHA<1>;
 UNHIDE()
