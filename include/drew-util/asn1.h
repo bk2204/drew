@@ -86,7 +86,7 @@ int drew_util_asn1_parse_bitstring(drew_util_asn1_t asn,
 // buf must be NULL, or at least val->length bytes long.
 DREW_SYM_PUBLIC
 int drew_util_asn1_parse_octetstring(drew_util_asn1_t asn,
-		const drew_util_asn1_value_t *val, uint8_t *buf, size_t *nbits);
+		const drew_util_asn1_value_t *val, uint8_t *buf);
 DREW_SYM_PUBLIC
 int drew_util_asn1_parse_null(drew_util_asn1_t asn,
 		const drew_util_asn1_value_t *val);
