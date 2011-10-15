@@ -94,8 +94,9 @@ static int cfb_info(int op, void *p)
 		case DREW_MODE_FINAL_OUTSIZE:
 			return 0;
 		case DREW_MODE_QUANTUM:
+			return 1;
 		default:
-			return DREW_ERR_INVALID;
+			return -DREW_ERR_INVALID;
 	}
 }
 
@@ -517,10 +518,11 @@ static int cfb_fini(drew_mode_t *ctx, int flags)
 		memset(c->buf, 0, sizeof(c->buf));
 		memset(c->prev, 0, sizeof(c->prev));
 	}
-	else
+	else {
 		drew_mem_sfree(c);
+		ctx->ctx = NULL;
+	}
 
-	ctx->ctx = NULL;
 	return 0;
 }
 

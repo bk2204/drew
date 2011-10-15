@@ -85,8 +85,9 @@ static int ofb_info(int op, void *p)
 		case DREW_MODE_FINAL_OUTSIZE:
 			return 0;
 		case DREW_MODE_QUANTUM:
+			return 1;
 		default:
-			return DREW_ERR_INVALID;
+			return -DREW_ERR_INVALID;
 	}
 }
 
@@ -372,10 +373,11 @@ static int ofb_fini(drew_mode_t *ctx, int flags)
 {
 	struct ofb *c = ctx->ctx;
 
-	if (!(flags & DREW_MODE_FIXED))
+	if (!(flags & DREW_MODE_FIXED)) {
 		drew_mem_sfree(c);
+		ctx->ctx = NULL;
+	}
 
-	ctx->ctx = NULL;
 	return 0;
 }
 

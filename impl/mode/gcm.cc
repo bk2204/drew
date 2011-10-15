@@ -34,6 +34,8 @@
 #include "util.hh"
 
 HIDE()
+#define TABLE_SIZE (64 * 1024)
+
 typedef BigEndian E;
 
 extern "C" {
@@ -42,7 +44,7 @@ struct gcm;
 
 struct gcm {
 	const drew_loader_t *ldr;
-	const drew_block_t *algo;
+	drew_block_t *algo;
 	uint8_t y0[16] ALIGNED_T;
 	uint8_t y[16] ALIGNED_T;
 	uint8_t h[16] ALIGNED_T;
@@ -112,8 +114,9 @@ static int gcm_info(int op, void *p)
 		case DREW_MODE_FINAL_OUTSIZE:
 			return 16;
 		case DREW_MODE_QUANTUM:
+			return 1;
 		default:
-			return DREW_ERR_INVALID;
+			return -DREW_ERR_INVALID;
 	}
 }
 
@@ -166,7 +169,7 @@ static int gcmfl_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	if (!(flags & DREW_MODE_FIXED))
 		newctx = (struct gcm *)drew_mem_smalloc(sizeof(*newctx));
 	memset(newctx, 0, sizeof(*newctx));
-	newctx->table = (uint64_t *)drew_mem_smalloc(64 * 1024);
+	newctx->table = (uint64_t *)drew_mem_smalloc(TABLE_SIZE);
 	if (!newctx->table) {
 		if (!(flags & DREW_MODE_FIXED))
 			drew_mem_sfree(newctx);
@@ -200,7 +203,9 @@ static int gcm_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 	if (!algoctx)
 		return DREW_ERR_INVALID;
 
-	c->algo = algoctx;
+	c->algo = (drew_block_t *)drew_mem_malloc(sizeof(*c->algo));
+	c->algo->functbl = algoctx->functbl;
+	c->algo->functbl->clone(c->algo, algoctx, 0);
 	c->blksize = c->algo->functbl->info(DREW_BLOCK_BLKSIZE, NULL);
 	if (c->blksize == 8)
 		return -DREW_ERR_NOT_IMPL;
@@ -721,21 +726,34 @@ static int gcm_fini(drew_mode_t *ctx, int flags)
 {
 	struct gcm *c = (struct gcm *)ctx->ctx;
 
+	if (c->algo)
+		c->algo->functbl->fini(c->algo, 0);
+	drew_mem_free(c->algo);
 	drew_mem_sfree(c->iv);
 	drew_mem_sfree(c->table);
-	if (!(flags & DREW_MODE_FIXED))
+	if (!(flags & DREW_MODE_FIXED)) {
 		drew_mem_sfree(c);
+		ctx->ctx = NULL;
+	}
 
-	ctx->ctx = NULL;
 	return 0;
 }
 
 static int gcm_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags)
 {
+	struct gcm *c = (struct gcm *)oldctx->ctx, *cn;
+
 	if (!(flags & DREW_MODE_FIXED))
 		newctx->ctx = (struct gcm *)drew_mem_smalloc(sizeof(struct gcm));
 	memset(newctx->ctx, 0, sizeof(struct gcm));
 	memcpy(newctx->ctx, oldctx->ctx, sizeof(struct gcm));
+	cn = (struct gcm *)newctx->ctx;
+	if (c->algo) {
+		cn->algo = (drew_block_t *)drew_mem_memdup(c->algo, sizeof(*c->algo));
+		cn->algo->functbl->clone(cn->algo, c->algo, 0);
+	}
+	if (c->table)
+		cn->table = (uint64_t *)drew_mem_memdup(c->table, TABLE_SIZE);
 	newctx->functbl = oldctx->functbl;
 	return 0;
 }
@@ -756,7 +774,7 @@ int DREW_PLUGIN_NAME(gcm)(void *ldr, int op, int id, void *p)
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 
 	if (id < 0 || id >= nplugins)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	switch (op) {
 		case DREW_LOADER_LOOKUP_NAME:
@@ -776,7 +794,7 @@ int DREW_PLUGIN_NAME(gcm)(void *ldr, int op, int id, void *p)
 			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1);
 			return 0;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
 UNEXPORT()
