@@ -97,6 +97,44 @@ static int parse_validity(drew_util_asn1_t asn,
 	return 0;
 }
 
+static int parse_extensions(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, drew_util_x509_cert_t *cert)
+{
+	drew_util_asn1_value_t *seq1, *seq2;
+	size_t len1, len2;
+
+	if (val->tagclass != DREW_UTIL_ASN1_TC_CONTEXT || val->tag != 3)
+		return -DREW_ERR_INVALID;
+
+	RETFAIL(drew_util_asn1_parse_sequence(asn, val, &seq1, &len1));
+	RETFAIL(drew_util_asn1_parse_sequence(asn, &seq1[0], &seq2, &len2));
+	cert->extensions_len = len2;
+	cert->extensions = calloc(sizeof(*cert->extensions), len2);
+	for (size_t i = 0; i < len2; i++) {
+		drew_util_x509_extension_t *p = cert->extensions + i;
+		drew_util_asn1_value_t *seq;
+		size_t slen;
+
+		RETFAIL(drew_util_asn1_parse_sequence(asn, &seq2[i], &seq, &slen));
+		if (slen < 2)
+			return -DREW_ERR_INVALID;
+		RETFAIL(drew_util_asn1_parse_oid(asn, &seq[0], &p->oid));
+		if (slen == 3) {
+			p->value = malloc(p->len = seq[2].length);
+			RETFAIL(drew_util_asn1_parse_boolean(asn, &seq[1], &p->critical));
+			RETFAIL(drew_util_asn1_parse_octetstring(asn, &seq[2], p->value));
+		}
+		else if (slen == 2) {
+			p->critical = false;
+			p->value = malloc(p->len = seq[1].length);
+			RETFAIL(drew_util_asn1_parse_octetstring(asn, &seq[1], p->value));
+		}
+		else
+			return -DREW_ERR_INVALID;
+	}
+	return 0;
+}
+
 int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 		const uint8_t *data, size_t len, drew_util_x509_cert_t *cert)
 {
@@ -135,6 +173,18 @@ int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 	RETFAIL(parse_validity(asn, &vals[3+valoff], cert));
 	RETFAIL(parse_name(asn, &vals[4+valoff], &cert->subject,
 				&cert->subject_len));
+	// We don't really care about the unique IDs.  Other than fodder for the
+	// hash, they have no significance.  On to the extensions!
+	if (cert->version == 3) {
+		for (size_t i = 5+valoff; i < nvals; i++) {
+			if (vals[i].tagclass != DREW_UTIL_ASN1_TC_CONTEXT ||
+					vals[i].tag != 3)
+				continue;
+			RETFAIL(parse_extensions(asn, &vals[i], cert));
+			// Don't allow multiple sets of extensions.
+			break;
+		}
+	}
 
 	RETFAIL(drew_util_asn1_parse_sequence(asn, &certvals[1], &sigvals,
 				&nsigvals));
