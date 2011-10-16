@@ -165,10 +165,12 @@ int drew_tls_session_set_transport(drew_tls_session_t sess,
 		drew_tls_data_in_func_t inf, drew_tls_data_out_func_t outf,
 		drew_tls_data_ctxt_t inp, drew_tls_data_ctxt_t outp)
 {
+	LOCK(sess);
 	sess->data_inp = inp;
 	sess->data_outp = outp;
 	sess->data_infunc = inf;
 	sess->data_outfunc = outf;
+	UNLOCK(sess);
 	return 0;
 }
 
