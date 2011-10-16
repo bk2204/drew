@@ -135,13 +135,70 @@ static int parse_extensions(drew_util_asn1_t asn,
 	return 0;
 }
 
+struct algooids {
+	const char *mdalgo;
+	const char *pkalgo;
+	size_t nvals;
+	size_t vals[9];
+};
+
+static const struct algooids oids[] = {
+	{"MD2", "RSA", 7, {1, 2, 840, 113549, 1, 1, 2}},
+	{"MD4", "RSA", 7, {1, 2, 840, 113549, 1, 1, 3}},
+	{"MD5", "RSA", 7, {1, 2, 840, 113549, 1, 1, 4}},
+	{"SHA-1", "RSA", 7, {1, 2, 840, 113549, 1, 1, 5}},
+	{"SHA-224", "RSA", 7, {1, 2, 840, 113549, 1, 1, 14}},
+	{"SHA-256", "RSA", 7, {1, 2, 840, 113549, 1, 1, 11}},
+	{"SHA-384", "RSA", 7, {1, 2, 840, 113549, 1, 1, 12}},
+	{"SHA-512", "RSA", 7, {1, 2, 840, 113549, 1, 1, 13}},
+	{"SHA-1", "DSA", 6, {1, 2, 840, 10040, 4, 3}},
+	{"SHA-224", "DSA", 9, {2, 16, 840, 1, 101, 3, 4, 3, 1}},
+	{"SHA-256", "DSA", 9, {2, 16, 840, 1, 101, 3, 4, 3, 2}},
+	{"SHA-224", "ECDSA", 7, {1, 2, 840, 10045, 4, 3, 1}},
+	{"SHA-256", "ECDSA", 7, {1, 2, 840, 10045, 4, 3, 2}},
+	{"SHA-384", "ECDSA", 7, {1, 2, 840, 10045, 4, 3, 3}},
+	{"SHA-512", "ECDSA", 7, {1, 2, 840, 10045, 4, 3, 4}},
+};
+
+static void fill_in_sig_fields(drew_util_x509_cert_sig_t *certsig)
+{
+	const drew_util_asn1_oid_t *p = &certsig->algo.oid;
+
+	certsig->mdalgo = NULL;
+	certsig->pkalgo = NULL;
+
+	for (size_t i = 0; i < DIM(oids); i++) {
+		if (p->length != oids[i].nvals)
+			continue;
+		if (!memcmp(oids[i].vals, p->values, p->length * sizeof(size_t))) {
+			certsig->mdalgo = oids[i].mdalgo;
+			certsig->pkalgo = oids[i].pkalgo;
+		}
+	}
+}
+
+int parse_signature(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, drew_util_x509_cert_sig_t *certsig)
+{
+	drew_util_asn1_value_t *sigvals;
+	size_t nsigvals;
+
+	RETFAIL(drew_util_asn1_parse_sequence(asn, val, &sigvals,
+				&nsigvals));
+	RETFAIL(drew_util_asn1_parse_oid(asn, sigvals, &certsig->algo.oid));
+	fill_in_sig_fields(certsig);
+
+	return 0;
+}
+
 int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
-		const uint8_t *data, size_t len, drew_util_x509_cert_t *cert)
+		const uint8_t *data, size_t len, drew_util_x509_cert_t *cert,
+		const drew_loader_t *ldr)
 {
 	int res = 0;
 	uint8_t *p;
-	size_t ncertvals, nvals, nsigvals;
-	drew_util_asn1_value_t certificate, *certvals, *sigvals, *vals;
+	size_t ncertvals, nvals;
+	drew_util_asn1_value_t certificate, *certvals, *vals;
 
 	memset(cert, 0, sizeof(*cert));
 
@@ -186,9 +243,7 @@ int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 		}
 	}
 
-	RETFAIL(drew_util_asn1_parse_sequence(asn, &certvals[1], &sigvals,
-				&nsigvals));
-	RETFAIL(drew_util_asn1_parse_oid(asn, sigvals, &cert->sig.algo.algo));
+	RETFAIL(parse_signature(asn, &certvals[1], &cert->sig));
 
 	if (!(p = malloc(certvals[2].length)))
 		return -ENOMEM;

@@ -121,12 +121,13 @@ int main(int argc, char **argv)
 		}
 		len = ret;
 	}
-	FAILCODE(8, drew_util_x509_parse_certificate(parser, decdata, len, &cert));
+	FAILCODE(8, drew_util_x509_parse_certificate(parser, decdata, len, &cert,
+				NULL));
 	printf("Certificate is version %d.\nSignature OID is ", cert.version);
-	for (size_t i = 0; i < cert.sig.algo.algo.length; i++)
-		printf("%zu%s", cert.sig.algo.algo.values[i],
-				(i == cert.sig.algo.algo.length-1) ? "" : ".");
-	printf(" (%s).\n", get_signame(&cert.sig.algo.algo));
+	for (size_t i = 0; i < cert.sig.algo.oid.length; i++)
+		printf("%zu%s", cert.sig.algo.oid.values[i],
+				(i == cert.sig.algo.oid.length-1) ? "" : ".");
+	printf(" (%s).\n", get_signame(&cert.sig.algo.oid));
 	printf("Issuer is:\n");
 	for (size_t i = 0; i < cert.issuer_len; i++) {
 		printf("\t");

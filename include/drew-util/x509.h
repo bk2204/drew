@@ -12,14 +12,9 @@
 #define DREW_UTIL_X509_MAX_MPIS	4
 
 typedef struct {
-	drew_util_asn1_oid_t algo;
+	drew_util_asn1_oid_t oid;
 	drew_param_t *param;
 } drew_util_x509_sig_algo_t;
-
-typedef struct drew_util_x509_sig_s {
-	drew_util_x509_sig_algo_t algo;
-	drew_util_asn1_bitstring_t value;
-} drew_util_x509_sig_t;
 
 typedef struct drew_util_x509_rdn_s {
 	drew_util_asn1_oid_t type;
@@ -45,11 +40,19 @@ typedef struct drew_util_x509_extension_s {
 	bool critical;
 } drew_util_x509_extension_t;
 
+typedef struct drew_util_x509_cert_sig_s {
+	const char *mdalgo;
+	const char *pkalgo;
+	uint8_t digest[512/8];
+	drew_util_x509_sig_algo_t algo;
+	drew_util_asn1_bitstring_t value;
+} drew_util_x509_cert_sig_t;
+
 typedef struct drew_util_x509_cert_s {
 	int version;
-	drew_util_x509_sig_t sig;
+	drew_util_x509_cert_sig_t sig;
 	drew_util_asn1_bigint_t serial_number;
-	drew_util_asn1_oid_t algo;
+	drew_util_x509_sig_algo_t algo;
 	drew_util_x509_rdn_t *issuer;
 	size_t issuer_len;
 	drew_util_x509_rdn_t *subject;
@@ -67,6 +70,7 @@ typedef struct drew_util_x509_cert_s {
 
 DREW_SYM_PUBLIC
 int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
-		const uint8_t *data, size_t len, drew_util_x509_cert_t *cert);
+		const uint8_t *data, size_t len, drew_util_x509_cert_t *cert,
+		const drew_loader_t *ldr);
 
 #endif
