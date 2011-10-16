@@ -55,6 +55,7 @@ LIBS			+= ${LDFLAGS} -lrt -ldl
 all:
 
 include lib/libdrew/Makefile
+include lib/libdrew-util/Makefile
 include $(patsubst %,impl/%/Makefile,$(CATEGORIES))
 include lib/libdrew-impl/Makefile
 include lib/libdrew-tls/Makefile
@@ -76,6 +77,7 @@ depend: $(DEPFILES)
 standard: ${DREW_SONAME} ${MD_SONAME} plugins libmd/testsuite
 standard: $(TEST_BINARIES)
 standard: $(DREW_TLS_SONAME) $(DREW_GNUTLS_SONAME)
+standard: $(DREW_UTIL_SONAME)
 standard: $(TEST_BINARIES) $(UTILITIES)
 
 ${TEST_EXE}: ${TEST_SRC} ${MD_SONAME} ${DREW_SONAME} ${DREW_IMPL_SONAME}
