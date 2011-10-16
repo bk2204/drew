@@ -128,6 +128,9 @@ int main(int argc, char **argv)
 		printf("%zu%s", cert.sig.algo.oid.values[i],
 				(i == cert.sig.algo.oid.length-1) ? "" : ".");
 	printf(" (%s).\n", get_signame(&cert.sig.algo.oid));
+	printf("Public key algorithm is %s; hash algorithm is %s.\n",
+			cert.sig.pkalgo ? cert.sig.pkalgo : "unknown",
+			cert.sig.mdalgo ? cert.sig.mdalgo : "unknown");
 	printf("Issuer is:\n");
 	for (size_t i = 0; i < cert.issuer_len; i++) {
 		printf("\t");
