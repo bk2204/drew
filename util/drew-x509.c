@@ -6,6 +6,7 @@
 
 #include <drew/drew.h>
 #include <drew/mem.h>
+#include <drew/plugin.h>
 #include <drew-util/asn1.h>
 #include <drew-util/codec.h>
 #include <drew-util/x509.h>
@@ -80,6 +81,24 @@ const char *get_attrname(const drew_util_asn1_oid_t *oid)
 	return get_oidname(attr_types, DIM(attr_types), oid);
 }
 
+int get_digest_length(const drew_util_x509_cert_t *cert)
+{
+	if (!strncmp("MD", cert->sig.mdalgo, 2))
+		return 16;
+	else if (!strcmp("SHA-1", cert->sig.mdalgo))
+		return 20;
+	else if (!strcmp("SHA-224", cert->sig.mdalgo))
+		return 28;
+	else if (!strcmp("SHA-256", cert->sig.mdalgo))
+		return 32;
+	else if (!strcmp("SHA-384", cert->sig.mdalgo))
+		return 48;
+	else if (!strcmp("SHA-512", cert->sig.mdalgo))
+		return 64;
+	else
+		return 0;
+}
+
 int main(int argc, char **argv)
 {
 	drew_util_asn1_t parser;
@@ -87,9 +106,10 @@ int main(int argc, char **argv)
 	drew_util_codec_t codec;
 	uint8_t *p, *decdata = NULL;
 	int fd;
-	int ret = 0;
+	int ret = 0, digestlen;
 	size_t len = 0;
 	struct stat st;
+	drew_loader_t *ldr;
 
 	if ((fd = open(argv[1], O_RDONLY)) < 0)
 		return 2;
@@ -98,6 +118,9 @@ int main(int argc, char **argv)
 	if ((p = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0)) ==
 			MAP_FAILED)
 		return 4;
+
+	drew_loader_new(&ldr);
+	drew_loader_load_plugin(ldr, NULL, NULL);
 
 	printf("Parsing certificate from %s.\n", argv[1]);
 	FAILCODE(5, drew_util_asn1_init(&parser));
@@ -122,7 +145,7 @@ int main(int argc, char **argv)
 		len = ret;
 	}
 	FAILCODE(8, drew_util_x509_parse_certificate(parser, decdata, len, &cert,
-				NULL));
+				ldr));
 	printf("Certificate is version %d.\nSignature OID is ", cert.version);
 	for (size_t i = 0; i < cert.sig.algo.oid.length; i++)
 		printf("%zu%s", cert.sig.algo.oid.values[i],
@@ -131,7 +154,11 @@ int main(int argc, char **argv)
 	printf("Public key algorithm is %s; hash algorithm is %s.\n",
 			cert.sig.pkalgo ? cert.sig.pkalgo : "unknown",
 			cert.sig.mdalgo ? cert.sig.mdalgo : "unknown");
-	printf("Issuer is:\n");
+	digestlen = get_digest_length(&cert);
+	printf("Digest is ");
+	for (size_t i = 0; i < digestlen; i++)
+		printf("%02x", cert.sig.digest[i]);
+	printf(".\nIssuer is:\n");
 	for (size_t i = 0; i < cert.issuer_len; i++) {
 		printf("\t");
 		for (size_t j = 0; j < cert.issuer[i].type.length; j++)
@@ -184,4 +211,5 @@ int main(int argc, char **argv)
 	printf("Bye.\n");
 	FAILCODE(9, drew_util_asn1_fini(&parser));
 	FAILCODE(9, drew_util_codec_fini(&codec));
+	drew_loader_free(&ldr);
 }
