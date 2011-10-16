@@ -6,6 +6,8 @@
 #include <time.h>
 
 #include <drew/drew.h>
+#include <drew/hash.h>
+#include <drew/plugin.h>
 #include <drew-util/drew-util.h>
 #include <drew-util/asn1.h>
 #include <drew-util/x509.h>
@@ -250,6 +252,21 @@ int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 	cert->sig.value.data = p;
 	RETFAIL(drew_util_asn1_parse_bitstring(asn, &certvals[2], p,
 				&cert->sig.value.nbits));
+
+	if (ldr && cert->sig.mdalgo) {
+		drew_hash_t hash;
+		int id, ret;
+
+		if ((id = drew_loader_lookup_by_name(ldr, cert->sig.mdalgo, 0, -1)) < 0)
+			return id;
+		if ((ret = drew_loader_get_functbl(ldr, id,
+						(const void **)&hash.functbl)) < 0)
+			return ret;
+		RETFAIL(hash.functbl->init(&hash, 0, ldr, NULL));
+		hash.functbl->update(&hash, certvals[0].data, certvals[0].length);
+		hash.functbl->final(&hash, cert->sig.digest, 0);
+		hash.functbl->fini(&hash, 0);
+	}
 
 	return res;
 }
