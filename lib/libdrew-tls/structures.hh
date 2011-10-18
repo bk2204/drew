@@ -123,6 +123,7 @@ struct Record
 		if (buf.BytesRemaining() < length)
 			return -DREW_TLS_ERR_RECORD_OVERFLOW;
 		buf.Get(data, length);
+		return 0;
 	}
 	void WriteToBuffer(SerializedBuffer &buf)
 	{
