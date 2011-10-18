@@ -8,6 +8,7 @@
 #include <drew/mac.h>
 
 #include <drew-tls/drew-tls.h>
+#include <drew-tls/priority.h>
 #include <drew-tls/session.h>
 
 typedef enum {
@@ -118,6 +119,7 @@ typedef struct {
 struct drew_tls_session_s {
 	int client; // is this the client end or the server end?
 	int enc_type;
+	drew_tls_cipher_suite_t cs;
 	const drew_loader_t *ldr;
 	drew_prng_t *prng;
 	uint8_t block_size;

@@ -507,6 +507,7 @@ static int handshake_server(drew_tls_session_t sess)
 #define CLIENT_HANDSHAKE_HELLO_REQUEST		0
 #define CLIENT_HANDSHAKE_NEED_SERVER_HELLO	1
 #define CLIENT_HANDSHAKE_NEED_SERVER_CERT	2
+#define CLIENT_HANDSHAKE_CERT_REQ_OR_DONE	3
 #define CLIENT_HANDSHAKE_FINISHED			20
 
 #define ALERT_WARNING	1
@@ -528,6 +529,19 @@ static int destroy_session(drew_tls_session_t sess)
 static int send_alert(drew_tls_session_t sess, int alert, int level)
 {
 	return -DREW_ERR_NOT_IMPL;
+}
+
+int need_server_keyex(drew_tls_priority_t prio,
+		const drew_tls_cipher_suite_t &cs)
+{
+	drew_tls_cipher_suite_info_t csi;
+
+	RETFAIL(drew_tls_priority_get_cipher_suite_info(prio, &csi, &cs));
+	/* This works well for us as long as we don't implement RSA_EXPORT or DH
+	 * certificates.  If we do decide to do that, we'll need to use different
+	 * logic.
+	 */
+	return !!strcmp(csi->keyex, csi->pkauth);
 }
 
 int client_parse_server_cert(drew_tls_session_t sess,
@@ -573,6 +587,13 @@ int client_parse_server_cert(drew_tls_session_t sess,
 
 	free(certs);
 
+	if (!res && (res = need_server_keyex(sess->prio, sess->cs))) {
+		if (res < 0)
+			return res;
+		sess->handshake_state = res ? CLIENT_HANDSHAKE_NEED_SERVER_KEYEX :
+			CLIENT_HANDSHAKE_CERT_REQ_OR_DONE;
+	}
+
 	return res;
 }
 
@@ -603,6 +624,20 @@ int client_parse_server_finished(drew_tls_session_t sess,
 int client_send_client_hello(drew_tls_session_t sess)
 {
 	return -DREW_ERR_NOT_IMPL;
+}
+
+static int validate_cipher_suite(drew_tls_priority_t prio,
+		drew_tls_cipher_suite_t &cs)
+{
+	drew_tls_cipher_suite_t buf[128];
+	size_t nsuites = DIM(buf);
+
+	drew_tls_priority_get_cipher_suites(prio, buf, &nsuites);
+	for (size_t i = 0; i < nsuites; i++)
+		if (!memcmp(buf[i].val, cs.val, sizeof(cs.val)))
+			return 0;
+
+	return -DREW_TLS_ERR_HANDSHAKE_FAILURE;
 }
 
 static int client_parse_server_hello(drew_tls_session_t sess,
@@ -645,6 +680,11 @@ static int client_parse_server_hello(drew_tls_session_t sess,
 
 	if (compress != 0)
 		return -DREW_TLS_ERR_HANDSHAKE_FAILURE;
+
+	if ((res = validate_cipher_suite(sess->prio, cs)))
+		return res;
+
+	memcpy(sess->cs, cs, sizeof(cs));
 
 	sess->handshake_state = CLIENT_HANDSHAKE_NEED_SERVER_CERT;
 
