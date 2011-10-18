@@ -11,15 +11,19 @@
 #define M_NONE	0
 #define M_HMAC	1
 #define M_GOST	2
+#define M_MAX	M_GOST
 
 #define K_NONE	0
 #define K_RSA	1
 #define K_EDH	2
+#define K_ECEDH	3
+#define K_MAX	K_ECEDH
 
 #define P_NONE		0
 #define P_RSA		1
 #define P_DSA		2
 #define P_ECDSA		3
+#define P_MAX		P_ECDSA
 
 #define C_NONE			0
 #define C_AES128		1
@@ -34,6 +38,7 @@
 #define C_SEED			10
 #define C_ARIA128		11
 #define C_ARIA256		12
+#define C_MAX			C_ARIA256
 
 #define H_NONE		0
 #define H_MD5		1
@@ -42,6 +47,7 @@
 #define H_SHA256	4
 #define H_SHA384	5
 #define H_SHA512	6
+#define H_MAX		H_SHA512
 
 #define F_FORBIDDEN			(1 << 0)
 #define F_EXPORT			(1 << 1)
@@ -54,6 +60,68 @@ struct item {
 	int pkauth;
 	int cipher;
 	int hash;
+};
+
+static const char *macnames[M_MAX+1] = {
+	[M_NONE] = NULL,
+	[M_HMAC] = "HMAC",
+	[M_GOST] = "GOST"
+};
+
+static const char *keyexnames[K_MAX+1] = {
+	[K_NONE] = NULL,
+	[K_RSA] = "RSA",
+	[K_EDH] = "Diffie-Hellman",
+	[K_ECEDH] = "Elliptic Curve Diffie-Hellman"
+};
+
+static const char *pubkeynames[P_MAX+1] = {
+	[P_NONE] = NULL,
+	[P_RSA] = "RSA",
+	[P_DSA] = "DSA",
+	[P_ECDSA] = "Elliptic Curve DSA"
+};
+
+static const char *ciphernames[C_MAX+1] = {
+	[C_NONE] = NULL,
+	[C_AES128] = "AES128",
+	[C_AES256] = "AES256",
+	[C_CAMELLIA128] = "Camellia",
+	[C_CAMELLIA256] = "Camellia",
+	[C_3DES] = "DESede",
+	[C_DES] = "DES",
+	[C_RC4] = "RC4",
+	[C_RC2] = "RC2",
+	[C_IDEA] = "IDEA",
+	[C_SEED] = "SEED",
+	[C_ARIA128] = "ARIA",
+	[C_ARIA256] = "ARIA"
+};
+
+static const size_t ciphersizes[C_MAX+1] = {
+	[C_NONE] = 0,
+	[C_AES128] = 16,
+	[C_AES256] = 32,
+	[C_CAMELLIA128] = 16,
+	[C_CAMELLIA256] = 32,
+	[C_3DES] = 24,
+	[C_DES] = 8,
+	[C_RC4] = 16,
+	[C_RC2] = 16,
+	[C_IDEA] = 16,
+	[C_SEED] = 16,
+	[C_ARIA128] = 16,
+	[C_ARIA256] = 32
+};
+
+static const char *hashnames[H_MAX+1] = {
+	[H_NONE] = NULL,
+	[H_MD5] = "MD5",
+	[H_SHA1] = "SHA-1",
+	[H_SHA224] = "SHA-224",
+	[H_SHA256] = "SHA-256",
+	[H_SHA384] = "SHA-384",
+	[H_SHA512] = "SHA-512"
 };
 
 static const struct item implemented[] = {
@@ -198,6 +266,25 @@ int drew_tls_priority_fini(drew_tls_priority_t *prio)
 int drew_tls_priority_set_string(drew_tls_priority_t prio, const char *s)
 {
 	return -DREW_ERR_NOT_IMPL;
+}
+
+int drew_tls_priority_get_cipher_suite_info(drew_tls_priority_t prio,
+		drew_tls_cipher_suite_info_t *info, const drew_tls_cipher_suite_t *cs)
+{
+	// This does not need a lock since it does not use prio.
+	for (size_t i = 0; i < DIM(implemented); i++) {
+		if (!memcmp(cs->val, implemented[i].val, sizeof(cs->val))) {
+			info->flags = implemented[i].flags;
+			info->mac = macnames[implemented[i].mac];
+			info->keyex = keyexnames[implemented[i].keyex];
+			info->pkauth = pubkeynames[implemented[i].pkauth];
+			info->hash = hashnames[implemented[i].hash];
+			info->cipher = ciphernames[implemented[i].cipher];
+			info->cipher_key_len = ciphersizes[implemented[i].cipher];
+			return 0;
+		}
+	}
+	return -DREW_ERR_INVALID;
 }
 
 int drew_tls_priority_get_cipher_suites(drew_tls_priority_t prio,

@@ -17,6 +17,16 @@ typedef struct {
 	uint8_t val[2];
 } drew_tls_cipher_suite_t;
 
+typedef struct {
+	const char *mac;
+	const char *keyex;
+	const char *pkauth;
+	const char *hash;
+	const char *cipher;
+	size_t cipher_key_len;
+	int flags;
+} drew_tls_cipher_suite_info_t;
+
 int drew_tls_priority_init(drew_tls_priority_t *prio);
 int drew_tls_priority_get_cipher_suites(drew_tls_priority_t prio,
 		drew_tls_cipher_suite_t **suites, size_t *nsuites);
