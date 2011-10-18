@@ -504,11 +504,21 @@ static int handshake_server(drew_tls_session_t sess)
 	return -DREW_ERR_NOT_IMPL;
 }
 
-#define CLIENT_HANDSHAKE_HELLO_REQUEST		0
-#define CLIENT_HANDSHAKE_NEED_SERVER_HELLO	1
-#define CLIENT_HANDSHAKE_NEED_SERVER_CERT	2
-#define CLIENT_HANDSHAKE_CERT_REQ_OR_DONE	3
-#define CLIENT_HANDSHAKE_FINISHED			20
+#define CLIENT_HANDSHAKE_HELLO_REQUEST				0
+#define CLIENT_HANDSHAKE_NEED_SERVER_HELLO			1
+#define CLIENT_HANDSHAKE_NEED_SERVER_CERT			2
+#define CLIENT_HANDSHAKE_CERT_REQ_OR_DONE			3
+#define CLIENT_HANDSHAKE_SERVER_DONE				4
+#define CLIENT_HANDSHAKE_DONE_NEED_CERT				5
+#define CLIENT_HANDSHAKE_NEED_CLIENT_CERT			6
+#define CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX			7
+#define CLIENT_HANDSHAKE_NEED_SERVER_KEYEX			8
+#define CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX_CERT		9
+#define CLIENT_HANDSHAKE_NEED_CLIENT_VERIFY			10
+#define CLIENT_HANDSHAKE_NEED_CLIENT_CIPHER_SPEC	11
+#define CLIENT_HANDSHAKE_NEED_CLIENT_FINISHED		12
+#define CLIENT_HANDSHAKE_CLIENT_FINISHED			13
+#define CLIENT_HANDSHAKE_FINISHED					20
 
 #define ALERT_WARNING	1
 #define ALERT_FATAL		2
@@ -541,7 +551,7 @@ int need_server_keyex(drew_tls_priority_t prio,
 	 * certificates.  If we do decide to do that, we'll need to use different
 	 * logic.
 	 */
-	return !!strcmp(csi->keyex, csi->pkauth);
+	return !!strcmp(csi.keyex, csi.pkauth);
 }
 
 int client_parse_server_cert(drew_tls_session_t sess,
@@ -600,18 +610,37 @@ int client_parse_server_cert(drew_tls_session_t sess,
 int client_parse_server_keyex(drew_tls_session_t sess,
 	const HandshakeMessage &msg)
 {
+	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_SERVER_KEYEX)
+		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+
+	sess->handshake_state = CLIENT_HANDSHAKE_CERT_REQ_OR_DONE;
+
 	return -DREW_ERR_NOT_IMPL;
 }
 
 int client_parse_server_certreq(drew_tls_session_t sess,
 	const HandshakeMessage &msg)
 {
+	if (sess->handshake_state != CLIENT_HANDSHAKE_CERT_REQ_OR_DONE)
+		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+
+	sess->handshake_state = CLIENT_HANDSHAKE_DONE_NEED_CERT;
+
 	return -DREW_ERR_NOT_IMPL;
 }
 
 int client_parse_server_hello_done(drew_tls_session_t sess,
 	const HandshakeMessage &msg)
 {
+	if (sess->handshake_state != CLIENT_HANDSHAKE_CERT_REQ_OR_DONE &&
+			sess->handshake_state != CLIENT_HANDSHAKE_DONE_NEED_CERT)
+		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+
+	if (sess->handshake_state == CLIENT_HANDSHAKE_DONE_NEED_CERT)
+		sess->handshake_state = CLIENT_HANDSHAKE_NEED_CLIENT_CERT;
+	else
+		sess->handshake_state = CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX;
+
 	return -DREW_ERR_NOT_IMPL;
 }
 
@@ -626,17 +655,101 @@ int client_send_client_hello(drew_tls_session_t sess)
 	return -DREW_ERR_NOT_IMPL;
 }
 
+int client_send_client_cert(drew_tls_session_t sess)
+{
+	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_CERT)
+		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+
+	sess->handshake_state = CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX_CERT;
+
+	return -DREW_ERR_NOT_IMPL;
+}
+
+int client_send_client_keyex(drew_tls_session_t sess)
+{
+	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX &&
+			sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX_CERT)
+		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+
+	if (sess->handshake_state == CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX_CERT)
+		sess->handshake_state = CLIENT_HANDSHAKE_NEED_CLIENT_VERIFY;
+	else
+		sess->handshake_state = CLIENT_HANDSHAKE_NEED_CLIENT_CIPHER_SPEC;
+
+	return -DREW_ERR_NOT_IMPL;
+}
+
+int client_send_client_verify(drew_tls_session_t sess)
+{
+	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_VERIFY)
+		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+
+	sess->handshake_state = CLIENT_HANDSHAKE_NEED_CLIENT_CIPHER_SPEC;
+
+	return -DREW_ERR_NOT_IMPL;
+}
+
+int client_send_client_cipher_spec(drew_tls_session_t sess)
+{
+	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_CIPHER_SPEC)
+		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+
+	sess->handshake_state = CLIENT_HANDSHAKE_NEED_CLIENT_FINISHED;
+
+	return -DREW_ERR_NOT_IMPL;
+}
+
+int client_send_client_finished(drew_tls_session_t sess)
+{
+	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_FINISHED)
+		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+
+	sess->handshake_state = CLIENT_HANDSHAKE_CLIENT_FINISHED;
+
+	return -DREW_ERR_NOT_IMPL;
+}
+
+int client_send_client_data(drew_tls_session_t sess)
+{
+	int res = 0;
+
+	while (sess->handshake_state != CLIENT_HANDSHAKE_CLIENT_FINISHED) {
+		switch (sess->handshake_state) {
+			case CLIENT_HANDSHAKE_NEED_CLIENT_CERT:
+				RETFAIL(client_send_client_cert(sess));
+				break;
+			case CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX:
+				RETFAIL(client_send_client_keyex(sess));
+				break;
+			case CLIENT_HANDSHAKE_NEED_CLIENT_VERIFY:
+				RETFAIL(client_send_client_verify(sess));
+				break;
+			case CLIENT_HANDSHAKE_NEED_CLIENT_CIPHER_SPEC:
+				RETFAIL(client_send_client_cipher_spec(sess));
+				break;
+			case CLIENT_HANDSHAKE_NEED_CLIENT_FINISHED:
+				RETFAIL(client_send_client_finished(sess));
+				break;
+		}
+	}
+
+	return 0;
+}
+
 static int validate_cipher_suite(drew_tls_priority_t prio,
 		drew_tls_cipher_suite_t &cs)
 {
-	drew_tls_cipher_suite_t buf[128];
-	size_t nsuites = DIM(buf);
+	drew_tls_cipher_suite_t *buf;
+	size_t nsuites = 0;
 
-	drew_tls_priority_get_cipher_suites(prio, buf, &nsuites);
+	drew_tls_priority_get_cipher_suites(prio, &buf, &nsuites);
 	for (size_t i = 0; i < nsuites; i++)
-		if (!memcmp(buf[i].val, cs.val, sizeof(cs.val)))
+		if (!memcmp(buf[i].val, cs.val, sizeof(cs.val))) {
+			free(buf);
 			return 0;
+		}
 
+	free(buf);
 	return -DREW_TLS_ERR_HANDSHAKE_FAILURE;
 }
 
@@ -684,7 +797,7 @@ static int client_parse_server_hello(drew_tls_session_t sess,
 	if ((res = validate_cipher_suite(sess->prio, cs)))
 		return res;
 
-	memcpy(sess->cs, cs, sizeof(cs));
+	memcpy(&sess->cs, &cs, sizeof(cs));
 
 	sess->handshake_state = CLIENT_HANDSHAKE_NEED_SERVER_CERT;
 
@@ -710,7 +823,10 @@ static int client_handle_handshake(drew_tls_session_t sess, const Record &rec)
 		case 13:
 			return client_parse_server_certreq(sess, hm);
 		case 14:
-			return client_parse_server_hello_done(sess, hm);
+			res = client_parse_server_hello_done(sess, hm);
+			if (res < 0)
+				return res;
+			return client_send_client_data(sess);
 		case 20:
 			return client_parse_server_finished(sess, hm);
 		case 15:
