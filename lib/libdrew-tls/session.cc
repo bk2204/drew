@@ -9,6 +9,8 @@
 #include <sys/socket.h>
 #include <time.h>
 
+#include <drew/drew.h>
+#include <drew/mem.h>
 #include <drew/plugin.h>
 
 #include <drew-tls/drew-tls.h>
@@ -504,6 +506,7 @@ static int handshake_server(drew_tls_session_t sess)
 
 #define CLIENT_HANDSHAKE_HELLO_REQUEST		0
 #define CLIENT_HANDSHAKE_NEED_SERVER_HELLO	1
+#define CLIENT_HANDSHAKE_NEED_SERVER_CERT	2
 #define CLIENT_HANDSHAKE_FINISHED			20
 
 #define ALERT_WARNING	1
@@ -530,7 +533,47 @@ static int send_alert(drew_tls_session_t sess, int alert, int level)
 int client_parse_server_cert(drew_tls_session_t sess,
 	const HandshakeMessage &msg)
 {
-	return -DREW_ERR_NOT_IMPL;
+	int res = 0;
+	uint8_t dummy;
+	uint32_t certlen = 0, certoff = 3;
+	size_t ncerts = 0;
+	drew_tls_encoded_cert_t *certs = NULL;
+	SerializedBuffer buf(msg.data);
+
+	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_SERVER_CERT)
+		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+
+	for (size_t i = 0; i < 3; i++) {
+		certlen <<= 8;
+		buf.Get(dummy);
+		certlen |= dummy;
+	}
+
+	if (msg.length != certlen + 3)
+		return -DREW_TLS_ERR_ILLEGAL_PARAMETER;
+
+	for (ncerts = 0; certoff < certlen; ncerts++) {
+		uint32_t thiscertlen = 0;
+		for (size_t i = 0; i < 3; i++) {
+			thiscertlen <<= 8;
+			buf.Get(dummy);
+			thiscertlen |= dummy;
+		}
+		if (thiscertlen + certoff > msg.length)
+			return -DREW_TLS_ERR_ILLEGAL_PARAMETER;
+		certs = (drew_tls_encoded_cert_t *)realloc(certs,
+				(ncerts+1)*sizeof(*certs));
+		if (!certs)
+			return -DREW_TLS_ERR_INTERNAL_ERROR;
+		certs[ncerts].len = thiscertlen;
+		certs[ncerts].data = buf.GetPointer(certoff + thiscertlen);
+	}
+
+	res = sess->cert_callback(sess->cert_ctxt, sess, certs, ncerts);
+
+	free(certs);
+
+	return res;
 }
 
 int client_parse_server_keyex(drew_tls_session_t sess,
@@ -602,6 +645,8 @@ static int client_parse_server_hello(drew_tls_session_t sess,
 
 	if (compress != 0)
 		return -DREW_TLS_ERR_HANDSHAKE_FAILURE;
+
+	sess->handshake_state = CLIENT_HANDSHAKE_NEED_SERVER_CERT;
 
 	return 0;
 }

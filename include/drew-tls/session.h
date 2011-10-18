@@ -20,9 +20,19 @@ typedef struct {
 	uint8_t sessionid[32];
 } drew_tls_session_id_t;
 
+typedef struct {
+	size_t len;
+	uint8_t *data;
+} drew_tls_encoded_cert_t;
+
 struct drew_tls_session_s;
 
 typedef struct drew_tls_session_s *drew_tls_session_t;
+
+typedef void *drew_tls_cert_ctxt_t;
+typedef int (*drew_tls_cert_callback_t)(drew_tls_cert_ctxt_t,
+		drew_tls_session_t, const drew_tls_encoded_cert_t *certs,
+		size_t ncerts);
 
 #ifdef __cplusplus
 }

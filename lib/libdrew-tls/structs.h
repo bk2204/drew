@@ -137,6 +137,8 @@ struct drew_tls_session_s {
 	drew_tls_data_ctxt_t data_outp;
 	drew_tls_data_in_func_t data_infunc;
 	drew_tls_data_out_func_t data_outfunc;
+	drew_tls_cert_ctxt_t cert_ctxt;
+	drew_tls_cert_callback_t cert_callback;
 	DREW_TLS_MUTEX_DECL()
 };
 
