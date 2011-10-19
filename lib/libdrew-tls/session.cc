@@ -541,17 +541,29 @@ static int send_alert(drew_tls_session_t sess, int alert, int level)
 	return -DREW_ERR_NOT_IMPL;
 }
 
-int need_server_keyex(drew_tls_priority_t prio,
-		const drew_tls_cipher_suite_t &cs)
+static int get_pkalgos(drew_tls_priority_t prio,
+		const drew_tls_cipher_suite_t &cs, const char **pkalgo,
+		const char **keyexalgo)
 {
 	drew_tls_cipher_suite_info_t csi;
 
 	RETFAIL(drew_tls_priority_get_cipher_suite_info(prio, &csi, &cs));
+	*pkalgo = csi.pkauth;
+	*keyexalgo = csi.keyex;
+	return 0;
+}
+
+int need_server_keyex(drew_tls_priority_t prio,
+		const drew_tls_cipher_suite_t &cs)
+{
+	const char *keyex, *pkauth;
+
+	RETFAIL(get_pkalgos(prio, cs, &pkauth, &keyex));
 	/* This works well for us as long as we don't implement RSA_EXPORT or DH
 	 * certificates.  If we do decide to do that, we'll need to use different
 	 * logic.
 	 */
-	return !!strcmp(csi.keyex, csi.pkauth);
+	return !!strcmp(keyex, pkauth);
 }
 
 int client_parse_server_cert(drew_tls_session_t sess,
@@ -607,15 +619,49 @@ int client_parse_server_cert(drew_tls_session_t sess,
 	return res;
 }
 
-int client_parse_server_keyex(drew_tls_session_t sess,
+static int client_parse_dh_params(drew_tls_session_t sess,
+		const HandshakeMessage &msg, size_t &off)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+static int client_verify_dsa_sig(drew_tls_session_t sess,
+		const HandshakeMessage &msg, size_t &off)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+static int client_verify_rsa_sig(drew_tls_session_t sess,
+		const HandshakeMessage &msg, size_t &off)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+static int client_parse_server_keyex(drew_tls_session_t sess,
 	const HandshakeMessage &msg)
 {
+	int res = 0;
+	size_t off = 0;
+	const char *pkauth, *keyex;
+
 	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_SERVER_KEYEX)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
 
+	RETFAIL(get_pkalgos(sess->prio, sess->cs, &pkauth, &keyex));
+
+	if (!strcmp("Diffie-Hellman", keyex))
+		RETFAIL(client_parse_dh_params(sess, msg, off));
+	else
+		return -DREW_ERR_NOT_IMPL;
+
+	if (!strcmp("DSA", pkauth))
+		RETFAIL(client_verify_dsa_sig(sess, msg, off));
+	else if (!strcmp("RSA", pkauth))
+		RETFAIL(client_verify_rsa_sig(sess, msg, off));
+
 	sess->handshake_state = CLIENT_HANDSHAKE_CERT_REQ_OR_DONE;
 
-	return -DREW_ERR_NOT_IMPL;
+	return res;
 }
 
 int client_parse_server_certreq(drew_tls_session_t sess,
