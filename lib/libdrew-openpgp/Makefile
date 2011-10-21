@@ -10,6 +10,7 @@ DREW_OPGP_OBJS-y						+= keystore.o
 DREW_OPGP_OBJS-y						+= encrypt.o
 DREW_OPGP_OBJS-$(CFG_OPGPBK_BDB)		+= keystore-bdb.o
 DREW_OPGP_DIR_OBJS	+= $(patsubst %,$(DREW_OPGP_DIR)/%,$(DREW_OPGP_OBJS-y))
+OBJECTS				+= $(DREW_OPGP_DIR_OBJS)
 
 ifeq ($(CFG_OPGPBK_BDB),y)
 $(DREW_OPGP_DIR_OBJS): CPPFLAGS += -DDREW_OPGP_BACKEND_BDB
