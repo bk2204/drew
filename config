@@ -13,6 +13,9 @@ CFG_SHA256		= y
 CFG_SHA512		= y
 CFG_TIGER		= y
 CFG_WHIRLPOOL	= y
+CFG_KECCAK		= y
+CFG_GRØSTL		= y
+CFG_BLAKE		= y
 
 ## Block ciphers.
 # Note that the aes plugin implements Rijndael (the AES algorithm) with key
@@ -26,6 +29,7 @@ CFG_WHIRLPOOL	= y
 CFG_CAST5		= y
 CFG_CAST6		= y
 CFG_BLOWFISH	= y
+CFG_AESNI		= y
 CFG_AES			= y
 CFG_RIJNDAEL	= y
 CFG_TWOFISH		= y
@@ -39,6 +43,7 @@ CFG_SEED		= y
 CFG_IDEA		= No, thanks.  I'm patented.
 CFG_ARIABYTE	= y
 CFG_ARIA128		= y
+CFG_SOSEMANUK	= y
 
 # Modes.
 CFG_CFB			= y
@@ -61,6 +66,7 @@ CFG_RABBIT		= y
 CFG_ARC4STIR	= y
 CFG_ARC4IL		= y
 CFG_SP80090		= y
+CFG_SYSPRNG		= y
 
 ## Bignum implementations.
 CFG_TOMMATH		= y

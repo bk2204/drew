@@ -1,9 +1,29 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include <utility>
 
 #include <stdio.h>
 #include <string.h>
 
 #include <internal.h>
+#include <drew/drew.h>
 #include <drew/plugin.h>
 #include <drew/stream.h>
 #include "salsa20.hh"
@@ -86,13 +106,22 @@ static int salsa20_info(int op, void *p)
 }
 
 static int salsa20_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
-		const drew_param_t *)
+		const drew_param_t *param)
 {
 	drew::Salsa20 *p;
+	size_t rounds = 20;
+
+	for (const drew_param_t *pp = param; pp; pp = pp->next) {
+		if (!strcmp(pp->name, "rounds"))
+			rounds = pp->param.number;
+	}
+
+	rounds /= 2;
+
 	if (flags & DREW_STREAM_FIXED)
-		p = new (ctx->ctx) drew::Salsa20;
+		p = new (ctx->ctx) drew::Salsa20(rounds);
 	else
-		p = new drew::Salsa20;
+		p = new drew::Salsa20(rounds);
 	ctx->ctx = p;
 	ctx->functbl = &salsa20functbl;
 	return 0;
@@ -169,6 +198,12 @@ PLUGIN_INTERFACE(salsa20)
 
 drew::Salsa20::Salsa20()
 {
+	m_ks.SetRounds(10);
+}
+
+drew::Salsa20::Salsa20(size_t nrounds)
+{
+	m_ks.SetRounds(nrounds);
 }
 
 void drew::Salsa20::Reset()
@@ -212,6 +247,11 @@ drew::Salsa20Keystream::Salsa20Keystream()
 	ctr = 0;
 }
 
+void drew::Salsa20Keystream::SetRounds(size_t rounds)
+{
+	nrounds = rounds;
+}
+
 void drew::Salsa20Keystream::SetKey(const uint8_t *key, size_t sz)
 {
 	keysz = sz;
@@ -242,7 +282,7 @@ inline void drew::Salsa20Keystream::DoHash(AlignedData &cur)
 	const AlignedData &st = state;
 	memcpy(cur.buf, st.buf, 16 * sizeof(uint32_t));
 
-	for (size_t i = 0; i < 10; i++) {
+	for (size_t i = 0; i < nrounds; i++) {
 		cur.buf[ 4] ^= RotateLeft(cur.buf[ 0] + cur.buf[12],  7);
 		cur.buf[ 8] ^= RotateLeft(cur.buf[ 4] + cur.buf[ 0],  9);
 		cur.buf[12] ^= RotateLeft(cur.buf[ 8] + cur.buf[ 4], 13);

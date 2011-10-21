@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #ifndef SP800_90_HH
 #define SP800_90_HH
 
@@ -45,9 +64,9 @@ class DRBG : public SeededPRNG, public BlockPRNG
 			struct timespec rt, mt, pt, tt;
 		};
 		static const size_t reseed_interval = 1024;
-		virtual void Initialize();
-		virtual void Initialize(const uint8_t *, size_t) = 0;
-		virtual void Reseed(const uint8_t *, size_t) = 0;
+		virtual int Initialize();
+		virtual int Initialize(const uint8_t *, size_t) = 0;
+		virtual int Reseed(const uint8_t *, size_t) = 0;
 		virtual void Stir();
 		void GeneratePersonalizationString(uint8_t *buf, size_t *len);
 		bool inited;
@@ -60,10 +79,10 @@ class HashDRBG : public DRBG
 	public:
 		HashDRBG(const drew_hash_t &);
 		virtual ~HashDRBG();
-		void GetBytes(uint8_t *, size_t);
+		int GetBytes(uint8_t *, size_t);
 	protected:
-		void Initialize(const uint8_t *, size_t);
-		void Reseed(const uint8_t *, size_t);
+		int Initialize(const uint8_t *, size_t);
+		int Reseed(const uint8_t *, size_t);
 		void HashDF(const drew_hash_t *, const uint8_t *, size_t,
 				uint8_t *, size_t);
 		void HashGen(uint8_t *, size_t);
@@ -82,11 +101,11 @@ class CounterDRBG : public DRBG
 		CounterDRBG(const drew_mode_t &c, const drew_block_t &b, size_t outl,
 				size_t keyl);
 		virtual ~CounterDRBG();
-		void GetBytes(uint8_t *, size_t);
+		int GetBytes(uint8_t *, size_t);
 	protected:
 		void Update(const uint8_t *);
-		void Initialize(const uint8_t *, size_t);
-		void Reseed(const uint8_t *, size_t);
+		int Initialize(const uint8_t *, size_t);
+		int Reseed(const uint8_t *, size_t);
 		void BlockCipherDF(const drew_block_t *, const uint8_t *, uint32_t,
 				uint8_t *, uint32_t);
 		void BCC(const drew_block_t *, const uint8_t *, size_t, uint8_t *);
@@ -100,15 +119,15 @@ class HMACDRBG : public DRBG
 	public:
 		HMACDRBG(drew_mac_t *m, size_t outl);
 		virtual ~HMACDRBG();
-		void GetBytes(uint8_t *, size_t);
+		int GetBytes(uint8_t *, size_t);
 	protected:
 		struct Buffer {
 			const uint8_t *data;
 			size_t len;
 		};
 		void Update(const Buffer *b, size_t nbufs);
-		void Initialize(const uint8_t *, size_t);
-		void Reseed(const uint8_t *, size_t);
+		int Initialize(const uint8_t *, size_t);
+		int Reseed(const uint8_t *, size_t);
 		drew_mac_t *hmac;
 		size_t outlen;
 		uint8_t *V;

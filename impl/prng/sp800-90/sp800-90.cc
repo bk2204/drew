@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include "sp800-90.hh"
 
 #include <fcntl.h>
@@ -91,8 +110,7 @@ template<class T>
 static int sp_algo_bytes(drew_prng_t *ctx, uint8_t *out, size_t len)
 {
 	T *p = reinterpret_cast<T *>(ctx->ctx);
-	p->GetBytes(out, len);
-	return 0;
+	return p->GetBytes(out, len);
 }
 
 template<class T>
@@ -447,9 +465,9 @@ void drew::DRBG::Stir()
 	this->Reseed(NULL, 0);
 }
 
-void drew::DRBG::Initialize()
+int drew::DRBG::Initialize()
 {
-	AddRandomData(NULL, 0, 0);
+	return AddRandomData(NULL, 0, 0);
 }
 
 int drew::DRBG::AddRandomData(const uint8_t *buf, size_t len, size_t entropy)
@@ -527,13 +545,16 @@ void drew::HashDRBG::HashDF(const drew_hash_t *h, const uint8_t *in,
 }
 
 // This data passed to this function is treated as a nonce.
-void drew::HashDRBG::Initialize(const uint8_t *data, size_t len)
+int drew::HashDRBG::Initialize(const uint8_t *data, size_t len)
 {
 	// Arbitrary constants.
 	const size_t buflen = std::max(len + 128, (size_t)1024) + 1;
 	uint8_t *buf = new uint8_t[buflen];
+	int res = 0;
 	DevURandom du;
-	du.GetBytes(buf, seedlen);
+	res = du.GetBytes(buf, seedlen);
+	if (res < 0)
+		return res;
 	size_t off = seedlen;
 	memcpy(buf+off, data, len);
 	off += len;
@@ -548,19 +569,23 @@ void drew::HashDRBG::Initialize(const uint8_t *data, size_t len)
 	rc = 1;
 	memset(buf, 0, buflen);
 	delete[] buf;
+	return 0;
 }
 
-void drew::HashDRBG::Reseed(const uint8_t *data, size_t len)
+int drew::HashDRBG::Reseed(const uint8_t *data, size_t len)
 {
 	const size_t buflen = 1 + sizeof(V) + seedlen + len;
 	uint8_t *buf = new uint8_t[buflen];
 	DevURandom du;
+	int res = 0;
 	buf[0] = 0x01;
 	size_t off = 1;
 	memcpy(buf+off, V, seedlen);
 	off += seedlen;
-	du.GetBytes(buf+off, seedlen);
-	off += seedlen;
+	res = du.GetBytes(buf+off, seedlen);
+	if (res < 0)
+		return res;
+	off += res;
 	memcpy(buf+off, data, len);
 	off += len;
 	HashDF(hash, buf, off, V, seedlen);
@@ -570,6 +595,7 @@ void drew::HashDRBG::Reseed(const uint8_t *data, size_t len)
 	rc = 1;
 	memset(buf, 0, buflen);
 	delete[] buf;
+	return 0;
 }
 
 // This is horribly inefficient.
@@ -584,15 +610,19 @@ inline static void AddArrays(uint8_t *buf, size_t len, const uint8_t *input)
 	}
 }
 
-void drew::HashDRBG::GetBytes(uint8_t *data, size_t len)
+int drew::HashDRBG::GetBytes(uint8_t *data, size_t len)
 {
 	HashHelper hh(hash);
 	uint8_t b = 0x03;
+	int res = 0;
 
 	if (!inited)
-		this->DRBG::Initialize();
+		res = this->DRBG::Initialize();
 	else if (rc >= reseed_interval)
 		this->Stir();
+
+	if (res < 0)
+		return res;
 
 	HashGen(data, len);
 
@@ -609,7 +639,7 @@ void drew::HashDRBG::GetBytes(uint8_t *data, size_t len)
 	rc++;
 	memset(buf, 0, seedlen);
 	delete[] buf;
-
+	return len;
 }
 
 void drew::HashDRBG::HashGen(uint8_t *buf, size_t len)
@@ -668,7 +698,7 @@ void drew::CounterDRBG::Update(const uint8_t *provided)
 }
 
 // This data passed to this function is treated as a nonce.
-void drew::CounterDRBG::Initialize(const uint8_t *data, size_t len)
+int drew::CounterDRBG::Initialize(const uint8_t *data, size_t len)
 {
 	// We choose to deviate from the specification here and allow the seed
 	// material to exceed seedlen bytes.  At least seedlen/2 bytes must be from
@@ -680,11 +710,16 @@ void drew::CounterDRBG::Initialize(const uint8_t *data, size_t len)
 	const size_t half = seedlen / 2;
 	const size_t noncelen = std::min(len, sizeof(buf) - 
 			(half + sizeof(Personalization)));
-	const size_t dulen = sizeof(buf) - noncelen - sizeof(Personalization);
+	size_t dulen = sizeof(buf) - noncelen - sizeof(Personalization);
 	size_t nbytes = sizeof(Personalization);
+	int res = 0;
 	DevURandom du;
 
-	du.GetBytes(buf, dulen);
+	res = du.GetBytes(buf, dulen);
+	if (res < 0)
+		return res;
+	else if (res)
+		dulen = res;
 	memcpy(buf+dulen, data, noncelen);
 	GeneratePersonalizationString(buf+dulen+noncelen, &nbytes);
 
@@ -697,6 +732,7 @@ void drew::CounterDRBG::Initialize(const uint8_t *data, size_t len)
 	rc = 1;
 	memset(buf, 0, sizeof(buf));
 	// No need to set zero to 0, because it's, uh, already zero.
+	return 0;
 }
 
 void drew::CounterDRBG::BlockCipherDF(const drew_block_t *bt, const uint8_t *in,
@@ -762,13 +798,18 @@ void drew::CounterDRBG::BCC(const drew_block_t *b, const uint8_t *data,
 	}
 }
 
-void drew::CounterDRBG::Reseed(const uint8_t *data, size_t len)
+int drew::CounterDRBG::Reseed(const uint8_t *data, size_t len)
 {
+	int res = 0;
 	uint8_t buf[CTR_BUFFER_SIZE];
 	DevURandom du;
 	size_t dubytes = sizeof(buf) - std::min(len, sizeof(buf) / 2);
 
-	du.GetBytes(buf, dubytes);
+	res = du.GetBytes(buf, dubytes);
+	if (res < 0)
+		return res;
+	else if (res)
+		dubytes = res;
 	memcpy(buf+dubytes, data, sizeof(buf) - dubytes);
 
 	BlockCipherDF(block, buf, sizeof(buf), buf, seedlen);
@@ -776,15 +817,20 @@ void drew::CounterDRBG::Reseed(const uint8_t *data, size_t len)
 	rc = 1;
 
 	memset(buf, 0, sizeof(buf));
+	return 0;
 }
 
-void drew::CounterDRBG::GetBytes(uint8_t *data, size_t len)
+int drew::CounterDRBG::GetBytes(uint8_t *data, size_t len)
 {
+	int res = 0;
 	uint8_t buf[CTR_BUFFER_SIZE];
 	if (!inited)
-		this->DRBG::Initialize();
+		res = this->DRBG::Initialize();
 	else if (rc >= reseed_interval)
 		this->Stir();
+
+	if (res < 0)
+		return res;
 
 	memset(buf, 0, sizeof(buf));
 	memcpy(buf, data, std::min(sizeof(buf), len));
@@ -794,6 +840,7 @@ void drew::CounterDRBG::GetBytes(uint8_t *data, size_t len)
 	ctr->functbl->encrypt(ctr, data, data, len);
 	Update(buf);
 	rc++;
+	return len;
 }
 
 drew::HMACDRBG::HMACDRBG(drew_mac_t *m, size_t outl)
@@ -848,18 +895,21 @@ void drew::HMACDRBG::Update(const Buffer *b, size_t nbufs)
 }
 
 // This data passed to this function is treated as a nonce.
-void drew::HMACDRBG::Initialize(const uint8_t *data, size_t len)
+int drew::HMACDRBG::Initialize(const uint8_t *data, size_t len)
 {
 	uint8_t buf[HMAC_BUFFER_SIZE], ps[sizeof(Personalization)];
 	uint8_t zero[HMAC_BUFFER_SIZE];
 	size_t nbytes = sizeof(Personalization);
+	int res = 0;
 	DevURandom du;
 	Buffer b[3];
 
-	du.GetBytes(buf, outlen);
+	res = du.GetBytes(buf, outlen);
+	if (res < 0)
+		return res;
 	GeneratePersonalizationString(ps, &nbytes);
 	b[0].data = buf;
-	b[0].len = outlen;
+	b[0].len = res;
 	b[1].data = data;
 	b[1].len = len;
 	b[2].data = ps;
@@ -874,17 +924,21 @@ void drew::HMACDRBG::Initialize(const uint8_t *data, size_t len)
 
 	rc = 1;
 	memset(buf, 0, sizeof(buf));
+	return 0;
 }
 
-void drew::HMACDRBG::Reseed(const uint8_t *data, size_t len)
+int drew::HMACDRBG::Reseed(const uint8_t *data, size_t len)
 {
 	uint8_t buf[HMAC_BUFFER_SIZE];
 	DevURandom du;
+	int res = 0;
 	Buffer b[2];
 
-	du.GetBytes(buf, outlen);
+	res = du.GetBytes(buf, outlen);
+	if (res < 0)
+		return res;
 	b[0].data = buf;
-	b[0].len = outlen;
+	b[0].len = res;
 	b[1].data = data;
 	b[1].len = len;
 
@@ -892,15 +946,20 @@ void drew::HMACDRBG::Reseed(const uint8_t *data, size_t len)
 	rc = 1;
 
 	memset(buf, 0, sizeof(buf));
+	return 0;
 }
 
-void drew::HMACDRBG::GetBytes(uint8_t *data, size_t len)
+int drew::HMACDRBG::GetBytes(uint8_t *data, size_t len)
 {
 	Buffer b;
+	int res = 0;
 	if (!inited)
-		this->DRBG::Initialize();
+		res = this->DRBG::Initialize();
 	else if (rc >= reseed_interval)
 		this->Stir();
+
+	if (res < 0)
+		return res;
 
 	b.data = data;
 	b.len = len;
@@ -918,5 +977,6 @@ void drew::HMACDRBG::GetBytes(uint8_t *data, size_t len)
 	}
 	Update(&b, 1);
 	rc++;
+	return len;
 }
 UNHIDE()

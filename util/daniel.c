@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -186,13 +205,40 @@ void process_strings(struct crypto *c, uint8_t *out, size_t nbytes,
 	drew_mem_sfree(buf);
 }
 
+void process_strings_fast(struct crypto *c, uint8_t *out, size_t nbytes,
+		const char **strs, size_t nstrs, const uint8_t *data, size_t len)
+{
+	size_t tsize = 0, off = 0;
+	uint8_t *buf, tmp[sizeof(uint32_t)], output[32];
+	drew_hash_t hash;
+	for (size_t i = 0; i < nstrs; tsize += strlen(strs[i]) + 4, i++);
+	buf = drew_mem_smalloc(tsize);
+	for (size_t i = 0; i < nstrs; i++) {
+		size_t sl = strlen(strs[i]);
+		store_uint32(buf+off, sl);
+		off += 4;
+		memcpy(buf+off, strs[i], sl);
+		off += sl;
+	}
+	c->hash->functbl->clone(&hash, c->hash, 0);
+	hash.functbl->reset(&hash);
+	hash.functbl->update(&hash, buf, tsize);
+	store_uint32(tmp, len);
+	hash.functbl->update(&hash, tmp, 4);
+	hash.functbl->update(&hash, data, len);
+	hash.functbl->final(&hash, output, 0);
+	memcpy(out, output, nbytes);
+	hash.functbl->fini(&hash, 0);
+	drew_mem_sfree(buf);
+}
+
 void calculate_quick_check(struct crypto *c, struct data *d)
 {
 	uint8_t buf[3];
 	const char *strs[2];
 	strs[0] = prefix;
 	strs[1] = "Quick Check: ";
-	process_strings(c, buf, sizeof(buf), strs, 2, d->master_secret,
+	process_strings_fast(c, buf, sizeof(buf), strs, 2, d->master_secret,
 			sizeof(d->master_secret));
 	snprintf(d->qc, sizeof(d->qc), "%02x%02x%02x", buf[0], buf[1], buf[2]);
 }
@@ -403,6 +449,7 @@ int main(int argc, char **argv)
 	program = argv[0];
 
 	d = drew_mem_scalloc(1, sizeof(*d));
+	d->flags = FLAG_NO_SPACES | FLAG_NO_SYMBOLS_OTHER;
 
 	while ((ch = getopt(argc, argv, "f:v:l:")) > 0) {
 		switch (ch) {

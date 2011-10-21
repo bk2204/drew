@@ -1,4 +1,9 @@
 #!/usr/bin/perl -w
+#-
+# brian m. carlson <sandals@crustytoothpaste.net> wrote this source code.
+# This source code is in the public domain; you may do whatever you please with
+# it.  However, a credit in the documentation, although not required, would be
+# appreciated.
 
 use Getopt::Long;
 use IO::File;
@@ -23,7 +28,15 @@ HIDE()
 EOM
 
 if ($modules) {
-	my @args = map { s/^.*\///; y/-/_/; s/^([a-z0-9_]+).*$/$1/; $_ } @ARGV;
+	my @args = map {
+		utf8::decode($_);
+		s/^.*\///;
+		y/-/_/;
+		$_ = join('', map {
+			ord($_) >= 128 ? sprintf("\\u%04x", ord($_)) : $_;
+		} split //, $_);
+		$_
+	} @ARGV;
 	for my $i (@args) {
 		$output->print("extern int drew_plugin_info_$i(void *, int, int, void *);\n");
 	}

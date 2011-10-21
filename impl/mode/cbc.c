@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 /* This is a C99 implementation of CBC, known in French as Radio-Canada. */
 
 #include "internal.h"
@@ -19,7 +38,7 @@
 
 struct cbc {
 	const drew_loader_t *ldr;
-	const drew_block_t *algo;
+	drew_block_t *algo;
 	uint8_t *buf;
 	uint8_t *iv;
 	size_t blksize;
@@ -62,8 +81,9 @@ static int cbc_info(int op, void *p)
 		case DREW_MODE_FINAL_OUTSIZE:
 			return 0;
 		case DREW_MODE_QUANTUM:
+			return 1;
 		default:
-			return DREW_ERR_INVALID;
+			return -DREW_ERR_INVALID;
 	}
 }
 
@@ -84,6 +104,7 @@ static int cbc_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 
 	if (!(flags & DREW_MODE_FIXED))
 		newctx = drew_mem_malloc(sizeof(*newctx));
+	memset(newctx, 0, sizeof(*newctx));
 	newctx->ldr = ldr;
 	newctx->algo = NULL;
 	
@@ -109,7 +130,9 @@ static int cbc_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 	if (!algoctx)
 		return -DREW_ERR_INVALID;
 
-	c->algo = algoctx;
+	c->algo = drew_mem_malloc(sizeof(*c->algo));
+	c->algo->functbl = algoctx->functbl;
+	c->algo->functbl->clone(c->algo, algoctx, 0);
 	c->blksize = c->algo->functbl->info(DREW_BLOCK_BLKSIZE, NULL);
 	if (!(c->buf = drew_mem_smalloc(c->blksize)))
 		return -ENOMEM;
@@ -124,7 +147,7 @@ static int cbc_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len)
 	struct cbc *c = ctx->ctx;
 
 	if (c->blksize != len)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	memcpy(c->buf, iv, len);
 	if (iv != c->iv)
@@ -333,23 +356,36 @@ static int cbc_fini(drew_mode_t *ctx, int flags)
 {
 	struct cbc *c = ctx->ctx;
 
+	if (c->algo)
+		c->algo->functbl->fini(c->algo, 0);
 	memset(c->buf, 0, c->blksize);
 	drew_mem_sfree(c->buf);
 	memset(c->iv, 0, c->blksize);
 	drew_mem_sfree(c->iv);
 	memset(c, 0, sizeof(*c));
-	if (!(flags & DREW_MODE_FIXED))
+	if (!(flags & DREW_MODE_FIXED)) {
 		drew_mem_free(c);
+		ctx->ctx = NULL;
+	}
 
-	ctx->ctx = NULL;
 	return 0;
 }
 
 static int cbc_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags)
 {
+	struct cbc *c = oldctx->ctx, *cn;
 	if (!(flags & DREW_MODE_FIXED))
 		newctx->ctx = drew_mem_malloc(sizeof(struct cbc));
+	cn = newctx->ctx;
 	memcpy(newctx->ctx, oldctx->ctx, sizeof(struct cbc));
+	if (c->algo) {
+		cn->algo = drew_mem_memdup(c->algo, sizeof(*cn->algo));
+		cn->algo->functbl->clone(cn->algo, c->algo, 0);
+	}
+	if (c->buf)
+		cn->buf = drew_mem_memdup(c->buf, c->blksize);
+	if (c->iv)
+		cn->iv = drew_mem_memdup(c->iv, c->blksize);
 	newctx->functbl = oldctx->functbl;
 	return 0;
 }

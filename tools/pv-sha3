@@ -1,0 +1,42 @@
+#!/usr/bin/perl -w
+
+# 0 = garbage, 1 = processing lines matching /\w+ = /, 2 = continuation lines
+# 3 = continuation lines for key, 4 = continuation lines for nonce.
+$state = 0;
+$cnt = 0;
+
+while (<>) {
+	chomp;
+	next if /^#/;
+	next if /^\s*$/;
+	y/A-F/a-f/;
+	if (/^Len\s+=\s+(\d+)/) {
+		$len = int($1);
+		if (!$len) {
+			# Special case this since the vector format gives us a byte.
+			printf "T%04x p\n", $cnt;
+			$state = 1;
+		}
+		elsif ($len & 7) {
+			$state = 0;
+		}
+		else {
+			$state = 2;
+		}
+	}
+	elsif (/^Msg\s+=\s+([0-9a-f]+)/) {
+		next unless $state;
+		if ($state == 2) {
+			printf "T%04x p%s\n", $cnt, $1;
+		}
+		$state = 3;
+	}
+	elsif (/^Md\s+=\s+([0-9a-f]+)/) {
+		next unless $state;
+		if ($state == 3) {
+			printf "T%04x c%s\n", $cnt, $1;
+		}
+		$cnt++;
+		$state = 0;
+	}
+}

@@ -1,3 +1,24 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 #include <fcntl.h>
 #include <pthread.h>
 #include <stddef.h>
@@ -5,6 +26,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <drew/drew.h>
 #include <drew/hash.h>
 #include <drew/plugin.h>
 
@@ -71,33 +93,39 @@ static void drew_impl_libmd_init(void)
 #define CONCAT(prefix, suffix) prefix ## suffix
 #define INTERFACE(prefix, name) \
 \
+DREW_SYM_PUBLIC \
 void prefix ## Init(drew_hash_t *ctx) \
 { \
 	drew_impl_libmd_init(); \
 	(plugins[CONCAT(PLUGIN_, name)].tbl->init)(ctx, 0, NULL, NULL); \
 } \
  \
+DREW_SYM_PUBLIC \
 void prefix ## Update(drew_hash_t *ctx, const uint8_t *data, size_t len) \
 { \
 	(ctx->functbl->update)(ctx, data, len); \
 } \
  \
+DREW_SYM_PUBLIC \
 void prefix ## Pad(drew_hash_t *ctx) \
 { \
 	(ctx->functbl->pad)(ctx); \
 } \
  \
+DREW_SYM_PUBLIC \
 void prefix ## Final(uint8_t *digest, drew_hash_t *ctx) \
 { \
 	(ctx->functbl->final)(ctx, digest, 0); \
 } \
  \
+DREW_SYM_PUBLIC \
 void prefix ## Transform(void *state, const uint8_t *block) \
 { \
 	drew_impl_libmd_init(); \
 	(plugins[CONCAT(PLUGIN_, name)].tbl->transform)(NULL, state, block); \
 } \
  \
+DREW_SYM_PUBLIC \
 char *prefix ## End(drew_hash_t *ctx, char *buf) \
 { \
 	const char *hex = "0123456789abcdef"; \
@@ -128,6 +156,7 @@ errout: \
 	return NULL; \
 } \
  \
+DREW_SYM_PUBLIC \
 char *prefix ## Data(const uint8_t *data, size_t len, char *buf) \
 { \
 	drew_hash_t ctx; \
@@ -136,6 +165,7 @@ char *prefix ## Data(const uint8_t *data, size_t len, char *buf) \
 	prefix ## Update(&ctx, data, len); \
 	return prefix ## End(&ctx, buf); \
 } \
+DREW_SYM_PUBLIC \
 char *prefix ## FileChunk(const char *filename, char *buf, off_t offset, \
 		off_t length) \
 { \
@@ -175,6 +205,7 @@ errout: \
 	close(fd); \
 	return NULL; \
 } \
+DREW_SYM_PUBLIC \
 char *prefix ## File(const char *filename, char *buf) \
 { \
 	return prefix ## FileChunk(filename, buf, 0, 0); \

@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #ifndef BLOCK_PLUGIN_HH
 #define BLOCK_PLUGIN_HH
 
@@ -8,15 +27,18 @@
 #include <new>
 
 #include <drew/block.h>
+#ifndef BLOCK_NO_MACROS
 #include "block-plugin.h"
+#endif
 #include "util.hh"
 
 HIDE()
 namespace drew {
-	template<size_t BlockSize>
+	template<size_t BlockSize, class E>
 	class BlockCipher {
 		public:
 			static const size_t block_size = BlockSize;
+			typedef E endian_t;
 			typedef AlignedBlock<uint8_t, BlockSize> FastBlock;
 			virtual ~BlockCipher() {}
 			virtual int Reset()
@@ -31,7 +53,7 @@ namespace drew {
 			{
 				// This takes minimal, if any, advantage of the alignment.
 				if (BlockSize == 8) {
-					for (size_t i = 0; i < n; i++, bout++, bin++) {
+					for (size_t i = 0; i < n/2; i++, bout++, bin++) {
 						Encrypt(bout->data, bin->data);
 						Encrypt(bout->data+8, bin->data+8);
 					}
@@ -50,7 +72,7 @@ namespace drew {
 					size_t n) const
 			{
 				if (BlockSize == 8) {
-					for (size_t i = 0; i < n; i++, bout++, bin++) {
+					for (size_t i = 0; i < n/2; i++, bout++, bin++) {
 						Decrypt(bout->data, bin->data);
 						Decrypt(bout->data+8, bin->data+8);
 					}
@@ -81,6 +103,8 @@ static int prefix ## info(int op, void *p) \
 			return 2; \
 		case DREW_BLOCK_BLKSIZE: \
 			return bname::block_size; \
+		case DREW_BLOCK_ENDIAN: \
+			return bname::endian_t::GetEndianness(); \
 		case DREW_BLOCK_KEYSIZE: \
 			for (size_t i = 0; i < DIM(prefix ## keysz); i++) { \
 				const int *x = reinterpret_cast<int *>(p); \
@@ -91,7 +115,7 @@ static int prefix ## info(int op, void *p) \
 		case DREW_BLOCK_INTSIZE: \
 			return sizeof(bname); \
 		default: \
-			return -EINVAL; \
+			return -DREW_ERR_INVALID; \
 	} \
 } \
 static int prefix ## init(drew_block_t *ctx, int flags, \

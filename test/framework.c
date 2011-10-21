@@ -1,5 +1,5 @@
 /*-
- * brian m. carlson <sandals@crustytoothpaste.ath.cx> wrote this source code.
+ * brian m. carlson <sandals@crustytoothpaste.net> wrote this source code.
  * This source code is in the public domain; you may do whatever you please with
  * it.  However, a credit in the documentation, although not required, would be
  * appreciated.
@@ -141,6 +141,7 @@ int process_bytes(ssize_t len, uint8_t **buf, const char *data)
 {
 	uint8_t *p;
 	drew_mem_free(*buf);
+	*buf = 0;
 	if (len < 0)
 		return TEST_CORRUPT;
 	if (strlen(data) != len * 2) {
@@ -268,9 +269,8 @@ int main(int argc, char **argv)
 	nplugins = drew_loader_get_nplugins(ldr, -1);
 	type = test_get_type();
 
-	if (mode == MODE_TEST &&
-			(retval = test_external_parse(ldr, resource, &tes)))
-		tes.results = -DREW_ERR_NOT_IMPL;
+	if (mode == MODE_TEST)
+		test_external_parse(ldr, resource, &tes);
 
 	for (i = 0; i < nplugins; i++) {
 		const void *functbl;

@@ -1,7 +1,7 @@
 /*-
- * Copyright © 2000-2009 The Legion Of The Bouncy Castle
+ * Copyright © 2000–2009 The Legion Of The Bouncy Castle
  * (http://www.bouncycastle.org)
- * Copyright © 2010 brian m. carlson
+ * Copyright © 2010–2011 brian m. carlson
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -270,7 +270,7 @@ static int aes256test(void *p, const drew_loader_t *ldr)
 	PLUGIN_INTERFACE(rijndael)
 }
 
-typedef drew::Rijndael::endian_t E;
+typedef BigEndian E;
 
 drew::Rijndael::Rijndael()
 {
