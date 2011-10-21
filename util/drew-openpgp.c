@@ -75,6 +75,7 @@ struct util {
 struct options {
 	int pktbufsz;
 	int validate;
+	int recovery;
 	const char *keystorefile;
 };
 
@@ -229,22 +230,38 @@ void print_key_info(drew_opgp_key_t key, int full)
 	free(uids);
 }
 
-int print_fingerprint(struct util *util, const struct options *opts)
+int open_keystore(drew_opgp_keystore_t ks, const struct options *opts,
+		bool write)
 {
-	int res = 0, nkeys = 0;
-	drew_opgp_keystore_t ks;
-	drew_opgp_key_t *keys;
+	int res = 0;
 	drew_opgp_id_t missingid;
 
-	drew_opgp_keystore_new(&ks, util->ldr);
 	drew_opgp_keystore_set_backend(ks, "bdb");
-	if ((res = drew_opgp_keystore_open(ks, opts->keystorefile, false)) ||
+	if (opts->recovery) {
+		int one = 1;
+		drew_opgp_keystore_set_backend_options(ks,
+				"http://ns.crustytoothpaste.net/drew/openpgp/backend/recovery",
+				&one);
+	}
+	if ((res = drew_opgp_keystore_open(ks, opts->keystorefile, write)) ||
 			(res = drew_opgp_keystore_load(ks, missingid))) {
 		if (res == -DREW_ERR_MORE_INFO)
 			return print_error(23, res, "missing ID: %02x%02x%02x%02x",
 					missingid[0], missingid[1], missingid[2], missingid[3]);
 		return print_error(23, res, "keystore failure");
 	}
+	return 0;
+}
+
+int print_fingerprint(struct util *util, const struct options *opts)
+{
+	int res = 0, nkeys = 0;
+	drew_opgp_keystore_t ks;
+	drew_opgp_key_t *keys;
+
+	drew_opgp_keystore_new(&ks, util->ldr);
+	if ((res = open_keystore(ks, opts, false)))
+		return res;
 	nkeys = drew_opgp_keystore_get_keys(ks, NULL, 0);
 	keys = malloc(nkeys * sizeof(*keys));
 	drew_opgp_keystore_get_keys(ks, keys, nkeys);
@@ -284,8 +301,8 @@ int process(struct util *util, const struct options *opts)
 
 	drew_opgp_keystore_new(&ks, util->ldr);
 	drew_opgp_keystore_set_backend(ks, "bdb");
-	if ((res = drew_opgp_keystore_open(ks, opts->keystorefile, false)))
-		return print_error(23, res, "error opening keystore");
+	if ((res = open_keystore(ks, opts, false)))
+		return res;
 	printf("Loading keys...");
 	fflush(stdout);
 	if ((res = drew_opgp_keystore_load(ks, missingid))) {
@@ -306,8 +323,8 @@ int process(struct util *util, const struct options *opts)
 
 	printf("Storing keys...");
 	fflush(stdout);
-	if ((res = drew_opgp_keystore_open(ks, opts->keystorefile, true)))
-		return print_error(23, res, "error opening keystore");
+	if ((res = open_keystore(ks, opts, true)))
+		return res;
 	drew_opgp_keystore_store(ks);
 	printf("ok, done.\n");
 	drew_opgp_keystore_close(ks);
@@ -405,6 +422,7 @@ int main(int argc, char **argv)
 	struct options opts = {
 		.pktbufsz = 20000,
 		.validate = 0,
+		.recovery = 0,
 		.keystorefile = NULL,
 	};
 	struct poptOption optsargs[] = {
@@ -413,6 +431,7 @@ int main(int argc, char **argv)
 		{"import", 0, POPT_ARG_VAL, &cmd, CMD_IMPORT, NULL, NULL},
 		{"process", 0, POPT_ARG_VAL, &cmd, CMD_PROCESS, NULL, NULL},
 		{"validate", 0, POPT_ARG_NONE, &opts.validate, 1, NULL, NULL},
+		{"recovery", 0, POPT_ARG_NONE, &opts.recovery, 0, NULL, NULL},
 		{"keystore", 0, POPT_ARG_STRING, &opts.keystorefile, 1, NULL, NULL},
 		{"packet-buffer-size", 0, POPT_ARG_INT, &opts.pktbufsz, 0, NULL, NULL},
 		POPT_TABLEEND
