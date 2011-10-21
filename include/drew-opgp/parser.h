@@ -60,8 +60,7 @@ typedef struct {
 
 typedef struct {
 	uint8_t type;
-	bool critical;
-	int lenoflen;
+	uint8_t lenoflen;
 	size_t len;
 	uint8_t *data;
 } drew_opgp_subpacket_t;

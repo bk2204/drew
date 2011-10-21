@@ -277,8 +277,7 @@ static void store_subpackets1(Chunk *c, const drew_opgp_subpacket_group_t *spg,
 			offset = 0x00;
 		}
 		E::Convert<uint16_t>(c[off]+offset+0x00, spg->subpkts[i].len);
-		c[off][offset+0x02] = spg->subpkts[i].type |
-			(spg->subpkts[i].critical ? 0x80 : 0);
+		c[off][offset+0x02] = spg->subpkts[i].type;
 		c[off][offset+0x03] = spg->subpkts[i].lenoflen;
 	}
 	if (offset)
@@ -672,8 +671,7 @@ static void load_subpackets1(drew_opgp_subpacket_group_t *spg, const Chunk *c,
 		}
 		spg->subpkts[i].len = E::Convert<uint16_t>(c[off]+offset+0x00);
 		uint8_t type = c[off][offset+0x02];
-		spg->subpkts[i].type = type & 0x7f;
-		spg->subpkts[i].critical = type & 0x80;
+		spg->subpkts[i].type = type;
 		spg->subpkts[i].lenoflen = c[off][offset+0x03];
 	}
 	if (offset)

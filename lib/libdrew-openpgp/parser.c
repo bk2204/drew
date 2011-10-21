@@ -370,8 +370,7 @@ static int load_subpackets(drew_opgp_subpacket_group_t *spgrp,
 		sp[i].len -= 1;
 		DECLARE_NEED(sp[i].len);
 		uint8_t typebyte = *data++;
-		sp[i].type = typebyte & 0x7f;
-		sp[i].critical = typebyte & 0x80;
+		sp[i].type = typebyte;
 		sp[i].data = drew_mem_memdup(data, sp[i].len);
 		data += sp[i].len;
 		// FIXME: split into data chunks.

@@ -350,7 +350,6 @@ static int add_subpacket(drew_opgp_sig_t sig, uint8_t type, const uint8_t *data,
 	sp = arr+hashed.nsubpkts;
 	sp->type = type;
 	sp->lenoflen = 1;
-	sp->critical = false;
 	sp->len = len;
 	sp->data = (uint8_t *)drew_mem_malloc(sp->len);
 	if (!sp->data) 
