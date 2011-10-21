@@ -260,8 +260,8 @@ struct drew_opgp_sig_s : public Identifiable, public ContainsLoader
 		uint8_t pkalgo;
 		uint8_t mdalgo;
 		uint8_t left[2];
-		time_t ctime;
-		time_t etime;
+		int32_t ctime;
+		int32_t etime;
 		drew_opgp_keyid_t keyid;
 		drew_opgp_subpacket_group_t hashed;
 		drew_opgp_subpacket_group_t unhashed;
