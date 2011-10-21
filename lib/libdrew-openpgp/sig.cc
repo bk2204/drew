@@ -122,7 +122,7 @@ int drew_opgp_sig_get_cipher_prefs(drew_opgp_sig_t sig,
 	Signature *s = reinterpret_cast<Signature *>(sig);
 	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
-	memcpy(prefs, s->GetSelfSignature().prefs+PREFS_CIPHER, sizeof(*prefs));
+	memcpy(prefs, s->GetSelfSignature()->prefs+PREFS_CIPHER, sizeof(*prefs));
 	return 0;
 }
 
@@ -132,7 +132,7 @@ int drew_opgp_set_cipher_prefs(drew_opgp_sig_t sig,
 	Signature *s = reinterpret_cast<Signature *>(sig);
 	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
-	memcpy(s->GetSelfSignature().prefs+PREFS_CIPHER, prefs, sizeof(*prefs));
+	memcpy(s->GetSelfSignature()->prefs+PREFS_CIPHER, prefs, sizeof(*prefs));
 	return 0;
 }
 
@@ -141,7 +141,7 @@ int drew_opgp_sig_get_hash_prefs(drew_opgp_sig_t sig, drew_opgp_prefs_t *prefs)
 	Signature *s = reinterpret_cast<Signature *>(sig);
 	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
-	memcpy(prefs, s->GetSelfSignature().prefs+PREFS_HASH, sizeof(*prefs));
+	memcpy(prefs, s->GetSelfSignature()->prefs+PREFS_HASH, sizeof(*prefs));
 	return 0;
 }
 
@@ -151,7 +151,7 @@ int drew_opgp_set_hash_prefs(drew_opgp_sig_t sig,
 	Signature *s = reinterpret_cast<Signature *>(sig);
 	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
-	memcpy(s->GetSelfSignature().prefs+PREFS_HASH, prefs, sizeof(*prefs));
+	memcpy(s->GetSelfSignature()->prefs+PREFS_HASH, prefs, sizeof(*prefs));
 	return 0;
 }
 
@@ -161,7 +161,7 @@ int drew_opgp_sig_get_compress_prefs(drew_opgp_sig_t sig,
 	Signature *s = reinterpret_cast<Signature *>(sig);
 	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
-	memcpy(prefs, s->GetSelfSignature().prefs+PREFS_COMPRESS, sizeof(*prefs));
+	memcpy(prefs, s->GetSelfSignature()->prefs+PREFS_COMPRESS, sizeof(*prefs));
 	return 0;
 }
 
@@ -171,7 +171,7 @@ int drew_opgp_set_compress_prefs(drew_opgp_sig_t sig,
 	Signature *s = reinterpret_cast<Signature *>(sig);
 	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
-	memcpy(s->GetSelfSignature().prefs+PREFS_COMPRESS, prefs, sizeof(*prefs));
+	memcpy(s->GetSelfSignature()->prefs+PREFS_COMPRESS, prefs, sizeof(*prefs));
 	return 0;
 }
 
@@ -180,7 +180,7 @@ int drew_opgp_sig_get_key_expiration_time(drew_opgp_sig_t sig, time_t *exp)
 	Signature *s = reinterpret_cast<Signature *>(sig);
 	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
-	*exp = s->GetSelfSignature().keyexp;
+	*exp = s->GetSelfSignature()->keyexp;
 	return 0;
 }
 
@@ -189,7 +189,7 @@ int drew_opgp_sig_set_key_expiration_time(drew_opgp_sig_t sig, time_t exp)
 	Signature *s = reinterpret_cast<Signature *>(sig);
 	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
-	s->GetSelfSignature().keyexp = exp;
+	s->GetSelfSignature()->keyexp = exp;
 	return 0;
 }
 
@@ -232,7 +232,7 @@ int drew_opgp_sig_get_key_flags(drew_opgp_sig_t sig, int *flags, size_t sz)
 		return -DREW_ERR_NOT_ALLOWED;
 	if (sz > 0) {
 		memset(flags, 0, sz * sizeof(*flags));
-		*flags = s->GetSelfSignature().keyflags;
+		*flags = s->GetSelfSignature()->keyflags;
 	}
 	return 0;
 }
@@ -242,14 +242,14 @@ int drew_opgp_sig_set_key_flags(drew_opgp_sig_t sig, int *flags)
 	Signature *s = reinterpret_cast<Signature *>(sig);
 	if (!drew_opgp_sig_is_self_signature(sig))
 		return -DREW_ERR_NOT_ALLOWED;
-	s->GetSelfSignature().keyflags = *flags;
+	s->GetSelfSignature()->keyflags = *flags;
 	return 0;
 }
 
 static void sync_cipher_prefs(drew_opgp_sig_t sig)
 {
 	Signature *s = reinterpret_cast<Signature *>(sig);
-	drew_opgp_prefs_t *prefs = s->GetSelfSignature().prefs+PREFS_CIPHER;
+	drew_opgp_prefs_t *prefs = s->GetSelfSignature()->prefs+PREFS_CIPHER;
 	uint8_t exists[256];
 	memset(exists, 0, sizeof(exists));
 	prefs->len = 0;
@@ -273,7 +273,7 @@ loop:
 static void sync_compress_prefs(drew_opgp_sig_t sig)
 {
 	Signature *s = reinterpret_cast<Signature *>(sig);
-	drew_opgp_prefs_t *prefs = s->GetSelfSignature().prefs+PREFS_COMPRESS;
+	drew_opgp_prefs_t *prefs = s->GetSelfSignature()->prefs+PREFS_COMPRESS;
 	uint8_t exists[256];
 	memset(exists, 0, sizeof(exists));
 	prefs->len = 0;
@@ -296,7 +296,7 @@ loop:
 static void sync_hash_prefs(drew_opgp_sig_t sig)
 {
 	Signature *s = reinterpret_cast<Signature *>(sig);
-	drew_opgp_prefs_t *prefs = s->GetSelfSignature().prefs+PREFS_HASH;
+	drew_opgp_prefs_t *prefs = s->GetSelfSignature()->prefs+PREFS_HASH;
 	uint8_t exists[256];
 	memset(exists, 0, sizeof(exists));
 	prefs->len = 0;
@@ -377,7 +377,7 @@ static int add_byte_subpacket(drew_opgp_sig_t sig, uint8_t type, uint8_t byte)
 static int update_subpackets(drew_opgp_sig_t sig)
 {
 	Signature *sigo = reinterpret_cast<Signature *>(sig);
-	selfsig_t *s = &sigo->GetSelfSignature();
+	selfsig_t *s = sigo->GetSelfSignature();
 	int &flags = sigo->GetFlags();
 	size_t len;
 	free_subpackets(sig);
@@ -385,13 +385,13 @@ static int update_subpackets(drew_opgp_sig_t sig)
 		RETFAIL(add_byte_subpacket(sig, 0x07, 0x00));
 	if (flags & DREW_OPGP_SIGNATURE_LOCAL)
 		RETFAIL(add_byte_subpacket(sig, 0x04, 0x00));
-	if ((len = s->prefs[PREFS_CIPHER].len))
+	if (s && (len = s->prefs[PREFS_CIPHER].len))
 		RETFAIL(add_subpacket(sig, 0x0b, s->prefs[PREFS_CIPHER].vals, len));
-	if ((len = s->prefs[PREFS_HASH].len))
+	if (s && (len = s->prefs[PREFS_HASH].len))
 		RETFAIL(add_subpacket(sig, 0x15, s->prefs[PREFS_HASH].vals, len));
-	if ((len = s->prefs[PREFS_COMPRESS].len))
+	if (s && (len = s->prefs[PREFS_COMPRESS].len))
 		RETFAIL(add_subpacket(sig, 0x16, s->prefs[PREFS_COMPRESS].vals, len));
-	if (s->keyflags)
+	if (s && s->keyflags)
 		RETFAIL(add_byte_subpacket(sig, 0x2b, s->keyflags));
 	return 0;
 }
@@ -405,10 +405,10 @@ int drew_opgp_sig_synchronize(drew_opgp_sig_t sig)
 		sync_hash_prefs(sig);
 		sync_cipher_prefs(sig);
 		sync_compress_prefs(sig);
-		s->GetSelfSignature().keyflags &= 0xbf;
+		s->GetSelfSignature()->keyflags &= 0xbf;
 	}
 	else
-		memset(&s->GetSelfSignature(), 0, sizeof(selfsig_t));
+		s->ClearSelfSignature();
 	if (s->GetVersion() == 4)
 		update_subpackets(sig);
 	return 0;

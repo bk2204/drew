@@ -407,9 +407,9 @@ void free_subpackets(drew_opgp_subpacket_group_t *spg)
 
 drew::Signature::drew_opgp_sig_s()
 {
-	memset(&selfsig, 0, sizeof(selfsig));
 	memset(&hashed, 0, sizeof(hashed));
 	memset(&unhashed, 0, sizeof(unhashed));
+	selfsig = 0;
 	flags = 0;
 	ver = 0;
 	type = 0;
@@ -425,7 +425,7 @@ drew::Signature::drew_opgp_sig_s()
 
 drew::Signature::drew_opgp_sig_s(const drew_opgp_sig_s &other)
 {
-	memcpy(&selfsig, &other.selfsig, sizeof(selfsig));
+	selfsig = other.selfsig ? new selfsig_t(*other.selfsig) : 0;
 	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++)
 		mpi[i] = other.mpi[i];
 	clone_subpackets(&hashed, &other.hashed);
@@ -452,7 +452,7 @@ drew::Signature::~drew_opgp_sig_s()
 
 drew::Signature &drew::Signature::operator=(const Signature &other)
 {
-	memcpy(&selfsig, &other.selfsig, sizeof(selfsig));
+	selfsig = other.selfsig ? new selfsig_t(*other.selfsig) : 0;
 	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS; i++)
 		mpi[i] = other.mpi[i];
 	clone_subpackets(&hashed, &other.hashed);
@@ -575,14 +575,26 @@ drew_opgp_subpacket_group_t &drew::Signature::GetUnhashedSubpackets()
 	return unhashed;
 }
 
-const selfsig_t &drew::Signature::GetSelfSignature() const
+const selfsig_t *drew::Signature::GetSelfSignature() const
 {
 	return selfsig;
 }
 
-selfsig_t &drew::Signature::GetSelfSignature()
+selfsig_t *drew::Signature::GetSelfSignature()
 {
 	return selfsig;
+}
+
+void drew::Signature::ClearSelfSignature()
+{
+	delete selfsig;
+	selfsig = 0;
+}
+
+void drew::Signature::CreateSelfSignature()
+{
+	selfsig = new selfsig_t;
+	memset(selfsig, 0, sizeof(selfsig_t));
 }
 
 void drew::Signature::GenerateID()
@@ -676,8 +688,10 @@ void drew::Signature::SynchronizeUserIDSignature(const PublicKey &pub,
 			if (f & DREW_OPGP_SYNCHRONIZE_VALIDATE_SELF_SIGNATURES)
 				ValidateSignature(pub, true);
 		}
-		if (!(flags & DREW_OPGP_SIGNATURE_SELF_SIG))
-			memset(&selfsig, 0, sizeof(selfsig));
+		if (!(flags & DREW_OPGP_SIGNATURE_SELF_SIG)) {
+			delete selfsig;
+			selfsig = 0;
+		}
 	}
 	for (size_t i = 0; i < DREW_OPGP_MAX_MPIS && mpi[i].GetByteLength(); i++) {
 		mpi[i].SetLoader(ldr);
@@ -1200,6 +1214,7 @@ int drew_opgp_key_new(drew_opgp_key_t *key, const drew_loader_t *ldr)
 	k->SetLoader(ldr);
 	*key = k;
 	END_FUNC();
+
 	return 0;
 }
 

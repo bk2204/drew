@@ -243,8 +243,10 @@ struct drew_opgp_sig_s : public Identifiable, public ContainsLoader
 		uint8_t *GetHash();
 		const int &GetFlags() const;
 		int &GetFlags();
-		const selfsig_t &GetSelfSignature() const;
-		selfsig_t &GetSelfSignature();
+		const selfsig_t *GetSelfSignature() const;
+		selfsig_t *GetSelfSignature();
+		void ClearSelfSignature();
+		void CreateSelfSignature();
 		bool IsSelfSignature() const;
 		void HashUserIDSignature(const PublicKey &pub, const UserID &uid);
 		int ValidateSignature(const PublicKey &pub, bool is_selfsig);
@@ -265,7 +267,7 @@ struct drew_opgp_sig_s : public Identifiable, public ContainsLoader
 		drew_opgp_subpacket_group_t unhashed;
 		MPI mpi[DREW_OPGP_MAX_MPIS];
 		drew_opgp_hash_t hash;
-		selfsig_t selfsig;
+		selfsig_t *selfsig;
 };
 
 struct drew_opgp_uid_s : public Identifiable, public ContainsLoader

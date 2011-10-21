@@ -320,7 +320,7 @@ static void store_sig(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 	uint32_t hchunks = 0, uchunks = 0;
 	const drew_opgp_subpacket_group_t &hashed = sig->GetHashedSubpackets();
 	const drew_opgp_subpacket_group_t &unhashed = sig->GetUnhashedSubpackets();
-	const selfsig_t &selfsig = sig->GetSelfSignature();
+	const selfsig_t *selfsig = sig->GetSelfSignature();
 	for (size_t i = 0; i < hashed.nsubpkts; i++)
 		hchunks += DivideAndRoundUp(hashed.subpkts[i].len, 0x40);
 	for (size_t i = 0; i < unhashed.nsubpkts; i++)
@@ -342,14 +342,14 @@ static void store_sig(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 	E::Convert<uint32_t>(c[0]+0x0c, sig->GetExpirationTime());
 	memcpy(c[0]+0x10, sig->GetKeyID(), 8);
 	E::Convert<uint32_t>(c[0]+0x18, sig->GetFlags());
-	E::Convert<uint32_t>(c[0]+0x20, selfsig.keyflags);
-	E::Convert<uint32_t>(c[0]+0x24, selfsig.keyexp);
+	E::Convert<uint32_t>(c[0]+0x20, selfsig ? selfsig->keyflags : 0);
+	E::Convert<uint32_t>(c[0]+0x24, selfsig ? selfsig->keyexp : 0);
 	c[0][0x28] = sig->GetLeft2()[0];
 	c[0][0x29] = sig->GetLeft2()[1];
 	// Two empty bytes.
-	c[0][0x2c] = selfsig.prefs[0].len;
-	c[0][0x2d] = selfsig.prefs[1].len;
-	c[0][0x2e] = selfsig.prefs[2].len;
+	c[0][0x2c] = selfsig ? selfsig->prefs[0].len : 0;
+	c[0][0x2d] = selfsig ? selfsig->prefs[1].len : 0;
+	c[0][0x2e] = selfsig ? selfsig->prefs[2].len : 0;
 	c[0][0x2f] = nmpis;
 	E::Convert<uint32_t>(c[0]+0x30, hashed.nsubpkts);
 	E::Convert<uint32_t>(c[0]+0x34, unhashed.nsubpkts);
@@ -368,9 +368,13 @@ static void store_sig(drew_opgp_keystore_t ks, const drew_opgp_id_t id,
 	store_subpackets3(c, &hashed, off);
 	store_subpackets3(c, &unhashed, off);
 
-	for (size_t i = 0; i < 3; i++, off++)
-		memcpy(c[off], selfsig.prefs[i].vals,
-				sizeof(selfsig.prefs[i].vals));
+	for (size_t i = 0; i < 3; i++, off++) {
+		if (selfsig)
+			memcpy(c[off], selfsig->prefs[i].vals,
+					sizeof(selfsig->prefs[i].vals));
+		else
+			memset(c[off], 0, sizeof(selfsig->prefs[i].vals));
+	}
 
 	IDConverter idc;
 	for (size_t i = 0; i < nmpis; i++)
@@ -705,8 +709,9 @@ static int load_sig(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 
 	sig.SetLoader(ks->ldr);
 	sig.SetInternalID(key);
+	sig.CreateSelfSignature();
 
-	selfsig_t &selfsig = sig.GetSelfSignature();
+	selfsig_t *selfsig = sig.GetSelfSignature();
 	drew_opgp_subpacket_group_t &hashed = sig.GetHashedSubpackets();
 	drew_opgp_subpacket_group_t &unhashed = sig.GetUnhashedSubpackets();
 
@@ -720,14 +725,14 @@ static int load_sig(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 	sig.SetExpirationTime(E::Convert<uint32_t>(c[0]+0x0c));
 	memcpy(sig.GetKeyID(), c[0]+0x10, 8);
 	sig.GetFlags() = E::Convert<uint32_t>(c[0]+0x18);
-	selfsig.keyflags = E::Convert<uint32_t>(c[0]+0x20);
-	selfsig.keyexp = E::Convert<uint32_t>(c[0]+0x24);
+	selfsig->keyflags = E::Convert<uint32_t>(c[0]+0x20);
+	selfsig->keyexp = E::Convert<uint32_t>(c[0]+0x24);
 	sig.GetLeft2()[0] = c[0][0x28];
 	sig.GetLeft2()[1] = c[0][0x29];
 	// Two empty bytes.
-	selfsig.prefs[0].len = c[0][0x2c];
-	selfsig.prefs[1].len = c[0][0x2d];
-	selfsig.prefs[2].len = c[0][0x2e];
+	selfsig->prefs[0].len = c[0][0x2c];
+	selfsig->prefs[1].len = c[0][0x2d];
+	selfsig->prefs[2].len = c[0][0x2e];
 	nmpis = c[0][0x2f];
 	hashed.nsubpkts = E::Convert<uint32_t>(c[0]+0x30);
 	unhashed.nsubpkts = E::Convert<uint32_t>(c[0]+0x34);
@@ -747,7 +752,13 @@ static int load_sig(drew_opgp_keystore_t ks, const Chunk &key, const Chunk *c,
 	load_subpackets3(&unhashed, c, off);
 
 	for (size_t i = 0; i < 3; i++, off++)
-		memcpy(selfsig.prefs[i].vals, c[off], sizeof(selfsig.prefs[i].vals));
+		memcpy(selfsig->prefs[i].vals, c[off], sizeof(selfsig->prefs[i].vals));
+
+	uint8_t *buf = new uint8_t[sizeof(selfsig_t)];
+	memset(buf, 0, sizeof(selfsig_t));
+	if (!memcmp(buf, selfsig, sizeof(selfsig_t)))
+		sig.ClearSelfSignature();
+	delete[] buf;
 
 	for (size_t i = 0, offset = 0; i < nmpis; i++, offset += 0x20) {
 		if (offset == 0x40) {
