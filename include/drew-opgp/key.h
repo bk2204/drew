@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include <drew/drew.h>
 #include <drew-opgp/parser.h>
 
 typedef struct drew_opgp_sig_s *drew_opgp_sig_t;
@@ -54,39 +55,65 @@ typedef uint8_t drew_opgp_hash_t[64];
 // A key ID.
 typedef uint8_t drew_opgp_keyid_t[8];
 
+DREW_SYM_PUBLIC
 int drew_opgp_key_new(drew_opgp_key_t *key, const drew_loader_t *ldr);
+DREW_SYM_PUBLIC
 int drew_opgp_key_free(drew_opgp_key_t *key);
+DREW_SYM_PUBLIC
 int drew_opgp_key_clone(drew_opgp_key_t *newp, drew_opgp_key_t old);
+DREW_SYM_PUBLIC
 int drew_opgp_key_has_secret(drew_opgp_key_t key);
+DREW_SYM_PUBLIC
 int drew_opgp_key_has_usable_secret(drew_opgp_key_t key);
+DREW_SYM_PUBLIC
 int drew_opgp_key_can_sign(drew_opgp_key_t key);
+DREW_SYM_PUBLIC
 int drew_opgp_key_can_encrypt(drew_opgp_key_t key);
+DREW_SYM_PUBLIC
 int drew_opgp_key_is_revoked(drew_opgp_key_t key, int flags);
+DREW_SYM_PUBLIC
 int drew_opgp_key_is_expired(drew_opgp_key_t key, int flags);
+DREW_SYM_PUBLIC
 int drew_opgp_key_can_do(drew_opgp_key_t key, int flags);
+DREW_SYM_PUBLIC
 int drew_opgp_key_get_version(drew_opgp_key_t key);
+DREW_SYM_PUBLIC
 int drew_opgp_key_get_type(drew_opgp_key_t key);
+DREW_SYM_PUBLIC
 int drew_opgp_key_get_subkeys(drew_opgp_key_t key, drew_opgp_key_t *subkeys);
+DREW_SYM_PUBLIC
 int drew_opgp_key_generate(drew_opgp_key_t key, uint8_t algo, size_t nbits,
 		size_t order, time_t expires);
+DREW_SYM_PUBLIC
 int drew_opgp_key_get_fingerprint(drew_opgp_key_t key, drew_opgp_fp_t fp);
+DREW_SYM_PUBLIC
 int drew_opgp_key_get_id(drew_opgp_key_t key, drew_opgp_id_t id);
+DREW_SYM_PUBLIC
 int drew_opgp_key_get_keyid(drew_opgp_key_t key, drew_opgp_keyid_t keyid);
+DREW_SYM_PUBLIC
 int drew_opgp_key_synchronize(drew_opgp_key_t key, int flags);
+DREW_SYM_PUBLIC
 int drew_opgp_key_load_public(drew_opgp_key_t key,
 		const drew_opgp_packet_t *pkts, size_t npkts);
+DREW_SYM_PUBLIC
 int drew_opgp_key_load_private(drew_opgp_key_t key,
 		const drew_opgp_packet_t *pkts, size_t npkts);
+DREW_SYM_PUBLIC
 int drew_opgp_key_store_public(drew_opgp_key_t key,
 		const drew_opgp_packet_t *pkts, size_t npkts);
+DREW_SYM_PUBLIC
 int drew_opgp_key_store_private(drew_opgp_key_t key,
 		const drew_opgp_packet_t *pkts, size_t npkts);
+DREW_SYM_PUBLIC
 int drew_opgp_key_get_preferences(drew_opgp_key_t key, int type,
 		drew_opgp_prefs_t *prefs);
+DREW_SYM_PUBLIC
 int drew_opgp_key_get_user_ids(drew_opgp_key_t key, drew_opgp_uid_t **uids);
 
 
+DREW_SYM_PUBLIC
 int drew_opgp_uid_get_text(drew_opgp_uid_t uid, const char **p);
+DREW_SYM_PUBLIC
 int drew_opgp_uid_get_signatures(drew_opgp_uid_t uid, drew_opgp_sig_t **sigs);
 
 #ifdef __cplusplus

@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#include <drew/drew.h>
 #include <drew/hash.h>
 
 // The header information is corrupt.
@@ -60,6 +61,7 @@ extern "C" {
 struct drew_opgp_s;
 typedef struct drew_opgp_s *drew_opgp_t;
 
+DREW_SYM_PUBLIC
 int drew_opgp_algo_hash_lookup(drew_opgp_t ctx, int algo,
 		drew_hash_t *hash, const char **name, size_t *len,
 		const uint8_t **prefix, size_t *prefixlen);

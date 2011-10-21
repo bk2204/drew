@@ -185,15 +185,21 @@ typedef struct {
 #define DREW_OPGP_F0_RFC2440			(1 << 1)
 #define DREW_OPGP_F0_RFC2440_BIS0		(1 << 2)
 
+DREW_SYM_PUBLIC
 int drew_opgp_parser_new(drew_opgp_parser_t *p, int mode, const int *flags);
+DREW_SYM_PUBLIC
 int drew_opgp_parser_free(drew_opgp_parser_t *p);
+DREW_SYM_PUBLIC
 int drew_opgp_parser_parse_packets(drew_opgp_parser_t p,
 		drew_opgp_packet_t *packets, size_t *npackets, const uint8_t *data,
 		size_t datalen, size_t *off);
+DREW_SYM_PUBLIC
 int drew_opgp_parser_parse_packet(drew_opgp_parser_t parser,
 		drew_opgp_packet_t *pkt, const uint8_t *data, size_t datalen);
+DREW_SYM_PUBLIC
 int drew_opgp_parser_parse_packet_header(drew_opgp_parser_t parser,
 		drew_opgp_packet_t *pkt, const uint8_t *data, size_t datalen);
+DREW_SYM_PUBLIC
 int drew_opgp_parser_parse_packet_contents(drew_opgp_parser_t parser,
 		drew_opgp_packet_t *pkt, const uint8_t *data, size_t datalen);
 
