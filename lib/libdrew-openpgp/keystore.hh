@@ -3,17 +3,14 @@
 
 
 #include "util.hh"
-HIDE()
 #include "internal.h"
 
-EXPORT()
 #include <errno.h>
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-UNEXPORT()
 
 #ifdef FEATURE_TR1
 #include <tr1/unordered_map>
@@ -23,7 +20,6 @@ UNEXPORT()
 #include <vector>
 
 struct drew_opgp_keystore_s;
-EXPORT()
 #ifdef DREW_OPGP_BACKEND_BDB
 #include <db.h>
 #endif
@@ -35,7 +31,6 @@ EXPORT()
 #include <drew-opgp/drew-opgp.h>
 #include <drew-opgp/key.h>
 #include <drew-opgp/keystore.h>
-UNEXPORT()
 
 
 #include "structs.h"

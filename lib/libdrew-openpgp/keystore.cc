@@ -74,7 +74,6 @@ class FileBackend : public Backend
 	private:	
 };
 
-EXPORT()
 extern "C"
 int drew_opgp_keystore_new(drew_opgp_keystore_t *ksp, const drew_loader_t *ldr)
 {
@@ -128,7 +127,6 @@ int drew_opgp_keystore_set_backend(drew_opgp_keystore_t ks, const char *backend)
 		return -DREW_ERR_INVALID;
 	return 0;
 }
-UNEXPORT()
 
 #define ROUND(x) (DivideAndRoundUp(x, 2))
 static int force_load_item(drew_opgp_keystore_t ks, const InternalID &id,
@@ -845,7 +843,6 @@ static int force_load_item(drew_opgp_keystore_t ks, const InternalID &id,
 	return load_item(ks, kchunk, c, nchunks, dummy);
 }
 
-EXPORT()
 extern "C"
 int drew_opgp_keystore_load(drew_opgp_keystore_t ks, drew_opgp_id_t missingid)
 {
@@ -1031,7 +1028,6 @@ int drew_opgp_keystore_add_key(drew_opgp_keystore_t ks, drew_opgp_key_t key,
 {
 	return drew_opgp_keystore_add_keys(ks, &key, 1, flags);
 }
-UNEXPORT()
 
 static void update_pubkeys(drew_opgp_keystore_t ks, PublicKey *pub, int flags)
 {
@@ -1045,7 +1041,6 @@ static void update_pubkeys(drew_opgp_keystore_t ks, PublicKey *pub, int flags)
 		drew_opgp_keystore_update_sig(ks, &it->second, flags);
 }
 
-EXPORT()
 extern "C"
 int drew_opgp_keystore_update_keys(drew_opgp_keystore_t ks,
 		drew_opgp_key_t *keys, size_t nkeys, int flags)
@@ -1141,5 +1136,3 @@ int drew_opgp_keystore_check(drew_opgp_keystore_t ks, int flags)
 {
 	return -DREW_ERR_NOT_IMPL;
 }
-UNEXPORT()
-UNHIDE()

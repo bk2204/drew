@@ -1,11 +1,7 @@
 #include "keystore.hh"
 
-extern "C" {
-EXPORT()
 #include <sys/stat.h>
 #include <sys/types.h>
-UNEXPORT()
-}
 
 #define CHUNKSZ	64
 
