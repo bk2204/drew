@@ -72,6 +72,12 @@ struct util {
 	drew_opgp_parser_t pars;
 };
 
+struct options {
+	int pktbufsz;
+	int validate;
+	const char *keystorefile;
+};
+
 int open_file(struct file *f, const char *filename)
 {
 	struct stat st;
@@ -223,7 +229,7 @@ void print_key_info(drew_opgp_key_t key, int full)
 	free(uids);
 }
 
-int print_fingerprint(struct util *util, const char *keystorefile)
+int print_fingerprint(struct util *util, const struct options *opts)
 {
 	int res = 0, nkeys = 0;
 	drew_opgp_keystore_t ks;
@@ -232,7 +238,7 @@ int print_fingerprint(struct util *util, const char *keystorefile)
 
 	drew_opgp_keystore_new(&ks, util->ldr);
 	drew_opgp_keystore_set_backend(ks, "bdb");
-	if ((res = drew_opgp_keystore_open(ks, keystorefile, false)) ||
+	if ((res = drew_opgp_keystore_open(ks, opts->keystorefile, false)) ||
 			(res = drew_opgp_keystore_load(ks, missingid))) {
 		if (res == -DREW_ERR_MORE_INFO)
 			return print_error(23, res, "missing ID: %02x%02x%02x%02x",
@@ -270,7 +276,7 @@ static void validate_keys(drew_opgp_keystore_t ks, int print)
 /* Process the keystore in some way.  Right now, all that can be done is
  * validating.
  */
-int process(struct util *util, const char *keystorefile, int validate)
+int process(struct util *util, const struct options *opts)
 {
 	int res = 0;
 	drew_opgp_keystore_t ks;
@@ -278,7 +284,7 @@ int process(struct util *util, const char *keystorefile, int validate)
 
 	drew_opgp_keystore_new(&ks, util->ldr);
 	drew_opgp_keystore_set_backend(ks, "bdb");
-	if ((res = drew_opgp_keystore_open(ks, keystorefile, false)))
+	if ((res = drew_opgp_keystore_open(ks, opts->keystorefile, false)))
 		return print_error(23, res, "error opening keystore");
 	printf("Loading keys...");
 	fflush(stdout);
@@ -291,7 +297,7 @@ int process(struct util *util, const char *keystorefile, int validate)
 	drew_opgp_keystore_close(ks);
 	printf("ok, done.\n");
 
-	if (validate) {
+	if (opts->validate) {
 		printf("Validating keys...\n");
 		validate_keys(ks, 1);
 		fflush(stdout);
@@ -300,7 +306,7 @@ int process(struct util *util, const char *keystorefile, int validate)
 
 	printf("Storing keys...");
 	fflush(stdout);
-	if ((res = drew_opgp_keystore_open(ks, keystorefile, true)))
+	if ((res = drew_opgp_keystore_open(ks, opts->keystorefile, true)))
 		return print_error(23, res, "error opening keystore");
 	drew_opgp_keystore_store(ks);
 	printf("ok, done.\n");
@@ -309,24 +315,23 @@ int process(struct util *util, const char *keystorefile, int validate)
 	return 0;
 }
 
-int import(struct file *f, struct util *util, size_t pktbufsz,
-		const char *keystorefile, int validate)
+int import(struct file *f, struct util *util, const struct options *opts)
 {
 	int res = 0;
 	size_t off = 0, toff;
 	drew_opgp_packet_t *pkts;
 	drew_opgp_key_t key;
 	drew_opgp_keystore_t ks;
-	size_t npkts = pktbufsz, nused = 0, nparsed = 1;
+	size_t npkts = opts->pktbufsz, nused = 0, nparsed = 1;
 	size_t fill = 0;
 
-	pkts = malloc(sizeof(*pkts) * pktbufsz);
+	pkts = malloc(sizeof(*pkts) * opts->pktbufsz);
 
-	memset(pkts, 0, sizeof(*pkts) * pktbufsz);
+	memset(pkts, 0, sizeof(*pkts) * opts->pktbufsz);
 	drew_opgp_keystore_new(&ks, util->ldr);
 	printf("Importing keys...\n");
 	while (off < f->size || nparsed || pkts[0].type) {
-		npkts = pktbufsz - fill;
+		npkts = opts->pktbufsz - fill;
 		res = drew_opgp_parser_parse_packets(util->pars, pkts+fill, &npkts,
 				f->buf+off, f->size-off, &toff);
 		if (res < 0) {
@@ -355,22 +360,22 @@ int import(struct file *f, struct util *util, size_t pktbufsz,
 		}
 		else
 			return print_error(22, 0,
-					"packet buffer (%zu packets) is too small", pktbufsz);
+					"packet buffer (%zu packets) is too small", opts->pktbufsz);
 		drew_opgp_keystore_update_key(ks, key, 0);
 		print_key_info(key, 0);
 		drew_opgp_key_free(&key);
 		res = 0;
-		for (size_t i = nused; i < pktbufsz && pkts[i].type &&
+		for (size_t i = nused; i < opts->pktbufsz && pkts[i].type &&
 				pkts[i].type != 6; i++, nused++);
-		size_t rem = pktbufsz - nused;
+		size_t rem = opts->pktbufsz - nused;
 		memmove(pkts, pkts+nused, rem * sizeof(*pkts));
 		memset(pkts+rem, 0, nused * sizeof(*pkts));
 		fill = rem;
 	}
 	drew_opgp_keystore_set_backend(ks, "bdb");
-	if ((res = drew_opgp_keystore_open(ks, keystorefile, true)))
+	if ((res = drew_opgp_keystore_open(ks, opts->keystorefile, true)))
 		return print_error(23, res, "error opening keystore");
-	if (validate) {
+	if (opts->validate) {
 		drew_opgp_keystore_store(ks);
 		printf("Validating keys...\n");
 		validate_keys(ks, 1);
@@ -391,20 +396,25 @@ out:
 #define CMD_FINGERPRINT		2
 #define CMD_IMPORT			3
 #define CMD_PROCESS			4
+
 int main(int argc, char **argv)
 {
-	int res = 0, cmd = 0, pktbufsz = 20000, validate = 0;
+	int res = 0, cmd = 0;
 	struct file f;
 	struct util util;
-	const char *keystorefile = NULL;
+	struct options opts = {
+		.pktbufsz = 20000,
+		.validate = 0,
+		.keystorefile = NULL,
+	};
 	struct poptOption optsargs[] = {
 		{"list-packets", 0, POPT_ARG_VAL, &cmd, CMD_LIST_PACKETS, NULL, NULL},
 		{"fingerprint", 0, POPT_ARG_VAL, &cmd, CMD_FINGERPRINT, NULL, NULL},
 		{"import", 0, POPT_ARG_VAL, &cmd, CMD_IMPORT, NULL, NULL},
 		{"process", 0, POPT_ARG_VAL, &cmd, CMD_PROCESS, NULL, NULL},
-		{"validate", 0, POPT_ARG_NONE, &validate, 1, NULL, NULL},
-		{"keystore", 0, POPT_ARG_STRING, &keystorefile, 1, NULL, NULL},
-		{"packet-buffer-size", 0, POPT_ARG_INT, &pktbufsz, 0, NULL, NULL},
+		{"validate", 0, POPT_ARG_NONE, &opts.validate, 1, NULL, NULL},
+		{"keystore", 0, POPT_ARG_STRING, &opts.keystorefile, 1, NULL, NULL},
+		{"packet-buffer-size", 0, POPT_ARG_INT, &opts.pktbufsz, 0, NULL, NULL},
 		POPT_TABLEEND
 	};
 	const char *filename = NULL;
@@ -431,25 +441,25 @@ int main(int argc, char **argv)
 		res = list_packets(&f, &util);
 	}
 	else if (cmd == CMD_FINGERPRINT) {
-		if (!keystorefile) {
+		if (!opts.keystorefile) {
 			res = 32;
 			goto out;
 		}
-		res = print_fingerprint(&util, keystorefile);
+		res = print_fingerprint(&util, &opts);
 	}
 	else if (cmd == CMD_IMPORT) {
-		if (!keystorefile) {
+		if (!opts.keystorefile) {
 			res = 32;
 			goto out;
 		}
-		res = import(&f, &util, pktbufsz, keystorefile, validate);
+		res = import(&f, &util, &opts);
 	}
 	else if (cmd == CMD_PROCESS) {
-		if (!keystorefile) {
+		if (!opts.keystorefile) {
 			res = 32;
 			goto out;
 		}
-		res = process(&util, keystorefile, validate);
+		res = process(&util, &opts);
 	}
 	else {
 		fprintf(stderr, "%s: need a valid command\n", argv[0]);
