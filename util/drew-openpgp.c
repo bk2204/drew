@@ -76,6 +76,7 @@ struct options {
 	int pktbufsz;
 	int validate;
 	int recovery;
+	const char *keystoretype;
 	const char *keystorefile;
 };
 
@@ -236,7 +237,7 @@ int open_keystore(drew_opgp_keystore_t ks, const struct options *opts,
 	int res = 0;
 	drew_opgp_id_t missingid;
 
-	drew_opgp_keystore_set_backend(ks, "bdb");
+	drew_opgp_keystore_set_backend(ks, opts->keystoretype);
 	if (opts->recovery) {
 		int one = 1;
 		drew_opgp_keystore_set_backend_options(ks,
@@ -270,6 +271,7 @@ int print_fingerprint(struct util *util, const struct options *opts)
 		print_key_info(keys[i], 1);
 
 	free(keys);
+	drew_opgp_keystore_close(ks);
 	drew_opgp_keystore_free(&ks);
 	return res;
 }
@@ -300,7 +302,7 @@ int process(struct util *util, const struct options *opts)
 	drew_opgp_id_t missingid;
 
 	drew_opgp_keystore_new(&ks, util->ldr);
-	drew_opgp_keystore_set_backend(ks, "bdb");
+	drew_opgp_keystore_set_backend(ks, opts->keystoretype);
 	if ((res = open_keystore(ks, opts, false)))
 		return res;
 	printf("Loading keys...");
@@ -328,6 +330,7 @@ int process(struct util *util, const struct options *opts)
 	drew_opgp_keystore_store(ks);
 	printf("ok, done.\n");
 	drew_opgp_keystore_close(ks);
+	drew_opgp_keystore_free(&ks);
 
 	return 0;
 }
@@ -389,7 +392,7 @@ int import(struct file *f, struct util *util, const struct options *opts)
 		memset(pkts+rem, 0, nused * sizeof(*pkts));
 		fill = rem;
 	}
-	drew_opgp_keystore_set_backend(ks, "bdb");
+	drew_opgp_keystore_set_backend(ks, opts->keystoretype);
 	if ((res = drew_opgp_keystore_open(ks, opts->keystorefile, true)))
 		return print_error(23, res, "error opening keystore");
 	if (opts->validate) {
@@ -423,6 +426,7 @@ int main(int argc, char **argv)
 		.pktbufsz = 20000,
 		.validate = 0,
 		.recovery = 0,
+		.keystoretype = "bdb",
 		.keystorefile = NULL,
 	};
 	struct poptOption optsargs[] = {
@@ -433,6 +437,7 @@ int main(int argc, char **argv)
 		{"validate", 0, POPT_ARG_NONE, &opts.validate, 1, NULL, NULL},
 		{"recovery", 0, POPT_ARG_NONE, &opts.recovery, 0, NULL, NULL},
 		{"keystore", 0, POPT_ARG_STRING, &opts.keystorefile, 1, NULL, NULL},
+		{"keystore-type", 0, POPT_ARG_STRING, &opts.keystoretype, 1, NULL, NULL},
 		{"packet-buffer-size", 0, POPT_ARG_INT, &opts.pktbufsz, 0, NULL, NULL},
 		POPT_TABLEEND
 	};
