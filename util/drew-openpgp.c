@@ -396,7 +396,6 @@ int import(struct file *f, struct util *util, const struct options *opts)
 	if ((res = drew_opgp_keystore_open(ks, opts->keystorefile, true)))
 		return print_error(23, res, "error opening keystore");
 	if (opts->validate) {
-		drew_opgp_keystore_store(ks);
 		printf("Validating keys...\n");
 		validate_keys(ks, 1);
 		fflush(stdout);
