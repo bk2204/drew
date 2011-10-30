@@ -13,6 +13,8 @@ test/test-mem
 test/plugin-main
 util/*sum
 util/daniel
+util/version
+include/version.h
 *.d
 *.o
 *.gen

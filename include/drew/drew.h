@@ -59,6 +59,9 @@
 
 #endif
 
+DREW_SYM_PUBLIC
+int drew_get_version(int op, const char **sp, void *p);
+
 #include <drew/plugin.h>
 
 #endif

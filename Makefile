@@ -1,5 +1,7 @@
 include config
 
+VERSION			:= $(shell test -d .git && git describe)
+
 CATEGORIES		:= hash block mode mac stream prng bignum pkenc pksig kdf
 
 TEST_SRC		+= libmd/testsuite.c
@@ -102,6 +104,16 @@ ${PLUGINS}: %: %.so
 $(PLUGINS:=.so): %.so: %.o
 	${CXX} ${LIBCFLAGS} ${CXXFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
+version:
+	printf '#define DREW_STRING_VERSION "$(VERSION)"\n' > $@
+	printf '#define DREW_VERSION %s\n' \
+		`echo $(VERSION) | perl -pe 's/v(\d+)(-.*)?/$$1/'` >> $@
+
+.PHONY: version
+
+include/version.h: version
+	if ! cmp -s $@ $<; then mv $< $@; else $(RM) $<; fi
+
 plugins: ${PLUGINS}
 	[ -d plugins ] || mkdir plugins
 	for i in ${.ALLSRC}; do cp $$i.so plugins/`basename $$i .so`; done
@@ -114,6 +126,7 @@ clean:
 	${RM} -f ${DREW_SONAME} ${DREW_SYMLINK}
 	${RM} -f ${TEST_BINARIES}
 	${RM} -f ${UTILITIES}
+	${RM} -f include/version.h
 	${RM} -fr ${PLUGINS} plugins/
 	${RM} -r install
 	find -name '*.o' | xargs -r rm
