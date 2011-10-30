@@ -42,6 +42,10 @@ typedef struct drew_param_t {
 		const char *string;
 		size_t number;
 		void *value;
+		struct {
+			void *ptr;
+			size_t len;
+		} array;
 	} param;
 } drew_param_t;
 
