@@ -186,7 +186,10 @@ int test_execute(void *data, const char *name, const void *tbl,
 
 	uint8_t *buf = malloc(tc->ctlen), *buf2 = malloc(tc->ctlen);
 	ctx.functbl = tbl;
-	ctx.functbl->init(&ctx, 0, tep->ldr, tc->feedbackBits ? &param : NULL);
+	if (ctx.functbl->init(&ctx, 0, tep->ldr, tc->feedbackBits ? &param : NULL)){
+		result = TEST_INTERNAL_ERR;
+		goto out;
+	}
 	ctx.functbl->setblock(&ctx, bctx);
 	ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
 	if (tc->aadlen)
