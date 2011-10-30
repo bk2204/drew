@@ -16,10 +16,9 @@
 HIDE()
 namespace drew {
 
-class SHACAL1 : public BlockCipher<20>
+class SHACAL1 : public BlockCipher<20, BigEndian>
 {
 	public:
-		typedef BigEndian endian_t;
 		SHACAL1();
 		~SHACAL1() {};
 		int SetKey(const uint8_t *key, size_t sz);
@@ -30,10 +29,9 @@ class SHACAL1 : public BlockCipher<20>
 		uint32_t m_words[80];
 };
 
-class SHACAL2 : public BlockCipher<32>
+class SHACAL2 : public BlockCipher<32, BigEndian>
 {
 	public:
-		typedef BigEndian endian_t;
 		SHACAL2();
 		~SHACAL2() {};
 		int SetKey(const uint8_t *key, size_t sz);
