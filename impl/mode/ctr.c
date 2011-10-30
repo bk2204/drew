@@ -140,6 +140,10 @@ static int ctr_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 	if (!algoctx)
 		return DREW_ERR_INVALID;
 
+	if (c->algo) {
+		c->algo->functbl->fini(c->algo, 0);
+		drew_mem_free(c->algo);
+	}
 	c->algo = drew_mem_malloc(sizeof(*c->algo));
 	c->algo->functbl = algoctx->functbl;
 	c->algo->functbl->clone(c->algo, algoctx, 0);
