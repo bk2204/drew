@@ -693,6 +693,7 @@ void drew::CounterDRBG::Update(const uint8_t *provided)
 	ctr->functbl->encryptfast(ctr, buf, buf, seedlen);
 	XorBuffers(buf, buf, provided, seedlen);
 	block->functbl->setkey(block, buf, keylen, 0);
+	ctr->functbl->setblock(ctr, block);
 	ctr->functbl->setiv(ctr, buf+keylen, outlen);
 	memset(buf, 0, sizeof(buf));
 }
@@ -727,6 +728,7 @@ int drew::CounterDRBG::Initialize(const uint8_t *data, size_t len)
 
 	memset(zero, 0, sizeof(zero));
 	block->functbl->setkey(block, zero, keylen, 0);
+	ctr->functbl->setblock(ctr, block);
 	ctr->functbl->setiv(ctr, zero, outlen);
 	Update(buf);
 	rc = 1;
