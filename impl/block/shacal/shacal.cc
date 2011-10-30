@@ -58,6 +58,8 @@ static int shacal1info(int op, void *p)
 			return 0;
 		case DREW_BLOCK_INTSIZE:
 			return sizeof(drew::SHACAL1);
+		case DREW_BLOCK_ENDIAN:
+			return drew::SHACAL1::endian_t::GetEndianness();
 		default:
 			return -DREW_ERR_INVALID;
 	}
@@ -112,6 +114,8 @@ static int shacal2info(int op, void *p)
 			return 0;
 		case DREW_BLOCK_INTSIZE:
 			return sizeof(drew::SHACAL2);
+		case DREW_BLOCK_ENDIAN:
+			return drew::SHACAL2::endian_t::GetEndianness();
 		default:
 			return -DREW_ERR_INVALID;
 	}
