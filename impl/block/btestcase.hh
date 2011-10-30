@@ -20,6 +20,7 @@
 #ifndef BLOCK_TESTCASE_HH
 #define BLOCK_TESTCASE_HH
 
+#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 

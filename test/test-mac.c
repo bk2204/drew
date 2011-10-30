@@ -134,11 +134,15 @@ int test_execute(void *data, const char *name, const void *tbl,
 		return TEST_CORRUPT;
 
 	drew_mac_t ctx;
-	drew_param_t param;
+	drew_param_t param, tagparam;
 	drew_hash_t hash;
 	drew_block_t block;
 
 	memset(&param, 0, sizeof(param));
+
+	tagparam.name = "tagLength";
+	tagparam.next = &param;
+	tagparam.param.number = tc->maclen;
 
 	if (!(res = make_new_ctx(tep->ldr, tc->algo, &hash, DREW_TYPE_HASH))) {
 		param.name = "digest";
@@ -157,7 +161,7 @@ int test_execute(void *data, const char *name, const void *tbl,
 
 	uint8_t *buf = malloc(tc->maclen);
 	ctx.functbl = tbl;
-	ctx.functbl->init(&ctx, 0, tep->ldr, &param);
+	ctx.functbl->init(&ctx, 0, tep->ldr, &tagparam);
 	ctx.functbl->setkey(&ctx, tc->key, tc->klen);
 	ctx.functbl->update(&ctx, tc->pt, tc->len);
 	ctx.functbl->final(&ctx, buf, 0);

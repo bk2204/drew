@@ -17,6 +17,7 @@ PLUGINS_BLOCK-${CFG_SEED}		+= seed/seed
 PLUGINS_BLOCK-${CFG_IDEA}		+= idea/idea
 PLUGINS_BLOCK-${CFG_ARIA128}	+= aria/aria128
 PLUGINS_BLOCK-${CFG_ARIABYTE}	+= aria/ariabyte
+PLUGINS_BLOCK-${CFG_SHACAL}		+= shacal/shacal
 
 ${BLOCK_DIR}/cast/cast5.so: ${BLOCK_DIR}/cast/sboxes.o
 ${BLOCK_DIR}/cast/cast6.so: ${BLOCK_DIR}/cast/sboxes.o
@@ -29,6 +30,13 @@ EXTRA_OBJECTS-${CFG_CAST6}		+= ${BLOCK_DIR}/cast/sboxes.o
 EXTRA_OBJECTS-${CFG_ARIA128}	+= ${BLOCK_DIR}/aria/aria.o
 EXTRA_OBJECTS-${CFG_ARIABYTE}	+= ${BLOCK_DIR}/aria/aria.o
 EXTRA_OBJECTS-${CFG_SERPENT}	+= ${BLOCK_DIR}/serpent/serpent-impl.o
+
+${BLOCK_DIR}/shacal/shacal.so:	${HASH_DIR}/sha1/sha1.o
+
+EXTRA_OBJECTS-${CFG_SHACAL}	+= ${HASH_DIR}/sha1/sha1.o
+
+${BLOCK_DIR}/shacal/shacal.o: CPPFLAGS += -I${HASH_DIR}
+${BLOCK_DIR}/shacal/shacal.d: CPPFLAGS += -I${HASH_DIR}
 
 BLOCK_PLUGINS	:= $(patsubst %,${BLOCK_DIR}/%,$(PLUGINS_BLOCK-m))
 BLOCK_MODULES	:= $(patsubst %,${BLOCK_DIR}/%.o,$(PLUGINS_BLOCK-y))

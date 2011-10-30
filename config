@@ -43,7 +43,7 @@ CFG_SEED		= y
 CFG_IDEA		= No, thanks.  I'm patented.
 CFG_ARIABYTE	= y
 CFG_ARIA128		= y
-CFG_SOSEMANUK	= y
+CFG_SHACAL		= y
 
 # Modes.
 CFG_CFB			= y
@@ -54,6 +54,7 @@ CFG_GCM			= y
 
 # MACs.
 CFG_HMAC		= y
+CFG_CMAC		= y
 
 ## Stream ciphers.
 CFG_RC4			= y
@@ -61,6 +62,7 @@ CFG_SALSA20		= y
 CFG_HC128		= y
 CFG_HC256		= y
 CFG_RABBIT		= y
+CFG_SOSEMANUK	= y
 
 ## PRNGs.
 CFG_ARC4STIR	= y
