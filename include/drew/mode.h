@@ -35,15 +35,15 @@
 #error "mismatched alignment values"
 #endif
 
-/* The ABI version of the hash interface. */
-#define DREW_MODE_VERSION 0 /* Not implemented. */
+/* The ABI version of the mode interface. */
+#define DREW_MODE_VERSION 0
 /* The number of bytes per quantum. */
-#define DREW_MODE_QUANTUM 1 /* Not implemented. */
+#define DREW_MODE_QUANTUM 1 /* Not implemented in version 3 and later. */
 /* The size of the underlying implementation's context.  This is useful for the
  * clone function if there's a need to copy the actual context into a given
  * block of memory, such as locked memory.
  */
-#define DREW_MODE_INTSIZE 2 /* Not implemented. */
+#define DREW_MODE_INTSIZE 2
 /* The number of bytes to pass as input to the final method instead of to the
  * normal one.
  */
@@ -99,6 +99,29 @@ typedef struct {
 			size_t);
 	int (*test)(void *, const drew_loader_t *);
 } drew_mode_functbl2_t;
+
+typedef struct {
+	int (*info)(int op, void *p);
+	int (*info2)(int op, void *, const void *);
+	int (*init)(drew_mode_t *, int, const drew_loader_t *,
+			const drew_param_t *);
+	int (*clone)(drew_mode_t *, const drew_mode_t *, int);
+	int (*reset)(drew_mode_t *);
+	int (*fini)(drew_mode_t *, int);
+	int (*setblock)(drew_mode_t *, const drew_block_t *);
+	int (*setiv)(drew_mode_t *, const uint8_t *, size_t);
+	int (*resync)(drew_mode_t *);
+	int (*encrypt)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
+	int (*decrypt)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
+	int (*encryptfast)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
+	int (*decryptfast)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
+	int (*setdata)(drew_mode_t *, const uint8_t *, size_t);
+	int (*encryptfinal)(drew_mode_t *, uint8_t *, size_t, const uint8_t *,
+			size_t);
+	int (*decryptfinal)(drew_mode_t *, uint8_t *, size_t, const uint8_t *,
+			size_t);
+	int (*test)(void *, const drew_loader_t *);
+} drew_mode_functbl3_t;
 
 typedef drew_mode_functbl2_t drew_mode_functbl_t;
 

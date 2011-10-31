@@ -34,10 +34,10 @@ extern "C" {
 #include <drew/plugin.h>
 #include <drew/hash.h>
 
-#define PLUGIN_FUNCTBL(prefix, info, init, update, updatefast, pad, final, transform, test, fini, clone, reset) \
+#define PLUGIN_FUNCTBL(prefix, info, info2, init, update, updatefast, pad, final, test, fini, clone, reset) \
 \
 static drew_hash_functbl_t prefix ## functbl = { \
-	info, init, clone, reset, fini, update, updatefast, pad, final, transform, test \
+	info, info2, init, clone, reset, fini, update, updatefast, pad, final, test \
 };
 
 struct plugin {
@@ -65,7 +65,7 @@ int DREW_PLUGIN_NAME(x)(void *ldr, int op, int id, void *p) \
 		case DREW_LOADER_GET_NPLUGINS: \
 			return nplugins; \
 		case DREW_LOADER_GET_TYPE: \
-			return 1; \
+			return DREW_TYPE_HASH; \
 		case DREW_LOADER_GET_FUNCTBL_SIZE: \
 			return sizeof(drew_hash_functbl_t); \
 		case DREW_LOADER_GET_FUNCTBL: \

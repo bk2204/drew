@@ -77,7 +77,7 @@ class Keccak
 		
 			Transform(m_buf);
 		}
-		virtual void GetDigest(uint8_t *digest, bool nopad);
+		virtual void GetDigest(uint8_t *digest, size_t len, bool nopad);
 		size_t GetDigestSize() const
 		{
 			return m_c / 2;
@@ -108,7 +108,7 @@ class KeccakWithLimitedNots : public Keccak
 		KeccakWithLimitedNots(size_t);
 		virtual void Reset();
 		static inline void Transform(uint64_t [5][5], const uint8_t *data);
-		virtual void GetDigest(uint8_t *digest, bool nopad);
+		virtual void GetDigest(uint8_t *digest, size_t len, bool nopad);
 	protected:
 		static inline void Transform(uint64_t [5][5], const uint8_t *data,
 				size_t);

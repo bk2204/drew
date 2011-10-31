@@ -150,7 +150,7 @@ static int hmac_setkey(drew_mac_t *ctxt, const uint8_t *data, size_t len)
 		keyhash.functbl->clone(&keyhash, &ctx->inside, 0);
 		keyhash.functbl->reset(&keyhash);
 		keyhash.functbl->update(&keyhash, data, len);
-		keyhash.functbl->final(&keyhash, ctx->keybuf, 0);
+		keyhash.functbl->final(&keyhash, ctx->keybuf, ctx->digestsz, 0);
 		keyhash.functbl->fini(&keyhash, 0);
 		ctx->keybufsz = len = ctx->digestsz;
 	}
@@ -203,9 +203,9 @@ static int hmac_final(drew_mac_t *ctx, uint8_t *digest, int flags)
 	struct hmac *c = ctx->ctx;
 	uint8_t buf[BUFFER_SIZE];
 
-	c->inside.functbl->final(&c->inside, buf, 0);
+	c->inside.functbl->final(&c->inside, buf, c->digestsz, 0);
 	c->outside.functbl->update(&c->outside, buf, c->digestsz);
-	c->outside.functbl->final(&c->outside, buf, 0);
+	c->outside.functbl->final(&c->outside, buf, c->digestsz, 0);
 	c->inside.functbl->reset(&c->inside);
 	c->outside.functbl->reset(&c->outside);
 

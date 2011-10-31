@@ -226,7 +226,7 @@ void process_strings_fast(struct crypto *c, uint8_t *out, size_t nbytes,
 	store_uint32(tmp, len);
 	hash.functbl->update(&hash, tmp, 4);
 	hash.functbl->update(&hash, data, len);
-	hash.functbl->final(&hash, output, 0);
+	hash.functbl->final(&hash, output, sizeof(output), 0);
 	memcpy(out, output, nbytes);
 	hash.functbl->fini(&hash, 0);
 	drew_mem_sfree(buf);

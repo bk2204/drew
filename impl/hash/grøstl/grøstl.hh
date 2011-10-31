@@ -30,7 +30,7 @@ namespace drew {
 class Gr\u00f8stlImplementation
 {
 	public:
-		virtual void GetDigest(uint8_t *digest, bool nopad) = 0;
+		virtual void GetDigest(uint8_t *digest, size_t len, bool nopad) = 0;
 		virtual size_t GetBlockSize() const = 0;
 		virtual size_t GetBufferSize() const = 0;
 		virtual ~Gr\u00f8stlImplementation()
@@ -114,7 +114,7 @@ class Gr\u00f8stl256 : public Gr\u00f8stlImplementation
 		Gr\u00f8stl256(size_t sz);
 		virtual ~Gr\u00f8stl256() {}
 		void Reset();
-		void GetDigest(uint8_t *digest, bool nopad);
+		void GetDigest(uint8_t *digest, size_t len, bool nopad);
 		size_t GetBlockSize() const
 		{
 			return 512 / 8;
@@ -141,7 +141,7 @@ class Gr\u00f8stl512: public Gr\u00f8stlImplementation
 		Gr\u00f8stl512(size_t sz);
 		virtual ~Gr\u00f8stl512() {}
 		void Reset();
-		void GetDigest(uint8_t *digest, bool nopad);
+		void GetDigest(uint8_t *digest, size_t len, bool nopad);
 		size_t GetBlockSize() const
 		{
 			return 1024 / 8;
@@ -190,9 +190,9 @@ class Gr\u00f8stlHash
 		{
 			m_impl->Reset();
 		}
-		void GetDigest(uint8_t *digest, bool nopad)
+		void GetDigest(uint8_t *digest, size_t len, bool nopad)
 		{
-			m_impl->GetDigest(digest, nopad);
+			m_impl->GetDigest(digest, len, nopad);
 		}
 		size_t GetDigestSize() const
 		{

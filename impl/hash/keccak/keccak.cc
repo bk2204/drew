@@ -115,9 +115,7 @@ static int keccak_info(int op, void *p)
 	const drew_hash_t *ctx = reinterpret_cast<const drew_hash_t *>(p);
 	switch (op) {
 		case DREW_HASH_VERSION:
-			return 2;
-		case DREW_HASH_QUANTUM:
-			return sizeof(typename T::quantum_t);
+			return 3;
 		case DREW_HASH_SIZE:
 			return keccak_get_digest_size(param);
 		case DREW_HASH_BLKSIZE:
@@ -125,9 +123,72 @@ static int keccak_info(int op, void *p)
 				return ((const T *)ctx->ctx)->GetBlockSize();
 			return -DREW_ERR_MORE_INFO;
 		case DREW_HASH_BUFSIZE:
-			if (p)
-				return ((const T *)ctx->ctx)->GetBlockSize();
+			return 1600/8;
+		case DREW_HASH_INTSIZE:
+			return sizeof(T);
+		case DREW_HASH_ENDIAN:
+			return T::endian_t::GetEndianness();
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
+static const int hash_sizes[] = {
+	224/8, 256/8, 384/8, 512/8
+};
+
+static const int block_sizes[] = {
+	224/8, 256/8, 384/8, 512/8
+};
+
+static const int buffer_sizes[] = {
+	5*5*(64/8)
+};
+
+template<class T>
+static int keccak_info2(int op, drew_param_t *outp, const drew_param_t *inp)
+{
+	using namespace drew;
+	switch (op) {
+		case DREW_HASH_VERSION:
+			return 3;
+		case DREW_HASH_SIZE_LIST:
+			for (drew_param_t *p = outp; p; p = p->next)
+				if (!strcmp(p->name, "digestSize")) {
+					p->param.array.ptr = (void *)hash_sizes;
+					p->param.array.len = DIM(hash_sizes);
+				}
+			return 0;
+		case DREW_HASH_BLKSIZE_LIST:
+			for (drew_param_t *p = outp; p; p = p->next)
+				if (!strcmp(p->name, "blockSize")) {
+					p->param.array.ptr = (void *)block_sizes;
+					p->param.array.len = DIM(block_sizes);
+				}
+			return 0;
+		case DREW_HASH_BUFSIZE_LIST:
+			for (drew_param_t *p = outp; p; p = p->next)
+				if (!strcmp(p->name, "bufferSize")) {
+					p->param.array.ptr = (void *)buffer_sizes;
+					p->param.array.len = DIM(buffer_sizes);
+				}
+			return 0;
+		case DREW_HASH_SIZE_CTX:
+			for (const drew_param_t *p = inp; p; p = p->next)
+				if (!strcmp(p->name, "context")) {
+					const T *ctx = (const T *)p->param.value;
+					return ctx->GetBlockSize();
+				}
 			return -DREW_ERR_MORE_INFO;
+		case DREW_HASH_BLKSIZE_CTX:
+			for (const drew_param_t *p = inp; p; p = p->next)
+				if (!strcmp(p->name, "context")) {
+					const T *ctx = (const T *)p->param.value;
+					return ctx->GetBlockSize();
+				}
+			return -DREW_ERR_MORE_INFO;
+		case DREW_HASH_BUFSIZE_CTX:
+			return 1600/8;
 		case DREW_HASH_INTSIZE:
 			return sizeof(T);
 		case DREW_HASH_ENDIAN:
@@ -168,6 +229,11 @@ static int keccakinfo(int op, void *p)
 	return keccak_info<drew::Keccak>(op, p);
 }
 
+static int keccakinfo2(int op, drew_param_t *out, const drew_param_t *in)
+{
+	return keccak_info2<drew::Keccak>(op, out, in);
+}
+
 static int keccakinit(drew_hash_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param)
 {
@@ -182,6 +248,11 @@ static int keccaktest(void *p, const drew_loader_t *ldr)
 static int keccakwlninfo(int op, void *p)
 {
 	return keccak_info<drew::KeccakWithLimitedNots>(op, p);
+}
+
+static int keccakwlninfo2(int op, drew_param_t *out, const drew_param_t *in)
+{
+	return keccak_info2<drew::KeccakWithLimitedNots>(op, out, in);
 }
 
 static int keccakwlninit(drew_hash_t *ctx, int flags, const drew_loader_t *ldr,
@@ -436,13 +507,12 @@ void drew::KeccakWithLimitedNots::Transform(uint64_t state[5][5],
 	keccak_f<1>(state);
 }
 
-void drew::Keccak::GetDigest(uint8_t *digest, bool nopad)
+void drew::Keccak::GetDigest(uint8_t *digest, size_t len, bool nopad)
 {
 	if (!nopad)
 		Pad();
 
 	const size_t nwords = m_r / sizeof(uint64_t);
-	const size_t len = m_c / 2;
 	uint8_t *d = digest;
 	for (size_t i = 0; i < len; i += m_r, d += m_r) {
 		uint64_t b[1152/64];
@@ -453,7 +523,8 @@ void drew::Keccak::GetDigest(uint8_t *digest, bool nopad)
 	}
 }
 
-void drew::KeccakWithLimitedNots::GetDigest(uint8_t *digest, bool nopad)
+void drew::KeccakWithLimitedNots::GetDigest(uint8_t *digest, size_t len,
+		bool nopad)
 {
 	if (!nopad)
 		Pad();
@@ -465,7 +536,6 @@ void drew::KeccakWithLimitedNots::GetDigest(uint8_t *digest, bool nopad)
 	m_hash[2][3] = ~m_hash[2][3];
 	m_hash[0][4] = ~m_hash[0][4];
 	const size_t nwords = m_r / sizeof(uint64_t);
-	const size_t len = m_c / 2;
 	uint8_t *d = digest;
 	for (size_t i = 0; i < len; i += m_r, d += m_r) {
 		uint64_t b[1152/64];

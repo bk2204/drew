@@ -38,7 +38,7 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 }
 
 inline int test_speed_loop(drew_hash_t *ctx, uint8_t *buf,
-		int chunk, int nchunks,
+		int chunk, int nchunks, int hashsize, 
 		int (*update)(drew_hash_t *, const uint8_t *, size_t))
 {
 	int i;
@@ -46,7 +46,7 @@ inline int test_speed_loop(drew_hash_t *ctx, uint8_t *buf,
 	for (i = 0; !framework_sigflag && i < nchunks; i++)
 		update(ctx, buf, chunk);
 	if (!framework_sigflag)
-		ctx->functbl->final(ctx, buf, 0);
+		ctx->functbl->final(ctx, buf, hashsize, 0);
 	ctx->functbl->fini(ctx, 0);
 
 	return i;
@@ -144,7 +144,7 @@ int test_execute(void *data, const char *name, const void *tbl,
 	ctx.functbl->init(&ctx, 0, tep->ldr, &param);
 	for (size_t i = 0; i < tc->nrepeats; i++)
 		ctx.functbl->update(&ctx, tc->in, tc->insize);
-	ctx.functbl->final(&ctx, buf, 0);
+	ctx.functbl->final(&ctx, buf, tc->digestsize, 0);
 	ctx.functbl->fini(&ctx, 0);
 	if (memcmp(buf, tc->digest, len))
 		result = TEST_FAILED;
@@ -284,13 +284,13 @@ int test_api_context(drew_hash_t *ctx, const drew_loader_t *ldr,
 	if (ctx->functbl->pad(ctx))
 		retval |= HASH_BAD_PAD;
 
-	if (ctx->functbl->final(ctx, buf, DREW_HASH_NO_PAD))
+	if (ctx->functbl->final(ctx, buf, hashsize, DREW_HASH_NO_PAD))
 		retval |= HASH_BAD_FINAL;
 
-	if (newctx->functbl->final(newctx, buf+hashsize, 0))
+	if (newctx->functbl->final(newctx, buf+hashsize, hashsize, 0))
 		retval |= HASH_BAD_FINAL;
 
-	if (clone[1].functbl->final(&clone[1], buf+(hashsize*2), 0))
+	if (clone[1].functbl->final(&clone[1], buf+(hashsize*2), hashsize, 0))
 		retval |= HASH_BAD_FINAL;
 
 	if (memcmp(buf, buf+hashsize, hashsize))
@@ -336,18 +336,20 @@ int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
 	res = ctx->functbl->info(DREW_HASH_VERSION, NULL);
 	if (is_forbidden_errno(res))
 		retval |= HASH_BAD_ERRNO;
-	if (res != 2)
+	if (res != 3)
 		retval |= HASH_BAD_VERSION;
 
-	res = ctx->functbl->info(DREW_HASH_QUANTUM, NULL);
-	if (is_forbidden_errno(res))
-		retval |= HASH_BAD_ERRNO;
-	if (res < 0)
-		retval |= HASH_BAD_QUANTUM;
-	else {
-		if (res & (res-1))
+	if (res < 3) {
+		res = ctx->functbl->info(DREW_HASH_QUANTUM, NULL);
+		if (is_forbidden_errno(res))
+			retval |= HASH_BAD_ERRNO;
+		if (res < 0)
 			retval |= HASH_BAD_QUANTUM;
-		quantum = res;
+		else {
+			if (res & (res-1))
+				retval |= HASH_BAD_QUANTUM;
+			quantum = res;
+		}
 	}
 
 	res = ctx->functbl->info(DREW_HASH_SIZE, NULL);
@@ -420,7 +422,7 @@ int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		const void *tbl, int chunk, int nchunks)
 {
-	int i, res, blksize;
+	int i, res, blksize, hashsize;
 	uint8_t *buf;
 	struct timespec cstart, cend;
 	drew_hash_t ctx;
@@ -452,10 +454,16 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	}
 	if (res)
 		return res;
+
+	drew_param_t param;
+	param.name = "context";
+	param.next = NULL;
+	param.param.value = &ctx;
+	hashsize = ctx.functbl->info2(DREW_HASH_SIZE_CTX, NULL, &param);
 	update = (!(chunk % blksize) && !(chunk % DREW_HASH_ALIGNMENT)) ? 
 		ctx.functbl->updatefast : ctx.functbl->update;
 	clock_gettime(USED_CLOCK, &cstart);
-	i = test_speed_loop(&ctx, buf, chunk, nchunks, update);
+	i = test_speed_loop(&ctx, buf, chunk, nchunks, hashsize, update);
 	clock_gettime(USED_CLOCK, &cend);
 
 	framework_teardown(fwdata);
