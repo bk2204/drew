@@ -1,5 +1,5 @@
 DREW_IMPL_DIR		:= lib/libdrew-impl
-DREW_IMPL_SONAME	:= libdrew-impl.so.0
+DREW_IMPL_SONAME	:= libdrew-impl.so.3
 DREW_IMPL_SYMLINK	:= $(basename $(DREW_IMPL_SONAME))
 DREW_IMPL_GEN		:= $(DREW_IMPL_DIR)/modules.gen
 
