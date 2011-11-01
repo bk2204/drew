@@ -61,7 +61,7 @@ static int xteainfo(int op, void *p)
 	using namespace drew;
 	switch (op) {
 		case DREW_BLOCK_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_BLOCK_BLKSIZE:
 			return XTEA::block_size;
 		case DREW_BLOCK_ENDIAN:
@@ -79,6 +79,38 @@ static int xteainfo(int op, void *p)
 			return -DREW_ERR_INVALID;
 	}
 }
+
+static int xteainfo2(const drew_block_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	using namespace drew;
+	switch (op) {
+		case DREW_BLOCK_VERSION:
+			return CURRENT_ABI;
+		case DREW_BLOCK_BLKSIZE:
+			return XTEA::block_size;
+		case DREW_BLOCK_ENDIAN:
+			return drew::XTEA::endian_t::GetEndianness();
+		case DREW_BLOCK_KEYSIZE_LIST:
+			for (drew_param_t *p = out; p; p = p->next)
+				if (!strcmp(p->name, "keySize")) {
+					p->param.array.ptr = (void *)xteakeysz;
+					p->param.array.len = DIM(xteakeysz);
+				}
+			return 0;
+		case DREW_BLOCK_KEYSIZE_CTX:
+			if (ctx && ctx->ctx) {
+				const drew::XTEA *p = (const drew::XTEA *)ctx->ctx;
+				return p->GetKeySize();
+			}
+			return -DREW_ERR_MORE_INFO;
+		case DREW_BLOCK_INTSIZE:
+			return sizeof(drew::XTEA);
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
 
 static int xteainit(drew_block_t *ctx, int flags,
 		const drew_loader_t *, const drew_param_t *param)
@@ -103,7 +135,7 @@ static int xteainit(drew_block_t *ctx, int flags,
 
 typedef drew::XTEA::endian_t E;
 
-int drew::XTEA::SetKey(const uint8_t *key, size_t len)
+int drew::XTEA::SetKeyInternal(const uint8_t *key, size_t len)
 {
 	E::Copy(m_k, key, len);
 	return 0;
