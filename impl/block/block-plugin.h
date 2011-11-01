@@ -34,11 +34,11 @@ extern "C" {
 #include <drew/plugin.h>
 #include <drew/block.h>
 
-#define PLUGIN_FUNCTBL(prefix, info, init, setkey, encrypt, decrypt, encryptmult, decryptmult, test, fini, clone, reset) \
+#define PLUGIN_FUNCTBL(prefix, info, info2, init, setkey, encrypt, decrypt, encryptmult, decryptmult, test, fini, clone, reset) \
 \
 static const drew_block_functbl_t prefix ## functbl = { \
-	info, init, clone, reset, fini, setkey, encrypt, decrypt, encryptmult, \
-	decryptmult, test \
+	info, info2, init, clone, reset, fini, setkey, encrypt, decrypt, \
+	encryptmult, decryptmult, test \
 };
 
 struct plugin {

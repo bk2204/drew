@@ -45,7 +45,15 @@ namespace drew {
 			{
 				return 0;
 			}
-			virtual int SetKey(const uint8_t *key, size_t len) = 0;
+			virtual int SetKey(const uint8_t *key, size_t len)
+			{
+				keysz = len;
+				return SetKeyInternal(key, len);
+			}
+			virtual int GetKeySize() const
+			{
+				return keysz;
+			}
 			virtual int Encrypt(uint8_t *out, const uint8_t *in) const = 0;
 			virtual int Decrypt(uint8_t *out, const uint8_t *in) const = 0;
 			virtual int EncryptFast(FastBlock *bout, const FastBlock *bin,
@@ -88,6 +96,8 @@ namespace drew {
 				return 0;
 			}
 		protected:
+			virtual int SetKeyInternal(const uint8_t *key, size_t len) = 0;
+			size_t keysz;
 		private:
 	};
 }
@@ -100,7 +110,7 @@ static int prefix ## info(int op, void *p) \
 	using namespace drew; \
 	switch (op) { \
 		case DREW_BLOCK_VERSION: \
-			return 2; \
+			return CURRENT_ABI; \
 		case DREW_BLOCK_BLKSIZE: \
 			return bname::block_size; \
 		case DREW_BLOCK_ENDIAN: \
@@ -112,6 +122,36 @@ static int prefix ## info(int op, void *p) \
 					return prefix ## keysz[i]; \
 			} \
 			return 0; \
+		case DREW_BLOCK_INTSIZE: \
+			return sizeof(bname); \
+		default: \
+			return -DREW_ERR_INVALID; \
+	} \
+} \
+static int prefix ## info2(const drew_block_t *ctx, int op, drew_param_t *out, \
+		const drew_param_t *in) \
+{ \
+	using namespace drew; \
+	switch (op) { \
+		case DREW_BLOCK_VERSION: \
+			return CURRENT_ABI; \
+		case DREW_BLOCK_BLKSIZE_CTX: \
+			return bname::block_size; \
+		case DREW_BLOCK_ENDIAN: \
+			return bname::endian_t::GetEndianness(); \
+		case DREW_BLOCK_KEYSIZE_LIST: \
+			for (drew_param_t *p = out; p; p = p->next) \
+				if (!strcmp(p->name, "keySize")) { \
+					p->param.array.ptr = (void *)prefix ## keysz; \
+					p->param.array.len = DIM(prefix ## keysz); \
+				} \
+			return 0; \
+		case DREW_BLOCK_KEYSIZE_CTX: \
+			if (ctx && ctx->ctx) { \
+				const bname *ctxp = (const bname *)ctx->ctx; \
+				return ctxp->GetKeySize(); \
+			} \
+			return -DREW_ERR_MORE_INFO; \
 		case DREW_BLOCK_INTSIZE: \
 			return sizeof(bname); \
 		default: \
@@ -135,6 +175,8 @@ static int prefix ## init(drew_block_t *ctx, int flags, \
 #define PLUGIN_STRUCTURE2(prefix, bname) \
  \
 static int prefix ## info(int op, void *p); \
+static int prefix ## info2(const drew_block_t *, int, drew_param_t *, \
+		const drew_param_t *); \
 static int prefix ## init(drew_block_t *ctx, int flags, \
 		const drew_loader_t *, const drew_param_t *); \
 static int prefix ## clone(drew_block_t *newctx, const drew_block_t *oldctx, \
@@ -151,7 +193,7 @@ static int prefix ## decryptfast(const drew_block_t *ctx, uint8_t *out, const ui
 static int prefix ## fini(drew_block_t *ctx, int flags); \
 static int prefix ## test(void *, const drew_loader_t *); \
  \
-PLUGIN_FUNCTBL(prefix, prefix ## info, prefix ## init, prefix ## setkey, prefix ## encrypt, prefix ## decrypt, prefix ## encryptfast, prefix ## decryptfast, prefix ## test, prefix ## fini, prefix ## clone, prefix ## reset); \
+PLUGIN_FUNCTBL(prefix, prefix ## info, prefix ## info2, prefix ## init, prefix ## setkey, prefix ## encrypt, prefix ## decrypt, prefix ## encryptfast, prefix ## decryptfast, prefix ## test, prefix ## fini, prefix ## clone, prefix ## reset); \
  \
 static int prefix ## clone(drew_block_t *newctx, const drew_block_t *oldctx, \
 		int flags) \
