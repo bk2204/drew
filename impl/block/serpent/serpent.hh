@@ -35,13 +35,13 @@ class Serpent : public BlockCipher<16, LittleEndian>
 		Serpent();
 		Serpent(const Serpent &);
 		~Serpent() {};
-		int SetKey(const uint8_t *key, size_t sz);
 		int Encrypt(uint8_t *out, const uint8_t *in) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
 		// This functionality is exposed for Sosemanuk.
 		static void Serpent1(uint32_t *blk);
 		void Serpent24(uint32_t *out, const uint8_t *in);
 	protected:
+		int SetKeyInternal(const uint8_t *key, size_t sz);
 	private:
 		uint32_t m_keybuf[140];
 		uint32_t *m_key;
