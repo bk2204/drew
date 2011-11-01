@@ -23,11 +23,11 @@ class DES : public BlockCipher<8, BigEndian>
 	public:
 		DES();
 		~DES() {};
-		int SetKey(const uint8_t *key, size_t sz);
 		int Encrypt(uint8_t *out, const uint8_t *in) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
 		void ProcessBlock(const uint32_t *, uint32_t &, uint32_t &) const;
 	protected:
+		int SetKeyInternal(const uint8_t *key, size_t sz);
 	private:
 		uint32_t m_k[32], m_kd[32];
 		static const uint32_t Spbox[8][64];
@@ -39,10 +39,10 @@ class TripleDES : public BlockCipher<8, BigEndian>
 	public:
 		TripleDES();
 		~TripleDES() {};
-		int SetKey(const uint8_t *key, size_t sz);
 		int Encrypt(uint8_t *out, const uint8_t *in) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
 	protected:
+		int SetKeyInternal(const uint8_t *key, size_t sz);
 	private:
 		DES m_des1, m_des2, m_des3;
 
