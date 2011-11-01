@@ -49,7 +49,7 @@ void drew::ARIABytewise::RotateRightAndXor(AlignedData &out,
 	XorAligned(out.data, out.data, x.data, 16);
 }
 
-int drew::ARIABytewise::SetKey(const uint8_t *key, size_t len)
+int drew::ARIABytewise::SetKeyInternal(const uint8_t *key, size_t len)
 {
 	// There are only three constants, but they're repeated for convenience.
 	static const AlignedData c[5] = {
