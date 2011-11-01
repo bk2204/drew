@@ -292,7 +292,7 @@ template<unsigned N>
 const size_t drew::GenericRijndael<N>::shiftoffset = (drew::GenericRijndael<N>::m_nb-4);
 
 template<unsigned N>
-int drew::GenericRijndael<N>::SetKey(const uint8_t *key, size_t len)
+int drew::GenericRijndael<N>::SetKeyInternal(const uint8_t *key, size_t len)
 {
 	m_nk = (len / 4);
 	m_nr = 6 + std::max(m_nb, m_nk);
