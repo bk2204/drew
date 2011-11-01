@@ -34,10 +34,10 @@ class Blowfish : public BlockCipher<8, BigEndian>
 	public:
 		Blowfish();
 		~Blowfish() {};
-		int SetKey(const uint8_t *key, size_t sz);
 		int Encrypt(uint8_t *out, const uint8_t *in) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
 	protected:
+		int SetKeyInternal(const uint8_t *key, size_t sz);
 	private:
 		inline uint32_t f(uint32_t x) const;
 		void MainAlgorithm(const uint32_t *p, uint32_t d[2]) const;
