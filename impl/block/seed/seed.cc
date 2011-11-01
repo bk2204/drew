@@ -100,7 +100,7 @@ uint64_t drew::SEED::EvenKey(uint32_t k[4], uint32_t kci)
 	return val;
 }
 
-int drew::SEED::SetKey(const uint8_t *key, size_t len)
+int drew::SEED::SetKeyInternal(const uint8_t *key, size_t len)
 {
 	uint32_t k[4];
 

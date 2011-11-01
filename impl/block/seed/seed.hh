@@ -34,10 +34,10 @@ class SEED : public BlockCipher<16, BigEndian>
 	public:
 		SEED();
 		~SEED() {};
-		int SetKey(const uint8_t *key, size_t sz);
 		int Encrypt(uint8_t *out, const uint8_t *in) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
 	protected:
+		int SetKeyInternal(const uint8_t *key, size_t sz);
 		static inline uint64_t GenerateSubkey(uint32_t k[4], uint32_t kci);
 		static inline uint64_t OddKey(uint32_t k[4], uint32_t kci);
 		static inline uint64_t EvenKey(uint32_t k[4], uint32_t kci);
