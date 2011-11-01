@@ -35,10 +35,10 @@ class CAST5 : public CAST, public BlockCipher<8, BigEndian>
 	public:
 		CAST5();
 		~CAST5() {};
-		int SetKey(const uint8_t *key, size_t sz);
 		int Encrypt(uint8_t *out, const uint8_t *in) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
 	protected:
+		int SetKeyInternal(const uint8_t *key, size_t sz);
 	private:
 		void SetUpEndianness();
 		void ComputeZSet(uint32_t *z, const uint32_t *x);
