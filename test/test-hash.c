@@ -455,11 +455,7 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	if (res)
 		return res;
 
-	drew_param_t param;
-	param.name = "context";
-	param.next = NULL;
-	param.param.value = &ctx;
-	hashsize = ctx.functbl->info2(DREW_HASH_SIZE_CTX, NULL, &param);
+	hashsize = ctx.functbl->info2(&ctx, DREW_HASH_SIZE_CTX, NULL, NULL);
 	update = (!(chunk % blksize) && !(chunk % DREW_HASH_ALIGNMENT)) ? 
 		ctx.functbl->updatefast : ctx.functbl->update;
 	clock_gettime(USED_CLOCK, &cstart);

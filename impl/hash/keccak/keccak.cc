@@ -146,7 +146,8 @@ static const int buffer_sizes[] = {
 };
 
 template<class T>
-static int keccak_info2(int op, drew_param_t *outp, const drew_param_t *inp)
+static int keccak_info2(const drew_hash_t *ctxt, int op, drew_param_t *outp,
+		const drew_param_t *inp)
 {
 	using namespace drew;
 	switch (op) {
@@ -174,18 +175,16 @@ static int keccak_info2(int op, drew_param_t *outp, const drew_param_t *inp)
 				}
 			return 0;
 		case DREW_HASH_SIZE_CTX:
-			for (const drew_param_t *p = inp; p; p = p->next)
-				if (!strcmp(p->name, "context")) {
-					const T *ctx = (const T *)p->param.value;
-					return ctx->GetBlockSize();
-				}
+			if (ctxt && ctxt->ctx) {
+				const T *ctx = (const T *)ctxt->ctx;
+				return ctx->GetBlockSize();
+			}	
 			return -DREW_ERR_MORE_INFO;
 		case DREW_HASH_BLKSIZE_CTX:
-			for (const drew_param_t *p = inp; p; p = p->next)
-				if (!strcmp(p->name, "context")) {
-					const T *ctx = (const T *)p->param.value;
-					return ctx->GetBlockSize();
-				}
+			if (ctxt && ctxt->ctx) {
+				const T *ctx = (const T *)ctxt->ctx;
+				return ctx->GetBlockSize();
+			}	
 			return -DREW_ERR_MORE_INFO;
 		case DREW_HASH_BUFSIZE_CTX:
 			return 1600/8;
@@ -229,9 +228,10 @@ static int keccakinfo(int op, void *p)
 	return keccak_info<drew::Keccak>(op, p);
 }
 
-static int keccakinfo2(int op, drew_param_t *out, const drew_param_t *in)
+static int keccakinfo2(const drew_hash_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
 {
-	return keccak_info2<drew::Keccak>(op, out, in);
+	return keccak_info2<drew::Keccak>(ctx, op, out, in);
 }
 
 static int keccakinit(drew_hash_t *ctx, int flags, const drew_loader_t *ldr,
@@ -250,9 +250,10 @@ static int keccakwlninfo(int op, void *p)
 	return keccak_info<drew::KeccakWithLimitedNots>(op, p);
 }
 
-static int keccakwlninfo2(int op, drew_param_t *out, const drew_param_t *in)
+static int keccakwlninfo2(const drew_hash_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
 {
-	return keccak_info2<drew::KeccakWithLimitedNots>(op, out, in);
+	return keccak_info2<drew::KeccakWithLimitedNots>(ctx, op, out, in);
 }
 
 static int keccakwlninit(drew_hash_t *ctx, int flags, const drew_loader_t *ldr,

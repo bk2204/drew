@@ -100,7 +100,8 @@ static const int buffer_sizes[] = {
 	1024/8
 };
 
-static int sha512tinfo2(int op, drew_param_t *outp, const drew_param_t *inp)
+static int sha512tinfo2(const drew_hash_t *ctxt, int op, drew_param_t *outp,
+		const drew_param_t *inp)
 {
 	using namespace drew;
 	switch (op) {
@@ -128,11 +129,10 @@ static int sha512tinfo2(int op, drew_param_t *outp, const drew_param_t *inp)
 				}
 			return 0;
 		case DREW_HASH_SIZE_CTX:
-			for (const drew_param_t *p = inp; p; p = p->next)
-				if (!strcmp(p->name, "context")) {
-					const SHA512t *ctx = (const SHA512t *)p->param.value;
-					return ctx->GetDigestSize();
-				}
+			if (ctxt && ctxt->ctx) {
+				const SHA512t *ctx = (const SHA512t *)ctxt->ctx;
+				return ctx->GetDigestSize();
+			}
 			return -DREW_ERR_MORE_INFO;
 		case DREW_HASH_BLKSIZE_CTX:
 			return SHA512t::block_size;

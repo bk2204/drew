@@ -120,7 +120,8 @@ typedef struct {
 
 typedef struct {
 	int (*info)(int op, void *p);
-	int (*info2)(int op, drew_param_t *out, const drew_param_t *in);
+	int (*info2)(const drew_hash_t *, int op, drew_param_t *out,
+			const drew_param_t *in);
 	int (*init)(drew_hash_t *, int, const drew_loader_t *,
 			const drew_param_t *);
 	int (*clone)(drew_hash_t *, const drew_hash_t *, int);

@@ -94,7 +94,8 @@ static const int buffer_sizes[] = {
 	512/8, 1024/8
 };
 
-static int gr\u00f8stlinfo2(int op, drew_param_t *outp, const drew_param_t *inp)
+static int gr\u00f8stlinfo2(const drew_hash_t *ctxt, int op, drew_param_t *outp,
+		const drew_param_t *inp)
 {
 	using namespace drew;
 	switch (op) {
@@ -122,28 +123,22 @@ static int gr\u00f8stlinfo2(int op, drew_param_t *outp, const drew_param_t *inp)
 				}
 			return 0;
 		case DREW_HASH_SIZE_CTX:
-			for (const drew_param_t *p = inp; p; p = p->next)
-				if (!strcmp(p->name, "context")) {
-					const Gr\u00f8stl *ctx =
-						(const Gr\u00f8stl *)p->param.value;
-					return ctx->GetDigestSize();
-				}
+			if (ctxt && ctxt->ctx) {
+				const Gr\u00f8stl *ctx = (const Gr\u00f8stl *)ctxt->ctx;
+				return ctx->GetDigestSize();
+			}
 			return -DREW_ERR_MORE_INFO;
 		case DREW_HASH_BLKSIZE_CTX:
-			for (const drew_param_t *p = inp; p; p = p->next)
-				if (!strcmp(p->name, "context")) {
-					const Gr\u00f8stl *ctx =
-						(const Gr\u00f8stl *)p->param.value;
-					return ctx->GetBlockSize();
-				}
+			if (ctxt && ctxt->ctx) {
+				const Gr\u00f8stl *ctx = (const Gr\u00f8stl *)ctxt->ctx;
+				return ctx->GetBlockSize();
+			}
 			return -DREW_ERR_MORE_INFO;
 		case DREW_HASH_BUFSIZE_CTX:
-			for (const drew_param_t *p = inp; p; p = p->next)
-				if (!strcmp(p->name, "context")) {
-					const Gr\u00f8stl *ctx =
-						(const Gr\u00f8stl *)p->param.value;
-					return ctx->GetBufferSize();
-				}
+			if (ctxt && ctxt->ctx) {
+				const Gr\u00f8stl *ctx = (const Gr\u00f8stl *)ctxt->ctx;
+				return ctx->GetBufferSize();
+			}
 			return -DREW_ERR_MORE_INFO;
 		case DREW_HASH_INTSIZE:
 			return sizeof(Gr\u00f8stl);

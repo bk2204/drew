@@ -65,7 +65,8 @@ static const int prefix ## buffer_sizes[] = { \
 	drew::hname::buffer_size \
 }; \
  \
-static int prefix ## info2(int op, drew_param_t *out, const drew_param_t *) \
+static int prefix ## info2(const drew_hash_t *, int op, drew_param_t *out, \
+		const drew_param_t *) \
 { \
 	using namespace drew; \
 	drew_param_t *p; \
@@ -125,7 +126,8 @@ static int prefix ## init(drew_hash_t *ctx, int flags, const drew_loader_t *, \
 #define PLUGIN_STRUCTURE2(prefix, hname) \
  \
 static int prefix ## info(int op, void *); \
-static int prefix ## info2(int op, drew_param_t *, const drew_param_t *); \
+static int prefix ## info2(const drew_hash_t *, int op, drew_param_t *, \
+		const drew_param_t *); \
 static int prefix ## init(drew_hash_t *ctx, int flags, const drew_loader_t *, \
 		const drew_param_t *); \
 static int prefix ## clone(drew_hash_t *newctx, const drew_hash_t *oldctx, \
