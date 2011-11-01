@@ -123,7 +123,7 @@ drew::Camellia::Camellia()
 
 // Number of bits in a uint64_t.
 #define NBITS (64)
-int drew::Camellia::SetKey(const uint8_t *key, size_t sz)
+int drew::Camellia::SetKeyInternal(const uint8_t *key, size_t sz)
 {
 	uint64_t ko[4];
 	
