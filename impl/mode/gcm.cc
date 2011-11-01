@@ -63,12 +63,14 @@ struct gcm {
 };
 
 static int gcm_info(int op, void *p);
+static int gcm_info2(const drew_mode_t *, int op, drew_param_t *,
+		const drew_param_t *);
 static int gcm_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param);
 static int gcmfl_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param);
 static int gcm_reset(drew_mode_t *ctx);
-static int gcm_setpad(drew_mode_t *ctx, const drew_pad_t *pad);
+static int gcm_resync(drew_mode_t *ctx);
 static int gcm_setblock(drew_mode_t *ctx, const drew_block_t *algoctx);
 static int gcm_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len);
 static int gcm_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
@@ -90,24 +92,24 @@ static int gcm_decryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 
 /* The slow implementation. */
 static const drew_mode_functbl_t gcm_functbl = {
-	gcm_info, gcm_init, gcm_clone, gcm_reset, gcm_fini, gcm_setpad,
+	gcm_info, gcm_info2, gcm_init, gcm_clone, gcm_reset, gcm_fini,
 	gcm_setblock, gcm_setiv, gcm_encrypt, gcm_decrypt,
 	gcm_encryptfast, gcm_decryptfast, gcm_setdata,
-	gcm_encryptfinal, gcm_decryptfinal, gcm_test
+	gcm_encryptfinal, gcm_decryptfinal, gcm_resync, gcm_test
 };
 /* The fastest implementation which uses large tables. */
 static const drew_mode_functbl_t gcmfl_functbl = {
-	gcm_info, gcmfl_init, gcm_clone, gcm_reset, gcm_fini, gcm_setpad,
+	gcm_info, gcm_info2, gcmfl_init, gcm_clone, gcm_reset, gcm_fini,
 	gcm_setblock, gcm_setiv, gcm_encrypt, gcm_decrypt,
 	gcm_encryptfast, gcm_decryptfast, gcm_setdata,
-	gcm_encryptfinal, gcm_decryptfinal, gcm_test
+	gcm_encryptfinal, gcm_decryptfinal, gcm_resync, gcm_test
 };
 
 static int gcm_info(int op, void *p)
 {
 	switch (op) {
 		case DREW_MODE_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_MODE_INTSIZE:
 			return sizeof(struct gcm);
 		case DREW_MODE_FINAL_INSIZE:
@@ -118,6 +120,36 @@ static int gcm_info(int op, void *p)
 		default:
 			return -DREW_ERR_INVALID;
 	}
+}
+
+static int gcm_info2(const drew_mode_t *ctx, int op, drew_param_t *,
+		const drew_param_t *)
+{
+	switch (op) {
+		case DREW_MODE_VERSION:
+			return CURRENT_ABI;
+		case DREW_MODE_INTSIZE:
+			return sizeof(struct gcm);
+		case DREW_MODE_FINAL_INSIZE_CTX:
+		case DREW_MODE_FINAL_OUTSIZE_CTX:
+			if (ctx && ctx->ctx) {
+				const struct gcm *c = (const struct gcm *)ctx->ctx;
+				if (c->algo) {
+					return c->algo->functbl->info2(c->algo,
+							DREW_BLOCK_BLKSIZE_CTX, NULL, NULL);
+				}
+			}
+			return -DREW_ERR_MORE_INFO;
+		case DREW_MODE_QUANTUM:
+			return 1;
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
+static int gcm_resync(drew_mode_t *ctx)
+{
+	return -DREW_ERR_NOT_IMPL;
 }
 
 static int gcm_reset(drew_mode_t *ctx)
@@ -189,11 +221,6 @@ static int gcmfl_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	ctx->functbl = &gcmfl_functbl;
 
 	return 0;
-}
-
-static int gcm_setpad(drew_mode_t *ctx, const drew_pad_t *algoname)
-{
-	return -DREW_ERR_NOT_ALLOWED;
 }
 
 static int gcm_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)

@@ -47,9 +47,12 @@ struct ctr {
 };
 
 static int ctr_info(int op, void *p);
+static int ctr_info2(const drew_mode_t *, int op, drew_param_t *,
+		const drew_param_t *);
 static int ctr_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param);
 static int ctr_reset(drew_mode_t *ctx);
+static int ctr_resync(drew_mode_t *ctx);
 static int ctr_setpad(drew_mode_t *ctx, const drew_pad_t *pad);
 static int ctr_setblock(drew_mode_t *ctx, const drew_block_t *algoctx);
 static int ctr_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len);
@@ -67,22 +70,23 @@ static int ctr_decryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 		const uint8_t *in, size_t inlen);
 
 static const drew_mode_functbl_t ctr_functbl = {
-	ctr_info, ctr_init, ctr_clone, ctr_reset, ctr_fini, ctr_setpad,
+	ctr_info, ctr_info2, ctr_init, ctr_clone, ctr_reset, ctr_fini,
 	ctr_setblock, ctr_setiv, ctr_encrypt, ctr_encrypt, ctr_encrypt, ctr_encrypt,
-	ctr_setdata, ctr_encryptfinal, ctr_decryptfinal, ctr_test
+	ctr_setdata, ctr_encryptfinal, ctr_decryptfinal, ctr_resync, ctr_test
 };
 
 static const drew_mode_functbl_t ctr_functbl_aligned = {
-	ctr_info, ctr_init, ctr_clone, ctr_reset, ctr_fini, ctr_setpad,
+	ctr_info, ctr_info2, ctr_init, ctr_clone, ctr_reset, ctr_fini,
 	ctr_setblock, ctr_setiv, ctr_encrypt, ctr_encrypt, ctr_encryptfast,
-	ctr_encryptfast, ctr_setdata, ctr_encryptfinal, ctr_decryptfinal, ctr_test
+	ctr_encryptfast, ctr_setdata, ctr_encryptfinal, ctr_decryptfinal,
+	ctr_resync, ctr_test
 };
 
 static int ctr_info(int op, void *p)
 {
 	switch (op) {
 		case DREW_MODE_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_MODE_INTSIZE:
 			return sizeof(struct ctr);
 		case DREW_MODE_FINAL_INSIZE:
@@ -95,6 +99,25 @@ static int ctr_info(int op, void *p)
 	}
 }
 
+static int ctr_info2(const drew_mode_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	switch (op) {
+		case DREW_MODE_VERSION:
+			return CURRENT_ABI;
+		case DREW_MODE_INTSIZE:
+			return sizeof(struct ctr);
+		case DREW_MODE_FINAL_INSIZE_CTX:
+		case DREW_MODE_FINAL_OUTSIZE_CTX:
+			return 0;
+		case DREW_MODE_BLKSIZE_CTX:
+			return 1;
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
+
 static int ctr_reset(drew_mode_t *ctx)
 {
 	struct ctr *c = ctx->ctx;
@@ -104,6 +127,11 @@ static int ctr_reset(drew_mode_t *ctx)
 		return res;
 	c->boff = 0;
 	return 0;
+}
+
+static int ctr_resync(drew_mode_t *ctx)
+{
+	return -DREW_ERR_NOT_IMPL;
 }
 
 static int ctr_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,

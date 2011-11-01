@@ -45,10 +45,12 @@ struct cbc {
 };
 
 static int cbc_info(int op, void *p);
+static int cbc_info2(const drew_mode_t *, int op, drew_param_t *,
+		const drew_param_t *);
 static int cbc_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param);
 static int cbc_reset(drew_mode_t *ctx);
-static int cbc_setpad(drew_mode_t *ctx, const drew_pad_t *pad);
+static int cbc_resync(drew_mode_t *ctx);
 static int cbc_setblock(drew_mode_t *ctx, const drew_block_t *algoctx);
 static int cbc_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len);
 static int cbc_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
@@ -65,16 +67,16 @@ static int cbc_decryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 		const uint8_t *in, size_t inlen);
 
 static const drew_mode_functbl_t cbc_functbl = {
-	cbc_info, cbc_init, cbc_clone, cbc_reset, cbc_fini, cbc_setpad,
+	cbc_info, cbc_info2, cbc_init, cbc_clone, cbc_reset, cbc_fini,
 	cbc_setblock, cbc_setiv, cbc_encrypt, cbc_decrypt, cbc_encrypt, cbc_decrypt,
-	cbc_setdata, cbc_encryptfinal, cbc_decryptfinal, cbc_test
+	cbc_setdata, cbc_encryptfinal, cbc_decryptfinal, cbc_resync, cbc_test
 };
 
 static int cbc_info(int op, void *p)
 {
 	switch (op) {
 		case DREW_MODE_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_MODE_INTSIZE:
 			return sizeof(struct cbc);
 		case DREW_MODE_FINAL_INSIZE:
@@ -87,6 +89,33 @@ static int cbc_info(int op, void *p)
 	}
 }
 
+static int cbc_info2(const drew_mode_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	struct cbc *c = NULL;
+
+	if (ctx && ctx->ctx)
+		c = ctx->ctx;
+
+	switch (op) {
+		case DREW_MODE_VERSION:
+			return CURRENT_ABI;
+		case DREW_MODE_INTSIZE:
+			return sizeof(struct cbc);
+		case DREW_MODE_FINAL_INSIZE_CTX:
+		case DREW_MODE_FINAL_OUTSIZE_CTX:
+			return 0;
+		case DREW_MODE_BLKSIZE_CTX:
+			if (!c || !c->algo)
+				return -DREW_ERR_MORE_INFO;
+			return c->algo->functbl->info2(c->algo, DREW_BLOCK_BLKSIZE_CTX,
+					NULL, NULL);
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
+
 static int cbc_reset(drew_mode_t *ctx)
 {
 	struct cbc *c = ctx->ctx;
@@ -95,6 +124,11 @@ static int cbc_reset(drew_mode_t *ctx)
 	if ((res = cbc_setiv(ctx, c->iv, c->blksize)))
 		return res;
 	return 0;
+}
+
+static int cbc_resync(drew_mode_t *ctx)
+{
+	return -DREW_ERR_NOT_IMPL;
 }
 
 static int cbc_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,

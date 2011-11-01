@@ -46,8 +46,10 @@ struct ofb {
 static int ofb_info(int op, void *p);
 static int ofb_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param);
+static int ofb_info2(const drew_mode_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in);
 static int ofb_reset(drew_mode_t *ctx);
-static int ofb_setpad(drew_mode_t *ctx, const drew_pad_t *pad);
+static int ofb_resync(drew_mode_t *ctx);
 static int ofb_setblock(drew_mode_t *ctx, const drew_block_t *algoctx);
 static int ofb_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len);
 static int ofb_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
@@ -62,23 +64,23 @@ static int ofb_final(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 		const uint8_t *in, size_t inlen);
 
 static const drew_mode_functbl_t ofb_functbl = {
-	ofb_info, ofb_init, ofb_clone, ofb_reset, ofb_fini, ofb_setpad,
+	ofb_info, ofb_info2, ofb_init, ofb_clone, ofb_reset, ofb_fini,
 	ofb_setblock, ofb_setiv, ofb_encrypt, ofb_encrypt, ofb_encrypt, ofb_encrypt,
 	ofb_setdata, ofb_final, ofb_final,
-	ofb_test
+	ofb_resync, ofb_test
 };
 static const drew_mode_functbl_t ofb_functblfast = {
-	ofb_info, ofb_init, ofb_clone, ofb_reset, ofb_fini, ofb_setpad,
+	ofb_info, ofb_info2, ofb_init, ofb_clone, ofb_reset, ofb_fini,
 	ofb_setblock, ofb_setiv, ofb_encrypt, ofb_encrypt, ofb_encryptfast,
-	ofb_encryptfast, ofb_setdata, ofb_final, ofb_final,
-	ofb_test
+	ofb_encryptfast, ofb_setdata, ofb_final, ofb_final, 
+	ofb_resync, ofb_test
 };
 
 static int ofb_info(int op, void *p)
 {
 	switch (op) {
 		case DREW_MODE_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_MODE_INTSIZE:
 			return sizeof(struct ofb);
 		case DREW_MODE_FINAL_INSIZE:
@@ -89,6 +91,29 @@ static int ofb_info(int op, void *p)
 		default:
 			return -DREW_ERR_INVALID;
 	}
+}
+
+static int ofb_info2(const drew_mode_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	switch (op) {
+		case DREW_MODE_VERSION:
+			return CURRENT_ABI;
+		case DREW_MODE_INTSIZE:
+			return sizeof(struct ofb);
+		case DREW_MODE_FINAL_INSIZE_CTX:
+		case DREW_MODE_FINAL_OUTSIZE_CTX:
+			return 0;
+		case DREW_MODE_BLKSIZE_CTX:
+			return 1;
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
+static int ofb_resync(drew_mode_t *ctx)
+{
+	return -DREW_ERR_MORE_INFO;
 }
 
 static int ofb_reset(drew_mode_t *ctx)
@@ -117,11 +142,6 @@ static int ofb_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	ctx->functbl = &ofb_functbl;
 
 	return 0;
-}
-
-static int ofb_setpad(drew_mode_t *ctx, const drew_pad_t *algoname)
-{
-	return -EINVAL;
 }
 
 static int ofb_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
