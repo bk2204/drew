@@ -21,10 +21,10 @@ class SHACAL1 : public BlockCipher<20, BigEndian>
 	public:
 		SHACAL1();
 		~SHACAL1() {};
-		int SetKey(const uint8_t *key, size_t sz);
 		int Encrypt(uint8_t *out, const uint8_t *in) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
 	protected:
+		int SetKeyInternal(const uint8_t *key, size_t sz);
 	private:
 		uint32_t m_words[80];
 };
@@ -34,10 +34,10 @@ class SHACAL2 : public BlockCipher<32, BigEndian>
 	public:
 		SHACAL2();
 		~SHACAL2() {};
-		int SetKey(const uint8_t *key, size_t sz);
 		int Encrypt(uint8_t *out, const uint8_t *in) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
 	protected:
+		int SetKeyInternal(const uint8_t *key, size_t sz);
 	private:
 		uint32_t m_words[64];
 };
