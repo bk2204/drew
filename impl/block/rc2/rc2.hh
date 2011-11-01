@@ -34,10 +34,10 @@ class RC2 : public BlockCipher<8, LittleEndian>
 	public:
 		RC2();
 		~RC2() {};
-		int SetKey(const uint8_t *key, size_t sz);
 		int Encrypt(uint8_t *out, const uint8_t *in) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
 	protected:
+		int SetKeyInternal(const uint8_t *key, size_t sz);
 	private:
 		inline void Mix(uint16_t *r, size_t i, size_t j, size_t s) const;
 		inline void MixRound(uint16_t *r, size_t j) const;
