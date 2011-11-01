@@ -145,7 +145,7 @@ uint32_t drew::Twofish::h(uint32_t x, const uint32_t *k, size_t len) const
 }
 
 #define MAXKEYSZ 32
-int drew::Twofish::SetKey(const uint8_t *key, size_t sz)
+int drew::Twofish::SetKeyInternal(const uint8_t *key, size_t sz)
 {
 	uint32_t buf[MAXKEYSZ];
 	size_t len = sz / 8;
