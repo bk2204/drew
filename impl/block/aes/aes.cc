@@ -169,7 +169,7 @@ drew::AES::AES()
 {
 }
 
-int drew::AES::SetKey(const uint8_t *key, size_t len)
+int drew::AES::SetKeyInternal(const uint8_t *key, size_t len)
 {
 	switch (len) {
 		case 16:

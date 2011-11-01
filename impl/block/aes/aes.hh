@@ -21,11 +21,11 @@ class AES : public BlockCipher<16, BigEndian>
 	public:
 		AES();
 		~AES() {};
-		int SetKey(const uint8_t *key, size_t sz);
 		int Encrypt(uint8_t *out, const uint8_t *in) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
 	protected:
 	private:
+		int SetKeyInternal(const uint8_t *key, size_t sz);
 		void SetKeyEncrypt(const uint8_t *key, size_t sz);
 		void SetKeyDecrypt(void);
 		static void EncryptRound(uint32_t *t, const uint32_t *s,
