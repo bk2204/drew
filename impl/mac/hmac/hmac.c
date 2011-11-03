@@ -387,7 +387,7 @@ int hmack_info(int op, void *p)
 	int hop = DREW_HASH_BLKSIZE;
 	switch (op) {
 		case DREW_KDF_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_KDF_SIZE:
 			hop = DREW_HASH_SIZE;
 		case DREW_KDF_BLKSIZE:
@@ -395,6 +395,29 @@ int hmack_info(int op, void *p)
 				return -DREW_ERR_MORE_INFO;
 			ctx = kdf->ctx;
 			return ctx->outside.functbl->info(hop, &ctx->outside);
+		case DREW_KDF_ENDIAN:
+			return 0;
+		case DREW_KDF_INTSIZE:
+			return sizeof(struct hmac);
+	}
+	return -DREW_ERR_INVALID;
+}
+
+int hmack_info2(const drew_kdf_t *kdf, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	struct hmac *ctx;
+	int hop = DREW_HASH_BLKSIZE;
+	switch (op) {
+		case DREW_KDF_VERSION:
+			return CURRENT_ABI;
+		case DREW_KDF_SIZE_CTX:
+			hop = DREW_HASH_SIZE;
+		case DREW_KDF_BLKSIZE_CTX:
+			if (!kdf)
+				return -DREW_ERR_MORE_INFO;
+			ctx = kdf->ctx;
+			return ctx->outside.functbl->info2(&ctx->outside, hop, NULL, NULL);
 		case DREW_KDF_ENDIAN:
 			return 0;
 		case DREW_KDF_INTSIZE:
@@ -533,8 +556,8 @@ static drew_mac_functbl_t hmac_functbl = {
 };
 
 static drew_kdf_functbl_t hmack_functbl = {
-	hmack_info, hmack_init, hmack_clone, hmack_reset, hmack_fini, hmack_setkey,
-	hmack_setsalt, hmack_setcount, hmack_generate, hmack_test
+	hmack_info, hmack_info2, hmack_init, hmack_clone, hmack_reset, hmack_fini,
+	hmack_setkey, hmack_setsalt, hmack_setcount, hmack_generate, hmack_test
 };
 
 struct plugin {
