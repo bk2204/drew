@@ -34,10 +34,10 @@ extern "C" {
 #include <drew/plugin.h>
 #include <drew/prng.h>
 
-#define PLUGIN_FUNCTBL(prefix, info, init, clone, fini, seed, bytes, entropy, test) \
+#define PLUGIN_FUNCTBL(prefix, info, info2, init, clone, fini, seed, bytes, entropy, test) \
 \
 static drew_prng_functbl_t prefix ## functbl = { \
-	info, init, clone, fini, seed, bytes, entropy, test \
+	info, info2, init, clone, fini, seed, bytes, entropy, test \
 };
 
 struct plugin {

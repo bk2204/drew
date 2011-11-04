@@ -84,6 +84,28 @@ static int sp_algo_info(int op, void *p)
 }
 
 template<class T>
+static int sp_algo_info2(const drew_prng_t *, int op, drew_param_t *,
+		const drew_param_t *)
+{
+	switch (op) {
+		case DREW_PRNG_VERSION:
+			return CURRENT_ABI;
+		case DREW_PRNG_BLKSIZE_CTX:
+			return -DREW_ERR_NOT_IMPL;
+		case DREW_PRNG_SEEDABLE:
+			return 1;
+		case DREW_PRNG_MUST_SEED:
+			return 0;
+		case DREW_PRNG_INTSIZE:
+			return sizeof(T);
+		case DREW_PRNG_BLOCKING:
+			return 0;
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
+template<class T>
 static int sp_algo_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags)
 {
 	T *p;
@@ -132,6 +154,8 @@ static int sp_algo_test(void *, const drew_loader_t *)
 extern "C" {
 
 static int sp_hash_info(int op, void *p);
+static int sp_hash_info2(const drew_prng_t *, int op, drew_param_t *,
+		const drew_param_t *);
 static int sp_hash_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
 static int sp_hash_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags);
@@ -143,6 +167,8 @@ static int sp_hash_fini(drew_prng_t *ctx, int flags);
 static int sp_hash_test(void *, const drew_loader_t *);
 
 static int sp_ctr_info(int op, void *p);
+static int sp_ctr_info2(const drew_prng_t *, int op, drew_param_t *,
+		const drew_param_t *);
 static int sp_ctr_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
 static int sp_ctr_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags);
@@ -154,6 +180,8 @@ static int sp_ctr_fini(drew_prng_t *ctx, int flags);
 static int sp_ctr_test(void *, const drew_loader_t *);
 
 static int sp_hmac_info(int op, void *p);
+static int sp_hmac_info2(const drew_prng_t *, int op, drew_param_t *,
+		const drew_param_t *);
 static int sp_hmac_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
 static int sp_hmac_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags);
@@ -164,15 +192,21 @@ static int sp_hmac_entropy(const drew_prng_t *ctx);
 static int sp_hmac_fini(drew_prng_t *ctx, int flags);
 static int sp_hmac_test(void *, const drew_loader_t *);
 
-PLUGIN_FUNCTBL(sphash, sp_hash_info, sp_hash_init, sp_hash_clone, sp_hash_fini, sp_hash_seed, sp_hash_bytes, sp_hash_entropy, sp_hash_test);
+PLUGIN_FUNCTBL(sphash, sp_hash_info, sp_hash_info2, sp_hash_init, sp_hash_clone, sp_hash_fini, sp_hash_seed, sp_hash_bytes, sp_hash_entropy, sp_hash_test);
 
-PLUGIN_FUNCTBL(spctr, sp_ctr_info, sp_ctr_init, sp_ctr_clone, sp_ctr_fini, sp_ctr_seed, sp_ctr_bytes, sp_ctr_entropy, sp_ctr_test);
+PLUGIN_FUNCTBL(spctr, sp_ctr_info, sp_ctr_info2, sp_ctr_init, sp_ctr_clone, sp_ctr_fini, sp_ctr_seed, sp_ctr_bytes, sp_ctr_entropy, sp_ctr_test);
 
-PLUGIN_FUNCTBL(sphmac, sp_hmac_info, sp_hmac_init, sp_hmac_clone, sp_hmac_fini, sp_hmac_seed, sp_hmac_bytes, sp_hmac_entropy, sp_hmac_test);
+PLUGIN_FUNCTBL(sphmac, sp_hmac_info, sp_hmac_info2, sp_hmac_init, sp_hmac_clone, sp_hmac_fini, sp_hmac_seed, sp_hmac_bytes, sp_hmac_entropy, sp_hmac_test);
 
 static int sp_hash_info(int op, void *p)
 {
 	return sp_algo_info<drew::HashDRBG>(op, p);
+}
+
+static int sp_hash_info2(const drew_prng_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	return sp_algo_info2<drew::CounterDRBG>(ctx, op, out, in);
 }
 
 static int sp_hash_init(drew_prng_t *ctx, int flags, const drew_loader_t *ldr,
@@ -237,6 +271,13 @@ static int sp_ctr_info(int op, void *p)
 {
 	return sp_algo_info<drew::CounterDRBG>(op, p);
 }
+
+static int sp_ctr_info2(const drew_prng_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	return sp_algo_info2<drew::CounterDRBG>(ctx, op, out, in);
+}
+
 
 // This has to be at least as large as the key size plus the block size.
 #define CTR_BUFFER_SIZE	512
@@ -315,6 +356,12 @@ static int sp_ctr_test(void *p, const drew_loader_t *ldr)
 static int sp_hmac_info(int op, void *p)
 {
 	return sp_algo_info<drew::HMACDRBG>(op, p);
+}
+
+static int sp_hmac_info2(const drew_prng_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	return sp_algo_info2<drew::HMACDRBG>(ctx, op, out, in);
 }
 
 // This has to be at least as large as the digest size.
