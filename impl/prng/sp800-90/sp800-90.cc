@@ -454,6 +454,10 @@ drew::HashHelper::HashHelper(const drew_hash_t *h) :
 
 drew::HashHelper::~HashHelper()
 {
+	if (hash->ctx) {
+		hash->functbl->fini(hash, 0);
+		hash->ctx = 0;
+	}
 	delete hash;
 }
 
