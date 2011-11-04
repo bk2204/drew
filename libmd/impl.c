@@ -116,7 +116,8 @@ DREW_SYM_PUBLIC \
 void prefix ## Final(uint8_t *digest, drew_hash_t *ctx) \
 { \
 	int size; \
-	size = (plugins[CONCAT(PLUGIN_, name)].tbl->info)(DREW_HASH_SIZE_CTX, ctx); \
+	size = (plugins[CONCAT(PLUGIN_, name)].tbl->info2)(ctx, \
+			DREW_HASH_SIZE_CTX, NULL, NULL); \
 	(ctx->functbl->final)(ctx, digest, size, 0); \
 } \
  \
@@ -128,7 +129,8 @@ char *prefix ## End(drew_hash_t *ctx, char *buf) \
 	int size = 0; \
 	int i; \
  \
-	size = (plugins[CONCAT(PLUGIN_, name)].tbl->info)(DREW_HASH_SIZE_CTX, ctx); \
+	size = (plugins[CONCAT(PLUGIN_, name)].tbl->info2)(ctx, \
+			DREW_HASH_SIZE_CTX, NULL, NULL); \
 	data = malloc(size); \
 	if (!data) \
 		goto errout; \
