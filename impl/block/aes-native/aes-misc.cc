@@ -11,22 +11,10 @@ static const int aes128keysz[] = {16};
 static const int aes192keysz[] = {24};
 static const int aes256keysz[] = {32};
 
-static void str2bytes(uint8_t *bytes, const char *s, size_t len = 0)
-{
-	if (!len)
-		len = strlen(s);
-
-	unsigned x;
-	for (size_t i = 0; i < (len / 2); i++) {
-		sscanf(s+(i*2), "%02x", &x);
-		bytes[i] = x;
-	}
-}
-
+#ifdef NATIVE_IMPLEMENTED
 static bool test(const char *key, const char *plain, const char *cipher,
 		size_t keybytes = 0, size_t blocksz = 16)
 {
-#ifdef NATIVE_IMPLEMENTED
 	using namespace drew;
 
 	uint8_t kb[32], pb[32], cb[32], buf[32];
@@ -48,9 +36,18 @@ static bool test(const char *key, const char *plain, const char *cipher,
 	ctx.Decrypt(buf, cb);
 
 	return !memcmp(buf, pb, blocksz);
-#else
-	return false;
-#endif
+}
+
+static void str2bytes(uint8_t *bytes, const char *s, size_t len = 0)
+{
+	if (!len)
+		len = strlen(s);
+
+	unsigned x;
+	for (size_t i = 0; i < (len / 2); i++) {
+		sscanf(s+(i*2), "%02x", &x);
+		bytes[i] = x;
+	}
 }
 
 static int rd_test(void *, const drew_loader_t *)
@@ -111,6 +108,8 @@ static int aes256test(void *p, const drew_loader_t *ldr)
 {
 	return rd_test(p, ldr);
 }
+#endif
+
 #ifdef NATIVE_IMPLEMENTED
 	PLUGIN_STRUCTURE(rijndael, AESImpl)
 	PLUGIN_STRUCTURE(aes128, AESImpl)
