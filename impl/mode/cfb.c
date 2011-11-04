@@ -190,7 +190,7 @@ static int cfb_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len)
 	struct cfb *c = ctx->ctx;
 
 	if (c->blksize != len)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	memcpy(c->prev, iv, len);
 	memcpy(c->buf, iv, len);
@@ -511,7 +511,7 @@ static int cfb_test(void *p, const drew_loader_t *ldr)
 	int result = 0, tres;
 	size_t ntests = 0;
 	if (!ldr)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	if ((tres = cfb_test_cast5(ldr, &ntests)) >= 0) {
 		result <<= ntests;
@@ -570,7 +570,7 @@ int DREW_PLUGIN_NAME(cfb)(void *ldr, int op, int id, void *p)
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 
 	if (id < 0 || id >= nplugins)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	switch (op) {
 		case DREW_LOADER_LOOKUP_NAME:
@@ -590,7 +590,7 @@ int DREW_PLUGIN_NAME(cfb)(void *ldr, int op, int id, void *p)
 			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1);
 			return 0;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
 UNEXPORT()

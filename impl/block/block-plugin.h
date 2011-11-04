@@ -59,7 +59,7 @@ int DREW_PLUGIN_NAME(x)(void *ldr, int op, int id, void *p) \
 \
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]); \
 	if (id < 0 || id >= nplugins) \
-		return -EINVAL; \
+		return -DREW_ERR_INVALID; \
 	switch (op) { \
 		case DREW_LOADER_LOOKUP_NAME: \
 			return 0; \
@@ -78,7 +78,7 @@ int DREW_PLUGIN_NAME(x)(void *ldr, int op, int id, void *p) \
 			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1); \
 			return 0; \
 		default: \
-			return -EINVAL; \
+			return -DREW_ERR_INVALID; \
 	} \
 } \
 UNEXPORT()

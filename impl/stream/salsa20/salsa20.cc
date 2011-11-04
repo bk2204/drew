@@ -104,7 +104,7 @@ static int salsa20_info(int op, void *p)
 		case DREW_STREAM_BLKSIZE:
 			return 64;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
 

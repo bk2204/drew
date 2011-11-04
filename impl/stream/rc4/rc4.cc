@@ -122,7 +122,7 @@ static int rc4_info(int op, void *p)
 		case DREW_STREAM_BLKSIZE:
 			return 1;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
 
@@ -221,7 +221,7 @@ static int rc4_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
 
 static int rc4_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len)
 {
-	return -EINVAL;
+	return -DREW_ERR_NOT_ALLOWED;
 }
 
 static int rc4_reset(drew_stream_t *ctx)

@@ -372,7 +372,7 @@ static int cbc_test(void *p, const drew_loader_t *ldr)
 	int result = 0, tres;
 	size_t ntests = 0;
 	if (!ldr)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	if ((tres = cbc_test_blowfish(ldr, &ntests)) >= 0) {
 		result <<= ntests;
@@ -439,7 +439,7 @@ int DREW_PLUGIN_NAME(cbc)(void *ldr, int op, int id, void *p)
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 
 	if (id < 0 || id >= nplugins)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	switch (op) {
 		case DREW_LOADER_LOOKUP_NAME:
@@ -459,7 +459,7 @@ int DREW_PLUGIN_NAME(cbc)(void *ldr, int op, int id, void *p)
 			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1);
 			return 0;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
 UNEXPORT()
