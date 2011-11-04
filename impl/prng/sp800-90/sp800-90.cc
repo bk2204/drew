@@ -565,6 +565,7 @@ drew::HashDRBG::HashDRBG(const drew_hash_t &h)
 
 drew::HashDRBG::~HashDRBG()
 {
+	hash->functbl->fini(const_cast<drew_hash_t *>(hash), 0);
 	delete hash;
 }
 
