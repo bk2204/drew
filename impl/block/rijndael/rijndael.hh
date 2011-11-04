@@ -39,7 +39,7 @@ class Rijndael
 {
 	public:
 		Rijndael();
-		~Rijndael() {};
+		virtual ~Rijndael() {};
 		virtual int SetKey(const uint8_t *key, size_t sz) = 0;
 		virtual int Encrypt(uint8_t *out, const uint8_t *in) const = 0;
 		virtual int Decrypt(uint8_t *out, const uint8_t *in) const;
