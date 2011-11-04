@@ -469,7 +469,11 @@ void drew::HashHelper::GetDigest(uint8_t *data, size_t len)
 		hash->functbl->final(hash, data, digsz, 0);
 		return;
 	}
-	hash->functbl->final(hash, data, len, 0);
+	uint8_t *buf = new uint8_t[digsz];
+	hash->functbl->final(hash, buf, digsz, 0);
+	memcpy(data, buf, std::min(digsz, len));
+	memset(buf, 0, digsz);
+	delete[] buf;
 }
 
 size_t drew::HashHelper::GetSeedLength() const
