@@ -148,11 +148,6 @@ static int cbc_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	return 0;
 }
 
-static int cbc_setpad(drew_mode_t *ctx, const drew_pad_t *algoname)
-{
-	return -DREW_ERR_NOT_IMPL;
-}
-
 static int cbc_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 {
 	struct cbc *c = ctx->ctx;

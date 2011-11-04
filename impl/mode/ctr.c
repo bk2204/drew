@@ -53,7 +53,6 @@ static int ctr_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param);
 static int ctr_reset(drew_mode_t *ctx);
 static int ctr_resync(drew_mode_t *ctx);
-static int ctr_setpad(drew_mode_t *ctx, const drew_pad_t *pad);
 static int ctr_setblock(drew_mode_t *ctx, const drew_block_t *algoctx);
 static int ctr_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len);
 static int ctr_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
@@ -150,11 +149,6 @@ static int ctr_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	ctx->functbl = &ctr_functbl;
 
 	return 0;
-}
-
-static int ctr_setpad(drew_mode_t *ctx, const drew_pad_t *algoname)
-{
-	return -DREW_ERR_INVALID;
 }
 
 static int ctr_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
