@@ -34,10 +34,10 @@ extern "C" {
 #include <drew/plugin.h>
 #include <drew/stream.h>
 
-#define PLUGIN_FUNCTBL(prefix, info, init, setiv, setkey, encrypt, decrypt, encryptfast, decryptfast, test, fini, clone, reset) \
+#define PLUGIN_FUNCTBL(prefix, info, info2, init, setiv, setkey, encrypt, decrypt, encryptfast, decryptfast, test, fini, clone, reset) \
 \
 static drew_stream_functbl_t prefix ## functbl = { \
-	info, init, clone, reset, fini, setiv, setkey, encrypt, decrypt, \
+	info, info2, init, clone, reset, fini, setiv, setkey, encrypt, decrypt, \
 	encryptfast, decryptfast, test \
 };
 

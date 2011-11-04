@@ -88,6 +88,10 @@ class RC4
 		void SetKey(const uint8_t *key, size_t sz);
 		void Encrypt(uint8_t *out, const uint8_t *in, size_t len);
 		void Decrypt(uint8_t *out, const uint8_t *in, size_t len);
+		size_t GetKeySize() const
+		{
+			return m_sz;
+		}
 	protected:
 	private:
 		RC4Keystream<int> m_ks;

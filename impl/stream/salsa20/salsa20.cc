@@ -35,6 +35,8 @@ extern "C" {
 
 static int salsa20_test(void *, const drew_loader_t *);
 static int salsa20_info(int op, void *p);
+static int salsa20_info2(const drew_stream_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in);
 static int salsa20_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
 static int salsa20_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
@@ -49,7 +51,7 @@ static int salsa20_encryptfast(drew_stream_t *ctx, uint8_t *out,
 		const uint8_t *in, size_t len);
 static int salsa20_fini(drew_stream_t *ctx, int flags);
 
-PLUGIN_FUNCTBL(salsa20, salsa20_info, salsa20_init, salsa20_setiv, salsa20_setkey, salsa20_encrypt, salsa20_encrypt, salsa20_encryptfast, salsa20_encryptfast, salsa20_test, salsa20_fini, salsa20_clone, salsa20_reset);
+PLUGIN_FUNCTBL(salsa20, salsa20_info, salsa20_info2, salsa20_init, salsa20_setiv, salsa20_setkey, salsa20_encrypt, salsa20_encrypt, salsa20_encryptfast, salsa20_encryptfast, salsa20_test, salsa20_fini, salsa20_clone, salsa20_reset);
 
 static int salsa20_maintenance_test(void)
 {
@@ -83,12 +85,13 @@ static int salsa20_test(void *, const drew_loader_t *)
 }
 
 static const int salsa_keysz[] = {16, 32};
+static const int salsa_ivsz[] = {8};
 
 static int salsa20_info(int op, void *p)
 {
 	switch (op) {
 		case DREW_STREAM_VERSION:
-			return 1;
+			return CURRENT_ABI;
 		case DREW_STREAM_KEYSIZE:
 			for (size_t i = 0; i < DIM(salsa_keysz); i++) {
 				const int *x = reinterpret_cast<int *>(p);
@@ -102,6 +105,43 @@ static int salsa20_info(int op, void *p)
 			return 64;
 		default:
 			return -EINVAL;
+	}
+}
+
+static int salsa20_info2(const drew_stream_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	switch (op) {
+		case DREW_STREAM_VERSION:
+			return CURRENT_ABI;
+		case DREW_STREAM_KEYSIZE_LIST:
+			for (drew_param_t *p = out; p; p = p->next)
+				if (!strcmp(p->name, "keySize")) {
+					p->param.array.ptr = (void *)salsa_keysz;
+					p->param.array.len = DIM(salsa_keysz);
+				}
+			return 0;
+		case DREW_STREAM_KEYSIZE_CTX:
+			if (ctx && ctx->ctx) {
+				const drew::Salsa20 *algo = (const drew::Salsa20 *)ctx->ctx;
+				return algo->GetKeySize();
+			}
+			return -DREW_ERR_MORE_INFO;
+		case DREW_STREAM_IVSIZE_LIST:
+			for (drew_param_t *p = out; p; p = p->next)
+				if (!strcmp(p->name, "ivSize")) {
+					p->param.array.ptr = (void *)salsa_ivsz;
+					p->param.array.len = DIM(salsa_ivsz);
+				}
+			return 0;
+		case DREW_STREAM_IVSIZE_CTX:
+			return 8;
+		case DREW_STREAM_INTSIZE:
+			return sizeof(drew::Salsa20);
+		case DREW_STREAM_BLKSIZE:
+			return 64;
+		default:
+			return -DREW_ERR_INVALID;
 	}
 }
 

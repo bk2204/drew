@@ -34,6 +34,8 @@ extern "C" {
 
 static int sosemanuk_test(void *, const drew_loader_t *);
 static int sosemanuk_info(int op, void *p);
+static int sosemanuk_info2(const drew_stream_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in);
 static int sosemanuk_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
 static int sosemanuk_reset(drew_stream_t *ctx);
@@ -46,7 +48,7 @@ static int sosemanuk_encrypt(drew_stream_t *ctx, uint8_t *out, const uint8_t *in
 		size_t len);
 static int sosemanuk_fini(drew_stream_t *ctx, int flags);
 
-PLUGIN_FUNCTBL(sosemanuk, sosemanuk_info, sosemanuk_init, sosemanuk_setiv, sosemanuk_setkey, sosemanuk_encrypt, sosemanuk_encrypt, sosemanuk_encrypt, sosemanuk_encrypt, sosemanuk_test, sosemanuk_fini, sosemanuk_clone, sosemanuk_reset);
+PLUGIN_FUNCTBL(sosemanuk, sosemanuk_info, sosemanuk_info2, sosemanuk_init, sosemanuk_setiv, sosemanuk_setkey, sosemanuk_encrypt, sosemanuk_encrypt, sosemanuk_encrypt, sosemanuk_encrypt, sosemanuk_test, sosemanuk_fini, sosemanuk_clone, sosemanuk_reset);
 
 static int sosemanuk_standard_test(void)
 {
@@ -85,12 +87,13 @@ static const int sosemanuk_keysz[] = {
 	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 	17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
 };
+static const int sosemanuk_ivsiz[] = {16};
 
 static int sosemanuk_info(int op, void *p)
 {
 	switch (op) {
 		case DREW_STREAM_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_STREAM_KEYSIZE:
 			for (size_t i = 0; i < DIM(sosemanuk_keysz); i++) {
 				const int *x = reinterpret_cast<int *>(p);
@@ -103,7 +106,46 @@ static int sosemanuk_info(int op, void *p)
 		case DREW_STREAM_BLKSIZE:
 			return 160;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
+	}
+}
+
+static const int sosemanuk_ivsz[] = {16};
+
+static int sosemanuk_info2(const drew_stream_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	switch (op) {
+		case DREW_STREAM_VERSION:
+			return CURRENT_ABI;
+		case DREW_STREAM_KEYSIZE_LIST:
+			for (drew_param_t *p = out; p; p = p->next)
+				if (!strcmp(p->name, "keySize")) {
+					p->param.array.ptr = (void *)sosemanuk_keysz;
+					p->param.array.len = DIM(sosemanuk_keysz);
+				}
+			return 0;
+		case DREW_STREAM_KEYSIZE_CTX:
+			if (ctx && ctx->ctx) {
+				const drew::Sosemanuk *algo = (const drew::Sosemanuk *)ctx->ctx;
+				return algo->GetKeySize();
+			}
+			return -DREW_ERR_MORE_INFO;
+		case DREW_STREAM_IVSIZE_LIST:
+			for (drew_param_t *p = out; p; p = p->next)
+				if (!strcmp(p->name, "ivSize")) {
+					p->param.array.ptr = (void *)sosemanuk_ivsz;
+					p->param.array.len = DIM(sosemanuk_ivsz);
+				}
+			return 0;
+		case DREW_STREAM_IVSIZE_CTX:
+			return 8;
+		case DREW_STREAM_INTSIZE:
+			return sizeof(drew::Sosemanuk);
+		case DREW_STREAM_BLKSIZE:
+			return 160;
+		default:
+			return -DREW_ERR_INVALID;
 	}
 }
 

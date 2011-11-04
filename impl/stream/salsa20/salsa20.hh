@@ -40,6 +40,10 @@ class Salsa20Keystream
 		void FillBuffer(uint8_t *);
 		void FillBufferAligned(uint8_t *);
 		void SetRounds(size_t rounds);
+		size_t GetKeySize() const
+		{
+			return keysz;
+		}
 	protected:
 	private:
 		struct AlignedData
@@ -65,6 +69,10 @@ class Salsa20
 		void Encrypt(uint8_t *out, const uint8_t *in, size_t len);
 		void Decrypt(uint8_t *out, const uint8_t *in, size_t len);
 		void EncryptFast(uint8_t *out, const uint8_t *in, size_t len);
+		size_t GetKeySize() const
+		{
+			return m_ks.GetKeySize();
+		}
 	protected:
 	private:
 		Salsa20Keystream m_ks;

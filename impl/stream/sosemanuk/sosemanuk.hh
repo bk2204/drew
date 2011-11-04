@@ -57,6 +57,10 @@ class Sosemanuk
 		void SetKey(const uint8_t *key, size_t sz);
 		void Encrypt(uint8_t *out, const uint8_t *in, size_t len);
 		void Decrypt(uint8_t *out, const uint8_t *in, size_t len);
+		size_t GetKeySize() const
+		{
+			return m_keysz;
+		}
 	protected:
 	private:
 		SosemanukKeystream m_ks;
