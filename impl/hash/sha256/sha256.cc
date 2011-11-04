@@ -245,7 +245,6 @@ void drew::SHA256Transform::ForwardTransform(uint32_t *state,
 void drew::SHA256Transform::InverseTransform(uint32_t *state,
 		const uint32_t *blk)
 {
-	const size_t block_size = 64;
 	ssize_t i;
 	uint32_t a, b, c, d, e, f, g, h;
 
