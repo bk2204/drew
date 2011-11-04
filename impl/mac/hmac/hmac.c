@@ -59,7 +59,38 @@ struct hmac {
 
 static int hmac_info(int op, void *p)
 {
+	if (op == DREW_MAC_VERSION)
+		return CURRENT_ABI;
 	return -DREW_ERR_NOT_IMPL;
+}
+
+static int hmac_info2(const drew_mac_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	switch (op) {
+		case DREW_MAC_VERSION:
+			return CURRENT_ABI;
+		case DREW_MAC_ENDIAN:
+			return 0;
+		case DREW_MAC_INTSIZE:
+			return sizeof(struct hmac);
+		case DREW_MAC_SIZE_CTX:
+			if (ctx && ctx->ctx) {
+				struct hmac *c = ctx->ctx;
+				return c->outside.functbl->info2(&c->outside,
+						DREW_HASH_SIZE_CTX, NULL, NULL);
+			}
+			return -DREW_ERR_MORE_INFO;
+		case DREW_MAC_BLKSIZE_CTX:
+			if (ctx && ctx->ctx) {
+				struct hmac *c = ctx->ctx;
+				return c->outside.functbl->info2(&c->outside,
+						DREW_HASH_BLKSIZE_CTX, NULL, NULL);
+			}
+			return -DREW_ERR_MORE_INFO;
+		default:
+			return -DREW_ERR_INVALID;
+	}
 }
 
 static int hmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
@@ -551,8 +582,8 @@ static int hmack_test(void *p, const drew_loader_t *ldr)
 
 
 static drew_mac_functbl_t hmac_functbl = {
-	hmac_info, hmac_init, hmac_clone, hmac_reset, hmac_fini, hmac_setkey,
-	hmac_update, hmac_update, hmac_final, hmac_test
+	hmac_info, hmac_info2, hmac_init, hmac_clone, hmac_reset, hmac_fini,
+	hmac_setkey, hmac_update, hmac_update, hmac_final, hmac_test
 };
 
 static drew_kdf_functbl_t hmack_functbl = {

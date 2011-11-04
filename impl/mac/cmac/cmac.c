@@ -60,7 +60,36 @@ struct cmac {
 
 static int cmac_info(int op, void *p)
 {
+	if (op == DREW_MAC_VERSION)
+		return CURRENT_ABI;
 	return -DREW_ERR_NOT_IMPL;
+}
+
+static int cmac_info2(const drew_mac_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	switch (op) {
+		case DREW_MAC_VERSION:
+			return CURRENT_ABI;
+		case DREW_MAC_ENDIAN:
+			return 0;
+		case DREW_MAC_INTSIZE:
+			return sizeof(struct cmac);
+		case DREW_MAC_SIZE_CTX:
+			if (ctx && ctx->ctx) {
+				struct cmac *c = ctx->ctx;
+				return c->taglen;
+			}
+			return -DREW_ERR_MORE_INFO;
+		case DREW_MAC_BLKSIZE_CTX:
+			if (ctx && ctx->ctx) {
+				struct cmac *c = ctx->ctx;
+				return c->blksize;
+			}
+			return -DREW_ERR_MORE_INFO;
+		default:
+			return -DREW_ERR_INVALID;
+	}
 }
 
 static int cmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
@@ -511,8 +540,8 @@ static int cmack_test(void *p, const drew_loader_t *ldr)
 #endif
 
 static drew_mac_functbl_t cmac_functbl = {
-	cmac_info, cmac_init, cmac_clone, cmac_reset, cmac_fini, cmac_setkey,
-	cmac_update, cmac_update, cmac_final, cmac_test
+	cmac_info, cmac_info2, cmac_init, cmac_clone, cmac_reset, cmac_fini,
+	cmac_setkey, cmac_update, cmac_update, cmac_final, cmac_test
 };
 
 #if 0
