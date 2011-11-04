@@ -44,6 +44,8 @@ struct rsa {
 };
 
 static int rsa_info(int op, void *p);
+static int rsa_info2(const drew_pkenc_t *, int, drew_param_t *,
+		const drew_param_t *);
 static int rsa_init(drew_pkenc_t *, int,
 		const drew_loader_t *, const drew_param_t *);
 static int rsa_clone(drew_pkenc_t *, const drew_pkenc_t *, int);
@@ -62,6 +64,7 @@ static int rsa_test(void *, const drew_loader_t *);
 
 static const drew_pkenc_functbl_t rsa_functbl = {
 	.info = rsa_info,
+	.info2 = rsa_info2,
 	.init = rsa_init,
 	.clone = rsa_clone,
 	.fini = rsa_fini,
@@ -82,7 +85,7 @@ static int rsa_info(int op, void *p)
 	drew_param_t *param = p;
 	switch (op) {
 		case DREW_PKENC_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_PKENC_INTSIZE:
 			return sizeof(struct rsa);
 		case DREW_PKENC_DECRYPT_IN:
@@ -109,6 +112,19 @@ static int rsa_info(int op, void *p)
 			return name_to_index(param, DIM(enc_out), enc_out);
 		case DREW_PKENC_ENCRYPT_OUT_INDEX_TO_NAME:
 			return index_to_name(param, DIM(enc_out), enc_out);
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
+static int rsa_info2(const drew_pkenc_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	switch (op) {
+		case DREW_PKENC_VERSION:
+			return CURRENT_ABI;
+		case DREW_PKENC_INTSIZE:
+			return sizeof(struct rsa);
 		default:
 			return -DREW_ERR_INVALID;
 	}
