@@ -30,7 +30,7 @@
 #include <drew/plugin.h>
 
 /* The ABI version of the hash interface. */
-#define DREW_MAC_VERSION 0 /* Not implemented. */
+#define DREW_MAC_VERSION 0
 /* The length of the final MAC in bytes. */
 #define DREW_MAC_SIZE 1
 /* The size of the block in bytes. */
@@ -44,6 +44,8 @@
  * block of memory, such as locked memory.
  */
 #define DREW_MAC_INTSIZE 4
+#define DREW_MAC_SIZE_CTX 5
+#define DREW_MAC_BLKSIZE_CTX 6
 
 /* This bit is a flag indicating that the new context should be copied into
  * already-existing memory at *newctx.
@@ -77,7 +79,22 @@ typedef struct {
 	int (*final)(drew_mac_t *, uint8_t *, int);
 	int (*test)(void *, const drew_loader_t *);
 } drew_mac_functbl2_t;
-typedef drew_mac_functbl2_t drew_mac_functbl_t;
+
+typedef struct {
+	int (*info)(int op, void *p);
+	int (*info2)(const drew_mac_t *, int, drew_param_t *, const drew_param_t *);
+	int (*init)(drew_mac_t *, int, const drew_loader_t *, const drew_param_t *);
+	int (*clone)(drew_mac_t *, const drew_mac_t *, int);
+	int (*reset)(drew_mac_t *);
+	int (*fini)(drew_mac_t *, int);
+	int (*setkey)(drew_mac_t *, const uint8_t *, size_t);
+	int (*update)(drew_mac_t *, const uint8_t *, size_t);
+	int (*updatefast)(drew_mac_t *, const uint8_t *, size_t);
+	int (*final)(drew_mac_t *, uint8_t *, int);
+	int (*test)(void *, const drew_loader_t *);
+} drew_mac_functbl3_t;
+
+typedef drew_mac_functbl3_t drew_mac_functbl_t;
 
 struct drew_mac_s {
 	void *ctx;
