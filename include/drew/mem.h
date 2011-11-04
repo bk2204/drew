@@ -30,6 +30,19 @@
 extern "C" {
 #endif
 
+/* The op parameter to drew_mem_adjust. */
+#define DREW_MEM_SECMEM		1
+
+/* Flags for drew_mem_adjust with DREW_MEM_SECMEM.
+ *
+ * FAIL_OK allows the secure memory allocator to succeed even if memory locking
+ * fails.
+ * NO_LOCK prevents the secure memory allocator from attempting to lock memory
+ * in the first place.
+ */
+#define DREW_MEM_SECMEM_FAIL_OK		1
+#define DREW_MEM_SECMEM_NO_LOCK		2
+
 DREW_SYM_PUBLIC
 void *drew_mem_malloc(size_t size);
 DREW_SYM_PUBLIC
@@ -51,6 +64,9 @@ DREW_SYM_PUBLIC
 void *drew_mem_smemdup(const void *ptr, size_t size);
 DREW_SYM_PUBLIC
 void drew_mem_sfree(void *ptr);
+
+DREW_SYM_PUBLIC
+int drew_mem_pool_adjust(void *pool, int op, int flags, void *p);
 
 #ifdef __cplusplus
 }

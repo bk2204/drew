@@ -76,6 +76,7 @@ struct pool {
 	pthread_mutex_t mutex;
 	size_t pgsize;
 	int inited;
+	int flags;
 	struct allocation *alloc;
 };
 
@@ -88,6 +89,7 @@ static struct pool mempool = {
 #else
 	0,
 #endif
+	0,
 	0,
 	0
 };
@@ -162,7 +164,8 @@ static inline void *do_allocate(size_t size, int secure, int clear)
 	if (secure || ALWAYS_ZERO)
 		if (!(new = create_entry(p, size, secure)))
 			goto err;
-	if (secure && mlock(p, new->block))
+	if (secure && !(mempool.flags & DREW_MEM_SECMEM_NO_LOCK) &&
+			mlock(p, new->block) && !(mempool.flags & DREW_MEM_SECMEM_FAIL_OK))
 		goto err;
 	if (new)
 		mempool.alloc = new;
@@ -183,6 +186,19 @@ static inline void *allocate(size_t size, int secure, int clear)
 	p = do_allocate(size, secure, clear);
 	UNLOCK(&mempool);
 	return p;
+}
+
+int drew_mem_pool_adjust(void *pool, int op, int flags, void *p)
+{
+	if (pool)
+		return -DREW_ERR_INVALID;
+	if (op != DREW_MEM_SECMEM)
+		return -DREW_ERR_INVALID;
+	LOCK(&mempool);
+	init_pool();
+	mempool.flags = flags;
+	UNLOCK(&mempool);
+	return 0;
 }
 
 void *drew_mem_memdup(const void *ptr, size_t size)
