@@ -1,5 +1,5 @@
 DREW_DIR		:= lib/libdrew
-DREW_SONAME		:= libdrew.so.0
+DREW_SONAME		:= libdrew.so.1
 DREW_SYMLINK	:= $(basename $(DREW_SONAME))
 
 DREW_OBJS		:= $(DREW_DIR)/drew.o $(DREW_DIR)/mem.o
