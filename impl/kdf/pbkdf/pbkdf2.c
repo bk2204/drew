@@ -388,12 +388,12 @@ static int pbkdf_test_md5(const drew_loader_t *ldr, size_t *ntests)
 
 static int pbkdf_test(void *p, const drew_loader_t *ldr)
 {
+#if 0
 	int result = 0, tres;
 	size_t ntests = 0;
 	if (!ldr)
 		return -DREW_ERR_INVALID;
 
-#if 0
 	if ((tres = pbkdf_test_md5(ldr, &ntests)) >= 0) {
 		result <<= ntests;
 		result |= tres;
