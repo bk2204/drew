@@ -245,13 +245,17 @@ static int ctr_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len)
 {
 	struct ctr *c = ctx->ctx;
+	uint8_t *outp = out;
+	const uint8_t *inp = in;
+	const size_t mul = len / c->blksize;
 
 	for (size_t i = 0; i < len; i += FAST_ALIGNMENT, out += FAST_ALIGNMENT,
 			in += FAST_ALIGNMENT) {
-		c->algo->functbl->encrypt(c->algo, c->buf, c->ctr);
+		memcpy(out, c->ctr, c->blksize);
 		increment_counter(c->ctr, c->blksize);
-		xor_aligned(out, c->buf, in, FAST_ALIGNMENT);
 	}
+	c->algo->functbl->encryptfast(c->algo, outp, outp, mul);
+	xor_aligned2(outp, inp, len);
 
 	return 0;
 }
