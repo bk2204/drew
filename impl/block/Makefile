@@ -4,6 +4,7 @@ PLUGINS_BLOCK-${CFG_CAST5}		+= cast/cast5
 PLUGINS_BLOCK-${CFG_CAST6}		+= cast/cast6
 PLUGINS_BLOCK-${CFG_BLOWFISH}	+= blowfish/blowfish
 PLUGINS_BLOCK-${CFG_AESNI}		+= aes-native/aesni
+PLUGINS_BLOCK-${CFG_LINUXAES}	+= linux/linuxaes
 PLUGINS_BLOCK-${CFG_AES}		+= aes/aes
 PLUGINS_BLOCK-${CFG_RIJNDAEL}	+= rijndael/rijndael
 PLUGINS_BLOCK-${CFG_TWOFISH}	+= twofish/twofish
@@ -32,8 +33,10 @@ EXTRA_OBJECTS-${CFG_ARIABYTE}	+= ${BLOCK_DIR}/aria/aria.o
 EXTRA_OBJECTS-${CFG_SERPENT}	+= ${BLOCK_DIR}/serpent/serpent-impl.o
 
 ${BLOCK_DIR}/shacal/shacal.so:	${HASH_DIR}/sha1/sha1.o
+${BLOCK_DIR}/linux/linuxaes.so:	impl/multi/linux/af-alg.o
 
-EXTRA_OBJECTS-${CFG_SHACAL}	+= ${HASH_DIR}/sha1/sha1.o
+EXTRA_OBJECTS-${CFG_SHACAL}		+= ${HASH_DIR}/sha1/sha1.o
+EXTRA_OBJECTS-${CFG_LINUXAES}	+= impl/multi/linux/af-alg.o
 
 ${BLOCK_DIR}/shacal/shacal.o: CPPFLAGS += -I${HASH_DIR}
 ${BLOCK_DIR}/shacal/shacal.d: CPPFLAGS += -I${HASH_DIR}
