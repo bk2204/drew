@@ -347,8 +347,8 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	ftbl->init(&bctx, 0, NULL, NULL);
 	ftbl->setkey(&bctx, key, keysz, 0);
 	mctx.functbl->init(&mctx, 0, ldr, NULL);
-	mctx.functbl->setiv(&mctx, buf2, blksz);
 	mctx.functbl->setblock(&mctx, &bctx);
+	mctx.functbl->setiv(&mctx, buf2, blksz);
 	encrypt = (chunk & 15) ? mctx.functbl->encrypt : mctx.functbl->encryptfast;
 	for (i = 0; i < nchunks; i++)
 		encrypt(&mctx, buf, buf, chunk);
