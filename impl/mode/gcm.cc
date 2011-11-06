@@ -238,11 +238,6 @@ static int gcm_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 		return -DREW_ERR_NOT_IMPL;
 	if (c->blksize != 16)
 		return -DREW_ERR_INVALID;
-	memset(c->h, 0, sizeof(c->h));
-	algoctx->functbl->encryptfast(algoctx, c->h, c->h, 1);
-
-	if (c->mul == mul_fl)
-		gen_table_fl(c);
 
 	return 0;
 }
@@ -342,6 +337,17 @@ static inline void hash_fast(struct gcm *c, uint8_t *buf, const uint8_t *block)
 static int gcm_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len)
 {
 	struct gcm *c = (struct gcm *)ctx->ctx;
+
+	memset(c->h, 0, sizeof(c->h));
+	memset(c->y, 0, sizeof(c->y));
+	memset(c->y0, 0, sizeof(c->y0));
+	memset(c->x, 0, sizeof(c->x));
+	memset(c->buf, 0, sizeof(c->buf));
+	memset(c->cbuf, 0, sizeof(c->cbuf));
+	c->algo->functbl->encryptfast(c->algo, c->h, c->h, 1);
+
+	if (c->mul == mul_fl)
+		gen_table_fl(c);
 
 	c->ivlen = len;
 	if (iv != c->iv)
