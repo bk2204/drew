@@ -180,8 +180,7 @@ int test_execute(void *data, const char *name, const void *tbl,
 	bctx->functbl->setkey(bctx, tc->key, tc->klen, 0);
 	blksize = bctx->functbl->info(DREW_BLOCK_BLKSIZE, 0);
 
-	if (((tc->feedbackBits / 8) == blksize) && !(tc->len % blksize) &&
-			!(tc->ctlen % blksize))
+	if (((tc->feedbackBits / 8) == blksize) && !(tc->len % blksize))
 		use_fast = true;
 
 	uint8_t *buf = malloc(tc->ctlen), *buf2 = malloc(tc->ctlen);
