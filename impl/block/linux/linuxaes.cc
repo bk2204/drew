@@ -45,6 +45,12 @@ static const int cast6keysz[] =
 	16, 20, 24, 28, 32
 };
 
+static const int cast5keysz[] =
+{
+	5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
+};
+
+
 static const int aes128keysz[] = {16};
 static const int aes192keysz[] = {24};
 static const int aes256keysz[] = {32};
@@ -151,17 +157,24 @@ static int cast6test(void *p, const drew_loader_t *ldr)
 	return -DREW_ERR_NOT_IMPL;
 }
 
+static int cast5test(void *p, const drew_loader_t *ldr)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
 	PLUGIN_STRUCTURE(rijndael, LinuxAES)
 	PLUGIN_STRUCTURE(aes128, LinuxAES)
 	PLUGIN_STRUCTURE(aes192, LinuxAES)
 	PLUGIN_STRUCTURE(aes256, LinuxAES)
 	PLUGIN_STRUCTURE(cast6, LinuxCAST6)
+	PLUGIN_STRUCTURE(cast5, LinuxCAST5)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(rijndael, "Rijndael")
 	PLUGIN_DATA(aes128, "AES128")
 	PLUGIN_DATA(aes192, "AES192")
 	PLUGIN_DATA(aes256, "AES256")
 	PLUGIN_DATA(cast6, "CAST-256")
+	PLUGIN_DATA(cast5, "CAST-128")
 	PLUGIN_DATA_END()
 	PLUGIN_INTERFACE(linuxaes)
 }
@@ -217,6 +230,24 @@ int drew::LinuxCAST6::SetKeyInternal(const uint8_t *key, size_t len)
 	}
 
 	return this->LinuxCryptoImplementation<16, BigEndian>::SetKeyInternal(key, len);
+}
+
+drew::LinuxCAST5::LinuxCAST5()
+{
+	ecbname = "ecb(cast5)";
+}
+
+drew::LinuxCAST5::LinuxCAST5(const LinuxCAST5 &other)
+{
+	Clone(other);
+}
+
+int drew::LinuxCAST5::SetKeyInternal(const uint8_t *key, size_t len)
+{
+	if (len < 5 || len > 16)
+		return -DREW_ERR_INVALID;
+
+	return this->LinuxCryptoImplementation<8, BigEndian>::SetKeyInternal(key, len);
 }
 
 #endif

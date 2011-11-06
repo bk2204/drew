@@ -111,6 +111,16 @@ class LinuxCAST6 : public LinuxCryptoImplementation<16, BigEndian>
 	private:
 };
 
+class LinuxCAST5 : public LinuxCryptoImplementation<8, BigEndian>
+{
+	public:
+		LinuxCAST5();
+		LinuxCAST5(const LinuxCAST5 &);
+	protected:
+		int SetKeyInternal(const uint8_t *key, size_t len);
+	private:
+};
+
 }
 
 #endif
