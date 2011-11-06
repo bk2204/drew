@@ -77,7 +77,7 @@ class LinuxCryptoImplementation : public BlockCipher<size, E>
 				close(alg.sockfd);
 
 			RETFAIL(af_alg_initialize(&alg));
-			RETFAIL(af_alg_open_socket(&alg, "skcipher", "ecb(aes)"));
+			RETFAIL(af_alg_open_socket(&alg, "skcipher", ecbname));
 
 			memcpy(keybak, key, len);
 
@@ -96,6 +96,16 @@ class LinuxAES : public LinuxCryptoImplementation<16, BigEndian>
 	public:
 		LinuxAES();
 		LinuxAES(const LinuxAES &);
+	protected:
+		int SetKeyInternal(const uint8_t *key, size_t len);
+	private:
+};
+
+class LinuxCAST6 : public LinuxCryptoImplementation<16, BigEndian>
+{
+	public:
+		LinuxCAST6();
+		LinuxCAST6(const LinuxCAST6 &);
 	protected:
 		int SetKeyInternal(const uint8_t *key, size_t len);
 	private:

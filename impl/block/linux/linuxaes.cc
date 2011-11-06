@@ -40,6 +40,11 @@ static const int rijndaelkeysz[] =
 	16, 24, 32
 };
 
+static const int cast6keysz[] =
+{
+	16, 20, 24, 28, 32
+};
+
 static const int aes128keysz[] = {16};
 static const int aes192keysz[] = {24};
 static const int aes256keysz[] = {32};
@@ -141,15 +146,22 @@ static int aes256test(void *p, const drew_loader_t *ldr)
 	return rd_test(p, ldr);
 }
 
+static int cast6test(void *p, const drew_loader_t *ldr)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
 	PLUGIN_STRUCTURE(rijndael, LinuxAES)
 	PLUGIN_STRUCTURE(aes128, LinuxAES)
 	PLUGIN_STRUCTURE(aes192, LinuxAES)
 	PLUGIN_STRUCTURE(aes256, LinuxAES)
+	PLUGIN_STRUCTURE(cast6, LinuxCAST6)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(rijndael, "Rijndael")
 	PLUGIN_DATA(aes128, "AES128")
 	PLUGIN_DATA(aes192, "AES192")
 	PLUGIN_DATA(aes256, "AES256")
+	PLUGIN_DATA(cast6, "CAST-256")
 	PLUGIN_DATA_END()
 	PLUGIN_INTERFACE(linuxaes)
 }
@@ -174,6 +186,32 @@ int drew::LinuxAES::SetKeyInternal(const uint8_t *key, size_t len)
 		case 20:
 		case 28:
 			return -DREW_ERR_NOT_IMPL;
+		default:
+			return -DREW_ERR_INVALID;
+	}
+
+	return this->LinuxCryptoImplementation<16, BigEndian>::SetKeyInternal(key, len);
+}
+
+drew::LinuxCAST6::LinuxCAST6()
+{
+	ecbname = "ecb(cast6)";
+}
+
+drew::LinuxCAST6::LinuxCAST6(const LinuxCAST6 &other)
+{
+	Clone(other);
+}
+
+int drew::LinuxCAST6::SetKeyInternal(const uint8_t *key, size_t len)
+{
+	switch (len) {
+		case 16:
+		case 20:
+		case 24:
+		case 28:
+		case 32:
+			break;
 		default:
 			return -DREW_ERR_INVALID;
 	}
