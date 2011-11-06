@@ -156,25 +156,16 @@ static int aes256test(void *p, const drew_loader_t *ldr)
 
 drew::LinuxAES::LinuxAES()
 {
+	ecbname = "ecb(aes)";
 }
 
 drew::LinuxAES::LinuxAES(const LinuxAES &other)
 {
-	this->SetKeyInternal(other.keybak, other.keysz);
+	Clone(other);
 }
 
 int drew::LinuxAES::SetKeyInternal(const uint8_t *key, size_t len)
 {
-	if (alg.fd >= 0)
-		close(alg.fd);
-	if (alg.sockfd >= 0)
-		close(alg.sockfd);
-
-	RETFAIL(af_alg_initialize(&alg));
-	RETFAIL(af_alg_open_socket(&alg, "skcipher", "ecb(aes)"));
-	
-	memcpy(keybak, key, len);
-
 	switch (len) {
 		case 16:
 		case 24:
@@ -186,31 +177,8 @@ int drew::LinuxAES::SetKeyInternal(const uint8_t *key, size_t len)
 		default:
 			return -DREW_ERR_INVALID;
 	}
-	RETFAIL(af_alg_set_key(&alg, key, len));
-	RETFAIL(af_alg_make_socket(&alg));
-	return 0;
+
+	return this->LinuxCryptoImplementation<16, BigEndian>::SetKeyInternal(key, len);
 }
 
-
-int drew::LinuxAES::Encrypt(uint8_t *out, const uint8_t *in) const
-{
-	return af_alg_do_crypt(&alg, out, in, block_size, 0);
-}
-
-int drew::LinuxAES::Decrypt(uint8_t *out, const uint8_t *in) const
-{
-	return af_alg_do_crypt(&alg, out, in, block_size, 1);
-}
-
-int drew::LinuxAES::EncryptFast(FastBlock *out, const FastBlock *in,
-		size_t n) const
-{
-	return af_alg_do_crypt(&alg, out->data, in->data, block_size*n, 0);
-}
-
-int drew::LinuxAES::DecryptFast(FastBlock *out, const FastBlock *in,
-		size_t n) const
-{
-	return af_alg_do_crypt(&alg, out->data, in->data, block_size*n, 1);
-}
 #endif

@@ -32,23 +32,73 @@
 
 namespace drew {
 
-class LinuxAES : public BlockCipher<16, BigEndian>
+template<int size, class E>
+class LinuxCryptoImplementation : public BlockCipher<size, E>
+{
+	public:
+		typedef typename BlockCipher<size, E>::FastBlock FastBlock;
+		LinuxCryptoImplementation() {}
+		~LinuxCryptoImplementation()
+		{
+			memset(keybak, 0, sizeof(keybak));
+		}
+		int Encrypt(uint8_t *out, const uint8_t *in) const
+		{
+			const size_t block_size = BlockCipher<size, E>::block_size;
+			return af_alg_do_crypt(&alg, out, in, block_size, 0);
+		}
+		int Decrypt(uint8_t *out, const uint8_t *in) const
+		{
+			const size_t block_size = BlockCipher<size, E>::block_size;
+			return af_alg_do_crypt(&alg, out, in, block_size, 1);
+		}
+		int EncryptFast(FastBlock *out, const FastBlock *in,
+				size_t n) const
+		{
+			const size_t block_size = BlockCipher<size, E>::block_size;
+			return af_alg_do_crypt(&alg, out->data, in->data, block_size*n, 0);
+		}
+		int DecryptFast(FastBlock *out, const FastBlock *in,
+				size_t n) const
+		{
+			const size_t block_size = BlockCipher<size, E>::block_size;
+			return af_alg_do_crypt(&alg, out->data, in->data, block_size*n, 1);
+		}
+	protected:
+		void Clone(const LinuxCryptoImplementation &other)
+		{
+			this->SetKeyInternal(other.keybak, other.keysz);
+		}
+		virtual int SetKeyInternal(const uint8_t *key, size_t len)
+		{
+			if (alg.fd >= 0)
+				close(alg.fd);
+			if (alg.sockfd >= 0)
+				close(alg.sockfd);
+
+			RETFAIL(af_alg_initialize(&alg));
+			RETFAIL(af_alg_open_socket(&alg, "skcipher", "ecb(aes)"));
+
+			memcpy(keybak, key, len);
+
+			RETFAIL(af_alg_set_key(&alg, key, len));
+			RETFAIL(af_alg_make_socket(&alg));
+			return 0;
+		}
+		struct af_alg alg;
+		uint8_t keybak[32];
+		const char *ecbname;
+	private:
+};
+
+class LinuxAES : public LinuxCryptoImplementation<16, BigEndian>
 {
 	public:
 		LinuxAES();
 		LinuxAES(const LinuxAES &);
-		~LinuxAES() { memset(keybak, 0, sizeof(keybak)); };
-		int Encrypt(uint8_t *out, const uint8_t *in) const;
-		int Decrypt(uint8_t *out, const uint8_t *in) const;
-		int EncryptFast(FastBlock *bout, const FastBlock *bin,
-				size_t n) const;
-		int DecryptFast(FastBlock *bout, const FastBlock *bin,
-				size_t n) const;
 	protected:
 		int SetKeyInternal(const uint8_t *key, size_t len);
 	private:
-		struct af_alg alg;
-		uint8_t keybak[32];
 };
 
 }
