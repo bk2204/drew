@@ -228,7 +228,7 @@ static int gcm_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 	struct gcm *c = (struct gcm *)ctx->ctx;
 
 	if (!algoctx)
-		return DREW_ERR_INVALID;
+		return -DREW_ERR_INVALID;
 
 	c->algo = (drew_block_t *)drew_mem_malloc(sizeof(*c->algo));
 	c->algo->functbl = algoctx->functbl;
