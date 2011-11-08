@@ -31,7 +31,7 @@
 
 #include <drew/block.h>
 #include "block-plugin.h"
-#include "linuxaes.hh"
+#include "linuxblock.hh"
 
 extern "C" {
 
@@ -176,7 +176,7 @@ static int cast5test(void *p, const drew_loader_t *ldr)
 	PLUGIN_DATA(cast6, "CAST-256")
 	PLUGIN_DATA(cast5, "CAST-128")
 	PLUGIN_DATA_END()
-	PLUGIN_INTERFACE(linuxaes)
+	PLUGIN_INTERFACE(linuxblock)
 }
 
 drew::LinuxAES::LinuxAES()
