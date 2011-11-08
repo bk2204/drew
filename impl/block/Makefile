@@ -6,7 +6,6 @@ PLUGINS_BLOCK-${CFG_BLOWFISH}	+= blowfish/blowfish
 PLUGINS_BLOCK-${CFG_AESNI}		+= aes-native/aesni
 PLUGINS_BLOCK-${CFG_AES}		+= aes/aes
 PLUGINS_BLOCK-${CFG_RIJNDAEL}	+= rijndael/rijndael
-PLUGINS_BLOCK-${CFG_LINUXBLOCK}	+= linux/linuxblock
 PLUGINS_BLOCK-${CFG_TWOFISH}	+= twofish/twofish
 PLUGINS_BLOCK-${CFG_DES}		+= des/des
 PLUGINS_BLOCK-${CFG_CAMELLIA}	+= camellia/camellia
@@ -19,6 +18,7 @@ PLUGINS_BLOCK-${CFG_IDEA}		+= idea/idea
 PLUGINS_BLOCK-${CFG_ARIA128}	+= aria/aria128
 PLUGINS_BLOCK-${CFG_ARIABYTE}	+= aria/ariabyte
 PLUGINS_BLOCK-${CFG_SHACAL}		+= shacal/shacal
+PLUGINS_BLOCK-${CFG_LINUXBLOCK}	+= linux/linuxblock
 
 ${BLOCK_DIR}/cast/cast5.so: ${BLOCK_DIR}/cast/sboxes.o
 ${BLOCK_DIR}/cast/cast6.so: ${BLOCK_DIR}/cast/sboxes.o
