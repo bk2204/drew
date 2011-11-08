@@ -35,7 +35,7 @@ class AES : public BlockCipher<16, BigEndian>
 				uint32_t &t2, uint32_t &t3, uint32_t s0, uint32_t s1,
 				uint32_t s2, uint32_t s3, const uint32_t *rk);
 		static const size_t m_nb;
-		size_t m_nr, m_nk;
+		size_t m_nr, m_nk, m_nri;
 		// maxnb*(maxnr+1) = 8 * 9 = 72
 		uint32_t m_rk[72], m_rkd[72];	
 		uint32_t m_km[16];
