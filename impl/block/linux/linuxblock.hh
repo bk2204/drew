@@ -121,6 +121,16 @@ class LinuxCAST5 : public LinuxCryptoImplementation<8, BigEndian>
 	private:
 };
 
+class LinuxTwofish : public LinuxCryptoImplementation<16, LittleEndian>
+{
+	public:
+		LinuxTwofish();
+		LinuxTwofish(const LinuxTwofish &);
+	protected:
+		int SetKeyInternal(const uint8_t *key, size_t len);
+	private:
+};
+
 }
 
 #endif

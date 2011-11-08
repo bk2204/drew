@@ -50,6 +50,10 @@ static const int cast5keysz[] =
 	5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
 };
 
+static const int twofishkeysz[] =
+{
+	16, 24, 32
+};
 
 static const int aes128keysz[] = {16};
 static const int aes192keysz[] = {24};
@@ -162,12 +166,18 @@ static int cast5test(void *p, const drew_loader_t *ldr)
 	return -DREW_ERR_NOT_IMPL;
 }
 
+static int twofishtest(void *p, const drew_loader_t *ldr)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
 	PLUGIN_STRUCTURE(rijndael, LinuxAES)
 	PLUGIN_STRUCTURE(aes128, LinuxAES)
 	PLUGIN_STRUCTURE(aes192, LinuxAES)
 	PLUGIN_STRUCTURE(aes256, LinuxAES)
 	PLUGIN_STRUCTURE(cast6, LinuxCAST6)
 	PLUGIN_STRUCTURE(cast5, LinuxCAST5)
+	PLUGIN_STRUCTURE(twofish, LinuxTwofish)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(rijndael, "Rijndael")
 	PLUGIN_DATA(aes128, "AES128")
@@ -175,6 +185,7 @@ static int cast5test(void *p, const drew_loader_t *ldr)
 	PLUGIN_DATA(aes256, "AES256")
 	PLUGIN_DATA(cast6, "CAST-256")
 	PLUGIN_DATA(cast5, "CAST-128")
+	PLUGIN_DATA(twofish, "Twofish")
 	PLUGIN_DATA_END()
 	PLUGIN_INTERFACE(linuxblock)
 }
@@ -248,6 +259,30 @@ int drew::LinuxCAST5::SetKeyInternal(const uint8_t *key, size_t len)
 		return -DREW_ERR_INVALID;
 
 	return this->LinuxCryptoImplementation<8, BigEndian>::SetKeyInternal(key, len);
+}
+
+drew::LinuxTwofish::LinuxTwofish()
+{
+	ecbname = "ecb(twofish)";
+}
+
+drew::LinuxTwofish::LinuxTwofish(const LinuxTwofish &other)
+{
+	Clone(other);
+}
+
+int drew::LinuxTwofish::SetKeyInternal(const uint8_t *key, size_t len)
+{
+	switch (len) {
+		case 16:
+		case 24:
+		case 32:
+			break;
+		default:
+			return -DREW_ERR_INVALID;
+	}
+
+	return this->LinuxCryptoImplementation<16, LittleEndian>::SetKeyInternal(key, len);
 }
 
 #endif
