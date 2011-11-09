@@ -47,9 +47,11 @@ static int rc4_setkey(drew_stream_t *ctx, const uint8_t *key, size_t len,
 		int mode);
 static int rc4_encrypt(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
+static int rc4_encryptfast(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len);
 static int rc4_fini(drew_stream_t *ctx, int flags);
 
-PLUGIN_FUNCTBL(rc4, rc4_info, rc4_info2, rc4_init, rc4_setiv, rc4_setkey, rc4_encrypt, rc4_encrypt, rc4_encrypt, rc4_encrypt, rc4_test, rc4_fini, rc4_clone, rc4_reset);
+PLUGIN_FUNCTBL(rc4, rc4_info, rc4_info2, rc4_init, rc4_setiv, rc4_setkey, rc4_encrypt, rc4_encrypt, rc4_encryptfast, rc4_encryptfast, rc4_test, rc4_fini, rc4_clone, rc4_reset);
 
 static int rc4_maintenance_test(void)
 {
@@ -186,7 +188,7 @@ static int rc4_info2(const drew_stream_t *ctx, int op, drew_param_t *out,
 		case DREW_STREAM_INTSIZE:
 			return sizeof(drew::RC4);
 		case DREW_STREAM_BLKSIZE:
-			return 1;
+			return 256;
 		default:
 			return -DREW_ERR_INVALID;
 	}
@@ -247,6 +249,14 @@ static int rc4_encrypt(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
 	return 0;
 }
 
+static int rc4_encryptfast(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len)
+{
+	drew::RC4 *p = reinterpret_cast<drew::RC4 *>(ctx->ctx);
+	p->EncryptFast(out, in, len);
+	return 0;
+}
+
 static int rc4_fini(drew_stream_t *ctx, int flags)
 {
 	drew::RC4 *p = reinterpret_cast<drew::RC4 *>(ctx->ctx);
@@ -300,5 +310,15 @@ void drew::RC4::Encrypt(uint8_t *out, const uint8_t *in, size_t len)
 void drew::RC4::Decrypt(uint8_t *out, const uint8_t *in, size_t len)
 {
 	return Encrypt(out, in, len);
+}
+
+void drew::RC4::EncryptFast(uint8_t *out, const uint8_t *in, size_t len)
+{
+	CopyAndXorAligned(out, in, len, m_buf, sizeof(m_buf), m_ks);
+}
+
+void drew::RC4::DecryptFast(uint8_t *out, const uint8_t *in, size_t len)
+{
+	return EncryptFast(out, in, len);
 }
 UNHIDE()
