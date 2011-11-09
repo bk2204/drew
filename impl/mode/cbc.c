@@ -57,6 +57,10 @@ static int cbc_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
 static int cbc_decrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
+static int cbc_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len);
+static int cbc_decryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len);
 static int cbc_fini(drew_mode_t *ctx, int flags);
 static int cbc_test(void *p, const drew_loader_t *ldr);
 static int cbc_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags);
@@ -68,8 +72,9 @@ static int cbc_decryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 
 static const drew_mode_functbl_t cbc_functbl = {
 	cbc_info, cbc_info2, cbc_init, cbc_clone, cbc_reset, cbc_fini,
-	cbc_setblock, cbc_setiv, cbc_encrypt, cbc_decrypt, cbc_encrypt, cbc_decrypt,
-	cbc_setdata, cbc_encryptfinal, cbc_decryptfinal, cbc_resync, cbc_test
+	cbc_setblock, cbc_setiv, cbc_encrypt, cbc_decrypt,
+	cbc_encryptfast, cbc_decryptfast, cbc_setdata,
+	cbc_encryptfinal, cbc_decryptfinal, cbc_resync, cbc_test
 };
 
 static int cbc_info(int op, void *p)
@@ -204,6 +209,21 @@ static int cbc_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 	return 0;
 }
 
+static int cbc_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len)
+{
+	struct cbc *c = ctx->ctx;
+	const size_t bs = c->blksize;
+
+	for (; len >= bs; len -= bs, out += bs, in += bs) {
+		xor_aligned2(c->buf, in, bs);
+		c->algo->functbl->encrypt(c->algo, c->buf, c->buf);
+		memcpy(out, c->buf, bs);
+	}
+
+	return 0;
+}
+
 static int cbc_decrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len)
 {
@@ -216,6 +236,21 @@ static int cbc_decrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 	for (; len >= bs; len -= bs, out += bs, in += bs) {
 		c->algo->functbl->decrypt(c->algo, out, in);
 		xor_buffers2(out, c->buf, bs);
+		memcpy(c->buf, in, bs);
+	}
+
+	return 0;
+}
+
+static int cbc_decryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len)
+{
+	struct cbc *c = ctx->ctx;
+	const size_t bs = c->blksize;
+
+	for (; len >= bs; len -= bs, out += bs, in += bs) {
+		c->algo->functbl->decrypt(c->algo, out, in);
+		xor_aligned2(out, c->buf, bs);
 		memcpy(c->buf, in, bs);
 	}
 
