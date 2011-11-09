@@ -100,7 +100,7 @@ class RC4
 		}
 	protected:
 	private:
-		RC4Keystream<int> m_ks;
+		RC4Keystream<unsigned> m_ks;
 		size_t m_drop;
 		uint8_t m_key[256];
 		uint8_t m_buf[256] ALIGNED_T;
