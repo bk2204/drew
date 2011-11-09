@@ -196,8 +196,7 @@ static int cbc_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		return -DREW_ERR_INVALID;
 
 	for (; len >= bs; len -= bs, out += bs, in += bs) {
-		for (size_t i = 0; i < bs; i++)
-			c->buf[i] ^= in[i];
+		xor_buffers2(c->buf, in, bs);
 		c->algo->functbl->encrypt(c->algo, c->buf, c->buf);
 		memcpy(out, c->buf, bs);
 	}
@@ -216,8 +215,7 @@ static int cbc_decrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 
 	for (; len >= bs; len -= bs, out += bs, in += bs) {
 		c->algo->functbl->decrypt(c->algo, out, in);
-		for (size_t i = 0; i < bs; i++)
-			out[i] ^= c->buf[i];
+		xor_buffers2(out, c->buf, bs);
 		memcpy(c->buf, in, bs);
 	}
 
