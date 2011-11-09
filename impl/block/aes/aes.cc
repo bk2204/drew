@@ -195,7 +195,7 @@ void drew::AES::SetKeyEncrypt(const uint8_t *key, size_t len)
 	m_nk = (len / 4);
 	// We subtract 8 here because we unroll the first eight rounds.
 	m_nr = 6 + std::max(m_nb, m_nk);
-	m_nri = m_nr - 8;
+	m_nri = (m_nr - 10) >> 1;
 
 	uint32_t *rk = m_rk;
 
@@ -349,7 +349,6 @@ int drew::AES::Encrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t s0, s1, s2, s3, t0, t1, t2, t3;
 	const uint32_t *rk = m_rk;
-	int r;
 
 	/*
 	 * map byte array block to cipher state
@@ -370,15 +369,11 @@ int drew::AES::Encrypt(uint8_t *out, const uint8_t *in) const
 	EncryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
 	EncryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
 	EncryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
+	EncryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
 
-	r = m_nri >> 1;
-	for (;;) {
-		EncryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
-
-		if (--r == 0)
-			break;
-
+	for (size_t r = m_nri; r; r--) {
 		EncryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
+		EncryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
 	}
 	/*
 	 * apply last round and
@@ -450,7 +445,6 @@ int drew::AES::Decrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t s0, s1, s2, s3, t0, t1, t2, t3;
 	const uint32_t *rk = m_rkd;
-	int r;
 
 	/*
 	 * map byte array block to cipher state
@@ -471,15 +465,11 @@ int drew::AES::Decrypt(uint8_t *out, const uint8_t *in) const
 	DecryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
 	DecryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
 	DecryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
+	DecryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
 
-	r = m_nri >> 1;
-	for (;;) {
-		DecryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
-
-		if (--r == 0)
-			break;
-
+	for (size_t r = m_nri; r; r--) {
 		DecryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
+		DecryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
 	}
 
 	rk += 4;
