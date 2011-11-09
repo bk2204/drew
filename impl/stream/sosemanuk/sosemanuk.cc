@@ -44,11 +44,13 @@ static int sosemanuk_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
 static int sosemanuk_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len);
 static int sosemanuk_setkey(drew_stream_t *ctx, const uint8_t *key, size_t len,
 		int mode);
-static int sosemanuk_encrypt(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
-		size_t len);
+static int sosemanuk_encrypt(drew_stream_t *ctx, uint8_t *out,
+		const uint8_t *in, size_t len);
+static int sosemanuk_encryptfast(drew_stream_t *ctx, uint8_t *out,
+		const uint8_t *in, size_t len);
 static int sosemanuk_fini(drew_stream_t *ctx, int flags);
 
-PLUGIN_FUNCTBL(sosemanuk, sosemanuk_info, sosemanuk_info2, sosemanuk_init, sosemanuk_setiv, sosemanuk_setkey, sosemanuk_encrypt, sosemanuk_encrypt, sosemanuk_encrypt, sosemanuk_encrypt, sosemanuk_test, sosemanuk_fini, sosemanuk_clone, sosemanuk_reset);
+PLUGIN_FUNCTBL(sosemanuk, sosemanuk_info, sosemanuk_info2, sosemanuk_init, sosemanuk_setiv, sosemanuk_setkey, sosemanuk_encrypt, sosemanuk_encrypt, sosemanuk_encryptfast, sosemanuk_encryptfast, sosemanuk_test, sosemanuk_fini, sosemanuk_clone, sosemanuk_reset);
 
 static int sosemanuk_standard_test(void)
 {
@@ -198,11 +200,19 @@ static int sosemanuk_setkey(drew_stream_t *ctx, const uint8_t *key, size_t len,
 	return 0;
 }
 
-static int sosemanuk_encrypt(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
-		size_t len)
+static int sosemanuk_encrypt(drew_stream_t *ctx, uint8_t *out,
+		const uint8_t *in, size_t len)
 {
 	drew::Sosemanuk *p = reinterpret_cast<drew::Sosemanuk *>(ctx->ctx);
 	p->Encrypt(out, in, len);
+	return 0;
+}
+
+static int sosemanuk_encryptfast(drew_stream_t *ctx, uint8_t *out,
+		const uint8_t *in, size_t len)
+{
+	drew::Sosemanuk *p = reinterpret_cast<drew::Sosemanuk *>(ctx->ctx);
+	p->EncryptFast(out, in, len);
 	return 0;
 }
 
@@ -261,6 +271,16 @@ void drew::Sosemanuk::Encrypt(uint8_t *out, const uint8_t *in, size_t len)
 void drew::Sosemanuk::Decrypt(uint8_t *out, const uint8_t *in, size_t len)
 {
 	return Encrypt(out, in, len);
+}
+
+void drew::Sosemanuk::EncryptFast(uint8_t *out, const uint8_t *in, size_t len)
+{
+	CopyAndXorAligned(out, in, len, m_buf, sizeof(m_buf), m_ks);
+}
+
+void drew::Sosemanuk::DecryptFast(uint8_t *out, const uint8_t *in, size_t len)
+{
+	return EncryptFast(out, in, len);
 }
 
 typedef drew::SosemanukKeystream::endian_t E;
@@ -334,6 +354,11 @@ void drew::SosemanukKeystream::FillBuffer(uint8_t buf[160])
 		XorAligned(z, f, s, 160);
 		E::Copy(buf, z, sizeof(z));
 	}
+}
+
+void drew::SosemanukKeystream::FillBufferAligned(uint8_t buf[160])
+{
+	return FillBuffer(buf);
 }
 
 /* From the Sosemanuk reference implementation in the ecrypt SVN.
