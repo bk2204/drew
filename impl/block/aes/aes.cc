@@ -361,19 +361,24 @@ int drew::AES::Encrypt(uint8_t *out, const uint8_t *in) const
 	/*
 	 * Nr - 1 full rounds:
 	 */
-	EncryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
-	EncryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
-	EncryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
-	EncryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
-	EncryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
-	EncryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
-	EncryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
-	EncryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
-	EncryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
-
-	for (size_t r = m_nri; r; r--) {
-		EncryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
-		EncryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
+	switch (m_nri & 3) {
+		default:
+		case 2:
+			EncryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
+			EncryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
+		case 1:
+			EncryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
+			EncryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
+		case 0:
+			EncryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
+			EncryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
+			EncryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
+			EncryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
+			EncryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
+			EncryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
+			EncryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
+			EncryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
+			EncryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
 	}
 	/*
 	 * apply last round and
@@ -457,19 +462,24 @@ int drew::AES::Decrypt(uint8_t *out, const uint8_t *in) const
 	/*
 	 * m_nr - 1 full rounds:
 	 */
-	DecryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
-	DecryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
-	DecryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
-	DecryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
-	DecryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
-	DecryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
-	DecryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
-	DecryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
-	DecryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
-
-	for (size_t r = m_nri; r; r--) {
-		DecryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
-		DecryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
+	switch (m_nri & 3) {
+		default:
+		case 2:
+			DecryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
+			DecryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
+		case 1:
+			DecryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
+			DecryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
+		case 0:
+			DecryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
+			DecryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
+			DecryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
+			DecryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
+			DecryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
+			DecryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
+			DecryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
+			DecryptRound(s0, s1, s2, s3, t0, t1, t2, t3, rk += 4);
+			DecryptRound(t0, t1, t2, t3, s0, s1, s2, s3, rk += 4);
 	}
 
 	rk += 4;
