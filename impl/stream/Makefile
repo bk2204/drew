@@ -12,8 +12,10 @@ PLUGINS			+= $(STREAM_PLUGINS)
 MODULES			+= $(STREAM_MODULES)
 
 ${STREAM_DIR}/sosemanuk/sosemanuk.so:	${BLOCK_DIR}/serpent/serpent-impl.o
+${STREAM_DIR}/salsa20/salsa20.so:		${STREAM_DIR}/salsa20/salsa20-amd64.o
 
 EXTRA_OBJECTS-${CFG_SOSEMANUK}	+= ${BLOCK_DIR}/serpent/serpent-impl.o
+EXTRA_OBJECTS-${CFG_SALSA20}	+= ${STREAM_DIR}/salsa20/salsa20-amd64.o
 
 ${STREAM_DIR}/sosemanuk/sosemanuk.o: CPPFLAGS += -I${BLOCK_DIR}
 ${STREAM_DIR}/sosemanuk/sosemanuk.d: CPPFLAGS += -I${BLOCK_DIR}
