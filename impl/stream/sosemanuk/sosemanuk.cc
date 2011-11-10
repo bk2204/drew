@@ -322,9 +322,6 @@ void drew::SosemanukKeystream::SetNonce(const uint8_t *iv, size_t sz)
 	m_r2 = vals[6];
 }
 
-/* TODO: consider processing 160 bytes at a time; that is, one full LFSR at a
- * time.
- */
 void drew::SosemanukKeystream::FillBuffer(uint8_t buf[160])
 {
 	uint32_t f[40] ALIGNED_T, s[40] ALIGNED_T, z[40] ALIGNED_T;
