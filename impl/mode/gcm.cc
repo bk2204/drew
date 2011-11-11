@@ -387,7 +387,7 @@ static void increment_counter(uint8_t *ctr, size_t len)
 {
 	bool carry = 0;
 	carry = !++ctr[len - 1];
-	for (size_t i = len - 2; carry && i >= len - 4; i--) {
+	for (size_t i = len - 2; unlikely(carry && i >= len - 4); i--) {
 		if (!(carry = !++ctr[i]))
 			break;
 	}
