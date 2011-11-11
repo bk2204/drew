@@ -196,7 +196,7 @@ static void increment_counter(uint8_t *ctr, size_t len)
 {
 	bool carry = 0;
 	carry = !++ctr[len - 1];
-	for (int i = len - 2; carry && i >= 0; i--) {
+	for (int i = len - 2; unlikely(carry && i >= 0); i--) {
 		if (!(carry = !++ctr[i]))
 			break;
 	}
