@@ -437,7 +437,7 @@ int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
 	res = ctx->functbl->info(DREW_MODE_VERSION, NULL);
 	if (is_forbidden_errno(res))
 		retval |= MODE_BAD_ERRNO;
-	if (res != 2)
+	if (res != 3)
 		retval |= MODE_BAD_VERSION;
 
 	res = ctx->functbl->info(DREW_MODE_QUANTUM, NULL);

@@ -350,7 +350,7 @@ int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
 {
 	int res = 0, retval = 0, quantum = 1;
 	size_t intsize = 0, blocksize = 0;
-	int keysize = 0;
+	int keysize = 0, apiver = 0;
 	drew_block_t c, *ctx = &c;
 	void *mem;
 
@@ -363,21 +363,23 @@ int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
 		}
 
 	ctx->functbl = tbl;
-	res = ctx->functbl->info(DREW_BLOCK_VERSION, NULL);
+	apiver = res = ctx->functbl->info(DREW_BLOCK_VERSION, NULL);
 	if (is_forbidden_errno(res))
 		retval |= BLOCK_BAD_ERRNO;
-	if (res != 2)
+	if (res != 3)
 		retval |= BLOCK_BAD_VERSION;
 
 	res = ctx->functbl->info(DREW_BLOCK_QUANTUM, NULL);
 	if (is_forbidden_errno(res))
 		retval |= BLOCK_BAD_ERRNO;
-	if (res < 0)
-		retval |= BLOCK_BAD_QUANTUM;
-	else {
-		if (res & (res-1))
+	if (apiver < 3) {
+		if (res < 0)
 			retval |= BLOCK_BAD_QUANTUM;
-		quantum = res;
+		else {
+			if (res & (res-1))
+				retval |= BLOCK_BAD_QUANTUM;
+			quantum = res;
+		}
 	}
 
 	res = ctx->functbl->info(DREW_BLOCK_BLKSIZE, NULL);
