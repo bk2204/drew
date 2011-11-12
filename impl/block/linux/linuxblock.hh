@@ -70,6 +70,7 @@ class LinuxCryptoImplementation : public BlockCipher<size, E>
 	protected:
 		void Clone(const LinuxCryptoImplementation &other)
 		{
+			this->ecbname = other.ecbname;
 			this->SetKeyInternal(other.keybak, other.keysz);
 		}
 		virtual int SetKeyInternal(const uint8_t *key, size_t len)
