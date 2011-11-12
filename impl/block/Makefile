@@ -18,6 +18,7 @@ PLUGINS_BLOCK-${CFG_IDEA}		+= idea/idea
 PLUGINS_BLOCK-${CFG_ARIA128}	+= aria/aria128
 PLUGINS_BLOCK-${CFG_ARIABYTE}	+= aria/ariabyte
 PLUGINS_BLOCK-${CFG_SHACAL}		+= shacal/shacal
+PLUGINS_BLOCK-${CFG_MARS}		+= mars/mars
 PLUGINS_BLOCK-${CFG_LINUXBLOCK}	+= linux/linuxblock
 
 ${BLOCK_DIR}/cast/cast5.so: ${BLOCK_DIR}/cast/sboxes.o

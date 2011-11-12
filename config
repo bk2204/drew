@@ -45,6 +45,7 @@ CFG_IDEA		= No, thanks.  I'm patented.
 CFG_ARIABYTE	= y
 CFG_ARIA128		= y
 CFG_SHACAL		= y
+CFG_MARS		= y
 
 # Modes.
 CFG_CFB			= y
