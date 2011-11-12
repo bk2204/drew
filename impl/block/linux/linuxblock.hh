@@ -37,7 +37,10 @@ class LinuxCryptoImplementation : public BlockCipher<size, E>
 {
 	public:
 		typedef typename BlockCipher<size, E>::FastBlock FastBlock;
-		LinuxCryptoImplementation() {}
+		LinuxCryptoImplementation()
+		{
+			memset(&alg, 0, sizeof(alg));
+		}
 		~LinuxCryptoImplementation()
 		{
 			memset(keybak, 0, sizeof(keybak));
