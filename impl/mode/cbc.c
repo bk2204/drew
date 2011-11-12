@@ -73,6 +73,13 @@ static int cbc_decryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 static const drew_mode_functbl_t cbc_functbl = {
 	cbc_info, cbc_info2, cbc_init, cbc_clone, cbc_reset, cbc_fini,
 	cbc_setblock, cbc_setiv, cbc_encrypt, cbc_decrypt,
+	cbc_encrypt, cbc_decrypt, cbc_setdata,
+	cbc_encryptfinal, cbc_decryptfinal, cbc_resync, cbc_test
+};
+
+static const drew_mode_functbl_t cbcfast_functbl = {
+	cbc_info, cbc_info2, cbc_init, cbc_clone, cbc_reset, cbc_fini,
+	cbc_setblock, cbc_setiv, cbc_encrypt, cbc_decrypt,
 	cbc_encryptfast, cbc_decryptfast, cbc_setdata,
 	cbc_encryptfinal, cbc_decryptfinal, cbc_resync, cbc_test
 };
@@ -172,6 +179,8 @@ static int cbc_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 		return -ENOMEM;
 	if (!(c->iv = drew_mem_smalloc(c->blksize)))
 		return -ENOMEM;
+	if (c->blksize == 16)
+		ctx->functbl = &cbcfast_functbl;
 
 	return 0;
 }
