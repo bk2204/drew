@@ -40,8 +40,6 @@ class MARS : public BlockCipher<16, LittleEndian>
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
 	protected:
 		int SetKeyInternal(const uint8_t *key, size_t sz);
-		static void e(uint32_t &l, uint32_t &m, uint32_t &r, uint32_t in,
-				uint32_t k1, uint32_t k2);
 	private:
 		uint32_t m_k[40];
 };

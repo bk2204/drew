@@ -242,7 +242,7 @@ int drew::MARS::SetKeyInternal(const uint8_t *key, size_t sz)
 	return 0;
 }
 
-inline void drew::MARS::e(uint32_t &l, uint32_t &m, uint32_t &r, uint32_t in,
+inline void e(uint32_t &l, uint32_t &m, uint32_t &r, uint32_t in,
 		uint32_t k1, uint32_t k2)
 {
 	uint32_t b, c;
@@ -260,6 +260,52 @@ inline void drew::MARS::e(uint32_t &l, uint32_t &m, uint32_t &r, uint32_t in,
 	l = RotateLeft(l, c);
 }
 
+inline void ForwardMixing(uint32_t &a, uint32_t &b, uint32_t &c, uint32_t &d)
+{
+	b ^= sbox[E::GetByte(a, 0)];
+	b += sbox[256+E::GetByte(a, 1)];
+	c += sbox[E::GetByte(a, 2)];
+	d ^= sbox[256+E::GetByte(a, 3)];
+	a = RotateRight(a, 24);
+}
+
+inline void ReverseMixing(uint32_t &a, uint32_t &b, uint32_t &c, uint32_t &d)
+{
+	b ^= sbox[256+E::GetByte(a, 0)];
+	c -= sbox[E::GetByte(a, 3)];
+	d -= sbox[256+E::GetByte(a, 2)];
+	d ^= sbox[E::GetByte(a, 1)];
+
+	a = RotateLeft(a, 24);
+}
+
+inline void EncryptCoreShared(uint32_t &a, uint32_t &b, uint32_t &c,
+		uint32_t &d, uint32_t &v1, uint32_t &v3, const uint32_t *k)
+{
+	uint32_t v2;
+	e(v1, v2, v3, a, k[0], k[1]);
+	a = RotateLeft(a, 13);
+	c += v2;
+}
+
+inline void EncryptCoreA(uint32_t &a, uint32_t &b, uint32_t &c,
+		uint32_t &d, const uint32_t *k)
+{
+	uint32_t v1, v3;
+	EncryptCoreShared(a, b, c, d, v1, v3, k);
+	b += v1;
+	d ^= v3;
+}
+
+inline void EncryptCoreB(uint32_t &a, uint32_t &b, uint32_t &c,
+		uint32_t &d, const uint32_t *k)
+{
+	uint32_t v1, v3;
+	EncryptCoreShared(a, b, c, d, v1, v3, k);
+	d += v1;
+	b ^= v3;
+}
+
 int drew::MARS::Encrypt(uint8_t *out, const uint8_t *in) const
 {
 	uint32_t a, b, c, d;
@@ -269,64 +315,37 @@ int drew::MARS::Encrypt(uint8_t *out, const uint8_t *in) const
 	c = E::Convert<uint32_t>(in +  8) + m_k[2];
 	d = E::Convert<uint32_t>(in + 12) + m_k[3];
 
-	for (size_t i = 0; i < 8; i++) {
-		b ^= sbox[E::GetByte(a, 0)];
-		b += sbox[256+E::GetByte(a, 1)];
-		c += sbox[E::GetByte(a, 2)];
-		d ^= sbox[256+E::GetByte(a, 3)];
-		a = RotateRight(a, 24);
-		if ((i & 3) == 0)
-			a += d;
-		else if ((i & 3) == 1)
-			a += b;
-		uint32_t t;
-		t = b;
-		b = c;
-		c = d;
-		d = a;
-		a = t;
+	for (size_t i = 0; i < 8; i += 4) {
+		ForwardMixing(a, b, c, d);
+		a += d;
+		ForwardMixing(b, c, d, a);
+		b += c;
+		ForwardMixing(c, d, a, b);
+		ForwardMixing(d, a, b, c);
 	}
 
-	const uint32_t *k = m_k + 4;
-	for (size_t i = 0; i < 16; i++, k += 2) {
-		uint32_t v1, v2, v3;
-		e(v1, v2, v3, a, k[0], k[1]);
-		a = RotateLeft(a, 13);
-		c += v2;
-		if (i & 8) {
-			d += v1;
-			b ^= v3;
-		}
-		else {
-			b += v1;
-			d ^= v3;
-		}
-		uint32_t t;
-		t = b;
-		b = c;
-		c = d;
-		d = a;
-		a = t;
+	const uint32_t *k = m_k + 2;
+	for (int i = 0; i < 2; i++) {
+		EncryptCoreA(a, b, c, d, k+=2);
+		EncryptCoreA(b, c, d, a, k+=2);
+		EncryptCoreA(c, d, a, b, k+=2);
+		EncryptCoreA(d, a, b, c, k+=2);
 	}
 
-	for (size_t i = 0; i < 8; i++) {
-		if ((i & 3) == 2)
-			a -= d;
-		else if ((i & 3) == 3)
-			a -= b;
+	for (int i = 0; i < 2; i++) {
+		EncryptCoreB(a, b, c, d, k+=2);
+		EncryptCoreB(b, c, d, a, k+=2);
+		EncryptCoreB(c, d, a, b, k+=2);
+		EncryptCoreB(d, a, b, c, k+=2);
+	}
 
-		b ^= sbox[256+E::GetByte(a, 0)];
-		c -= sbox[E::GetByte(a, 3)];
-		d -= sbox[256+E::GetByte(a, 2)];
-		d ^= sbox[E::GetByte(a, 1)];
-
-		a = RotateLeft(a, 24);
-		uint32_t t;
-		t = b;
-		b = c;
-		c = d;
-		d = a;
-		a = t;
+	for (size_t i = 0; i < 8; i += 4) {
+		ReverseMixing(a, b, c, d);
+		ReverseMixing(b, c, d, a);
+		c -= b;
+		ReverseMixing(c, d, a, b);
+		d -= a;
+		ReverseMixing(d, a, b, c);
 	}
 
 	k = m_k+36;
