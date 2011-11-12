@@ -39,6 +39,7 @@ class SosemanukKeystream
 		void SetKey(const uint8_t *key, size_t sz);
 		void SetNonce(const uint8_t *key, size_t sz);
 		void FillBuffer(uint8_t *);
+		void FillBufferAligned(uint8_t *);
 		void Reset();
 	protected:
 	private:
@@ -57,6 +58,8 @@ class Sosemanuk
 		void SetKey(const uint8_t *key, size_t sz);
 		void Encrypt(uint8_t *out, const uint8_t *in, size_t len);
 		void Decrypt(uint8_t *out, const uint8_t *in, size_t len);
+		void EncryptFast(uint8_t *out, const uint8_t *in, size_t len);
+		void DecryptFast(uint8_t *out, const uint8_t *in, size_t len);
 		size_t GetKeySize() const
 		{
 			return m_keysz;

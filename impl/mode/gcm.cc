@@ -228,7 +228,7 @@ static int gcm_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 	struct gcm *c = (struct gcm *)ctx->ctx;
 
 	if (!algoctx)
-		return DREW_ERR_INVALID;
+		return -DREW_ERR_INVALID;
 
 	c->algo = (drew_block_t *)drew_mem_malloc(sizeof(*c->algo));
 	c->algo->functbl = algoctx->functbl;
@@ -238,11 +238,6 @@ static int gcm_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 		return -DREW_ERR_NOT_IMPL;
 	if (c->blksize != 16)
 		return -DREW_ERR_INVALID;
-	memset(c->h, 0, sizeof(c->h));
-	algoctx->functbl->encryptfast(algoctx, c->h, c->h, 1);
-
-	if (c->mul == mul_fl)
-		gen_table_fl(c);
 
 	return 0;
 }
@@ -333,15 +328,29 @@ static inline void hash(struct gcm *c, uint8_t *buf, const uint8_t *block)
 	c->mul(c, buf);
 }
 
-static inline void hash_fast(struct gcm *c, uint8_t *buf, const uint8_t *block)
+static inline void hash_fast(struct gcm *c, uint8_t *buf, const uint8_t *block,
+		size_t mul)
 {
-	XorAligned(buf, block, 16);
-	c->mul(c, buf);
+	for (size_t i = 0; i < mul; i++, block += 16) {
+		XorAligned(buf, block, 16);
+		c->mul(c, buf);
+	}
 }
 
 static int gcm_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len)
 {
 	struct gcm *c = (struct gcm *)ctx->ctx;
+
+	memset(c->h, 0, sizeof(c->h));
+	memset(c->y, 0, sizeof(c->y));
+	memset(c->y0, 0, sizeof(c->y0));
+	memset(c->x, 0, sizeof(c->x));
+	memset(c->buf, 0, sizeof(c->buf));
+	memset(c->cbuf, 0, sizeof(c->cbuf));
+	c->algo->functbl->encryptfast(c->algo, c->h, c->h, 1);
+
+	if (c->mul == mul_fl)
+		gen_table_fl(c);
 
 	c->ivlen = len;
 	if (iv != c->iv)
@@ -378,7 +387,7 @@ static void increment_counter(uint8_t *ctr, size_t len)
 {
 	bool carry = 0;
 	carry = !++ctr[len - 1];
-	for (size_t i = len - 2; carry && i >= len - 4; i--) {
+	for (size_t i = len - 2; unlikely(carry && i >= len - 4); i--) {
 		if (!(carry = !++ctr[i]))
 			break;
 	}
@@ -434,18 +443,17 @@ static int gcm_encryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 	uint8_t *out = outp;
 	const uint8_t *in = inp;
 	const size_t blksize = 16;
+	const size_t chunks = len / blksize;
 
 	c->clen += len;
 
-	while (len >= blksize) {
+	for (size_t i = 0; i < len; i += blksize, out += blksize, in += blksize) {
 		increment_counter(c->y, blksize);
-		c->algo->functbl->encrypt(c->algo, c->buf, c->y);
-		XorAligned(out, c->buf, in, blksize);
-		hash_fast(c, c->x, out);
-		len -= blksize;
-		out += blksize;
-		in += blksize;
+		memcpy(out, c->y, blksize);
 	}
+	c->algo->functbl->encryptfast(c->algo, outp, outp, chunks);
+	XorAligned(outp, inp, len);
+	hash_fast(c, c->x, outp, chunks);
 
 	return 0;
 }
@@ -500,18 +508,18 @@ static int gcm_decryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 	uint8_t *out = outp;
 	const uint8_t *in = inp;
 	const size_t blksize = 16;
+	const size_t chunks = len / blksize;
 
 	c->clen += len;
 
-	while (len >= blksize) {
+	hash_fast(c, c->x, in, chunks);
+
+	for (size_t i = 0; i < len; i += blksize, out += blksize, in += blksize) {
 		increment_counter(c->y, blksize);
-		c->algo->functbl->encrypt(c->algo, c->buf, c->y);
-		hash_fast(c, c->x, in);
-		XorAligned(out, c->buf, in, blksize);
-		len -= blksize;
-		out += blksize;
-		in += blksize;
+		memcpy(out, c->y, blksize);
 	}
+	c->algo->functbl->encryptfast(c->algo, outp, outp, chunks);
+	XorAligned(outp, inp, len);
 
 	return 0;
 }

@@ -180,8 +180,7 @@ int test_execute(void *data, const char *name, const void *tbl,
 	bctx->functbl->setkey(bctx, tc->key, tc->klen, 0);
 	blksize = bctx->functbl->info(DREW_BLOCK_BLKSIZE, 0);
 
-	if (((tc->feedbackBits / 8) == blksize) && !(tc->len % blksize) &&
-			!tc->aadlen && tc->ctlen == tc->len)
+	if (((tc->feedbackBits / 8) == blksize) && !(tc->len % blksize))
 		use_fast = true;
 
 	uint8_t *buf = malloc(tc->ctlen), *buf2 = malloc(tc->ctlen);
@@ -190,17 +189,19 @@ int test_execute(void *data, const char *name, const void *tbl,
 		result = TEST_INTERNAL_ERR;
 		goto out;
 	}
-	ctx.functbl->setblock(&ctx, bctx);
-	ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
-	if (tc->aadlen)
-		ctx.functbl->setdata(&ctx, tc->aad, tc->aadlen);
-	ctx.functbl->encrypt(&ctx, buf, tc->pt, tc->len);
-	if (tc->len != tc->ctlen)
-		ctx.functbl->encryptfinal(&ctx, buf+tc->len, tc->ctlen-tc->len, NULL,
-				0);
-	if (use_fast) {
+	for (int i = 0; i <= use_fast; i++) {
+		uint8_t *buffer = i ? buf2 : buf;
+		ctx.functbl->setblock(&ctx, bctx);
 		ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
-		ctx.functbl->encryptfast(&ctx, buf2, tc->pt, tc->len);
+		if (tc->aadlen)
+			ctx.functbl->setdata(&ctx, tc->aad, tc->aadlen);
+		if (!i)
+			ctx.functbl->encrypt(&ctx, buffer, tc->pt, tc->len);
+		else
+			ctx.functbl->encryptfast(&ctx, buffer, tc->pt, tc->len);
+		if (tc->len != tc->ctlen)
+			ctx.functbl->encryptfinal(&ctx, buffer+tc->len, tc->ctlen-tc->len,
+					NULL, 0);
 	}
 	ctx.functbl->fini(&ctx, 0);
 	if (memcmp(buf, tc->ct, tc->ctlen)) {
@@ -213,18 +214,20 @@ int test_execute(void *data, const char *name, const void *tbl,
 	}
 
 	ctx.functbl->init(&ctx, 0, tep->ldr, tc->feedbackBits ? &param : NULL);
-	ctx.functbl->setblock(&ctx, bctx);
-	ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
-	if (tc->aadlen)
-		ctx.functbl->setdata(&ctx, tc->aad, tc->aadlen);
-	ctx.functbl->decrypt(&ctx, buf, tc->ct, tc->len);
-	if (tc->len != tc->ctlen)
-		if (ctx.functbl->decryptfinal(&ctx, NULL, 0, tc->ct+tc->len,
-					tc->ctlen-tc->len) < 0)
-			result = TEST_FAILED;
-	if (use_fast) {
+	for (int i = 0; i <= use_fast; i++) {
+		uint8_t *buffer = i ? buf2 : buf;
+		ctx.functbl->setblock(&ctx, bctx);
 		ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
-		ctx.functbl->decryptfast(&ctx, buf2, tc->ct, tc->len);
+		if (tc->aadlen)
+			ctx.functbl->setdata(&ctx, tc->aad, tc->aadlen);
+		if (!i)
+			ctx.functbl->decrypt(&ctx, buffer, tc->ct, tc->len);
+		else
+			ctx.functbl->decryptfast(&ctx, buffer, tc->ct, tc->len);
+		if (tc->len != tc->ctlen)
+			if (ctx.functbl->decryptfinal(&ctx, NULL, 0, tc->ct+tc->len,
+						tc->ctlen-tc->len) < 0)
+				result = TEST_FAILED;
 	}
 	ctx.functbl->fini(&ctx, 0);
 	if (memcmp(buf, tc->pt, tc->len))
@@ -344,8 +347,8 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	ftbl->init(&bctx, 0, NULL, NULL);
 	ftbl->setkey(&bctx, key, keysz, 0);
 	mctx.functbl->init(&mctx, 0, ldr, NULL);
-	mctx.functbl->setiv(&mctx, buf2, blksz);
 	mctx.functbl->setblock(&mctx, &bctx);
+	mctx.functbl->setiv(&mctx, buf2, blksz);
 	encrypt = (chunk & 15) ? mctx.functbl->encrypt : mctx.functbl->encryptfast;
 	for (i = 0; i < nchunks; i++)
 		encrypt(&mctx, buf, buf, chunk);
