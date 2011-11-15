@@ -136,7 +136,10 @@ int test_execute(void *data, const char *name, const void *tbl,
 
 	drew_block_t ctx;
 	ctx.functbl = tbl;
-	ctx.functbl->init(&ctx, 0, tep->ldr, NULL);
+	if (ctx.functbl->init(&ctx, 0, tep->ldr, NULL)) {
+		result = TEST_INTERNAL_ERR;
+		goto out;
+	}
 	if (ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0) == -DREW_ERR_NOT_IMPL) {
 		result = TEST_NOT_FOR_US;
 		goto out;
@@ -148,7 +151,10 @@ int test_execute(void *data, const char *name, const void *tbl,
 	}
 	ctx.functbl->fini(&ctx, 0);
 
-	ctx.functbl->init(&ctx, 0, tep->ldr, NULL);
+	if (ctx.functbl->init(&ctx, 0, tep->ldr, NULL)) {
+		result = TEST_INTERNAL_ERR;
+		goto out;
+	}
 	ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0);
 	ctx.functbl->decrypt(&ctx, buf, tc->ct);
 	if (memcmp(buf, tc->pt, len))
