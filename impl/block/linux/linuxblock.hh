@@ -40,9 +40,15 @@ class LinuxCryptoImplementation : public BlockCipher<size, E>
 		LinuxCryptoImplementation()
 		{
 			memset(&alg, 0, sizeof(alg));
+			alg.fd = -1;
+			alg.sockfd = -1;
 		}
-		~LinuxCryptoImplementation()
+		virtual ~LinuxCryptoImplementation()
 		{
+			if (alg.fd >= 0)
+				close(alg.fd);
+			if (alg.sockfd >= 0)
+				close(alg.sockfd);
 			memset(keybak, 0, sizeof(keybak));
 		}
 		int Encrypt(uint8_t *out, const uint8_t *in) const
@@ -69,9 +75,17 @@ class LinuxCryptoImplementation : public BlockCipher<size, E>
 		}
 		int TestAvailability()
 		{
-			RETFAIL(af_alg_initialize(&alg));
-			RETFAIL(af_alg_open_socket(&alg, "skcipher", ecbname));
-			return 0;
+			int res = 0;
+			if (!(res = af_alg_initialize(&alg)))
+				res = af_alg_open_socket(&alg, "skcipher", ecbname);
+			if (alg.fd >= 0)
+				close(alg.fd);
+			if (alg.sockfd >= 0)
+				close(alg.sockfd);
+			memset(&alg, 0, sizeof(alg));
+			alg.fd = -1;
+			alg.sockfd = -1;
+			return res;
 		}
 	protected:
 		void Clone(const LinuxCryptoImplementation &other)

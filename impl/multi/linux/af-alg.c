@@ -55,7 +55,8 @@ int af_alg_open_socket(struct af_alg *aas, const char *type, const char *algo)
 			MIN(strlen(type), sizeof(aas->sa.salg_type)));
 	memcpy(aas->sa.salg_name, algo,
 			MIN(strlen(algo), sizeof(aas->sa.salg_name)));
-	aas->sockfd = socket(AF_ALG, SOCK_SEQPACKET, 0);
+	if ((aas->sockfd = socket(AF_ALG, SOCK_SEQPACKET, 0)) == -1)
+		return -errno;
 	if (bind(aas->sockfd, (struct sockaddr *)&aas->sa, sizeof(aas->sa)))
 		return -errno;
 	return 0;
@@ -83,6 +84,7 @@ int af_alg_do_crypt(const struct af_alg *aas, uint8_t *out, const uint8_t *in,
 	struct iovec iov;
 
 	memset(&msg, 0, sizeof(msg));
+	memset(cbuf, 0, sizeof(cbuf));
 
 	msg.msg_control = cbuf;
 	msg.msg_controllen = sizeof(cbuf);
