@@ -67,6 +67,12 @@ class LinuxCryptoImplementation : public BlockCipher<size, E>
 			const size_t block_size = BlockCipher<size, E>::block_size;
 			return af_alg_do_crypt(&alg, out->data, in->data, block_size*n, 1);
 		}
+		int TestAvailability()
+		{
+			RETFAIL(af_alg_initialize(&alg));
+			RETFAIL(af_alg_open_socket(&alg, "skcipher", ecbname));
+			return 0;
+		}
 	protected:
 		void Clone(const LinuxCryptoImplementation &other)
 		{

@@ -54,6 +54,10 @@ namespace drew {
 			{
 				return keysz;
 			}
+			virtual int TestAvailability()
+			{
+				return 0;
+			}
 			virtual int Encrypt(uint8_t *out, const uint8_t *in) const = 0;
 			virtual int Decrypt(uint8_t *out, const uint8_t *in) const = 0;
 			virtual int EncryptFast(FastBlock *bout, const FastBlock *bin,
@@ -163,12 +167,17 @@ static int prefix ## init(drew_block_t *ctx, int flags, \
 { \
 	using namespace drew; \
 	bname *p; \
+	int res = 0; \
 	if (flags & DREW_BLOCK_FIXED) \
 		p = new (ctx->ctx) bname; \
 	else \
 		p = new bname; \
 	ctx->ctx = p; \
 	ctx->functbl = &prefix ## functbl; \
+	if ((res = p->TestAvailability())) { \
+		prefix ## fini(ctx, flags); \
+		return res; \
+	} \
 	return 0; \
 }
 
