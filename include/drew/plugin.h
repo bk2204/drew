@@ -67,6 +67,7 @@ typedef struct drew_loader_s drew_loader_t;
 #define DREW_TYPE_PKENC 8
 #define DREW_TYPE_PKSIG 9
 #define DREW_TYPE_KDF 10
+#define DREW_TYPE_ECC 11
 
 /* The system dynamic loader failed. */
 #define DREW_ERR_RESOLUTION		0x10001
