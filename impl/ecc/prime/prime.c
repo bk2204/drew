@@ -74,6 +74,10 @@ static int ecp_setvalbignum(drew_ecc_t *ctx, const char *name,
 		const drew_bignum_t *bn, int coord);
 static int ecp_valbignum(const drew_ecc_t *ctx , const char *name,
 		drew_bignum_t *bn, int coord);
+static int ecp_setvalpoint(drew_ecc_t *ctx, const char *name,
+		const drew_ecc_point_t *pt);
+static int ecp_valpoint(const drew_ecc_t *ctx, const char *name,
+		drew_ecc_point_t *pt);
 static int ecp_point(const drew_ecc_t *ctx, drew_ecc_point_t *pt);
 static int ecp_test(void *, const drew_loader_t *);
 
@@ -111,7 +115,7 @@ static int ecpt_test(void *p, const drew_loader_t *ldr);
 static drew_ecc_functbl_t ecp_functbl = {
 	ecp_info, ecp_info2, ecp_init, ecp_clone, ecp_fini, ecp_setcurvename,
 	ecp_curvename, ecp_setval, ecp_val, ecp_valsize, ecp_setvalbignum,
-	ecp_valbignum, ecp_point, ecp_test
+	ecp_valbignum, ecp_setvalpoint, ecp_valpoint, ecp_point, ecp_test
 };
 
 static drew_ecc_point_functbl_t ecpt_functbl = {
@@ -570,6 +574,37 @@ static int ecp_valbignum(const drew_ecc_t *ctx , const char *name,
 	}
 
 	return -DREW_ERR_INVALID;
+}
+
+static int ecp_setvalpoint(drew_ecc_t *ctx, const char *name,
+		const drew_ecc_point_t *pt)
+{
+	struct curve *c = ctx->ctx;
+	drew_ecc_point_t g;
+
+	if (!strcmp(name, "g"))
+		return -DREW_ERR_INVALID;
+	g.ctx = &c->g;
+	g.functbl = &ecpt_functbl;
+	g.functbl->fini(&g, DREW_ECC_FIXED);
+	g.functbl->clone(&g, pt, 0);
+	return 0;
+}
+
+static int ecp_valpoint(const drew_ecc_t *ctx, const char *name,
+		drew_ecc_point_t *pt)
+{
+	struct curve *c = ctx->ctx;
+	drew_ecc_point_t g;
+
+	if (!strcmp(name, "g"))
+		return -DREW_ERR_INVALID;
+
+	g.ctx = &c->g;
+	g.functbl = &ecpt_functbl;
+	pt->functbl->fini(pt, 0);
+	pt->functbl->clone(pt, &g, 0);
+	return 0;
 }
 
 static int ecpt_init(drew_ecc_point_t *ctx, int flags,

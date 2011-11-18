@@ -73,6 +73,8 @@ typedef struct {
 	int (*valsize)(const drew_ecc_t *, const char *, int);
 	int (*setvalbignum)(drew_ecc_t *, const char *, const drew_bignum_t *, int);
 	int (*valbignum)(const drew_ecc_t *, const char *, drew_bignum_t *, int);
+	int (*setvalpoint)(drew_ecc_t *, const char *, const drew_ecc_point_t *);
+	int (*valpoint)(const drew_ecc_t *, const char *, drew_ecc_point_t *);
 	int (*point)(const drew_ecc_t *, drew_ecc_point_t *);
 	int (*test)(void *, const drew_loader_t *);
 } drew_ecc_functbl3_t;
