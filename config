@@ -85,6 +85,7 @@ CFG_RSAENC		= y
 ## Public key signatures.
 CFG_RSASIG		= y
 CFG_DSA			= y
+CFG_ECDSA		= y
 
 # PRFs and KDFs.
 CFG_PBKDF2		= y
