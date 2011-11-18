@@ -76,6 +76,9 @@ CFG_SYSPRNG		= y
 CFG_TOMMATH		= y
 CFG_OPENSSLBN	= No, thanks.
 
+## Elliptic curve field implementations.
+CFG_ECCPRIME	= y
+
 ## Public key encryption.
 CFG_RSAENC		= y
 

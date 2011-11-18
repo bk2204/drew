@@ -2,7 +2,7 @@ include config
 
 VERSION			:= $(shell test -d .git && git describe)
 
-CATEGORIES		:= hash block mode mac stream prng bignum pkenc pksig kdf
+CATEGORIES		:= hash block mode mac stream prng bignum pkenc pksig kdf ecc
 
 TEST_SRC		+= libmd/testsuite.c
 TEST_OBJ		:= ${SRC:.c=.o} ${TEST_SRC:.c=.o}
