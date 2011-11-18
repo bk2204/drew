@@ -381,9 +381,11 @@ static int strtobytes(uint8_t *buf, size_t len, const char *s)
 	return slen / 2;
 }
 
+#define MAX_CURVE_BITS 521
+#define MAX_CURVE_BYTES ((MAX_CURVE_BITS + 7) / 8)
 static int load_curve_bignum(drew_bignum_t *b, const char *p)
 {
-	uint8_t buf[(65 + 1) + 1];
+	uint8_t buf[(MAX_CURVE_BYTES + 1) + 1];
 	int len = 0;
 	if ((len = strtobytes(buf, sizeof(buf), p)) < 0)
 		return len;
@@ -394,7 +396,7 @@ static int load_curve_bignum(drew_bignum_t *b, const char *p)
 static int load_curve(struct curve *c, const char *name)
 {
 	int len = 0;
-	uint8_t buf[((65 + 1) * 2) + 1];
+	uint8_t buf[((MAX_CURVE_BYTES + 1) * 2) + 1];
 
 	for (size_t i = 0; i < DIM(curves); i++) {
 		if (!strcmp(name, curves[i].name)) {
