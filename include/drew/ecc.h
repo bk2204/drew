@@ -43,8 +43,13 @@
  */
 #define DREW_ECC_FIXED  1
 
+/* Whether the value is the x coordinate, the y coordinate, or a serialized
+ * point representation specified in the SEC format.  The latter is not valid
+ * for [sg]etcoordbignum.
+ */
 #define DREW_ECC_POINT_X	0
 #define DREW_ECC_POINT_Y	1
+#define DREW_ECC_POINT_SEC	2
 
 struct drew_ecc_s;
 typedef struct drew_ecc_s drew_ecc_t;
@@ -74,7 +79,7 @@ typedef struct {
 			const drew_param_t *);
 	int (*clone)(drew_ecc_point_t *, const drew_ecc_point_t *, int);
 	int (*fini)(drew_ecc_point_t *, int);
-	int (*setinf)(drew_ecc_point_t *);
+	int (*setinf)(drew_ecc_point_t *, bool);
 	int (*isinf)(const drew_ecc_point_t *);
 	int (*compare)(const drew_ecc_point_t *, const drew_ecc_point_t *);
 	int (*setcoordbytes)(drew_ecc_point_t *, const uint8_t *, size_t, int);
@@ -83,8 +88,6 @@ typedef struct {
 	int (*getcoordbignum)(const drew_ecc_point_t *, drew_bignum_t *, int);
 	int (*inv)(drew_ecc_point_t *, const drew_ecc_point_t *);
 	int (*add)(drew_ecc_point_t *, const drew_ecc_point_t *,
-			const drew_ecc_point_t *);
-	int (*sub)(drew_ecc_point_t *, const drew_ecc_point_t *,
 			const drew_ecc_point_t *);
 	int (*mul)(drew_ecc_point_t *, const drew_ecc_point_t *,
 			const drew_bignum_t *);
