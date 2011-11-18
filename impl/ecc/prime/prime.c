@@ -63,8 +63,17 @@ static int ecp_init(drew_ecc_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param);
 static int ecp_clone(drew_ecc_t *new, const drew_ecc_t *old, int flags);
 static int ecp_fini(drew_ecc_t *ctx, int flags);
-static int ecp_setcurve(drew_ecc_t *ctx, const drew_param_t *param);
-static int ecp_getcurve(const drew_ecc_t *ctx, drew_param_t *param);
+static int ecp_setcurvename(drew_ecc_t *ctx, const char *name);
+static int ecp_curvename(drew_ecc_t *ctx, const char **namep);
+static int ecp_setval(drew_ecc_t *ctx, const char *name, const uint8_t *data,
+		size_t len, int coord);
+static int ecp_val(const drew_ecc_t *ctx, const char *name, uint8_t *data,
+		size_t len, int coord);
+static int ecp_valsize(const drew_ecc_t *, const char *, int);
+static int ecp_setvalbignum(drew_ecc_t *ctx, const char *name,
+		const drew_bignum_t *bn, int coord);
+static int ecp_valbignum(const drew_ecc_t *ctx , const char *name,
+		drew_bignum_t *bn, int coord);
 static int ecp_point(const drew_ecc_t *ctx, drew_ecc_point_t *pt);
 static int ecp_test(void *, const drew_loader_t *);
 
@@ -81,11 +90,12 @@ static int ecpt_isinf(const drew_ecc_point_t *ctx);
 static int ecpt_compare(const drew_ecc_point_t *a, const drew_ecc_point_t *b);
 static int ecpt_setcoordbytes(drew_ecc_point_t *ctx, const uint8_t *data,
 		size_t len, int coord);
-static int ecpt_getcoordbytes(const drew_ecc_point_t *ctx, uint8_t *data,
+static int ecpt_coordbytes(const drew_ecc_point_t *ctx, uint8_t *data,
 		size_t len, int coord);
+static int ecpt_ncoordbytes(const drew_ecc_point_t *ctx, int coord);
 static int ecpt_setcoordbignum(drew_ecc_point_t *ctx, const drew_bignum_t *data,
 		int coord);
-static int ecpt_getcoordbignum(const drew_ecc_point_t *ctx,
+static int ecpt_coordbignum(const drew_ecc_point_t *ctx,
 		drew_bignum_t *bn, int coord);
 static int ecpt_inv(drew_ecc_point_t *r, const drew_ecc_point_t *a);
 static int ecpt_dbl(drew_ecc_point_t *ptr, const drew_ecc_point_t *pta);
@@ -99,14 +109,15 @@ static int ecpt_mul(drew_ecc_point_t *ptr, const drew_ecc_point_t *pta,
 static int ecpt_test(void *p, const drew_loader_t *ldr);
 
 static drew_ecc_functbl_t ecp_functbl = {
-	ecp_info, ecp_info2, ecp_init, ecp_clone, ecp_fini, ecp_setcurve,
-	ecp_getcurve, ecp_point, ecp_test
+	ecp_info, ecp_info2, ecp_init, ecp_clone, ecp_fini, ecp_setcurvename,
+	ecp_curvename, ecp_setval, ecp_val, ecp_valsize, ecp_setvalbignum,
+	ecp_valbignum, ecp_point, ecp_test
 };
 
 static drew_ecc_point_functbl_t ecpt_functbl = {
 	ecpt_info, ecpt_info2, ecpt_init, ecpt_clone, ecpt_fini, ecpt_setinf,
-	ecpt_isinf, ecpt_compare, ecpt_setcoordbytes, ecpt_getcoordbytes,
-	ecpt_setcoordbignum, ecpt_getcoordbignum, ecpt_inv, ecpt_add,
+	ecpt_isinf, ecpt_compare, ecpt_setcoordbytes, ecpt_coordbytes,
+	ecpt_ncoordbytes, ecpt_setcoordbignum, ecpt_coordbignum, ecpt_inv, ecpt_add,
 	ecpt_mul, ecpt_mul2, ecpt_dbl, ecpt_test
 };
 
@@ -402,42 +413,161 @@ static int load_curve(struct curve *c, const char *name)
 	return -DREW_ERR_NOT_IMPL;
 }
 
-static int ecp_setcurve(drew_ecc_t *ctx, const drew_param_t *param)
+static int ecp_setcurvename(drew_ecc_t *ctx, const char *name)
+{
+	return load_curve(ctx->ctx, name);
+}
+
+static int ecp_curvename(drew_ecc_t *ctx, const char **namep)
 {
 	struct curve *c = ctx->ctx;
 
-	for (const drew_param_t *p = param; p; p = p->next) {
-		if (!strcmp(p->name, "curveName"))
-			return load_curve(c, p->param.string);
-		else if (!strcmp(p->name, "p"))
-			RETFAIL(load_bignum(&c->p, p->param.array.ptr, p->param.array.len));
-		else if (!strcmp(p->name, "a"))
-			RETFAIL(load_bignum(&c->a, p->param.array.ptr, p->param.array.len));
-		else if (!strcmp(p->name, "b"))
-			RETFAIL(load_bignum(&c->b, p->param.array.ptr, p->param.array.len));
-		else if (!strcmp(p->name, "n"))
-			RETFAIL(load_bignum(&c->n, p->param.array.ptr, p->param.array.len));
-		else if (!strcmp(p->name, "h"))
-			RETFAIL(load_bignum(&c->h, p->param.array.ptr, p->param.array.len));
-		else if (!strcmp(p->name, "g"))
-			RETFAIL(load_point(&c->g, p->param.array.ptr, p->param.array.len));
-	}
+	*namep = c->name;
+
 	return 0;
 }
 
-static int ecp_getcurve(const drew_ecc_t *ctx, drew_param_t *param)
+static int ecp_setval(drew_ecc_t *ctx, const char *name, const uint8_t *data,
+		size_t len, int coord)
 {
 	struct curve *c = ctx->ctx;
 
-	for (drew_param_t *p = param; p; p = p->next) {
-		if (!c->name)
-			break;
-		if (!strcmp(p->name, "curveName")) {
-			p->param.string = c->name;
-			return 0;
-		}
+	if (!strcmp(name, "p"))
+		return load_bignum(&c->p, data, len);
+	else if (!strcmp(name, "a"))
+		return load_bignum(&c->a, data, len);
+	else if (!strcmp(name, "b"))
+		return load_bignum(&c->b, data, len);
+	else if (!strcmp(name, "n"))
+		return load_bignum(&c->n, data, len);
+	else if (!strcmp(name, "h"))
+		return load_bignum(&c->h, data, len);
+	else if (!strcmp(name, "g")) {
+		if (coord == DREW_ECC_POINT_SEC ||
+				coord == DREW_ECC_POINT_SEC_COMPRESSED)
+			return load_point(&c->g, data, len);
+		else if (coord == DREW_ECC_POINT_X)
+			return load_bignum(&c->g.x, data, len);
+		else if (coord == DREW_ECC_POINT_Y)
+			return load_bignum(&c->g.y, data, len);
 	}
-	return -DREW_ERR_NOT_IMPL;
+
+	return -DREW_ERR_INVALID;
+}
+
+static int ecp_val(const drew_ecc_t *ctx, const char *name, uint8_t *data,
+		size_t len, int coord)
+{
+	struct curve *c = ctx->ctx;
+	const drew_bignum_functbl_t *ft = c->p.functbl;
+
+	if (!strcmp(name, "p"))
+		return ft->bytes(&c->p, data, len);
+	else if (!strcmp(name, "a"))
+		return ft->bytes(&c->a, data, len);
+	else if (!strcmp(name, "b"))
+		return ft->bytes(&c->b, data, len);
+	else if (!strcmp(name, "n"))
+		return ft->bytes(&c->n, data, len);
+	else if (!strcmp(name, "h"))
+		return ft->bytes(&c->h, data, len);
+	else if (!strcmp(name, "g")) {
+		if (coord == DREW_ECC_POINT_SEC)
+			return store_point(&c->g, data, len);
+		else if (coord == DREW_ECC_POINT_SEC_COMPRESSED)
+			return -DREW_ERR_NOT_IMPL;
+		else if (coord == DREW_ECC_POINT_X)
+			return ft->bytes(&c->g.x, data, len);
+		else if (coord == DREW_ECC_POINT_Y)
+			return ft->bytes(&c->g.y, data, len);
+	}
+
+	return -DREW_ERR_INVALID;
+}
+
+static int ecp_valsize(const drew_ecc_t *ctx, const char *name, int coord)
+{
+	struct curve *c = ctx->ctx;
+	const drew_bignum_functbl_t *ft = c->p.functbl;
+
+	if (!strcmp(name, "p"))
+		return ft->nbytes(&c->p);
+	else if (!strcmp(name, "a"))
+		return ft->nbytes(&c->a);
+	else if (!strcmp(name, "b"))
+		return ft->nbytes(&c->b);
+	else if (!strcmp(name, "n"))
+		return ft->nbytes(&c->n);
+	else if (!strcmp(name, "h"))
+		return ft->nbytes(&c->h);
+	else if (!strcmp(name, "g")) {
+		if (coord == DREW_ECC_POINT_SEC)
+			return c->g.inf ? 1 : (ft->nbytes(&c->p) * 2) + 1;
+		else if (coord == DREW_ECC_POINT_SEC_COMPRESSED)
+			return -DREW_ERR_NOT_IMPL;
+		else if (coord == DREW_ECC_POINT_X)
+			return ft->nbytes(&c->g.x);
+		else if (coord == DREW_ECC_POINT_Y)
+			return ft->nbytes(&c->g.y);
+	}
+
+	return -DREW_ERR_INVALID;
+}
+
+static int copy(drew_bignum_t *r, const drew_bignum_t *a)
+{
+	r->functbl->fini(r, 0);
+	return r->functbl->clone(r, a, 0);
+}
+
+static int ecp_setvalbignum(drew_ecc_t *ctx, const char *name,
+		const drew_bignum_t *bn, int coord)
+{
+	struct curve *c = ctx->ctx;
+
+	if (!strcmp(name, "p"))
+		return copy(&c->p, bn);
+	else if (!strcmp(name, "a"))
+		return copy(&c->a, bn);
+	else if (!strcmp(name, "b"))
+		return copy(&c->b, bn);
+	else if (!strcmp(name, "n"))
+		return copy(&c->n, bn);
+	else if (!strcmp(name, "h"))
+		return copy(&c->h, bn);
+	else if (!strcmp(name, "g")) {
+		if (coord == DREW_ECC_POINT_X)
+			return copy(&c->g.x, bn);
+		else if (coord == DREW_ECC_POINT_Y)
+			return copy(&c->g.y, bn);
+	}
+
+	return -DREW_ERR_INVALID;
+}
+
+static int ecp_valbignum(const drew_ecc_t *ctx , const char *name,
+		drew_bignum_t *bn, int coord)
+{
+	struct curve *c = ctx->ctx;
+
+	if (!strcmp(name, "p"))
+		return copy(bn, &c->p);
+	else if (!strcmp(name, "a"))
+		return copy(bn, &c->a);
+	else if (!strcmp(name, "b"))
+		return copy(bn, &c->b);
+	else if (!strcmp(name, "n"))
+		return copy(bn, &c->n);
+	else if (!strcmp(name, "h"))
+		return copy(bn, &c->h);
+	else if (!strcmp(name, "g")) {
+		if (coord == DREW_ECC_POINT_X)
+			return copy(bn, &c->g.x);
+		else if (coord == DREW_ECC_POINT_Y)
+			return copy(bn, &c->g.y);
+	}
+
+	return -DREW_ERR_INVALID;
 }
 
 static int ecpt_init(drew_ecc_point_t *ctx, int flags,
@@ -572,7 +702,7 @@ static int ecpt_setcoordbytes(drew_ecc_point_t *ctx, const uint8_t *data,
 	return -DREW_ERR_INVALID;
 }
 
-static int ecpt_getcoordbytes(const drew_ecc_point_t *ctx, uint8_t *data,
+static int ecpt_coordbytes(const drew_ecc_point_t *ctx, uint8_t *data,
 		size_t len, int coord)
 {
 	struct point *pt = ctx->ctx;
@@ -583,8 +713,30 @@ static int ecpt_getcoordbytes(const drew_ecc_point_t *ctx, uint8_t *data,
 		return pt->y.functbl->bytes(&pt->y, data, len);
 	if (coord == DREW_ECC_POINT_SEC)
 		return store_point(pt, data, len);
+	if (coord == DREW_ECC_POINT_SEC_COMPRESSED)
+		return -DREW_ERR_NOT_IMPL;
 	return -DREW_ERR_INVALID;
 }
+
+static int ecpt_ncoordbytes(const drew_ecc_point_t *ctx, int coord)
+{
+	struct point *pt = ctx->ctx;
+
+	if (coord == DREW_ECC_POINT_X)
+		return pt->x.functbl->nbytes(&pt->x);
+	if (coord == DREW_ECC_POINT_Y)
+		return pt->y.functbl->nbytes(&pt->y);
+	if (coord == DREW_ECC_POINT_SEC) {
+		if (pt->inf)
+			return 1;
+		else
+			return (pt->curve->p.functbl->nbytes(&pt->curve->p) * 2) + 1;
+	}
+	if (coord == DREW_ECC_POINT_SEC_COMPRESSED)
+		return -DREW_ERR_NOT_IMPL;
+	return -DREW_ERR_INVALID;
+}
+
 
 static int ecpt_setcoordbignum(drew_ecc_point_t *ctx, const drew_bignum_t *data,
 		int coord)
@@ -598,7 +750,7 @@ static int ecpt_setcoordbignum(drew_ecc_point_t *ctx, const drew_bignum_t *data,
 	return -DREW_ERR_INVALID;
 }
 
-static int ecpt_getcoordbignum(const drew_ecc_point_t *ctx,
+static int ecpt_coordbignum(const drew_ecc_point_t *ctx,
 		drew_bignum_t *bn, int coord)
 {
 	struct point *pt = ctx->ctx;

@@ -44,12 +44,13 @@
 #define DREW_ECC_FIXED  1
 
 /* Whether the value is the x coordinate, the y coordinate, or a serialized
- * point representation specified in the SEC format.  The latter is not valid
- * for [sg]etcoordbignum.
+ * point representation specified in the SEC format.
  */
-#define DREW_ECC_POINT_X	0
-#define DREW_ECC_POINT_Y	1
-#define DREW_ECC_POINT_SEC	2
+#define DREW_ECC_POINT_NONE				0
+#define DREW_ECC_POINT_X				1
+#define DREW_ECC_POINT_Y				2
+#define DREW_ECC_POINT_SEC				3
+#define DREW_ECC_POINT_SEC_COMPRESSED	4
 
 struct drew_ecc_s;
 typedef struct drew_ecc_s drew_ecc_t;
@@ -65,8 +66,13 @@ typedef struct {
 			const drew_param_t *);
 	int (*clone)(drew_ecc_t *, const drew_ecc_t *, int);
 	int (*fini)(drew_ecc_t *, int);
-	int (*setcurve)(drew_ecc_t *, const drew_param_t *);
-	int (*getcurve)(const drew_ecc_t *, drew_param_t *);
+	int (*setcurvename)(drew_ecc_t *, const char *);
+	int (*curvename)(drew_ecc_t *, const char **);
+	int (*setval)(drew_ecc_t *, const char *, const uint8_t *, size_t, int);
+	int (*val)(const drew_ecc_t *, const char *, uint8_t *, size_t, int);
+	int (*valsize)(const drew_ecc_t *, const char *, int);
+	int (*setvalbignum)(drew_ecc_t *, const char *, const drew_bignum_t *, int);
+	int (*valbignum)(const drew_ecc_t *, const char *, drew_bignum_t *, int);
 	int (*point)(const drew_ecc_t *, drew_ecc_point_t *);
 	int (*test)(void *, const drew_loader_t *);
 } drew_ecc_functbl3_t;
@@ -83,9 +89,10 @@ typedef struct {
 	int (*isinf)(const drew_ecc_point_t *);
 	int (*compare)(const drew_ecc_point_t *, const drew_ecc_point_t *);
 	int (*setcoordbytes)(drew_ecc_point_t *, const uint8_t *, size_t, int);
-	int (*getcoordbytes)(const drew_ecc_point_t *, uint8_t *, size_t, int);
+	int (*coordbytes)(const drew_ecc_point_t *, uint8_t *, size_t, int);
+	int (*ncoordbytes)(const drew_ecc_point_t *, int);
 	int (*setcoordbignum)(drew_ecc_point_t *, const drew_bignum_t *, int);
-	int (*getcoordbignum)(const drew_ecc_point_t *, drew_bignum_t *, int);
+	int (*coordbignum)(const drew_ecc_point_t *, drew_bignum_t *, int);
 	int (*inv)(drew_ecc_point_t *, const drew_ecc_point_t *);
 	int (*add)(drew_ecc_point_t *, const drew_ecc_point_t *,
 			const drew_ecc_point_t *);
