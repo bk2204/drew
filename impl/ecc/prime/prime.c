@@ -449,6 +449,7 @@ static int ecp_setval(drew_ecc_t *ctx, const char *name, const uint8_t *data,
 	else if (!strcmp(name, "h"))
 		return load_bignum(&c->h, data, len);
 	else if (!strcmp(name, "g")) {
+		c->g.inf = false;
 		if (coord == DREW_ECC_POINT_SEC ||
 				coord == DREW_ECC_POINT_SEC_COMPRESSED)
 			return load_point(&c->g, data, len);
@@ -478,6 +479,7 @@ static int ecp_val(const drew_ecc_t *ctx, const char *name, uint8_t *data,
 	else if (!strcmp(name, "h"))
 		return ft->bytes(&c->h, data, len);
 	else if (!strcmp(name, "g")) {
+		c->g.inf = false;
 		if (coord == DREW_ECC_POINT_SEC)
 			return store_point(&c->g, data, len);
 		else if (coord == DREW_ECC_POINT_SEC_COMPRESSED)
