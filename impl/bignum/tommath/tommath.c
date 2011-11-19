@@ -213,14 +213,7 @@ static int bn_nbits(const drew_bignum_t *ctx)
 	drew_bignum_t t1, *t = &t1;
 	RETFAIL(bn_clone(t, ctx, 0));
 	nbytes = bn_nbytes(t);
-	for (int i = 0; i < 8; i++) {
-		RETFAIL(bn_shiftright(t, t, 1));
-		if (nbytes != bn_nbytes(t)) {
-			bn_fini(t, 0);
-			return (nbytes * 8) - i - 1;
-		}
-	}
-	return -DREW_ERR_BUG;
+	return nbytes * 8;
 }
 
 static int bn_nbytes(const drew_bignum_t *ctx)
