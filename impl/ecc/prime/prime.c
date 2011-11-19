@@ -917,8 +917,9 @@ static int ecpt_dbl(drew_ecc_point_t *ptr, const drew_ecc_point_t *pta)
 		ft->mulmod(&lambda, &lambda, &three, p);
 		ft->add(&lambda, &lambda, &r->curve->a);
 		ft->clone(&t1, &a->y, 0);
-		ft->mulmod(&t1, &t1, &two, p);
-		ft->div(&lambda, NULL, &lambda, &t1);
+		ft->mul(&t1, &t1, &two);
+		ft->invmod(&t1, &t1, p);
+		ft->mul(&lambda, &lambda, &t1);
 		ft->mod(&lambda, &lambda, p);
 		// x = lambda^2 - 2(x1)
 		ft->squaremod(&x, &lambda, p);
@@ -938,6 +939,7 @@ static int ecpt_dbl(drew_ecc_point_t *ptr, const drew_ecc_point_t *pta)
 		ft->fini(&two, 0);
 		ft->fini(&x, 0);
 		ft->fini(&y, 0);
+		r->inf = false;
 	}
 	return 0;
 }
@@ -952,10 +954,12 @@ static int ecpt_add(drew_ecc_point_t *ptr, const drew_ecc_point_t *pta,
 	if (a->inf && b->inf)
 		r->inf = true;
 	else if (a->inf) {
+		r->inf = false;
 		ft->clone(&r->x, &b->x, DREW_ECC_FIXED);
 		ft->clone(&r->y, &b->y, DREW_ECC_FIXED);
 	}
 	else if (b->inf) {
+		r->inf = false;
 		ft->clone(&r->x, &a->x, DREW_ECC_FIXED);
 		ft->clone(&r->y, &a->y, DREW_ECC_FIXED);
 	}
@@ -964,6 +968,7 @@ static int ecpt_add(drew_ecc_point_t *ptr, const drew_ecc_point_t *pta,
 	else {
 		drew_bignum_t lambda, t1, x, y;
 		const drew_bignum_t *p = &r->curve->p;
+		r->inf = false;
 		// lambda = (y2 - y1) / (x2 - x1) mod p.
 		ft->clone(&lambda, &b->y, 0);
 		ft->clone(&t1, &b->x, 0);
@@ -971,7 +976,8 @@ static int ecpt_add(drew_ecc_point_t *ptr, const drew_ecc_point_t *pta,
 		ft->clone(&y, &b->x, 0);
 		ft->sub(&lambda, &lambda, &a->y);
 		ft->sub(&t1, &t1, &a->x);
-		ft->div(&lambda, NULL, &lambda, &t1);
+		ft->invmod(&t1, &t1, p);
+		ft->mul(&lambda, &lambda, &t1);
 		ft->mod(&lambda, &lambda, p);
 		// x = lambda^2 - x1 - x2
 		ft->squaremod(&x, &lambda, p);
@@ -993,11 +999,11 @@ static int ecpt_add(drew_ecc_point_t *ptr, const drew_ecc_point_t *pta,
 }
 
 // This uses Shamir's Trick.  The implementation is from Bouncy Castle.
-static int ecpt_mul2(drew_ecc_point_t *r, const drew_ecc_point_t *ptp,
+static int ecpt_mul2(drew_ecc_point_t *res, const drew_ecc_point_t *ptp,
 		const drew_bignum_t *a, const drew_ecc_point_t *ptq,
 		const drew_bignum_t *b)
 {
-	drew_ecc_point_t z;
+	drew_ecc_point_t z, tmp, *r = &tmp;
 	size_t abits = a->functbl->nbits(a);
 	size_t bbits = b ? b->functbl->nbits(b) : 0;
 	size_t nbits = MAX(abits, bbits);
@@ -1006,11 +1012,12 @@ static int ecpt_mul2(drew_ecc_point_t *r, const drew_ecc_point_t *ptp,
 		return -DREW_ERR_INVALID;
 
 	if (b) {
-		ecpt_init(&z, 0, NULL, NULL);
+		ecpt_clone(&z, ptp, 0);
 		ecpt_add(&z, ptp, ptq);
 	}
 	else
 		ecpt_clone(&z, ptp, 0);
+	ecpt_clone(r, ptp, 0);
 	ecpt_setinf(r, true);
 
 	for (int i = nbits - 1; i >= 0; i--) {
@@ -1026,6 +1033,8 @@ static int ecpt_mul2(drew_ecc_point_t *r, const drew_ecc_point_t *ptp,
 	}
 
 	ecpt_fini(&z, 0);
+	ecpt_fini(res, 0);
+	ecpt_clone(res, r, 0);
 	return 0;
 }
 
