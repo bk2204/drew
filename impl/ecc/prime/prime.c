@@ -621,9 +621,89 @@ static int ecp_point(const drew_ecc_t *ctx, drew_ecc_point_t *pt)
 	return ecpt_init(pt, 0, NULL, &param);
 }
 
+struct ecp_testcase {
+	int k;
+	const char *x;
+	const char *y;
+};
+
+static struct ecp_testcase p521_testcases[] = {
+	{
+		1,
+		"00c6858e06b70404e9cd9e3ecb662395b4429c648139053fb521f828af606b4d3dbaa"
+			"14b5e77efe75928fe1dc127a2ffa8de3348b3c1856a429bf97e7e31c2e5bd66",
+		"011839296a789a3bc0045c8a5fb42c7d1bd998f54449579b446817afbd17273e662c9"
+			"7ee72995ef42640c550b9013fad0761353c7086a272c24088be94769fd16650"
+	},
+	{
+		2,
+		"00433c219024277e7e682fcb288148c282747403279b1ccc06352c6e5505d769be97b"
+			"3b204da6ef55507aa104a3a35c5af41cf2fa364d60fd967f43e3933ba6d783d",
+		"00f4bb8cc7f86db26700a7f3eceeeed3f0b5c6b5107c4da97740ab21a29906c42dbbb"
+			"3e377de9f251f6b93937fa99a3248f4eafcbe95edc0f4f71be356d661f41b02"
+	},
+	{
+		3,
+		"01a73d352443de29195dd91d6a64b5959479b52a6e5b123d9ab9e5ad7a112d7a8dd1a"
+			"d3f164a3a4832051da6bd16b59fe21baeb490862c32ea05a5919d2ede37ad7d",
+		"013e9b03b97dfa62ddd9979f86c6cab814f2f1557fa82a9d0317d2f8ab1fa355ceec2"
+			"e2dd4cf8dc575b02d5aced1dec3c70cf105c9bc93a590425f588ca1ee86c0e5"
+	}
+};
+
 static int ecp_test(void *p, const drew_loader_t *ldr)
 {
-	return -DREW_ERR_NOT_IMPL;
+	drew_ecc_t curve;
+	drew_ecc_point_t p1, pres, pcur;
+	drew_bignum_t bn;
+	drew_param_t param;
+	const void *bnfunctbl;
+	int id = 0, res = 0, len = 0;
+	uint8_t buf[128];
+
+	if ((id = drew_loader_lookup_by_name(ldr, "Bignum", 0, -1)) < 0)
+		return id;
+	drew_loader_get_functbl(ldr, id, &bnfunctbl);
+
+	bn.functbl = bnfunctbl;
+	bn.functbl->init(&bn, 0, ldr, NULL);
+
+	param.name = "bignum";
+	param.param.value = &bn;
+	param.next = NULL;
+
+	ecp_init(&curve, 0, ldr, &param);
+	ecp_setcurvename(&curve, "secp521r1");
+	ecp_point(&curve, &p1);
+	ecp_point(&curve, &pres);
+	ecp_point(&curve, &pcur);
+
+	ecpt_setinf(&p1, false);
+	len = strtobytes(buf, sizeof(buf), p521_testcases[0].x);
+	ecpt_setcoordbytes(&p1, buf, len, DREW_ECC_POINT_X);
+	len = strtobytes(buf, sizeof(buf), p521_testcases[0].y);
+	ecpt_setcoordbytes(&p1, buf, len, DREW_ECC_POINT_Y);
+
+	for (size_t i = 0; i < DIM(p521_testcases); i++) {
+		res <<= 1;
+
+		ecpt_setinf(&pcur, false);
+		len = strtobytes(buf, sizeof(buf), p521_testcases[i].x);
+		ecpt_setcoordbytes(&pcur, buf, len, DREW_ECC_POINT_X);
+		len = strtobytes(buf, sizeof(buf), p521_testcases[i].y);
+		ecpt_setcoordbytes(&pcur, buf, len, DREW_ECC_POINT_Y);
+
+		bn.functbl->setsmall(&bn, p521_testcases[i].k);
+		ecpt_mul(&pres, &p1, &bn);
+
+		res |= !!ecpt_compare(&pres, &pcur);
+	}
+
+	ecp_fini(&curve, 0);
+
+	bn.functbl->fini(&bn, 0);
+
+	return res;
 }
 
 static int ecpt_info(int op, void *p)
