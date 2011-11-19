@@ -584,7 +584,7 @@ static int ecp_setvalpoint(drew_ecc_t *ctx, const char *name,
 	struct curve *c = ctx->ctx;
 	drew_ecc_point_t g;
 
-	if (!strcmp(name, "g"))
+	if (strcmp(name, "g"))
 		return -DREW_ERR_INVALID;
 	g.ctx = &c->g;
 	g.functbl = &ecpt_functbl;
@@ -599,7 +599,7 @@ static int ecp_valpoint(const drew_ecc_t *ctx, const char *name,
 	struct curve *c = ctx->ctx;
 	drew_ecc_point_t g;
 
-	if (!strcmp(name, "g"))
+	if (strcmp(name, "g"))
 		return -DREW_ERR_INVALID;
 
 	g.ctx = &c->g;
