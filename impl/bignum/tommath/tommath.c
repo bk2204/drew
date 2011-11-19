@@ -374,7 +374,7 @@ static int bn_mul(drew_bignum_t *c, const drew_bignum_t *a,
 static int bn_div(drew_bignum_t *quot, drew_bignum_t *rem,
 		const drew_bignum_t *dividend, const drew_bignum_t *divisor)
 {
-	RETFAIL(mp_div(MPC(dividend), MPC(divisor), MP(quot), MP(rem)));
+	RETFAIL(mp_div(MPC(dividend), MPC(divisor), MP(quot), rem ? MP(rem) : 0));
 	return 0;
 }
 
