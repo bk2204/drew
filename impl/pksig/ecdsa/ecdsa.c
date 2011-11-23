@@ -446,33 +446,33 @@ static int ecdsa_sign(const drew_pksig_t *ctx, drew_bignum_t *out,
 		const drew_bignum_t *in)
 {
 	struct ecdsa *c = ctx->ctx;
-	drew_bignum_t t, kinv, z, p, *r = out, *s = out+1;
+	drew_bignum_t t, kinv, z, n, *r = out, *s = out+1;
 	const drew_bignum_t *h = in, *k = in+1;
 	drew_ecc_point_t kpt, *K = &kpt;
 	int res = 0;
 
 	c->curve->functbl->point(c->curve, K);
 	r->functbl->init(&z, 0, NULL, NULL);
-	r->functbl->init(&p, 0, NULL, NULL);
+	r->functbl->init(&n, 0, NULL, NULL);
 	r->functbl->init(&t, 0, NULL, NULL);
 	r->functbl->init(&kinv, 0, NULL, NULL);
 	z.functbl->setzero(&z);
 
 	// Compute the point corresponding to k (kG == K).
 	c->curve->functbl->valpoint(c->curve, "g", K);
-	c->curve->functbl->valbignum(c->curve, "p", &p, 0);
+	c->curve->functbl->valbignum(c->curve, "n", &n, 0);
 	K->functbl->mul(K, K, k);
 	K->functbl->coordbignum(K, r, DREW_ECC_POINT_X);
-	kinv.functbl->invmod(&kinv, k, &p);
-	r->functbl->mod(r, r, &p);
-	t.functbl->mulmod(&t, c->d, r, &p);
+	kinv.functbl->invmod(&kinv, k, &n);
+	r->functbl->mod(r, r, &n);
+	t.functbl->mulmod(&t, c->d, r, &n);
 	t.functbl->add(&t, &t, h);
-	s->functbl->mulmod(s, &kinv, &t, &p);
+	s->functbl->mulmod(s, &kinv, &t, &n);
 	// Check whether either r or s is zero.
 	if (!r->functbl->compare(r, &z, 0) || !s->functbl->compare(s, &z, 0))
 		res = -DREW_ERR_INVALID;
 	t.functbl->fini(&t, 0);
-	p.functbl->fini(&p, 0);
+	n.functbl->fini(&n, 0);
 	kinv.functbl->fini(&kinv, 0);
 	K->functbl->fini(K, 0);
 	return res;
@@ -483,43 +483,40 @@ static int ecdsa_verify(const drew_pksig_t *ctx, drew_bignum_t *out,
 {
 	struct ecdsa *c = ctx->ctx;
 	const drew_bignum_t *r = in, *s = in+1, *h = in+2;
-	drew_bignum_t *v = out, pbuf, *p = &pbuf;
+	drew_bignum_t *v = out, nbuf, *n = &nbuf;
 	drew_bignum_t wbuf, *w = &wbuf, u1buf, *u1 = &u1buf, u2buf, *u2 = &u2buf;
 	drew_bignum_t zbuf, *z = &zbuf;
 	const drew_ecc_point_t *Q = c->q;
-	drew_ecc_point_t Gpt, *G = &Gpt, Rpt, *R = &Rpt, Tpt, *T = &Tpt;
+	drew_ecc_point_t Gpt, *G = &Gpt, Rpt, *R = &Rpt;
 	int res = 0;
 
 	r->functbl->init(w, 0, NULL, NULL);
 	r->functbl->init(u1, 0, NULL, NULL);
 	r->functbl->init(u2, 0, NULL, NULL);
 	r->functbl->init(z, 0, NULL, NULL);
-	r->functbl->init(p, 0, NULL, NULL);
+	r->functbl->init(n, 0, NULL, NULL);
 	z->functbl->setzero(z);
 	c->curve->functbl->point(c->curve, R);
-	c->curve->functbl->point(c->curve, T);
+	c->curve->functbl->point(c->curve, G);
 	c->curve->functbl->valpoint(c->curve, "g", G);
-	c->curve->functbl->valbignum(c->curve, "p", p, 0);
+	c->curve->functbl->valbignum(c->curve, "n", n, 0);
 	// Check whether either r or s is zero.
 	if (!r->functbl->compare(r, z, 0) || !s->functbl->compare(s, z, 0))
 		res = -DREW_ERR_INVALID;
-	w->functbl->invmod(w, s, p);
-	u1->functbl->mulmod(u1, h, w, p);
-	u2->functbl->mulmod(u2, r, w, p);
-	T->functbl->mul(T, Q, u2);
-	R->functbl->mul(R, G, u1);
-	R->functbl->add(R, R, T);
+	w->functbl->invmod(w, s, n);
+	u1->functbl->mulmod(u1, h, w, n);
+	u2->functbl->mulmod(u2, r, w, n);
+	R->functbl->mul2(R, G, u1, Q, u2);
 	if (R->functbl->isinf(R))
 		res = -DREW_ERR_INVALID;
 	R->functbl->coordbignum(R, v, DREW_ECC_POINT_X);
-	v->functbl->mod(v, v, p);
+	v->functbl->mod(v, v, n);
 	w->functbl->fini(w, 0);
 	u1->functbl->fini(u1, 0);
 	u2->functbl->fini(u2, 0);
 	z->functbl->fini(z, 0);
-	p->functbl->fini(p, 0);
+	n->functbl->fini(n, 0);
 	R->functbl->fini(R, 0);
-	T->functbl->fini(T, 0);
 	return res;
 }
 
