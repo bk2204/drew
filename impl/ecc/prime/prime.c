@@ -1061,8 +1061,10 @@ static int ecpt_add(drew_ecc_point_t *ptr, const drew_ecc_point_t *pta,
 		ft->clone(&r->x, &a->x, DREW_ECC_FIXED);
 		ft->clone(&r->y, &a->y, DREW_ECC_FIXED);
 	}
-	else if (!ft->compare(&a->x, &b->x, 0))
+	else if (!pta->functbl->compare(pta, ptb))
 		return ecpt_dbl(ptr, pta);
+	else if (!ft->compare(&a->x, &b->x, 0))
+		r->inf = true;
 	else {
 		drew_bignum_t lambda, t1, x, y;
 		const drew_bignum_t *p = &r->curve->p;
