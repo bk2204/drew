@@ -1077,6 +1077,7 @@ static int ecpt_add(drew_ecc_point_t *ptr, const drew_ecc_point_t *pta,
 		ft->sub(&lambda, &lambda, &a->y);
 		ft->sub(&t1, &t1, &a->x);
 		ft->invmod(&t1, &t1, p);
+		ft->abs(&t1, &t1);
 		ft->mul(&lambda, &lambda, &t1);
 		ft->mod(&lambda, &lambda, p);
 		// x = lambda^2 - x1 - x2
