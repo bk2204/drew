@@ -1112,12 +1112,9 @@ static int ecpt_mul2(drew_ecc_point_t *res, const drew_ecc_point_t *ptp,
 	if (!!ptq != !!b)
 		return -DREW_ERR_INVALID;
 
-	if (b) {
-		ecpt_clone(&z, ptp, 0);
+	ecpt_clone(&z, ptp, 0);
+	if (b)
 		ecpt_add(&z, ptp, ptq);
-	}
-	else
-		ecpt_clone(&z, ptp, 0);
 	ecpt_clone(r, ptp, 0);
 	ecpt_setinf(r, true);
 
