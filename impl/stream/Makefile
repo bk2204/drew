@@ -4,6 +4,7 @@ PLUGINS_STREAM-${CFG_HC128}		+= hc/hc128
 PLUGINS_STREAM-${CFG_HC256}		+= hc/hc256
 PLUGINS_STREAM-${CFG_RABBIT}	+= rabbit/rabbit
 PLUGINS_STREAM-${CFG_SOSEMANUK}	+= sosemanuk/sosemanuk
+PLUGINS_STREAM-${CFG_CHACHA}	+= chacha/chacha
 
 STREAM_DIR		:= impl/stream
 STREAM_PLUGINS	:= $(patsubst %,${STREAM_DIR}/%,$(PLUGINS_STREAM-m))
@@ -13,9 +14,11 @@ MODULES			+= $(STREAM_MODULES)
 
 ${STREAM_DIR}/sosemanuk/sosemanuk.so:	${BLOCK_DIR}/serpent/serpent-impl.o
 ${STREAM_DIR}/salsa20/salsa20.so:		${STREAM_DIR}/salsa20/salsa20-amd64.o
+${STREAM_DIR}/chacha/chacha.so:		${STREAM_DIR}/chacha/chacha-amd64.o
 
 EXTRA_OBJECTS-${CFG_SOSEMANUK}	+= ${BLOCK_DIR}/serpent/serpent-impl.o
 EXTRA_OBJECTS-${CFG_SALSA20}	+= ${STREAM_DIR}/salsa20/salsa20-amd64.o
+EXTRA_OBJECTS-${CFG_CHACHA}		+= ${STREAM_DIR}/chacha/chacha-amd64.o
 
 ${STREAM_DIR}/sosemanuk/sosemanuk.o: CPPFLAGS += -I${BLOCK_DIR}
 ${STREAM_DIR}/sosemanuk/sosemanuk.d: CPPFLAGS += -I${BLOCK_DIR}
