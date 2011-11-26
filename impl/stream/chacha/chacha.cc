@@ -408,8 +408,16 @@ inline void drew::ChaChaKeystream::DoHash(AlignedData &cur)
 		QuarterRound(cur, 2, 7,  8, 13);
 		QuarterRound(cur, 3, 4,  9, 14);
 	}
+#if defined(VECTOR_T)
+	typedef int vector_t __attribute__ ((vector_size (16)));
+	vector_t *curp = (vector_t *)&cur;
+	const vector_t *stp = (const vector_t *)&st;
+	for (size_t i = 0; i < 4; i++, curp++, stp++)
+		*curp += *stp;
+#else
 	for (size_t i = 0; i < 16; i++)
 		cur.buf[i] += st.buf[i];
+#endif
 }
 
 void drew::ChaChaKeystream::FillBuffer(uint8_t buf[64])
