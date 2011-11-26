@@ -255,14 +255,14 @@ static int chacha_asm_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *param)
 {
 	drew::ChaCha *p;
-	size_t rounds = 20;
+	size_t rounds = 8;
 
 	for (const drew_param_t *pp = param; pp; pp = pp->next) {
 		if (!strcmp(pp->name, "rounds"))
 			rounds = pp->param.number;
 	}
 
-	if (rounds != 20)
+	if (rounds != 8)
 		return -DREW_ERR_INVALID;
 
 	if (flags & DREW_STREAM_FIXED)
