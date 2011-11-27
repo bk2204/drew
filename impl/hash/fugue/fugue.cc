@@ -297,13 +297,11 @@ inline void tix_256(uint32_t *s, uint32_t p)
 	s[1] ^= s[24];
 }
 
-inline void ror_256(uint32_t *s, const size_t off)
+inline void ror_256(uint32_t *t, const uint32_t *s, const size_t off)
 {
-	uint32_t t[30];
-	memcpy(t, s, sizeof(t));
-
-	for (size_t i = 0; i < DIM(t); i++)
-		s[i] = t[(i+DIM(t)-off) % DIM(t)];
+	const size_t bufsize = 30;
+	for (size_t i = 0; i < bufsize; i++)
+		t[i] = s[(i+bufsize-off) % bufsize];
 }
 
 inline void cmix_256(uint32_t *s)
@@ -331,11 +329,9 @@ inline void substitute(uint32_t *s)
 #define B(x) t[(x) ^ 3]
 #define BS(x) s[(x) ^ 3]
 #endif
-inline void smix(uint32_t *sb)
+inline void smix(uint32_t *sb, uint32_t *tb)
 {
-	uint32_t tb[4];
 	uint8_t *t = (uint8_t *)tb, *s = (uint8_t *)sb;
-	memcpy(tb, sb, sizeof(tb));
 	substitute(tb);
 
 	BS( 0) = B(0) ^ mul4[B(1)] ^ mul7[B(2)] ^ B(3) ^ B(4) ^ B(8) ^ B(12);
@@ -367,18 +363,25 @@ inline void smix(uint32_t *sb)
 		mul5[B(11)];
 }
 
+inline void smix_256(uint32_t *sb, uint32_t *tb)
+{
+	smix(sb, tb);
+	memcpy(sb+4, tb+4, sizeof(*sb) * (30 - 4));
+}
+
 void drew::Fugue256Transform::Transform(uint32_t *state, const uint8_t *block)
 {
 	uint32_t p;
+	uint32_t tmp[30];
 
 	p = E::Convert<uint32_t>(block);
 	tix_256(state, p);
-	ror_256(state, 3);
-	cmix_256(state);
-	smix(state);
-	ror_256(state, 3);
-	cmix_256(state);
-	smix(state);
+	ror_256(tmp, state, 3);
+	cmix_256(tmp);
+	smix_256(state, tmp);
+	ror_256(tmp, state, 3);
+	cmix_256(tmp);
+	smix_256(state, tmp);
 }
 
 void drew::Fugue256Transform::Pad(uint32_t *state, uint8_t *buf,
@@ -405,21 +408,23 @@ void drew::Fugue256Transform::Pad(uint32_t *state, uint8_t *buf,
 void drew::Fugue256Transform::Final(uint32_t *state)
 {
 	for (size_t i = 0; i < 10; i++) {
-		ror_256(state, 3);
-		cmix_256(state);
-		smix(state);
+		uint32_t tmp[30];
+		ror_256(tmp, state, 3);
+		cmix_256(tmp);
+		smix_256(state, tmp);
 	}
 
 
 	for (size_t i = 0; i < 13; i++) {
+		uint32_t tmp[30];
 		state[ 4] ^= state[0];
 		state[15] ^= state[0];
-		ror_256(state, 15);
-		smix(state);
+		ror_256(tmp, state, 15);
+		smix_256(state, tmp);
 		state[ 4] ^= state[0];
 		state[16] ^= state[0];
-		ror_256(state, 14);
-		smix(state);
+		ror_256(tmp, state, 14);
+		smix_256(state, tmp);
 	}
 
 	state[ 4] ^= state[0];
