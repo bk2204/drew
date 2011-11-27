@@ -16,6 +16,7 @@ CFG_WHIRLPOOL	= y
 CFG_KECCAK		= y
 CFG_GRØSTL		= y
 CFG_BLAKE		= y
+CFG_FUGUE		= y
 
 ## Block ciphers.
 # Note that the aes plugin implements Rijndael (the AES algorithm) with key
