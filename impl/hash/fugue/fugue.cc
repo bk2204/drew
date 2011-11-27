@@ -314,6 +314,42 @@ inline void cmix_256(uint32_t *s)
 	s[17] ^= s[6];
 }
 
+#define OFF(x, r) ((x+30-r) % 30)
+inline void ror3cmix_256(uint32_t *t, const uint32_t *s)
+{
+	t[ 0] = s[OFF( 0, 3)] ^ s[OFF(4, 3)];
+	t[ 1] = s[OFF( 1, 3)] ^ s[OFF(5, 3)];
+	t[ 2] = s[OFF( 2, 3)] ^ s[OFF(6, 3)];
+	t[ 3] = s[OFF( 3, 3)];
+	t[ 4] = s[OFF( 4, 3)];
+	t[ 5] = s[OFF( 5, 3)];
+	t[ 6] = s[OFF( 6, 3)];
+	t[ 7] = s[OFF( 7, 3)];
+	t[ 8] = s[OFF( 8, 3)];
+	t[ 9] = s[OFF( 9, 3)];
+	t[10] = s[OFF(10, 3)];
+	t[11] = s[OFF(11, 3)];
+	t[12] = s[OFF(12, 3)];
+	t[13] = s[OFF(13, 3)];
+	t[14] = s[OFF(14, 3)];
+	t[15] = s[OFF(15, 3)] ^ s[OFF(4, 3)];
+	t[16] = s[OFF(16, 3)] ^ s[OFF(5, 3)];
+	t[17] = s[OFF(17, 3)] ^ s[OFF(6, 3)];
+	t[18] = s[OFF(18, 3)];
+	t[19] = s[OFF(19, 3)];
+	t[20] = s[OFF(20, 3)];
+	t[21] = s[OFF(21, 3)];
+	t[22] = s[OFF(22, 3)];
+	t[23] = s[OFF(23, 3)];
+	t[24] = s[OFF(24, 3)];
+	t[25] = s[OFF(25, 3)];
+	t[26] = s[OFF(26, 3)];
+	t[27] = s[OFF(27, 3)];
+	t[28] = s[OFF(28, 3)];
+	t[29] = s[OFF(29, 3)];
+}
+#undef OFF
+
 inline void substitute(uint32_t *s)
 {
 	uint8_t *a = (uint8_t *)s;
@@ -376,11 +412,9 @@ void drew::Fugue256Transform::Transform(uint32_t *state, const uint8_t *block)
 
 	p = E::Convert<uint32_t>(block);
 	tix_256(state, p);
-	ror_256(tmp, state, 3);
-	cmix_256(tmp);
+	ror3cmix_256(tmp, state);
 	smix_256(state, tmp);
-	ror_256(tmp, state, 3);
-	cmix_256(tmp);
+	ror3cmix_256(tmp, state);
 	smix_256(state, tmp);
 }
 
@@ -409,8 +443,7 @@ void drew::Fugue256Transform::Final(uint32_t *state)
 {
 	for (size_t i = 0; i < 10; i++) {
 		uint32_t tmp[30];
-		ror_256(tmp, state, 3);
-		cmix_256(tmp);
+		ror3cmix_256(tmp, state);
 		smix_256(state, tmp);
 	}
 
