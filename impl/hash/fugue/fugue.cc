@@ -33,9 +33,13 @@
 extern "C" {
 PLUGIN_STRUCTURE(fugue256, Fugue256)
 PLUGIN_STRUCTURE(fugue224, Fugue224)
+PLUGIN_STRUCTURE(fugue384, Fugue384)
+PLUGIN_STRUCTURE(fugue512, Fugue512)
 PLUGIN_DATA_START()
 PLUGIN_DATA(fugue256, "Fugue-256")
 PLUGIN_DATA(fugue224, "Fugue-224")
+PLUGIN_DATA(fugue384, "Fugue-384")
+PLUGIN_DATA(fugue512, "Fugue-512")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE(fugue)
 
@@ -65,6 +69,22 @@ static int fugue224test(void *, const drew_loader_t *)
 	res |= !HashTestCase<Fugue224>("", 0).Test("e2cd30d51a913c4ed2388a141f90caa4914de43010849e7b8a7a9ccd");
 	res <<= 1;
 	res |= !HashTestCase<Fugue224>("\xcc", 1).Test("34602ea95b2b9936b9a04ba14b5dc463988df90b1a46f90dd716b60f");
+
+	return res;
+}
+
+static int fugue384test(void *, const drew_loader_t *)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+static int fugue512test(void *, const drew_loader_t *)
+{
+	int res = 0;
+
+	using namespace drew;
+
+	res |= !HashTestCase<Fugue512>("\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2a\x2b\x2c\x2d\x2e\x2f\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x3a\x3b\x3c\x3d\x3e\x3f\x40", 1).Test("5b745debb033edae2eaa024ce67aba9715be1933699bf96c2988ed7090f25a16b1b265471fb351fdd516d7a0a031b459a3cdc37c5f1ad6e87db8bc1bac447c14");
 
 	return res;
 }
@@ -297,11 +317,43 @@ inline void tix_256(uint32_t *s, uint32_t p)
 	s[1] ^= s[24];
 }
 
+inline void tix_384(uint32_t *s, uint32_t p)
+{
+	s[16] ^= s[0];
+	s[0] = p;
+	s[8] ^= s[0];
+	s[1] ^= s[27];
+	s[4] ^= s[30];
+}
+
+
+inline void tix_512(uint32_t *s, uint32_t p)
+{
+	s[22] ^= s[0];
+	s[0] = p;
+	s[8] ^= s[0];
+	s[1] ^= s[24];
+	s[4] ^= s[27];
+	s[7] ^= s[30];
+}
+
 inline void ror_256(uint32_t *t, const uint32_t *s, const size_t off)
 {
 	const size_t bufsize = 30;
 	for (size_t i = 0; i < bufsize; i++)
 		t[i] = s[(i+bufsize-off) % bufsize];
+}
+
+inline void ror_384(uint32_t *t, const uint32_t *s, const size_t off)
+{
+	const size_t bufsize = 36;
+	for (size_t i = 0; i < bufsize; i++)
+		t[i] = s[(i+bufsize-off) % bufsize];
+}
+
+inline void ror_512(uint32_t *t, const uint32_t *s, const size_t off)
+{
+	return ror_384(t, s, off);
 }
 
 inline void cmix_256(uint32_t *s)
@@ -312,6 +364,16 @@ inline void cmix_256(uint32_t *s)
 	s[15] ^= s[4];
 	s[16] ^= s[5];
 	s[17] ^= s[6];
+}
+
+inline void cmix_384(uint32_t *s)
+{
+	s[ 0] ^= s[4];
+	s[ 1] ^= s[5];
+	s[ 2] ^= s[6];
+	s[18] ^= s[4];
+	s[19] ^= s[5];
+	s[20] ^= s[6];
 }
 
 #define OFF(x, r) ((x+30-r) % 30)
@@ -349,6 +411,53 @@ inline void ror3cmix_256(uint32_t *t, const uint32_t *s)
 	t[29] = s[OFF(29, 3)];
 }
 #undef OFF
+
+#define OFF(x, r) ((x+36-r) % 36)
+inline void ror3cmix_384(uint32_t *t, const uint32_t *s)
+{
+	t[ 0] = s[OFF( 0, 3)] ^ s[OFF(4, 3)];
+	t[ 1] = s[OFF( 1, 3)] ^ s[OFF(5, 3)];
+	t[ 2] = s[OFF( 2, 3)] ^ s[OFF(6, 3)];
+	t[ 3] = s[OFF( 3, 3)];
+	t[ 4] = s[OFF( 4, 3)];
+	t[ 5] = s[OFF( 5, 3)];
+	t[ 6] = s[OFF( 6, 3)];
+	t[ 7] = s[OFF( 7, 3)];
+	t[ 8] = s[OFF( 8, 3)];
+	t[ 9] = s[OFF( 9, 3)];
+	t[10] = s[OFF(10, 3)];
+	t[11] = s[OFF(11, 3)];
+	t[12] = s[OFF(12, 3)];
+	t[13] = s[OFF(13, 3)];
+	t[14] = s[OFF(14, 3)];
+	t[15] = s[OFF(15, 3)];
+	t[16] = s[OFF(16, 3)];
+	t[17] = s[OFF(17, 3)];
+	t[18] = s[OFF(18, 3)] ^ s[OFF(4, 3)];
+	t[19] = s[OFF(19, 3)] ^ s[OFF(5, 3)];
+	t[20] = s[OFF(20, 3)] ^ s[OFF(6, 3)];
+	t[21] = s[OFF(21, 3)];
+	t[22] = s[OFF(22, 3)];
+	t[23] = s[OFF(23, 3)];
+	t[24] = s[OFF(24, 3)];
+	t[25] = s[OFF(25, 3)];
+	t[26] = s[OFF(26, 3)];
+	t[27] = s[OFF(27, 3)];
+	t[28] = s[OFF(28, 3)];
+	t[29] = s[OFF(29, 3)];
+	t[30] = s[OFF(30, 3)];
+	t[31] = s[OFF(31, 3)];
+	t[32] = s[OFF(32, 3)];
+	t[33] = s[OFF(33, 3)];
+	t[34] = s[OFF(34, 3)];
+	t[35] = s[OFF(35, 3)];
+}
+#undef OFF
+
+inline void ror3cmix_512(uint32_t *t, const uint32_t *s)
+{
+	ror3cmix_384(t, s);
+}
 
 inline void substitute(uint32_t *s)
 {
@@ -405,6 +514,17 @@ inline void smix_256(uint32_t *sb, uint32_t *tb)
 	memcpy(sb+4, tb+4, sizeof(*sb) * (30 - 4));
 }
 
+inline void smix_384(uint32_t *sb, uint32_t *tb)
+{
+	smix(sb, tb);
+	memcpy(sb+4, tb+4, sizeof(*sb) * (36 - 4));
+}
+
+inline void smix_512(uint32_t *sb, uint32_t *tb)
+{
+	smix_384(sb, tb);
+}
+
 void drew::Fugue256Transform::Transform(uint32_t *state, const uint8_t *block)
 {
 	uint32_t p;
@@ -446,7 +566,6 @@ void drew::Fugue256Transform::Final(uint32_t *state)
 		ror3cmix_256(tmp, state);
 		smix_256(state, tmp);
 	}
-
 
 	for (size_t i = 0; i < 13; i++) {
 		uint32_t tmp[30];
@@ -496,4 +615,231 @@ void drew::Fugue224::GetDigest(uint8_t *digest, size_t len, bool nopad)
 	E::CopyCarefully(digest, m_hash+1, std::min<size_t>(len, 16));
 	if (len > 16)
 		E::CopyCarefully(digest+16, m_hash+15, std::min<size_t>(len-16, 12));
+}
+
+drew::Fugue384::Fugue384()
+{
+	Reset();
+}
+
+void drew::Fugue384::Reset()
+{
+	memset(m_hash, 0, sizeof(*m_hash) * 24);
+	m_hash[24] = 0xaa61ec0d;
+	m_hash[25] = 0x31252e1f;
+	m_hash[26] = 0xa01db4c7;
+	m_hash[27] = 0x00600985;
+	m_hash[28] = 0x215ef44a;
+	m_hash[29] = 0x741b5e9c;
+	m_hash[30] = 0xfa693e9a;
+	m_hash[31] = 0x473eb040;
+	m_hash[32] = 0xe502ae8a;
+	m_hash[33] = 0xa99c25e0;
+	m_hash[34] = 0xbc95517c;
+	m_hash[35] = 0x5c1095a1;
+	Initialize();
+}
+
+void drew::Fugue384::Transform(const uint8_t *block)
+{
+	uint32_t p;
+	uint32_t tmp[36];
+
+	p = E::Convert<uint32_t>(block);
+	tix_384(m_hash, p);
+	ror3cmix_384(tmp, m_hash);
+	smix_384(m_hash, tmp);
+	ror3cmix_384(tmp, m_hash);
+	smix_384(m_hash, tmp);
+	ror3cmix_384(tmp, m_hash);
+	smix_384(m_hash, tmp);
+}
+
+void drew::Fugue384::Pad()
+{
+	size_t off = m_len[0] & 3;
+	uint8_t block[8] = {0};
+
+	if (off) {
+		memcpy(block, m_buf, off);
+		Transform(block);
+	}
+
+	m_len[1] <<= 3;
+	m_len[1] |= (m_len[0] >> (32 - 3));
+	m_len[0] <<= 3;
+	std::swap(m_len[0], m_len[1]);
+
+	E::Copy(block, m_len, 8);
+	Transform(block);
+	Transform(block+4);
+}
+
+void drew::Fugue384::Final()
+{
+	for (size_t i = 0; i < 18; i++) {
+		uint32_t tmp[36];
+		ror3cmix_384(tmp, m_hash);
+		smix_384(m_hash, tmp);
+	}
+
+	for (size_t i = 0; i < 13; i++) {
+		uint32_t tmp[36];
+		m_hash[ 4] ^= m_hash[0];
+		m_hash[12] ^= m_hash[0];
+		m_hash[24] ^= m_hash[0];
+		ror_384(tmp, m_hash, 12);
+		smix_384(m_hash, tmp);
+		m_hash[ 4] ^= m_hash[0];
+		m_hash[13] ^= m_hash[0];
+		m_hash[24] ^= m_hash[0];
+		ror_384(tmp, m_hash, 12);
+		smix_384(m_hash, tmp);
+		m_hash[ 4] ^= m_hash[0];
+		m_hash[13] ^= m_hash[0];
+		m_hash[25] ^= m_hash[0];
+		ror_384(tmp, m_hash, 11);
+		smix_384(m_hash, tmp);
+	}
+
+	m_hash[ 4] ^= m_hash[0];
+	m_hash[12] ^= m_hash[0];
+	m_hash[24] ^= m_hash[0];
+}
+
+void drew::Fugue384::GetDigest(uint8_t *digest, size_t len, bool nopad)
+{
+	if (!nopad)
+		Pad();
+
+	Final();
+
+	E::CopyCarefully(digest, m_hash+1, std::min<size_t>(len, 16));
+	if (len > 16)
+		E::CopyCarefully(digest+16, m_hash+12, std::min<size_t>(len-16, 16));
+	if (len > 32)
+		E::CopyCarefully(digest+32, m_hash+24, std::min<size_t>(len-32, 16));
+}
+
+
+drew::Fugue512::Fugue512()
+{
+	Reset();
+}
+
+void drew::Fugue512::Reset()
+{
+	memset(m_hash, 0, sizeof(*m_hash) * 20);
+	m_hash[20] = 0x8807a57e;
+	m_hash[21] = 0xe616af75;
+	m_hash[22] = 0xc5d3e4db;
+	m_hash[23] = 0xac9ab027;
+	m_hash[24] = 0xd915f117;
+	m_hash[25] = 0xb6eecc54;
+	m_hash[26] = 0x06e8020b;
+	m_hash[27] = 0x4a92efd1;
+	m_hash[28] = 0xaac6e2c9;
+	m_hash[29] = 0xddb21398;
+	m_hash[30] = 0xcae65838;
+	m_hash[31] = 0x437f203f;
+	m_hash[32] = 0x25ea78e7;
+	m_hash[33] = 0x951fddd6;
+	m_hash[34] = 0xda6ed11d;
+	m_hash[35] = 0xe13e3567;
+	Initialize();
+}
+
+void drew::Fugue512::Transform(const uint8_t *block)
+{
+	uint32_t p;
+	uint32_t tmp[36];
+
+	p = E::Convert<uint32_t>(block);
+	tix_512(m_hash, p);
+	ror3cmix_512(tmp, m_hash);
+	smix_512(m_hash, tmp);
+	ror3cmix_512(tmp, m_hash);
+	smix_512(m_hash, tmp);
+	ror3cmix_512(tmp, m_hash);
+	smix_512(m_hash, tmp);
+	ror3cmix_512(tmp, m_hash);
+	smix_512(m_hash, tmp);
+}
+
+void drew::Fugue512::Pad()
+{
+	size_t off = m_len[0] & 3;
+	uint8_t block[8] = {0};
+
+	if (off) {
+		memcpy(block, m_buf, off);
+		Transform(block);
+	}
+
+	m_len[1] <<= 3;
+	m_len[1] |= (m_len[0] >> (32 - 3));
+	m_len[0] <<= 3;
+	std::swap(m_len[0], m_len[1]);
+
+	E::Copy(block, m_len, 8);
+	Transform(block);
+	Transform(block+4);
+}
+
+void drew::Fugue512::Final()
+{
+	for (size_t i = 0; i < 32; i++) {
+		uint32_t tmp[36];
+		ror3cmix_512(tmp, m_hash);
+		smix_512(m_hash, tmp);
+	}
+
+	for (size_t i = 0; i < 13; i++) {
+		uint32_t tmp[36];
+		m_hash[ 4] ^= m_hash[0];
+		m_hash[ 9] ^= m_hash[0];
+		m_hash[18] ^= m_hash[0];
+		m_hash[27] ^= m_hash[0];
+		ror_512(tmp, m_hash, 9);
+		smix_512(m_hash, tmp);
+		m_hash[ 4] ^= m_hash[0];
+		m_hash[10] ^= m_hash[0];
+		m_hash[18] ^= m_hash[0];
+		m_hash[27] ^= m_hash[0];
+		ror_512(tmp, m_hash, 9);
+		smix_512(m_hash, tmp);
+		m_hash[ 4] ^= m_hash[0];
+		m_hash[10] ^= m_hash[0];
+		m_hash[19] ^= m_hash[0];
+		m_hash[27] ^= m_hash[0];
+		ror_512(tmp, m_hash, 9);
+		smix_512(m_hash, tmp);
+		m_hash[ 4] ^= m_hash[0];
+		m_hash[10] ^= m_hash[0];
+		m_hash[19] ^= m_hash[0];
+		m_hash[28] ^= m_hash[0];
+		ror_512(tmp, m_hash, 8);
+		smix_512(m_hash, tmp);
+	}
+
+	m_hash[ 4] ^= m_hash[0];
+	m_hash[ 9] ^= m_hash[0];
+	m_hash[18] ^= m_hash[0];
+	m_hash[27] ^= m_hash[0];
+}
+
+void drew::Fugue512::GetDigest(uint8_t *digest, size_t len, bool nopad)
+{
+	if (!nopad)
+		Pad();
+
+	Final();
+
+	E::CopyCarefully(digest, m_hash+1, std::min<size_t>(len, 16));
+	if (len > 16)
+		E::CopyCarefully(digest+16, m_hash+9, std::min<size_t>(len-16, 16));
+	if (len > 32)
+		E::CopyCarefully(digest+32, m_hash+18, std::min<size_t>(len-32, 16));
+	if (len > 48)
+		E::CopyCarefully(digest+48, m_hash+27, std::min<size_t>(len-48, 16));
 }

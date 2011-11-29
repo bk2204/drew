@@ -72,6 +72,35 @@ class Fugue224 : public Hash<uint32_t, 28, 120, 4, BigEndian>,
 	private:
 };
 
+class Fugue384 : public Hash<uint32_t, 48, 144, 4, BigEndian>
+{
+	public:
+		Fugue384();
+		virtual ~Fugue384() {}
+		void Reset();
+		virtual void GetDigest(uint8_t *digest, size_t len, bool nopad);
+		virtual void Pad();
+	protected:
+		void Final();
+		virtual void Transform(const uint8_t *data);
+	private:
+};
+
+class Fugue512 : public Hash<uint32_t, 64, 144, 4, BigEndian>
+{
+	public:
+		Fugue512();
+		virtual ~Fugue512() {}
+		void Reset();
+		virtual void GetDigest(uint8_t *digest, size_t len, bool nopad);
+		virtual void Pad();
+	protected:
+		void Final();
+		virtual void Transform(const uint8_t *data);
+	private:
+};
+
+
 }
 UNHIDE()
 
