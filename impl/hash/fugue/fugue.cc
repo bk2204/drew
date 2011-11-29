@@ -61,10 +61,10 @@ static int fugue224test(void *, const drew_loader_t *)
 	using namespace drew;
 	
 	res |= !HashTestCase<Fugue224>("\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2a\x2b\x2c\x2d\x2e\x2f\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x3a\x3b\x3c\x3d\x3e\x3f\x40", 1).Test("495659c190b12f491b66c43a8d9004aaa1437c60e402045dbe2a645c");
-	//res <<= 1;
-	//res |= !HashTestCase<Fugue224>("", 0).Test("e2cd30d51a913c4ed2388a141f90caa4914de43010849e7b8a7a9ccd");
-	//res <<= 1;
-	//res |= !HashTestCase<Fugue224>("\xcc", 1).Test("34602ea95b2b9936b9a04ba14b5dc463988df90b1a46f90dd716b60f");
+	res <<= 1;
+	res |= !HashTestCase<Fugue224>("", 0).Test("e2cd30d51a913c4ed2388a141f90caa4914de43010849e7b8a7a9ccd");
+	res <<= 1;
+	res |= !HashTestCase<Fugue224>("\xcc", 1).Test("34602ea95b2b9936b9a04ba14b5dc463988df90b1a46f90dd716b60f");
 
 	return res;
 }
