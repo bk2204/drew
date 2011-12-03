@@ -22,8 +22,10 @@
 HIDE()
 extern "C" {
 PLUGIN_STRUCTURE(rmd160, RIPEMD160)
+PLUGIN_STRUCTURE(rmd128, RIPEMD128)
 PLUGIN_STRUCTURE(rmd320, RIPEMD320)
 PLUGIN_DATA_START()
+PLUGIN_DATA(rmd128, "RIPEMD-128")
 PLUGIN_DATA(rmd160, "RIPEMD-160")
 PLUGIN_DATA(rmd320, "RIPEMD-320")
 PLUGIN_DATA_END()
@@ -50,6 +52,29 @@ static int rmd160test(void *, const drew_loader_t *)
 	res |= !HashTestCase<RIPEMD160>("12345678901234567890123456789012345678901234567890123456789012345678901234567890", 1).Test("9b752e45573d4b39f4dbd3323cab82bf63326bfb");
 	res <<= 1;
 	res |= !HashTestCase<RIPEMD160>::MaintenanceTest("73154a71f6286c75073dfba04128de5b074d8cdf");
+
+	return res;
+}
+
+static int rmd128test(void *, const drew_loader_t *)
+{
+	int res = 0;
+
+	using namespace drew;
+
+	res |= !HashTestCase<RIPEMD128>("", 0).Test("cdf26213a150dc3ecb610f18f6b38b46");
+	res <<= 1;
+	res |= !HashTestCase<RIPEMD128>("a", 1).Test("86be7afa339d0fc7cfc785e72f578d33");
+	res <<= 1;
+	res |= !HashTestCase<RIPEMD128>("abc", 1).Test("c14a12199c66e4ba84636b0f69144c77");
+	res <<= 1;
+	res |= !HashTestCase<RIPEMD128>("message digest", 1).Test("9e327b3d6e523062afc1132d7df9d1b8");
+	res <<= 1;
+	res |= !HashTestCase<RIPEMD128>("abcdefghijklmnopqrstuvwxyz", 1).Test("fd2aa607f71dc8f510714922b371834e");
+	res <<= 1;
+	res |= !HashTestCase<RIPEMD128>("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", 1).Test("d1e959eb179c911faea4624c60c5c702");
+	res <<= 1;
+	res |= !HashTestCase<RIPEMD128>("12345678901234567890123456789012345678901234567890123456789012345678901234567890", 1).Test("3f45ef194732c2dbb2c4a2c769795fa3");
 
 	return res;
 }
@@ -191,6 +216,64 @@ void drew::RIPEMD160::Transform(quantum_t *state, const uint8_t *block)
 	state[4] = state[0] + b + cc;
 	state[0] = t;
 }
+
+drew::RIPEMD128::RIPEMD128()
+{
+	Reset();
+}
+
+void drew::RIPEMD128::Reset()
+{
+	m_hash[0] = 0x67452301;
+	m_hash[1] = 0xefcdab89;
+	m_hash[2] = 0x98badcfe;
+	m_hash[3] = 0x10325476;
+	Initialize();
+}
+
+#define SSTD(a, b, c, d) a=d; d=c; c=b; b=t;
+#define SOP(f, r, s, k, a, b, c, d) \
+	t=RotateLeft(a+f(b, c, d)+blk[r[i]]+k, s[i]); \
+	SSTD(a, b, c, d);
+
+void drew::RIPEMD128::Transform(quantum_t *state, const uint8_t *block)
+{
+	uint32_t buf[block_size/sizeof(uint32_t)];
+	const uint32_t *blk;
+	size_t i;
+	uint32_t a, b, c, d, aa, bb, cc, dd, t;
+
+	a = aa = state[0];
+	b = bb = state[1];
+	c = cc = state[2];
+	d = dd = state[3];
+
+	blk = endian_t::CopyIfNeeded(buf, block, block_size);
+
+	for (i=0; i<16; i++) {
+		SOP(ff,  r,  s, 0x00000000,  a,  b,  c,  d);
+		SOP(ii, rp, sp, 0x50a28be6, aa, bb, cc, dd);
+	}
+	for (i=16; i<32; i++) {
+		SOP(gg,  r,  s, 0x5a827999,  a,  b,  c,  d);
+		SOP(hh, rp, sp, 0x5c4dd124, aa, bb, cc, dd);
+	}
+	for (i=32; i<48; i++) {
+		SOP(hh,  r,  s, 0x6ed9eba1,  a,  b,  c,  d);
+		SOP(gg, rp, sp, 0x6d703ef3, aa, bb, cc, dd);
+	}
+	for (i=48; i<64; i++) {
+		SOP(ii,  r,  s, 0x8f1bbcdc,  a,  b,  c,  d);
+		SOP(ff, rp, sp, 0x00000000, aa, bb, cc, dd);
+	}
+
+	t = state[1] + c + dd;
+	state[1] = state[2] + d + aa;
+	state[2] = state[3] + a + bb;
+	state[3] = state[0] + b + cc;
+	state[0] = t;
+}
+
 
 drew::RIPEMD320::RIPEMD320()
 {
