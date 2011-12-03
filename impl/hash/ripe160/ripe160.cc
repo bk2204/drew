@@ -369,18 +369,17 @@ void drew::RIPEMD320::Transform(quantum_t *state, const uint8_t *block)
 		OP(jj,  r,  s, 0xa953fd4e,  a,  b,  c,  d,  e);
 		OP(ff, rp, sp, 0x00000000, aa, bb, cc, dd, ee);
 	}
-	std::swap(e, ee);
 
 	state[0] += a;
 	state[1] += b;
 	state[2] += c;
 	state[3] += d;
-	state[4] += e;
+	state[4] += ee;
 	state[5] += aa;
 	state[6] += bb;
 	state[7] += cc;
 	state[8] += dd;
-	state[9] += ee;
+	state[9] += e;
 }
 
 drew::RIPEMD256::RIPEMD256()
@@ -438,15 +437,14 @@ void drew::RIPEMD256::Transform(quantum_t *state, const uint8_t *block)
 		SOP(ii,  r,  s, 0x8f1bbcdc,  a,  b,  c,  d);
 		SOP(ff, rp, sp, 0x00000000, aa, bb, cc, dd);
 	}
-	std::swap(d, dd);
 
 	state[0] += a;
 	state[1] += b;
 	state[2] += c;
-	state[3] += d;
+	state[3] += dd;
 	state[4] += aa;
 	state[5] += bb;
 	state[6] += cc;
-	state[7] += dd;
+	state[7] += d;
 }
 UNHIDE()
