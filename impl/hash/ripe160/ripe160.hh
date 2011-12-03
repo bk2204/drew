@@ -59,6 +59,22 @@ class RIPEMD320 : public Hash<uint32_t, 40, 40, 64, LittleEndian>
 	private:
 };
 
+class RIPEMD256 : public Hash<uint32_t, 32, 32, 64, LittleEndian>
+{
+	public:
+		RIPEMD256();
+		virtual ~RIPEMD256() {}
+		void Reset();
+		static void Transform(quantum_t *state, const uint8_t *data);
+	protected:
+		virtual void Transform(const uint8_t *data)
+		{
+			Transform(m_hash, data);
+		}
+	private:
+};
+
+
 }
 UNHIDE()
 
