@@ -19,6 +19,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/*-
+ * The optimized encryption routine is from the NIST package code, which is in
+ * the public domain.
+ */
 /* This implements Threefish-512 only. */
 #include <utility>
 
