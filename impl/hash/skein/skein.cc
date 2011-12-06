@@ -33,19 +33,29 @@
 #include "hash-plugin.hh"
 
 extern "C" {
-PLUGIN_STRUCTURE(skein512, Skein)
+
+static const int skeinhash_sizes[] = {
+	28, 32, 48, 64
+};
+
+PLUGIN_STRUCTURE_VARIABLE(skein, Skein)
 PLUGIN_DATA_START()
-PLUGIN_DATA(skein512, "Skein-512")
+PLUGIN_DATA(skein, "Skein")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE(skein)
 
-static int skein512test(void *, const drew_loader_t *)
+static int skeintest(void *, const drew_loader_t *)
 {
 	int res = 0;
 
 	using namespace drew;
 
-	res |= !HashTestCase<Skein>("", 0).Test("bc5b4c50925519c290cc634277ae3d6257212395cba733bbad37a4af0fa06af41fca7903d06564fea7a2d3730dbdb80c1f85562dfcc070334ea4d1d9e72cba7a");
+	typedef VariableSizedHashTestCase<Skein, 224/8> TestCase224;
+	typedef VariableSizedHashTestCase<Skein, 256/8> TestCase256;
+	typedef VariableSizedHashTestCase<Skein, 384/8> TestCase384;
+	typedef VariableSizedHashTestCase<Skein, 512/8> TestCase512;
+
+	res |= !TestCase512("", 0).Test("bc5b4c50925519c290cc634277ae3d6257212395cba733bbad37a4af0fa06af41fca7903d06564fea7a2d3730dbdb80c1f85562dfcc070334ea4d1d9e72cba7a");
 
 	return res;
 }
@@ -53,7 +63,7 @@ static int skein512test(void *, const drew_loader_t *)
 
 typedef drew::Skein::endian_t E;
 
-drew::Skein::Skein()
+drew::Skein::Skein(size_t len) : m_digest_size(len)
 {
 	Reset();
 }
@@ -66,7 +76,7 @@ drew::Skein::Skein()
 
 void drew::Skein::Reset()
 {
-	const uint8_t config[32] = {
+	uint8_t config[32] = {
 		// S     H     A     3, version 1,  reserved
 		0x53, 0x48, 0x41, 0x33, 0x01, 0x00, 0x00, 0x00,
 		// 512 bit output length
@@ -76,6 +86,9 @@ void drew::Skein::Reset()
 		// Reserved
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	};
+
+	E::Convert<uint16_t>(config+8, m_digest_size * 8);
+
 	memset(m_hash, 0, sizeof(m_hash));
 
 	memset(m_tweak, 0, sizeof(m_tweak));

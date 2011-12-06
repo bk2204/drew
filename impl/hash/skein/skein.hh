@@ -32,7 +32,7 @@ namespace drew {
 class Skein : public Hash<uint64_t, 64, 64, 64, LittleEndian>
 {
 	public:
-		Skein();
+		Skein(size_t);
 		virtual ~Skein() {}
 		void Reset();
 		virtual void GetDigest(uint8_t *digest, size_t len, bool nopad);
@@ -43,6 +43,10 @@ class Skein : public Hash<uint64_t, 64, 64, 64, LittleEndian>
 		void UBIBlock(uint64_t *state, const uint64_t *m,
 				const uint64_t *tweak);
 		void Update(const uint8_t *data, size_t len);
+		size_t GetDigestSize() const
+		{
+			return m_digest_size;
+		}
 	protected:
 		void Transform(const uint8_t *data)
 		{
@@ -53,6 +57,7 @@ class Skein : public Hash<uint64_t, 64, 64, 64, LittleEndian>
 		static void Final(uint32_t *);
 	private:
 		bool full;
+		size_t m_digest_size;
 		uint64_t m_tweak[2];
 };
 
