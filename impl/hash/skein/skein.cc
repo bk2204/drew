@@ -206,7 +206,6 @@ void drew::Skein::Pad()
 void drew::Skein::Transform(const uint8_t *data, bool final)
 {
 	m_tweak[0] = m_len[0];
-	//m_tweak[1] = (m_tweak[1] & ~(uint64_t)0xffffffff) | (m_len[1] & 0xffffffff);
 	m_tweak[1] |= final ? BIT_FINAL : 0;
 
 	UBIBlock(m_hash, data, m_tweak);

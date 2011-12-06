@@ -87,28 +87,10 @@ const unsigned rc[8][4] = {
 	{ 8, 35, 56, 22}
 };
 
-static inline void mix(uint64_t &y0, uint64_t &y1, unsigned rotk)
-{
-	y0 += y1;
-	y1 = RotateLeft(y1, rotk) ^ y0;
-}
-
 static inline void unmix(uint64_t &y0, uint64_t &y1, unsigned rotk)
 {
 	y1 = RotateLeft(y1 ^ y0, rotk);
 	y0 -= y1;
-}
-
-static inline void permute(uint64_t *y, uint64_t *x)
-{
-	y[0] = x[2];
-	y[1] = x[1];
-	y[2] = x[4];
-	y[3] = x[7];
-	y[4] = x[6];
-	y[5] = x[5];
-	y[6] = x[0];
-	y[7] = x[3];
 }
 
 static inline void unpermute(uint64_t *y, uint64_t *x)
@@ -142,24 +124,10 @@ inline void drew::Threefish::InjectKey(uint64_t *x, const size_t r) const
 
 int drew::Threefish::Encrypt(uint64_t *out, const uint64_t *in) const
 {
-	uint64_t x[8] ALIGNED_T;//, y[8] ALIGNED_T;
+	uint64_t x[8] ALIGNED_T;
 	
 	memcpy(x, in, sizeof(x));
 
-#if 0
-	for (size_t i = 0, d = 0; i < (ROUNDS / 4); i++, d ^= 4) {
-		for (size_t j = 0; j < 8; j++)
-			x[j] += m_k[i][j];
-		for (size_t r = 0; r < 2; r++) {
-			for (size_t j = 0, k = 0; j < 8; j += 2, k++)
-				mix(x[j], x[j+1], rc[(d+r+0) & 7][k]);
-			permute(y, x);
-			for (size_t j = 0, k = 0; j < 8; j += 2, k++)
-				mix(y[j], y[j+1], rc[(d+r+1) & 7][k]);
-			permute(x, y);
-		}
-	}
-#else
 	for (size_t i = 0, r = 0; i < (ROUNDS/8); i++, r += 2) {
 		for (size_t j = 0; j < 8; j++)
 			x[j] += m_k[r][j];
@@ -210,7 +178,6 @@ int drew::Threefish::Encrypt(uint64_t *out, const uint64_t *in) const
 
 	for (size_t j = 0; j < 8; j++)
 		x[j] += m_k[72/4][j];
-#endif
 
 	memcpy(out, x, sizeof(x));
 	return 0;
