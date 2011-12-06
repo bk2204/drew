@@ -28,6 +28,113 @@
 #include <drew/hash.h>
 #include "hash-plugin.h"
 
+#define PLUGIN_STRUCTURE_VARIABLE(prefix, hname) \
+PLUGIN_STRUCTURE2(prefix, hname) \
+static int prefix ## info(int op, void *p) \
+{ \
+	using namespace drew; \
+	drew_hash_t *ctx = (drew_hash_t *)p; \
+	switch (op) { \
+		case DREW_HASH_VERSION: \
+			return CURRENT_ABI; \
+		case DREW_HASH_QUANTUM: \
+			return sizeof(hname::quantum_t); \
+		case DREW_HASH_SIZE: \
+			if (ctx && ctx->ctx) { \
+				const hname *s = (const hname *)ctx->ctx; \
+				return s->GetDigestSize(); \
+			} \
+			return -DREW_ERR_MORE_INFO; \
+		case DREW_HASH_BLKSIZE: \
+			return hname::block_size; \
+		case DREW_HASH_BUFSIZE: \
+			return hname::buffer_size; \
+		case DREW_HASH_INTSIZE: \
+			return sizeof(hname); \
+		case DREW_HASH_ENDIAN: \
+			return hname::endian_t::GetEndianness(); \
+		default: \
+			return -DREW_ERR_INVALID; \
+	} \
+} \
+ \
+static const int prefix ## block_sizes[] = { \
+	drew::hname::block_size \
+}; \
+ \
+static const int prefix ## buffer_sizes[] = { \
+	drew::hname::buffer_size \
+}; \
+ \
+static int prefix ## info2(const drew_hash_t *ctx, int op, drew_param_t *out, \
+		const drew_param_t *) \
+{ \
+	using namespace drew; \
+	drew_param_t *p; \
+	switch (op) { \
+		case DREW_HASH_VERSION: \
+			return CURRENT_ABI; \
+		case DREW_HASH_SIZE_LIST: \
+			for (p = out; p; p = p->next) \
+				if (!strcmp(p->name, "digestSize")) { \
+					p->param.array.ptr = (void *)prefix ## hash_sizes; \
+					p->param.array.len = DIM(prefix ## hash_sizes); \
+				} \
+			return 0; \
+		case DREW_HASH_BLKSIZE_LIST: \
+			for (p = out; p; p = p->next) \
+				if (!strcmp(p->name, "blockSize")) { \
+					p->param.array.ptr = (void *)prefix ## block_sizes; \
+					p->param.array.len = DIM(prefix ## block_sizes); \
+				} \
+			return 0; \
+		case DREW_HASH_BUFSIZE_LIST: \
+			for (p = out; p; p = p->next) \
+				if (!strcmp(p->name, "bufferSize")) { \
+					p->param.array.ptr = (void *)prefix ## buffer_sizes; \
+					p->param.array.len = DIM(prefix ## buffer_sizes); \
+				} \
+			return 0; \
+		case DREW_HASH_SIZE_CTX: \
+			if (ctx && ctx->ctx) { \
+				const hname *s = (const hname *)ctx->ctx; \
+				return s->GetDigestSize(); \
+			} \
+			return -DREW_ERR_MORE_INFO; \
+		case DREW_HASH_BLKSIZE_CTX: \
+			return hname::block_size; \
+		case DREW_HASH_BUFSIZE_CTX: \
+			return hname::buffer_size; \
+		case DREW_HASH_INTSIZE: \
+			return sizeof(hname); \
+		case DREW_HASH_ENDIAN: \
+			return hname::endian_t::GetEndianness(); \
+		default: \
+			return -DREW_ERR_INVALID; \
+	} \
+} \
+ \
+static int prefix ## init(drew_hash_t *ctx, int flags, const drew_loader_t *, \
+		const drew_param_t *param) \
+{ \
+	using namespace drew; \
+	hname *p; \
+	size_t sz = 0; \
+	for (const drew_param_t *q = param; q; q = q->next) \
+		if (!strcmp(q->name, "digestSize")) \
+			sz = q->param.number; \
+	if (!sz) \
+		return -DREW_ERR_MORE_INFO; \
+	if (flags & DREW_HASH_FIXED) \
+		p = new (ctx->ctx) hname(sz); \
+	else \
+		p = new hname(sz); \
+	ctx->ctx = p; \
+	ctx->functbl = &prefix ## functbl; \
+	return 0; \
+}
+
+
 #define PLUGIN_STRUCTURE(prefix, hname) \
 PLUGIN_STRUCTURE2(prefix, hname) \
 static int prefix ## info(int op, void *) \
