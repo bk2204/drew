@@ -40,6 +40,8 @@ class Isaac64 : public BlockPRNG
 		void Stir();
 		void Stir(const uint64_t *);
 		void FillBuffer(uint64_t *);
+		uint64_t Round(uint64_t, uint64_t &, uint64_t &, uint64_t *,
+				const uint64_t *);
 		uint64_t m_aa, m_bb, m_cc;
 		uint64_t m_s[256], m_res[256];
 		size_t m_nbytes;

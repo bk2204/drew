@@ -179,35 +179,41 @@ drew::Isaac64::Isaac64()
 	Stir();
 }
 
+inline uint64_t drew::Isaac64::Round(uint64_t mix, uint64_t &a, uint64_t &b,
+		uint64_t *s, const uint64_t *t)
+{
+	uint64_t x;
+
+	x = *s;
+	a = mix + *t;
+	*s = a + b + m_s[uint8_t(x >> 3)];
+	return b = x + m_s[uint8_t(*s >> 11)];
+}
+
 void drew::Isaac64::FillBuffer(uint64_t *r)
 {
-	uint64_t a, b, x;
+	uint64_t a, b;
 
 	a = m_aa;
 	b = m_bb + (++m_cc);
 
-	uint64_t *s = m_s;
+	uint64_t *s = m_s, *t = m_s + BUFFERSZ/2;
 
-	for (size_t i = 0; i < BUFFERSZ; i += 4) {
-		x = s[i+0];
-		a = ~(a ^ (a << 21)) + s[(i+0) ^ 0x80];
-		s[i+0] = a + b + s[uint8_t(x >> 3)];
-		b = r[i+0] = x + s[uint8_t(s[i+0] >> 11)];
+	for (size_t i = 0; i < BUFFERSZ/2; i += 4) {
+		*r++ = Round(~(a ^ (a << 21)), a, b, s++, t++);
+		*r++ = Round( (a ^ (a >>  5)), a, b, s++, t++);
+		*r++ = Round( (a ^ (a << 12)), a, b, s++, t++);
+		*r++ = Round( (a ^ (a >> 33)), a, b, s++, t++);
+	}
 
-		x = s[i+1];
-		a = (a ^ (a >> 5)) + s[(i+1) ^ 0x80];
-		s[i+1] = a + b + s[uint8_t(x >> 3)];
-		b = r[i+1] = x + s[uint8_t(s[i+1] >> 11)];
+	t = m_s;
+	s = m_s + BUFFERSZ/2;
 
-		x = s[i+2];
-		a = (a ^ (a << 12)) + s[(i+2) ^ 0x80];
-		s[i+2] = a + b + s[uint8_t(x >> 3)];
-		b = r[i+2] = x + s[uint8_t(s[i+2] >> 11)];
-
-		x = s[i+3];
-		a = (a ^ (a >> 33)) + s[(i+3) ^ 0x80];
-		s[i+3] = a + b + s[uint8_t(x >> 3)];
-		b = r[i+3] = x + s[uint8_t(s[i+3] >> 11)];
+	for (size_t i = 0; i < BUFFERSZ/2; i += 4) {
+		*r++ = Round(~(a ^ (a << 21)), a, b, s++, t++);
+		*r++ = Round( (a ^ (a >>  5)), a, b, s++, t++);
+		*r++ = Round( (a ^ (a << 12)), a, b, s++, t++);
+		*r++ = Round( (a ^ (a >> 33)), a, b, s++, t++);
 	}
 	m_bb = b;
 	m_aa = a;
