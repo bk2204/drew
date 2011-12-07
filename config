@@ -74,6 +74,7 @@ CFG_ARC4STIR	= y
 CFG_ARC4IL		= y
 CFG_SP80090		= y
 CFG_SYSPRNG		= y
+CFG_ISAAC64		= y
 
 ## Bignum implementations.
 CFG_TOMMATH		= y
