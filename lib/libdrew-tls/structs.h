@@ -137,12 +137,20 @@ typedef struct {
 	drew_tls_compression_method_t compression_method;
 } drew_tls_server_hello_t;
 
+typedef struct drew_tls_session_queues_s *drew_tls_session_queues_t;
+
+typedef struct {
+	int nmsgs; // The number of hashes used to calculate Finished messages.
+	drew_hash_t msgs[2]; // The hash contexts for the above.
+} drew_tls_handshake_t;
+
 struct drew_tls_session_s {
 	int client; // is this the client end or the server end?
 	int enc_type;
 	drew_tls_cipher_suite_t cs;
 	const drew_loader_t *ldr;
 	drew_prng_t *prng;
+	drew_tls_session_queues_t queues;
 	uint8_t block_size;
 	uint8_t hash_size;
 	drew_mac_t *inmac;
@@ -151,6 +159,7 @@ struct drew_tls_session_s {
 	drew_mac_t *outmac;
 	drew_mode_t *outmode;
 	uint64_t outseqnum;
+	drew_tls_handshake_t handshake;
 	int handshake_state;
 	int state;
 	drew_tls_priority_t prio;

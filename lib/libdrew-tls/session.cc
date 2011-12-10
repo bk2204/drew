@@ -1,4 +1,6 @@
 /*-
+ * Copyright © 2000–2011 The Legion Of The Bouncy Castle
+ * (http://www.bouncycastle.org)
  * Copyright © 2010–2011 brian m. carlson
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,6 +20,9 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ */
+/* Part of the (re-)design of this code is based on the Bouncy Castle TLS
+ * implementation.
  */
 #include "internal.h"
 
@@ -45,6 +50,13 @@ struct generic {
 	void *ctx;
 	const void *functbl;
 	void *priv;
+};
+
+struct drew_tls_session_queues_s {
+	ByteQueue cs;
+	ByteQueue alert;
+	ByteQueue handshake;
+	ByteQueue appdata;
 };
 
 static int make_primitive(const drew_loader_t *ldr, const char *name,
@@ -151,6 +163,7 @@ int drew_tls_session_init(drew_tls_session_t *sess, const drew_loader_t *ldr)
 		free(s);
 		return res;
 	}
+	s->queues = new drew_tls_session_queues_s;
 	// TLS 1.0, since that's all we support right now.
 	s->protover.major = 3;
 	s->protover.minor = 1;
@@ -164,6 +177,7 @@ int drew_tls_session_fini(drew_tls_session_t *sess)
 {
 	drew_tls_session_t s = *sess;
 	// FIXME: free shit.
+	delete s->queues;
 	s->prng->functbl->fini(s->prng, 0);
 	free(*sess);
 	*sess = NULL;
@@ -493,31 +507,6 @@ static int handshake_send_server_hello(drew_tls_session_t sess)
 	return -DREW_ERR_NOT_IMPL;
 }
 #endif
-
-static int parse_handshake(drew_tls_session_t sess, const Record &rec,
-		SerializedBuffer &buf, uint32_t *length, uint8_t *type)
-{
-	int res = 0;
-
-	if (rec.length < 4)
-		return -DREW_TLS_ERR_ILLEGAL_PARAMETER;
-
-	// length is really only 24 bits in length, but we can't just load a
-	// three-byte quantity.  The type octet precedes it, so we do some fancy
-	// footwork to get both. 
-	buf = rec.data;
-	buf.ResetPosition();
-	buf.Get(*type);
-	buf.ResetPosition();
-	buf.Get(*length);
-
-	*length &= 0xffffff;
-
-	if (rec.length != *length + 4)
-		return -DREW_TLS_ERR_ILLEGAL_PARAMETER;
-
-	return res;
-}
 
 static int handshake_server(drew_tls_session_t sess)
 {
@@ -868,12 +857,10 @@ static int client_parse_server_hello(drew_tls_session_t sess,
 	return 0;
 }
 
-static int client_handle_handshake(drew_tls_session_t sess, const Record &rec)
+static int client_dispatch_handshake(drew_tls_session_t sess,
+		HandshakeMessage &hm)
 {
 	int res = 0;
-	HandshakeMessage hm;
-
-	RETFAIL(parse_handshake(sess, rec, hm.data, &hm.length, &hm.type));
 
 	switch (hm.type) {
 		case 0:
@@ -900,7 +887,47 @@ static int client_handle_handshake(drew_tls_session_t sess, const Record &rec)
 		default:
 			return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
 	}
+}
 
+static int client_handle_handshake(drew_tls_session_t sess)
+{
+	int res = 0;
+	bool read;
+	drew_tls_handshake_t *hs = &sess->handshake;
+	ByteQueue &hq = sess->queues->handshake;
+
+	do {
+		read = false;
+		if (hq.GetSize() < 4)
+			continue;
+
+		uint8_t type = hq.Read<uint8_t>(0);
+		uint32_t len = hq.Read24(1);
+
+		if (hq.GetSize() < (4 + len))
+			continue;
+
+		uint8_t *buf = new uint8_t[len + 4];
+
+		hq.Read(buf, len + 4);
+		hq.Remove(len + 4);
+
+		for (int i = 0; i < hs->nmsgs; i++)
+			hs->msgs[i].functbl->update(hs->msgs+i, buf, len + 4);
+
+		// process message.
+		HandshakeMessage hm;
+		hm.type = type;
+		hm.length = len;
+		hm.data.Put(buf+4, len);
+
+		res = client_dispatch_handshake(sess, hm);
+
+		delete[] buf;
+		read = true;
+	} while (read);
+
+	return res;
 }
 
 // Return 0 to continue the connection, 1 to close it gracefully, and a negative
@@ -974,7 +1001,9 @@ static int handshake_client(drew_tls_session_t sess)
 				URETFAIL(sess, handle_alert(sess, rec));
 				break;
 			case TYPE_HANDSHAKE:
-				res = client_handle_handshake(sess, rec);
+				sess->queues->handshake.AddData(rec.data.GetPointer(),
+						rec.length);
+				res = client_handle_handshake(sess);
 				if (!res)
 					break;
 				// Fallthru to send alert and return.
