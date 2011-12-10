@@ -256,6 +256,7 @@ int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 	if (ldr && cert->sig.mdalgo) {
 		drew_hash_t hash;
 		int id, ret;
+		size_t len;
 
 		if ((id = drew_loader_lookup_by_name(ldr, cert->sig.mdalgo, 0, -1)) < 0)
 			return id;
@@ -263,8 +264,9 @@ int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 						(const void **)&hash.functbl)) < 0)
 			return ret;
 		RETFAIL(hash.functbl->init(&hash, 0, ldr, NULL));
+		len = hash.functbl->info2(&hash, DREW_HASH_SIZE_CTX, NULL, NULL);
 		hash.functbl->update(&hash, certvals[0].data, certvals[0].length);
-		hash.functbl->final(&hash, cert->sig.digest, 0);
+		hash.functbl->final(&hash, cert->sig.digest, len, 0);
 		hash.functbl->fini(&hash, 0);
 	}
 
