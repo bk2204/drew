@@ -34,7 +34,7 @@ class Salsa20GenericKeystream
 	public:
 		typedef LittleEndian endian_t;
 		Salsa20GenericKeystream() {}
-		~Salsa20GenericKeystream() {}
+		virtual ~Salsa20GenericKeystream() {}
 		virtual Salsa20GenericKeystream *Clone() const = 0;
 		virtual void SetKey(const uint8_t *key, size_t sz) = 0;
 		virtual void SetNonce(const uint8_t *key, size_t sz) = 0;

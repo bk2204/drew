@@ -34,7 +34,7 @@ class ChaChaGenericKeystream
 	public:
 		typedef LittleEndian endian_t;
 		ChaChaGenericKeystream() {}
-		~ChaChaGenericKeystream() {}
+		virtual ~ChaChaGenericKeystream() {}
 		virtual ChaChaGenericKeystream *Clone() const = 0;
 		virtual void SetKey(const uint8_t *key, size_t sz) = 0;
 		virtual void SetNonce(const uint8_t *key, size_t sz) = 0;
