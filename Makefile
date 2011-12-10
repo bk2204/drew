@@ -109,10 +109,15 @@ version:
 	printf '#define DREW_VERSION %s\n' \
 		`echo $(VERSION) | perl -pe 's/v(\d+)(-.*)?/$$1/'` >> $@
 
-.PHONY: version
+.PHONY: version tags
 
 include/version.h: version
 	if ! cmp -s $@ $<; then mv $< $@; else $(RM) $<; fi
+
+tags:
+	$(RM) tags
+	find -name '*.c' -o -name '*.cc' -o -name '*.h' -o -name '*.hh' | \
+		xargs ctags -a
 
 plugins: ${PLUGINS}
 	[ -d plugins ] || mkdir plugins
@@ -129,6 +134,7 @@ clean:
 	${RM} -f include/version.h
 	${RM} -fr ${PLUGINS} plugins/
 	${RM} -r install
+	${RM} -f tags
 	find -name '*.o' | xargs -r rm
 	find -name '*.d' | xargs -r rm
 	find -name '*.so' | xargs -r rm

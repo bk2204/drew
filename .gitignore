@@ -22,6 +22,7 @@ include/version.h
 *.so*
 plugins/*
 gmon.out
+tags
 misc/devel
 *.pdf
 *.ps
