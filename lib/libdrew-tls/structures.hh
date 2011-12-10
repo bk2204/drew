@@ -25,13 +25,15 @@
 #include "internal.h"
 #include "util.hh"
 
+#include <deque>
+
 #include <stdint.h>
 #include <pthread.h>
 #include <sys/types.h>
 
 #include <drew-tls/drew-tls.h>
 
-// None of these classes are thread-safe.
+// None of these classes are thread-safe except for ByteQueue.
 
 class MutexLock
 {
@@ -47,6 +49,75 @@ class MutexLock
 		}
 	private:
 		pthread_mutex_t *mutex;
+};
+
+// The idea for handling data this way came from Bouncy Castle.
+class ByteQueue
+{
+	public:
+		void AddData(const uint8_t *data, size_t len)
+		{
+			LOCK(this);
+			for (size_t i = 0; i < len; i++)
+				m_queue.push_back(*data++);
+		}
+		size_t GetSize()
+		{
+			return m_queue.size();
+		}
+		template<class T>
+		T Read(size_t off)
+		{
+			LOCK(this);
+			return ReadUnlocked<T>(off);
+		}
+		template<class T>
+		T Read()
+		{
+			return Read<T>(0);
+		}
+		uint32_t Read24(size_t off)
+		{
+			LOCK(this);
+			uint32_t x;
+			x = Read<uint16_t>(off) << 8;
+			x |= Read<uint8_t>(off+2);
+			return x;
+		}
+		uint32_t Read24()
+		{
+			return Read24(0);
+		}
+		void Read(uint8_t *data, size_t len)
+		{
+			return Read(0, data, len);
+		}
+		void Read(size_t off, uint8_t *data, size_t len)
+		{
+			LOCK(this);
+			std::deque<uint8_t>::const_iterator it = m_queue.begin()+off;
+			for (size_t i = 0; i < len; i++)
+				*data++ = *it++;
+		}
+		void Remove(size_t len)
+		{
+			LOCK(this);
+		}
+	protected:
+		template<class T>
+		T ReadUnlocked(size_t off)
+		{
+			T x = 0;
+			std::deque<uint8_t>::const_iterator it = m_queue.begin()+off;
+			for (size_t i = 0; i < sizeof(T); i++) {
+				x <<= 8;
+				x |= *it++;
+			}
+			return x;
+		}
+	private:
+		std::deque<uint8_t> m_queue;
+		DREW_TLS_MUTEX_DECL();
 };
 
 class SerializedBuffer
