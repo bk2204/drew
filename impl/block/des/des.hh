@@ -18,33 +18,31 @@ namespace drew {
 
 class TripleDES;
 
-class DES : public BlockCipher<8>
+class DES : public BlockCipher<8, BigEndian>
 {
 	public:
-		typedef BigEndian endian_t;
 		DES();
 		~DES() {};
-		int SetKey(const uint8_t *key, size_t sz);
 		int Encrypt(uint8_t *out, const uint8_t *in) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
 		void ProcessBlock(const uint32_t *, uint32_t &, uint32_t &) const;
 	protected:
+		int SetKeyInternal(const uint8_t *key, size_t sz);
 	private:
 		uint32_t m_k[32], m_kd[32];
 		static const uint32_t Spbox[8][64];
 		friend class TripleDES;
 };
 
-class TripleDES : public BlockCipher<8>
+class TripleDES : public BlockCipher<8, BigEndian>
 {
 	public:
-		typedef BigEndian endian_t;
 		TripleDES();
 		~TripleDES() {};
-		int SetKey(const uint8_t *key, size_t sz);
 		int Encrypt(uint8_t *out, const uint8_t *in) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
 	protected:
+		int SetKeyInternal(const uint8_t *key, size_t sz);
 	private:
 		DES m_des1, m_des2, m_des3;
 

@@ -16,6 +16,8 @@ CFG_WHIRLPOOL	= y
 CFG_KECCAK		= y
 CFG_GRØSTL		= y
 CFG_BLAKE		= y
+CFG_FUGUE		= y
+CFG_SKEIN		= y
 
 ## Block ciphers.
 # Note that the aes plugin implements Rijndael (the AES algorithm) with key
@@ -30,6 +32,7 @@ CFG_CAST5		= y
 CFG_CAST6		= y
 CFG_BLOWFISH	= y
 CFG_AESNI		= y
+CFG_LINUXBLOCK	= y
 CFG_AES			= y
 CFG_RIJNDAEL	= y
 CFG_TWOFISH		= y
@@ -43,7 +46,8 @@ CFG_SEED		= y
 CFG_IDEA		= No, thanks.  I'm patented.
 CFG_ARIABYTE	= y
 CFG_ARIA128		= y
-CFG_SOSEMANUK	= y
+CFG_SHACAL		= y
+CFG_MARS		= y
 
 # Modes.
 CFG_CFB			= y
@@ -54,6 +58,7 @@ CFG_GCM			= y
 
 # MACs.
 CFG_HMAC		= y
+CFG_CMAC		= y
 
 ## Stream ciphers.
 CFG_RC4			= y
@@ -61,16 +66,22 @@ CFG_SALSA20		= y
 CFG_HC128		= y
 CFG_HC256		= y
 CFG_RABBIT		= y
+CFG_SOSEMANUK	= y
+CFG_CHACHA		= y
 
 ## PRNGs.
 CFG_ARC4STIR	= y
 CFG_ARC4IL		= y
 CFG_SP80090		= y
 CFG_SYSPRNG		= y
+CFG_ISAAC64		= y
 
 ## Bignum implementations.
 CFG_TOMMATH		= y
 CFG_OPENSSLBN	= No, thanks.
+
+## Elliptic curve field implementations.
+CFG_ECCPRIME	= y
 
 ## Public key encryption.
 CFG_RSAENC		= y
@@ -78,6 +89,7 @@ CFG_RSAENC		= y
 ## Public key signatures.
 CFG_RSASIG		= y
 CFG_DSA			= y
+CFG_ECDSA		= y
 
 # PRFs and KDFs.
 CFG_PBKDF2		= y

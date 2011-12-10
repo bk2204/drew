@@ -53,7 +53,7 @@ static int pbkdf_info(int op, void *p)
 	struct pbkdf *ctx;
 	switch (op) {
 		case DREW_KDF_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_KDF_SIZE:
 			return 0;
 		case DREW_KDF_BLKSIZE:
@@ -61,6 +61,28 @@ static int pbkdf_info(int op, void *p)
 				return -DREW_ERR_MORE_INFO;
 			ctx = kdf->ctx;
 			return ctx->prf.functbl->info(op, &ctx->prf);
+		case DREW_KDF_ENDIAN:
+			return 0;
+		case DREW_KDF_INTSIZE:
+			return sizeof(struct pbkdf);
+	}
+	return -DREW_ERR_INVALID;
+}
+
+static int pbkdf_info2(const drew_kdf_t *kdf, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	struct pbkdf *ctx;
+	switch (op) {
+		case DREW_KDF_VERSION:
+			return 2;
+		case DREW_KDF_SIZE_CTX:
+			return 0;
+		case DREW_KDF_BLKSIZE_CTX:
+			if (!kdf)
+				return -DREW_ERR_MORE_INFO;
+			ctx = kdf->ctx;
+			return ctx->prf.functbl->info2(&ctx->prf, op, NULL, NULL);
 		case DREW_KDF_ENDIAN:
 			return 0;
 		case DREW_KDF_INTSIZE:
@@ -366,12 +388,12 @@ static int pbkdf_test_md5(const drew_loader_t *ldr, size_t *ntests)
 
 static int pbkdf_test(void *p, const drew_loader_t *ldr)
 {
+#if 0
 	int result = 0, tres;
 	size_t ntests = 0;
 	if (!ldr)
 		return -DREW_ERR_INVALID;
 
-#if 0
 	if ((tres = pbkdf_test_md5(ldr, &ntests)) >= 0) {
 		result <<= ntests;
 		result |= tres;
@@ -383,8 +405,8 @@ static int pbkdf_test(void *p, const drew_loader_t *ldr)
 }
 
 static drew_kdf_functbl_t pbkdf_functbl = {
-	pbkdf_info, pbkdf_init, pbkdf_clone, pbkdf_reset, pbkdf_fini, pbkdf_setkey,
-	pbkdf_setsalt, pbkdf_setcount, pbkdf_generate, pbkdf_test
+	pbkdf_info, pbkdf_info2, pbkdf_init, pbkdf_clone, pbkdf_reset, pbkdf_fini,
+	pbkdf_setkey, pbkdf_setsalt, pbkdf_setcount, pbkdf_generate, pbkdf_test
 };
 
 struct plugin {

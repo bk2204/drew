@@ -184,7 +184,7 @@ inline void drew::Blowfish::MainAlgorithm(const uint32_t *p, uint32_t d[2])
 	d[1] ^= p[17];
 }
 
-int drew::Blowfish::SetKey(const uint8_t *key, size_t sz)
+int drew::Blowfish::SetKeyInternal(const uint8_t *key, size_t sz)
 {
 	memcpy(m_s, m_sbox, sizeof(m_sbox));
 	memcpy(m_p, m_parray, sizeof(m_parray));

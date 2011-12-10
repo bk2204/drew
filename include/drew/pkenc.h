@@ -95,9 +95,29 @@ typedef struct {
 	int (*test)(void *, const drew_loader_t *);
 } drew_pkenc_functbl2_t;
 
+typedef struct {
+	int (*info)(int op, void *p);
+	int (*info2)(const drew_pkenc_t *, int, drew_param_t *,
+			const drew_param_t *);
+	int (*init)(drew_pkenc_t *, int,
+			const drew_loader_t *, const drew_param_t *);
+	int (*clone)(drew_pkenc_t *, const drew_pkenc_t *, int);
+	int (*fini)(drew_pkenc_t *, int);
+	int (*generate)(drew_pkenc_t *, const drew_param_t *);
+	int (*setmode)(drew_pkenc_t *, int);
+	int (*setval)(drew_pkenc_t *, const char *, const uint8_t *, size_t);
+	int (*val)(const drew_pkenc_t *, const char *, uint8_t *, size_t);
+	int (*valsize)(const drew_pkenc_t *, const char *);
+	int (*encrypt)(const drew_pkenc_t *, drew_bignum_t *,
+			const drew_bignum_t *);
+	int (*decrypt)(const drew_pkenc_t *, drew_bignum_t *,
+			const drew_bignum_t *);
+	int (*test)(void *, const drew_loader_t *);
+} drew_pkenc_functbl3_t;
+
 typedef drew_pkenc_functbl2_t drew_pkenc_functbl0_t;
 typedef drew_pkenc_functbl2_t drew_pkenc_functbl1_t;
-typedef drew_pkenc_functbl2_t drew_pkenc_functbl_t;
+typedef drew_pkenc_functbl3_t drew_pkenc_functbl_t;
 
 struct drew_pkenc_s {
 	void *ctx;

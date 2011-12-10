@@ -42,7 +42,6 @@ class MD2 : public Hash<uint8_t, 16, 64, 16, NonEndian>
 		}
 		static const uint8_t sbox[256];
 		uint8_t *m_csum;
-		uint8_t m_l;
 	private:
 };
 

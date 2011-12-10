@@ -64,12 +64,12 @@ class SHA512t : public SHA512
 		{
 			SHA512Transform::Transform(state, data);
 		}
-		void GetDigest(uint8_t *digest, bool nopad)
+		void GetDigest(uint8_t *digest, size_t len, bool nopad)
 		{
 			if (!nopad)
 				Pad();
 
-			endian_t::CopyCarefully(digest, m_hash, t);
+			endian_t::CopyCarefully(digest, m_hash, len);
 		}
 		size_t GetDigestSize() const
 		{

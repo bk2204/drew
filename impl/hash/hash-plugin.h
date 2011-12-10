@@ -34,10 +34,10 @@ extern "C" {
 #include <drew/plugin.h>
 #include <drew/hash.h>
 
-#define PLUGIN_FUNCTBL(prefix, info, init, update, updatefast, pad, final, transform, test, fini, clone, reset) \
+#define PLUGIN_FUNCTBL(prefix, info, info2, init, update, updatefast, pad, final, test, fini, clone, reset) \
 \
 static drew_hash_functbl_t prefix ## functbl = { \
-	info, init, clone, reset, fini, update, updatefast, pad, final, transform, test \
+	info, info2, init, clone, reset, fini, update, updatefast, pad, final, test \
 };
 
 struct plugin {
@@ -58,14 +58,14 @@ int DREW_PLUGIN_NAME(x)(void *ldr, int op, int id, void *p) \
 \
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]); \
 	if (id < 0 || id >= nplugins) \
-		return -EINVAL; \
+		return -DREW_ERR_INVALID; \
 	switch (op) { \
 		case DREW_LOADER_LOOKUP_NAME: \
 			return 0; \
 		case DREW_LOADER_GET_NPLUGINS: \
 			return nplugins; \
 		case DREW_LOADER_GET_TYPE: \
-			return 1; \
+			return DREW_TYPE_HASH; \
 		case DREW_LOADER_GET_FUNCTBL_SIZE: \
 			return sizeof(drew_hash_functbl_t); \
 		case DREW_LOADER_GET_FUNCTBL: \
@@ -77,7 +77,7 @@ int DREW_PLUGIN_NAME(x)(void *ldr, int op, int id, void *p) \
 			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1); \
 			return 0; \
 		default: \
-			return -EINVAL; \
+			return -DREW_ERR_INVALID; \
 	} \
 } \
 UNEXPORT()

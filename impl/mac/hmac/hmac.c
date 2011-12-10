@@ -54,22 +54,57 @@ struct hmac {
 	size_t keybufsz;
 	size_t blksz;
 	size_t digestsz;
+	size_t taglen;
 };
 
 static int hmac_info(int op, void *p)
 {
+	if (op == DREW_MAC_VERSION)
+		return CURRENT_ABI;
 	return -DREW_ERR_NOT_IMPL;
+}
+
+static int hmac_info2(const drew_mac_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	switch (op) {
+		case DREW_MAC_VERSION:
+			return CURRENT_ABI;
+		case DREW_MAC_ENDIAN:
+			return 0;
+		case DREW_MAC_INTSIZE:
+			return sizeof(struct hmac);
+		case DREW_MAC_SIZE_CTX:
+			if (ctx && ctx->ctx) {
+				struct hmac *c = ctx->ctx;
+				return c->outside.functbl->info2(&c->outside,
+						DREW_HASH_SIZE_CTX, NULL, NULL);
+			}
+			return -DREW_ERR_MORE_INFO;
+		case DREW_MAC_BLKSIZE_CTX:
+			if (ctx && ctx->ctx) {
+				struct hmac *c = ctx->ctx;
+				return c->outside.functbl->info2(&c->outside,
+						DREW_HASH_BLKSIZE_CTX, NULL, NULL);
+			}
+			return -DREW_ERR_MORE_INFO;
+		default:
+			return -DREW_ERR_INVALID;
+	}
 }
 
 static int hmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param)
 {
 	drew_hash_t *algo = NULL;
+	size_t taglen = 0;
 
-	for (; param; param = param->next)
-		if (!strcmp(param->name, "digest")) {
+	for (; param; param = param->next) {
+		if (!strcmp(param->name, "digest"))
 			algo = param->param.value;
-		}
+		if (!strcmp(param->name, "tagLength"))
+			taglen = param->param.number;
+	}
 
 	if (!algo)
 		return -DREW_ERR_INVALID;
@@ -87,6 +122,7 @@ static int hmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
 	p->outside.functbl->reset(&p->outside);
 	p->inside.functbl->clone(&p->inside, algo, 0);
 	p->inside.functbl->reset(&p->inside);
+	p->taglen = taglen ? taglen : p->digestsz;
 
 	if (p->blksz > BUFFER_SIZE || p->digestsz > BUFFER_SIZE) {
 		drew_mem_sfree(p);
@@ -145,7 +181,7 @@ static int hmac_setkey(drew_mac_t *ctxt, const uint8_t *data, size_t len)
 		keyhash.functbl->clone(&keyhash, &ctx->inside, 0);
 		keyhash.functbl->reset(&keyhash);
 		keyhash.functbl->update(&keyhash, data, len);
-		keyhash.functbl->final(&keyhash, ctx->keybuf, 0);
+		keyhash.functbl->final(&keyhash, ctx->keybuf, ctx->digestsz, 0);
 		keyhash.functbl->fini(&keyhash, 0);
 		ctx->keybufsz = len = ctx->digestsz;
 	}
@@ -198,11 +234,13 @@ static int hmac_final(drew_mac_t *ctx, uint8_t *digest, int flags)
 	struct hmac *c = ctx->ctx;
 	uint8_t buf[BUFFER_SIZE];
 
-	c->inside.functbl->final(&c->inside, buf, 0);
+	c->inside.functbl->final(&c->inside, buf, c->digestsz, 0);
 	c->outside.functbl->update(&c->outside, buf, c->digestsz);
-	c->outside.functbl->final(&c->outside, digest, 0);
+	c->outside.functbl->final(&c->outside, buf, c->digestsz, 0);
 	c->inside.functbl->reset(&c->inside);
 	c->outside.functbl->reset(&c->outside);
+
+	memcpy(digest, buf, c->taglen);
 
 	memset(buf, 0, sizeof(buf));
 
@@ -380,7 +418,7 @@ int hmack_info(int op, void *p)
 	int hop = DREW_HASH_BLKSIZE;
 	switch (op) {
 		case DREW_KDF_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_KDF_SIZE:
 			hop = DREW_HASH_SIZE;
 		case DREW_KDF_BLKSIZE:
@@ -388,6 +426,29 @@ int hmack_info(int op, void *p)
 				return -DREW_ERR_MORE_INFO;
 			ctx = kdf->ctx;
 			return ctx->outside.functbl->info(hop, &ctx->outside);
+		case DREW_KDF_ENDIAN:
+			return 0;
+		case DREW_KDF_INTSIZE:
+			return sizeof(struct hmac);
+	}
+	return -DREW_ERR_INVALID;
+}
+
+int hmack_info2(const drew_kdf_t *kdf, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	struct hmac *ctx;
+	int hop = DREW_HASH_BLKSIZE;
+	switch (op) {
+		case DREW_KDF_VERSION:
+			return CURRENT_ABI;
+		case DREW_KDF_SIZE_CTX:
+			hop = DREW_HASH_SIZE;
+		case DREW_KDF_BLKSIZE_CTX:
+			if (!kdf)
+				return -DREW_ERR_MORE_INFO;
+			ctx = kdf->ctx;
+			return ctx->outside.functbl->info2(&ctx->outside, hop, NULL, NULL);
 		case DREW_KDF_ENDIAN:
 			return 0;
 		case DREW_KDF_INTSIZE:
@@ -521,13 +582,13 @@ static int hmack_test(void *p, const drew_loader_t *ldr)
 
 
 static drew_mac_functbl_t hmac_functbl = {
-	hmac_info, hmac_init, hmac_clone, hmac_reset, hmac_fini, hmac_setkey,
-	hmac_update, hmac_update, hmac_final, hmac_test
+	hmac_info, hmac_info2, hmac_init, hmac_clone, hmac_reset, hmac_fini,
+	hmac_setkey, hmac_update, hmac_update, hmac_final, hmac_test
 };
 
 static drew_kdf_functbl_t hmack_functbl = {
-	hmack_info, hmack_init, hmack_clone, hmack_reset, hmack_fini, hmack_setkey,
-	hmack_setsalt, hmack_setcount, hmack_generate, hmack_test
+	hmack_info, hmack_info2, hmack_init, hmack_clone, hmack_reset, hmack_fini,
+	hmack_setkey, hmack_setsalt, hmack_setcount, hmack_generate, hmack_test
 };
 
 struct plugin {

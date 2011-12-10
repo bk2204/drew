@@ -1,6 +1,8 @@
 include config
 
-CATEGORIES		:= hash block mode mac stream prng bignum pkenc pksig kdf
+VERSION			:= $(shell test -d .git && git describe)
+
+CATEGORIES		:= hash block mode mac stream prng bignum pkenc pksig kdf ecc
 
 TEST_SRC		+= libmd/testsuite.c
 TEST_OBJ		:= ${SRC:.c=.o} ${TEST_SRC:.c=.o}
@@ -31,7 +33,7 @@ CLIKEFLAGS		+= -fstack-protector
 endif
 
 CPPFLAGS		+= -Iinclude
-CLIKEFLAGS		+= -Wall -fPIC -O3 -g -pipe
+CLIKEFLAGS		+= -Wall -Werror -fPIC -O3 -g -pipe
 CLIKEFLAGS		+= -D_POSIX_SOURCE=200112L -D_XOPEN_SOURCE=600
 CLIKEFLAGS		+= -fextended-identifiers
 CLIKEFLAGS		+= -floop-interchange -floop-block
@@ -51,6 +53,8 @@ LIBS			+= ${LDFLAGS} -lrt -ldl
 .TARGET			= $@
 .ALLSRC			= $^
 .IMPSRC			= $<
+
+SONAME			= -Wl,-soname,$(@F)
 
 all:
 
@@ -106,6 +110,16 @@ ${PLUGINS}: %: %.so
 $(PLUGINS:=.so): %.so: %.o
 	${CXX} ${LIBCFLAGS} ${CXXFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
+version:
+	printf '#define DREW_STRING_VERSION "$(VERSION)"\n' > $@
+	printf '#define DREW_VERSION %s\n' \
+		`echo $(VERSION) | perl -pe 's/v(\d+)(-.*)?/$$1/'` >> $@
+
+.PHONY: version
+
+include/version.h: version
+	if ! cmp -s $@ $<; then mv $< $@; else $(RM) $<; fi
+
 plugins: ${PLUGINS}
 	[ -d plugins ] || mkdir plugins
 	for i in ${.ALLSRC}; do cp $$i.so plugins/`basename $$i .so`; done
@@ -118,6 +132,7 @@ clean:
 	${RM} -f ${DREW_SONAME} ${DREW_SYMLINK}
 	${RM} -f ${TEST_BINARIES}
 	${RM} -f ${UTILITIES}
+	${RM} -f include/version.h
 	${RM} -fr ${PLUGINS} plugins/
 	${RM} -r install
 	find -name '*.o' | xargs -r rm
@@ -150,6 +165,13 @@ testx-scripts: $(TEST_BINARIES) plugins
 		xargs env LD_LIBRARY_PATH=. test/test-$$i -t; \
 		done
 
+test-api: $(TEST_BINARIES) plugins
+	for i in $(CATEGORIES); do \
+		find plugins -type f | sed -e 's,.*/,,g' | \
+		sort | grep -vE '.rdf$$' | \
+		xargs env LD_LIBRARY_PATH=. test/test-$$i -p; \
+		done
+
 speed-scripts: $(TEST_BINARIES) plugins
 	for i in $(CATEGORIES); do \
 		find plugins -type f | sed -e 's,.*/,,g' | \
@@ -164,7 +186,8 @@ INSTDIR			:= $(CFG_INSTALL_DIR)
 install: all
 	$(INSTALL) -m 755 -d $(INSTDIR)/lib/drew/plugins
 	$(INSTALL) -m 755 -d $(INSTDIR)/include
-	for i in plugins/*; do $(INSTALL) -m 644 $$i $(INSTDIR)/lib/drew/plugins; done
+	find plugins -type f | \
+		xargs -I%s $(INSTALL) -m 644 %s $(INSTDIR)/lib/drew/plugins
 	$(INSTALL) -m 644 libdrew*.so.* $(INSTDIR)/lib
 	for i in include/*; do \
 		[ -f $$i ] || \
@@ -175,7 +198,7 @@ install: all
 
 uninstall:
 	$(RM) $(INSTDIR)/lib/libdrew*.so.*
-	for i in plugins/*; do $(RM) $(INSTDIR)/lib/drew/$$i; done
+	find plugins -type f | xargs -I%s $(RM) $(INSTDIR)/lib/drew/%s
 	for i in include/*; do \
 		[ -f $$i ] || \
 			($(RM) $(INSTDIR)/$$i/*.h; $(RMDIR) $(INSTDIR)/$$i); \

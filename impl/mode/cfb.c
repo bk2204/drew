@@ -47,10 +47,12 @@ struct cfb {
 };
 
 static int cfb_info(int op, void *p);
+static int cfb_info2(const drew_mode_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in);
 static int cfb_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param);
 static int cfb_reset(drew_mode_t *ctx);
-static int cfb_setpad(drew_mode_t *ctx, const drew_pad_t *pad);
+static int cfb_resync(drew_mode_t *ctx);
 static int cfb_setblock(drew_mode_t *ctx, const drew_block_t *algoctx);
 static int cfb_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len);
 static int cfb_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
@@ -71,32 +73,56 @@ static int cfb_decryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 		const uint8_t *in, size_t inlen);
 
 static const drew_mode_functbl_t cfb_functbl = {
-	cfb_info, cfb_init, cfb_clone, cfb_reset, cfb_fini, cfb_setpad,
+	cfb_info, cfb_info2, cfb_init, cfb_clone, cfb_reset, cfb_fini,
 	cfb_setblock, cfb_setiv, cfb_encrypt, cfb_decrypt, cfb_encrypt, cfb_decrypt,
-	cfb_setdata, cfb_encryptfinal, cfb_decryptfinal, cfb_test
+	cfb_setdata, cfb_encryptfinal, cfb_decryptfinal, cfb_resync, cfb_test
 };
 
 static const drew_mode_functbl_t cfb_functblfast = {
-	cfb_info, cfb_init, cfb_clone, cfb_reset, cfb_fini, cfb_setpad,
+	cfb_info, cfb_info2, cfb_init, cfb_clone, cfb_reset, cfb_fini,
 	cfb_setblock, cfb_setiv, cfb_encrypt, cfb_decrypt,
 	cfb_encryptfast, cfb_decryptfast, cfb_setdata,
-	cfb_encryptfinal, cfb_decryptfinal, cfb_test
+	cfb_encryptfinal, cfb_decryptfinal, cfb_resync, cfb_test
 };
 
 static int cfb_info(int op, void *p)
 {
 	switch (op) {
 		case DREW_MODE_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_MODE_INTSIZE:
 			return sizeof(struct cfb);
 		case DREW_MODE_FINAL_INSIZE:
 		case DREW_MODE_FINAL_OUTSIZE:
 			return 0;
 		case DREW_MODE_QUANTUM:
+			return 1;
 		default:
-			return DREW_ERR_INVALID;
+			return -DREW_ERR_INVALID;
 	}
+}
+
+static int cfb_info2(const drew_mode_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	switch (op) {
+		case DREW_MODE_VERSION:
+			return CURRENT_ABI;
+		case DREW_MODE_INTSIZE:
+			return sizeof(struct cfb);
+		case DREW_MODE_FINAL_INSIZE_CTX:
+		case DREW_MODE_FINAL_OUTSIZE_CTX:
+			return 0;
+		case DREW_MODE_BLKSIZE_CTX:
+			return 1;
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
+static int cfb_resync(drew_mode_t *ctx)
+{
+	return -DREW_ERR_NOT_IMPL;
 }
 
 static int cfb_reset(drew_mode_t *ctx)
@@ -134,11 +160,6 @@ static int cfb_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	return 0;
 }
 
-static int cfb_setpad(drew_mode_t *ctx, const drew_pad_t *algoname)
-{
-	return -EINVAL;
-}
-
 static int cfb_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 {
 	struct cfb *c = ctx->ctx;
@@ -169,7 +190,7 @@ static int cfb_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len)
 	struct cfb *c = ctx->ctx;
 
 	if (c->blksize != len)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	memcpy(c->prev, iv, len);
 	memcpy(c->buf, iv, len);
@@ -490,7 +511,7 @@ static int cfb_test(void *p, const drew_loader_t *ldr)
 	int result = 0, tres;
 	size_t ntests = 0;
 	if (!ldr)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	if ((tres = cfb_test_cast5(ldr, &ntests)) >= 0) {
 		result <<= ntests;
@@ -517,10 +538,11 @@ static int cfb_fini(drew_mode_t *ctx, int flags)
 		memset(c->buf, 0, sizeof(c->buf));
 		memset(c->prev, 0, sizeof(c->prev));
 	}
-	else
+	else {
 		drew_mem_sfree(c);
+		ctx->ctx = NULL;
+	}
 
-	ctx->ctx = NULL;
 	return 0;
 }
 
@@ -548,7 +570,7 @@ int DREW_PLUGIN_NAME(cfb)(void *ldr, int op, int id, void *p)
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 
 	if (id < 0 || id >= nplugins)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	switch (op) {
 		case DREW_LOADER_LOOKUP_NAME:
@@ -568,7 +590,7 @@ int DREW_PLUGIN_NAME(cfb)(void *ldr, int op, int id, void *p)
 			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1);
 			return 0;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
 UNEXPORT()

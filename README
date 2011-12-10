@@ -61,3 +61,21 @@ not always checked and things may break if you do not ensure this.
 Please report bugs and wishlist requests on the github issue tracker.  Until a
 mailing list is set up, please send email to brian m. carlson at
 <sandals@crustytoothpaste.net>.
+
+Contributing
+------------
+
+Contributions are generally welcome.  Implementations of algorithms are
+generally acceptable provided that they are under the GPLv2/Apache 2.0
+dual-license, under the MIT License, or in the public domain.  If your
+implementation is the first implementation of an algorithm in the project, it
+should be written in portable C or C++ and come with a variety of tests, both
+internal and external.  A new implementation of an algorithm for which there is
+already an implementation should offer something that the original does not,
+such as speed or more options, even if these are limited to a particular
+platform.  A different license is generally not sufficient in this case.
+
+Algorithms should be legitimate, publicly documented cryptographic algorithms.
+Specifications and test vectors should be available at no cost via the Internet.
+
+Contributions are generally preferred as git repositories.

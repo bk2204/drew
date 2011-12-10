@@ -35,6 +35,12 @@ drew::Serpent::Serpent()
 {
 }
 
+drew::Serpent::Serpent(const Serpent &other)
+{
+	m_key = m_keybuf + 8;
+	memcpy(m_keybuf, other.m_keybuf, sizeof(m_keybuf));
+}
+
 #define SBOX_OUT(a, b, c, d) \
 	do { x[0] = r##a; x[1] = r##b; x[2] = r##c; x[3] = r##d; } while (0)
 
@@ -464,7 +470,7 @@ static inline void si7(uint32_t *x)
 	SBOX_OUT(3, 0, 1, 4);
 }
 
-int drew::Serpent::SetKey(const uint8_t *key, size_t len)
+int drew::Serpent::SetKeyInternal(const uint8_t *key, size_t len)
 {
 	uint32_t *w = m_key = m_keybuf + 8;
 	memset(m_keybuf, 0, sizeof(m_keybuf));

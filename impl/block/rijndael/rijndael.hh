@@ -38,9 +38,8 @@ namespace drew {
 class Rijndael
 {
 	public:
-		typedef BigEndian endian_t;
 		Rijndael();
-		~Rijndael() {};
+		virtual ~Rijndael() {};
 		virtual int SetKey(const uint8_t *key, size_t sz) = 0;
 		virtual int Encrypt(uint8_t *out, const uint8_t *in) const = 0;
 		virtual int Decrypt(uint8_t *out, const uint8_t *in) const;
@@ -76,17 +75,22 @@ class Rijndael
 };
 
 template<unsigned BlockSize>
-class GenericRijndael : public Rijndael, public BlockCipher<BlockSize/8>
+class GenericRijndael : public Rijndael,
+	public BlockCipher<BlockSize/8, BigEndian>
 {
 	public:
 		static const size_t block_size = BlockSize / 8;
-		int SetKey(const uint8_t *key, size_t sz);
 		int Encrypt(uint8_t *, const uint8_t *) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const
 		{
 			return Rijndael::Decrypt(out, in);
 		}
+		int SetKey(const uint8_t *key, size_t sz)
+		{
+			return this->BlockCipher<BlockSize/8, BigEndian>::SetKey(key, sz);
+		}
 	protected:
+		int SetKeyInternal(const uint8_t *key, size_t sz);
 		static const size_t m_nb;
 		static const size_t m_bc;
 		static const uint64_t m_bcmask;

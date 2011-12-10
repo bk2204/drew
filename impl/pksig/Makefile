@@ -3,6 +3,7 @@ PKSIG_DIR						:= impl/pksig
 PLUGINS_PKSIG-${CFG_RSASIG}		+= rsa/rsasig
 PLUGINS_PKSIG-${CFG_RSASIGPGP}	+= rsa/rsasig-openpgp
 PLUGINS_PKSIG-${CFG_DSA}		+= dsa/dsa
+PLUGINS_PKSIG-${CFG_ECDSA}		+= ecdsa/ecdsa
 PLUGINS_PKSIG-${CFG_ELGAMALSIG}	+= elgamal/elgamalsig
 
 PKSIG_PLUGINS	:= $(patsubst %,${PKSIG_DIR}/%,$(PLUGINS_PKSIG-m))

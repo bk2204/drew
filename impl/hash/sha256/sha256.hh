@@ -32,6 +32,8 @@ class SHA256Transform
 	public:
 		typedef BigEndian endian;
 		virtual ~SHA256Transform() {}
+		static void ForwardTransform(uint32_t *state, const uint32_t *data);
+		static void InverseTransform(uint32_t *state, const uint32_t *data);
 		static void Transform(uint32_t *state, const uint8_t *data);
 };
 

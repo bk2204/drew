@@ -524,7 +524,7 @@ drew::TripleDES::TripleDES()
 {
 }
 
-int drew::DES::SetKey(const uint8_t *key, size_t len)
+int drew::DES::SetKeyInternal(const uint8_t *key, size_t len)
 {
 	uint8_t buffer[56+56+8];
 	uint8_t *const pc1m = buffer;
@@ -568,7 +568,7 @@ int drew::DES::SetKey(const uint8_t *key, size_t len)
 	return 0;
 }
 
-int drew::TripleDES::SetKey(const uint8_t *key, size_t len)
+int drew::TripleDES::SetKeyInternal(const uint8_t *key, size_t len)
 {
 	m_des1.SetKey(key, 8);
 	m_des2.SetKey(key+8, 8);

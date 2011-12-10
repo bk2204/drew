@@ -21,6 +21,8 @@ class SHA : public Hash<uint32_t, 20, 20, 64, BigEndian>
 		SHA();
 		virtual ~SHA() {}
 		void Reset();
+		static void ForwardTransform(quantum_t *state, const quantum_t *data);
+		static void InverseTransform(quantum_t *state, const quantum_t *data);
 		static void Transform(quantum_t *state, const uint8_t *data);
 	protected:
 		virtual void Transform(const uint8_t *data)

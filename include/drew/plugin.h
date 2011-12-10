@@ -28,15 +28,20 @@
 extern "C" {
 #endif
 
+/* object is a URI or IRI. */
 #define DREW_LOADER_MD_URI 0
 #define DREW_LOADER_MD_IRI DREW_LOADER_MD_URI
+/* object is a literal value. */
 #define DREW_LOADER_MD_LITERAL 1
+/* object is the name of a blank node. */
+#define DREW_LOADER_MD_BLANK 2
 
 typedef struct {
-	int version;	/* Must be zero. */
-	char *predicate;
-	int type;
-	char *object;
+	int version;		/* Must be one. */
+	char *subject;		/* Must be NULL (rdf:about="") or a blank node name. */
+	char *predicate;	/* The full IRI of an RDF predicate. */
+	int type;			/* A DREW_LOADER_MD constant. */
+	char *object;		/* An IRI, literal value, or blank node name. */
 } drew_metadata_t;
 
 struct drew_loader_s;
@@ -62,6 +67,7 @@ typedef struct drew_loader_s drew_loader_t;
 #define DREW_TYPE_PKENC 8
 #define DREW_TYPE_PKSIG 9
 #define DREW_TYPE_KDF 10
+#define DREW_TYPE_ECC 11
 
 /* The system dynamic loader failed. */
 #define DREW_ERR_RESOLUTION		0x10001

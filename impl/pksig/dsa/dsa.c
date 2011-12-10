@@ -44,6 +44,8 @@ struct dsa {
 };
 
 static int dsa_info(int op, void *p);
+static int dsa_info2(const drew_pksig_t *, int, drew_param_t *,
+		const drew_param_t *);
 static int dsa_init(drew_pksig_t *, int,
 		const drew_loader_t *, const drew_param_t *);
 static int dsa_clone(drew_pksig_t *, const drew_pksig_t *, int);
@@ -62,6 +64,7 @@ static int dsa_test(void *, const drew_loader_t *);
 
 static const drew_pksig_functbl_t dsa_functbl = {
 	.info = dsa_info,
+	.info2 = dsa_info2,
 	.init = dsa_init,
 	.clone = dsa_clone,
 	.fini = dsa_fini,
@@ -123,7 +126,7 @@ static int dsa_info(int op, void *p)
 	};
 	switch (op) {
 		case DREW_PKSIG_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_PKSIG_INTSIZE:
 			return sizeof(struct dsa);
 		case DREW_PKSIG_SIGN_IN:
@@ -150,6 +153,19 @@ static int dsa_info(int op, void *p)
 			return name_to_index(param, DIM(verify_out), verify_out);
 		case DREW_PKSIG_VERIFY_OUT_INDEX_TO_NAME:
 			return index_to_name(param, DIM(verify_out), verify_out);
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
+static int dsa_info2(const drew_pksig_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	switch (op) {
+		case DREW_PKSIG_VERSION:
+			return CURRENT_ABI;
+		case DREW_PKSIG_INTSIZE:
+			return sizeof(struct dsa);
 		default:
 			return -DREW_ERR_INVALID;
 	}
@@ -606,7 +622,7 @@ int DREW_PLUGIN_NAME(dsa)(void *ldr, int op, int id, void *p)
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 
 	if (id < 0 || id >= nplugins)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	switch (op) {
 		case DREW_LOADER_LOOKUP_NAME:
@@ -626,7 +642,7 @@ int DREW_PLUGIN_NAME(dsa)(void *ldr, int op, int id, void *p)
 			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1);
 			return 0;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
 UNEXPORT()

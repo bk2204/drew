@@ -118,12 +118,12 @@ class Hash
 			E::Copy(buf+trip, len, sizeof(len), sizeof(len));
 			Transform(buf);
 		}
-		virtual void GetDigest(uint8_t *digest, bool nopad)
+		virtual void GetDigest(uint8_t *digest, size_t len, bool nopad)
 		{
 			if (!nopad)
 				Pad();
 
-			E::CopyCarefully(digest, m_hash, Size);
+			E::CopyCarefully(digest, m_hash, len);
 		}
 		virtual size_t GetDigestSize() const
 		{

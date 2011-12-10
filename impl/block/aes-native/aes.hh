@@ -38,15 +38,15 @@
 HIDE()
 namespace drew {
 
-class AESNative : public BlockCipher<16>
+class AESNative : public BlockCipher<16, BigEndian>
 {
 	public:
 		AESNative() {}
 		~AESNative() {};
-		virtual int SetKey(const uint8_t *key, size_t sz) = 0;
 		virtual int Encrypt(uint8_t *out, const uint8_t *in) const = 0;
 		virtual int Decrypt(uint8_t *out, const uint8_t *in) const = 0;
 	protected:
+		virtual int SetKeyInternal(const uint8_t *key, size_t sz) = 0;
 		static const size_t m_nb;
 		size_t m_nr, m_nk;
 	private:
@@ -62,10 +62,10 @@ class AESNI : public AESNative
 		typedef int vector4i_t __attribute__ ((vector_size (16)));
 		AESNI();
 		~AESNI() {};
-		int SetKey(const uint8_t *key, size_t sz);
 		int Encrypt(uint8_t *out, const uint8_t *in) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
 	protected:
+		int SetKeyInternal(const uint8_t *key, size_t sz);
 		void SetKeyEncrypt(const uint8_t *key, size_t sz);
 		void SetKeyDecrypt(void);
 		void SetKeyEncrypt128(const uint8_t *key);

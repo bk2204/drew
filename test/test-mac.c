@@ -57,6 +57,7 @@ struct testcase {
 	size_t maclen;
 	uint8_t *pt;
 	uint8_t *ct;
+	size_t nrepeats;
 };
 
 const char *test_get_filename()
@@ -100,6 +101,7 @@ void *test_clone_data(void *tc, int flags)
 	q->algo = strdup(p->algo);
 	q->mac = strdup(p->mac);
 	q->klen = p->klen;
+	q->nrepeats = p->nrepeats;
 	q->key = malloc(q->klen);
 	memcpy(q->key, p->key, q->klen);
 	q->len = p->len;
@@ -134,11 +136,15 @@ int test_execute(void *data, const char *name, const void *tbl,
 		return TEST_CORRUPT;
 
 	drew_mac_t ctx;
-	drew_param_t param;
+	drew_param_t param, tagparam;
 	drew_hash_t hash;
 	drew_block_t block;
 
 	memset(&param, 0, sizeof(param));
+
+	tagparam.name = "tagLength";
+	tagparam.next = &param;
+	tagparam.param.number = tc->maclen;
 
 	if (!(res = make_new_ctx(tep->ldr, tc->algo, &hash, DREW_TYPE_HASH))) {
 		param.name = "digest";
@@ -157,9 +163,10 @@ int test_execute(void *data, const char *name, const void *tbl,
 
 	uint8_t *buf = malloc(tc->maclen);
 	ctx.functbl = tbl;
-	ctx.functbl->init(&ctx, 0, tep->ldr, &param);
+	ctx.functbl->init(&ctx, 0, tep->ldr, &tagparam);
 	ctx.functbl->setkey(&ctx, tc->key, tc->klen);
-	ctx.functbl->update(&ctx, tc->pt, tc->len);
+	for (size_t i = 0; i < tc->nrepeats; i++)
+		ctx.functbl->update(&ctx, tc->pt, tc->len);
 	ctx.functbl->final(&ctx, buf, 0);
 	ctx.functbl->fini(&ctx, 0);
 	if (memcmp(buf, tc->ct, tc->maclen))
@@ -189,6 +196,10 @@ int test_process_testcase(void *data, int type, const char *item,
 		case 'm':
 			free(tc->mac);
 			tc->mac = strdup(item);
+			break;
+		case 'r':
+			if (sscanf(item, "%zu", &tc->nrepeats) != 1)
+				return TEST_CORRUPT;
 			break;
 		case 'K':
 			if (sscanf(item, "%zu", &tc->klen) != 1)

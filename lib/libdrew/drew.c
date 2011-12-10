@@ -456,7 +456,8 @@ static int special_metadata(const drew_loader_t *ldr, int id,
 
 	if (!stat(rdfpath, &st)) {
 		if (meta) {
-			meta->version = 0;
+			meta->version = 1;
+			meta->subject = NULL;
 			meta->predicate =
 				strdup("http://www.w3.org/2000/01/rdf-schema#seeAlso");
 			meta->type = DREW_LOADER_MD_URI;
@@ -513,4 +514,16 @@ int drew_loader_get_metadata(const drew_loader_t *ldr, int id, int item,
 	}
 
 	return -DREW_ERR_NONEXISTENT;
+}
+
+#include <version.h>
+int drew_get_version(int op, const char **sp, void *p)
+{
+	if (op != 0)
+		return -DREW_ERR_INVALID;
+	if (p)
+		return -DREW_ERR_INVALID;
+
+	*sp = DREW_STRING_VERSION;
+	return DREW_VERSION;
 }

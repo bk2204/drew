@@ -70,7 +70,7 @@ static int sha512tinfo(int op, void *p)
 	const drew_param_t *param = reinterpret_cast<const drew_param_t *>(p);
 	switch (op) {
 		case DREW_HASH_VERSION:
-			return 2;
+			return 3;
 		case DREW_HASH_QUANTUM:
 			return sizeof(SHA512t::quantum_t);
 		case DREW_HASH_SIZE:
@@ -87,6 +87,66 @@ static int sha512tinfo(int op, void *p)
 			return -DREW_ERR_INVALID;
 	}
 }
+
+static const int hash_sizes[] = {
+	224/8, 256/8
+};
+
+static const int block_sizes[] = {
+	224/8, 256/8, 384/8, 512/8
+};
+
+static const int buffer_sizes[] = {
+	1024/8
+};
+
+static int sha512tinfo2(const drew_hash_t *ctxt, int op, drew_param_t *outp,
+		const drew_param_t *inp)
+{
+	using namespace drew;
+	switch (op) {
+		case DREW_HASH_VERSION:
+			return 3;
+		case DREW_HASH_SIZE_LIST:
+			for (drew_param_t *p = outp; p; p = p->next)
+				if (!strcmp(p->name, "digestSize")) {
+					p->param.array.ptr = (void *)hash_sizes;
+					p->param.array.len = DIM(hash_sizes);
+				}
+			return 0;
+		case DREW_HASH_BLKSIZE_LIST:
+			for (drew_param_t *p = outp; p; p = p->next)
+				if (!strcmp(p->name, "blockSize")) {
+					p->param.array.ptr = (void *)block_sizes;
+					p->param.array.len = DIM(block_sizes);
+				}
+			return 0;
+		case DREW_HASH_BUFSIZE_LIST:
+			for (drew_param_t *p = outp; p; p = p->next)
+				if (!strcmp(p->name, "bufferSize")) {
+					p->param.array.ptr = (void *)buffer_sizes;
+					p->param.array.len = DIM(buffer_sizes);
+				}
+			return 0;
+		case DREW_HASH_SIZE_CTX:
+			if (ctxt && ctxt->ctx) {
+				const SHA512t *ctx = (const SHA512t *)ctxt->ctx;
+				return ctx->GetDigestSize();
+			}
+			return -DREW_ERR_MORE_INFO;
+		case DREW_HASH_BLKSIZE_CTX:
+			return SHA512t::block_size;
+		case DREW_HASH_BUFSIZE_CTX:
+			return SHA512t::buffer_size;
+		case DREW_HASH_INTSIZE:
+			return sizeof(SHA512t);
+		case DREW_HASH_ENDIAN:
+			return SHA512t::endian_t::GetEndianness();
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
 
 static int sha512tinit(drew_hash_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *param)

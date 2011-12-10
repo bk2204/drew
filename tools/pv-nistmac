@@ -1,0 +1,69 @@
+#! /usr/bin/perl
+
+$algname = "";
+$altalgname = "";
+$cnt = 0;
+$keysz = 0;
+$key = "";
+$altkey = "";
+$altkeysz = 0;
+$mlen = 0;
+
+while (<>) {
+	if (/Algorithms tested:Alg = (\w+) KeySize = (\d+)/) {
+		if ($1 eq "AES") {
+			$algname = "AES$2";
+			$altalgname = "Rijndael";
+		}
+		else {
+			$algname = $1;
+		}
+		# The way NIST has defined this field is utter idiocy.  For 3DES, it's
+		# the number of 64-bit keys and for AES it's the number of bits.
+		$keysz = int($2);
+		if ($keysz < 16) {
+			$keysz *= 8;
+		}
+		else {
+			$keysz /= 8;
+		}
+		printf "T%04x a%s m K%d\n", $cnt, $algname, $keysz;
+	}
+	elsif (/Mlen = (\d+)/) {
+		$mlen = int($1);
+	}
+	elsif (/Key = ([A-Fa-f0-9]+)/) {
+		printf "T%04x k%s\n", $cnt, $1;
+	}
+	elsif (/Key([123]) = ([A-Fa-f0-9]+)/) {
+		$key .= $2;
+		if (length($key) == $keysz*2) {
+			printf "T%04x k%s\n", $cnt, $key;
+			$altkey = $key;
+			$key = "";
+		}
+		elsif ($1 eq "3") {
+			$altkey .= $key;
+			$altkeysz = length($altkey)/2;
+			$key = "";
+		}
+	}
+	elsif (/Msg = ([A-Fa-f0-9]+)/) {
+		# NIST feels compelled to put dummy data in when the message is empty.
+		# This is not limited to MAC testcases; they always do this.
+		printf "T%04x p%s\n", $cnt, $mlen ? $1 : "";
+	}
+	elsif (/Mac = ([A-Fa-f0-9]+)/) {
+		printf "T%04x c%s\n", $cnt, $1;
+		$cnt++;
+		if ($altalgname) {
+			printf "T%04x a%s\n", $cnt, $altalgname;
+			$cnt++;
+		}
+		if ($altkeysz) {
+			printf "T%04x K%s k%s\n", $cnt, $altkeysz, $altkey;
+			$cnt++;
+			printf "T%04x K%s\n", $cnt, $keysz;
+		}
+	}
+}

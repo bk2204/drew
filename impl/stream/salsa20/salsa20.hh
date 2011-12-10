@@ -23,17 +23,46 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "salsa.h"
 #include "util.hh"
 
 HIDE()
 namespace drew {
 
-class Salsa20Keystream
+class Salsa20GenericKeystream
 {
 	public:
 		typedef LittleEndian endian_t;
+		Salsa20GenericKeystream() {}
+		virtual ~Salsa20GenericKeystream() {}
+		virtual Salsa20GenericKeystream *Clone() const = 0;
+		virtual void SetKey(const uint8_t *key, size_t sz) = 0;
+		virtual void SetNonce(const uint8_t *key, size_t sz) = 0;
+		virtual void Reset() = 0;
+		virtual void FillBuffer(uint8_t *) = 0;
+		virtual void FillBufferAligned(uint8_t *) = 0;
+		virtual void SetRounds(size_t rounds)
+		{
+			nrounds = rounds;
+		}
+		size_t GetKeySize() const
+		{
+			return keysz;
+		}
+	protected:
+		size_t keysz;
+		size_t nrounds;
+};
+
+class Salsa20Keystream : public Salsa20GenericKeystream
+{
+	public:
 		Salsa20Keystream();
 		~Salsa20Keystream() {}
+		Salsa20GenericKeystream *Clone() const
+		{
+			return new Salsa20Keystream(*this);
+		}
 		void SetKey(const uint8_t *key, size_t sz);
 		void SetNonce(const uint8_t *key, size_t sz);
 		void Reset();
@@ -48,27 +77,63 @@ class Salsa20Keystream
 		};
 		virtual void DoHash(AlignedData &cur);
 		AlignedData state;
-		size_t keysz;
-		size_t nrounds;
 		uint64_t ctr;
 };
+
+#ifdef SALSA_HAVE_ASM
+class Salsa20AssemblerKeystream : public Salsa20GenericKeystream
+{
+	public:
+		struct AlignedData
+		{
+			uint32_t buf[16] ALIGNED_T;
+		};
+		Salsa20AssemblerKeystream();
+		~Salsa20AssemblerKeystream() {}
+		Salsa20GenericKeystream *Clone() const
+		{
+			return new Salsa20AssemblerKeystream(*this);
+		}
+		void SetKey(const uint8_t *key, size_t sz);
+		void SetNonce(const uint8_t *key, size_t sz);
+		void Reset();
+		void FillBuffer(uint8_t *);
+		void FillBufferAligned(uint8_t *);
+	protected:
+	private:
+		AlignedData state;
+};
+#endif
 
 class Salsa20
 {
 	public:
 		Salsa20();
+		Salsa20(Salsa20GenericKeystream *ks);
 		Salsa20(size_t);
-		~Salsa20() {}
+		Salsa20(Salsa20GenericKeystream *ks, size_t);
+		Salsa20(const Salsa20 &other)
+		{
+			m_ks = other.m_ks->Clone();
+		}
+		~Salsa20()
+		{
+			delete m_ks;
+		}
 		void Reset();
 		void SetNonce(const uint8_t *, size_t sz);
 		void SetKey(const uint8_t *key, size_t sz);
 		void Encrypt(uint8_t *out, const uint8_t *in, size_t len);
 		void Decrypt(uint8_t *out, const uint8_t *in, size_t len);
 		void EncryptFast(uint8_t *out, const uint8_t *in, size_t len);
+		size_t GetKeySize() const
+		{
+			return m_ks->GetKeySize();
+		}
 	protected:
 	private:
-		Salsa20Keystream m_ks;
-		uint8_t m_buf[64];
+		Salsa20GenericKeystream *m_ks;
+		uint8_t m_buf[64] ALIGNED_T;
 		size_t m_nbytes;
 };
 

@@ -38,6 +38,7 @@ inline static int prng_info(int op, void *p, int blksize)
 		case DREW_PRNG_VERSION:
 			return 2;
 		case DREW_PRNG_BLKSIZE:
+		case DREW_PRNG_BLKSIZE_CTX:
 			return blksize;
 		case DREW_PRNG_SEEDABLE:
 			return 0;
@@ -108,6 +109,8 @@ static int prng_entropy(const drew_prng_t *ctx);
 static int prng_test(void *, const drew_loader_t *);
 
 static int dur_info(int op, void *p);
+static int dur_info2(const drew_prng_t *, int op, drew_param_t *,
+		const drew_param_t *);
 static int dur_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
 static int dur_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags);
@@ -120,10 +123,10 @@ static int rdrand_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
 static int rdrand_clone(drew_prng_t *newctx, const drew_prng_t *oldctx,
 		int flags);
 static int rdrand_fini(drew_prng_t *ctx, int flags);
-PLUGIN_FUNCTBL(rdrand, rdrand_info, rdrand_init, rdrand_clone, rdrand_fini, prng_seed, prng_bytes, prng_entropy, prng_test);
+PLUGIN_FUNCTBL(rdrand, rdrand_info, rdrand_info2, rdrand_init, rdrand_clone, rdrand_fini, prng_seed, prng_bytes, prng_entropy, prng_test);
 #endif
 
-PLUGIN_FUNCTBL(dur, dur_info, dur_init, dur_clone, dur_fini, prng_seed, prng_bytes, prng_entropy, prng_test);
+PLUGIN_FUNCTBL(dur, dur_info, dur_info2, dur_init, dur_clone, dur_fini, prng_seed, prng_bytes, prng_entropy, prng_test);
 
 
 static int prng_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
@@ -156,6 +159,12 @@ static int dur_info(int op, void *p)
 	return prng_info<drew::DevURandom>(op, p, 1);
 }
 
+static int dur_info2(const drew_prng_t *, int op, drew_param_t *,
+		const drew_param_t *)
+{
+	return prng_info<drew::DevURandom>(op, NULL, 1);
+}
+
 static int dur_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *)
 {
@@ -176,6 +185,12 @@ static int dur_fini(drew_prng_t *ctx, int flags)
 static int rdrand_info(int op, void *p)
 {
 	return prng_info<drew::RDRAND>(op, p, 4);
+}
+
+static int rdrand_info2(const drew_prng_t *, int op, drew_param_t *,
+		const drew_param_t *)
+{
+	return prng_info<drew::RDRAND>(op, NULL, 4);
 }
 
 static int rdrand_init(drew_prng_t *ctx, int flags, const drew_loader_t *,

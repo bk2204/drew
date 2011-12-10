@@ -22,9 +22,6 @@
 
 #define FILENAME "test/vectors-mode"
 
-#define STUBS_API 1
-#include "stubs.c"
-
 int test_get_type(void)
 {
 	return DREW_TYPE_MODE;
@@ -183,24 +180,28 @@ int test_execute(void *data, const char *name, const void *tbl,
 	bctx->functbl->setkey(bctx, tc->key, tc->klen, 0);
 	blksize = bctx->functbl->info(DREW_BLOCK_BLKSIZE, 0);
 
-	if (((tc->feedbackBits / 8) == blksize) && !(tc->len % blksize) &&
-			!tc->aadlen && tc->ctlen == tc->len)
+	if (((tc->feedbackBits / 8) == blksize) && !(tc->len % blksize))
 		use_fast = true;
 
 	uint8_t *buf = malloc(tc->ctlen), *buf2 = malloc(tc->ctlen);
 	ctx.functbl = tbl;
-	ctx.functbl->init(&ctx, 0, tep->ldr, tc->feedbackBits ? &param : NULL);
-	ctx.functbl->setblock(&ctx, bctx);
-	ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
-	if (tc->aadlen)
-		ctx.functbl->setdata(&ctx, tc->aad, tc->aadlen);
-	ctx.functbl->encrypt(&ctx, buf, tc->pt, tc->len);
-	if (tc->len != tc->ctlen)
-		ctx.functbl->encryptfinal(&ctx, buf+tc->len, tc->ctlen-tc->len, NULL,
-				0);
-	if (use_fast) {
+	if (ctx.functbl->init(&ctx, 0, tep->ldr, tc->feedbackBits ? &param : NULL)){
+		result = TEST_INTERNAL_ERR;
+		goto out;
+	}
+	for (int i = 0; i <= use_fast; i++) {
+		uint8_t *buffer = i ? buf2 : buf;
+		ctx.functbl->setblock(&ctx, bctx);
 		ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
-		ctx.functbl->encryptfast(&ctx, buf2, tc->pt, tc->len);
+		if (tc->aadlen)
+			ctx.functbl->setdata(&ctx, tc->aad, tc->aadlen);
+		if (!i)
+			ctx.functbl->encrypt(&ctx, buffer, tc->pt, tc->len);
+		else
+			ctx.functbl->encryptfast(&ctx, buffer, tc->pt, tc->len);
+		if (tc->len != tc->ctlen)
+			ctx.functbl->encryptfinal(&ctx, buffer+tc->len, tc->ctlen-tc->len,
+					NULL, 0);
 	}
 	ctx.functbl->fini(&ctx, 0);
 	if (memcmp(buf, tc->ct, tc->ctlen)) {
@@ -213,18 +214,20 @@ int test_execute(void *data, const char *name, const void *tbl,
 	}
 
 	ctx.functbl->init(&ctx, 0, tep->ldr, tc->feedbackBits ? &param : NULL);
-	ctx.functbl->setblock(&ctx, bctx);
-	ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
-	if (tc->aadlen)
-		ctx.functbl->setdata(&ctx, tc->aad, tc->aadlen);
-	ctx.functbl->decrypt(&ctx, buf, tc->ct, tc->len);
-	if (tc->len != tc->ctlen)
-		if (ctx.functbl->decryptfinal(&ctx, NULL, 0, tc->ct+tc->len,
-					tc->ctlen-tc->len) < 0)
-			result = TEST_FAILED;
-	if (use_fast) {
+	for (int i = 0; i <= use_fast; i++) {
+		uint8_t *buffer = i ? buf2 : buf;
+		ctx.functbl->setblock(&ctx, bctx);
 		ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
-		ctx.functbl->decryptfast(&ctx, buf2, tc->ct, tc->len);
+		if (tc->aadlen)
+			ctx.functbl->setdata(&ctx, tc->aad, tc->aadlen);
+		if (!i)
+			ctx.functbl->decrypt(&ctx, buffer, tc->ct, tc->len);
+		else
+			ctx.functbl->decryptfast(&ctx, buffer, tc->ct, tc->len);
+		if (tc->len != tc->ctlen)
+			if (ctx.functbl->decryptfinal(&ctx, NULL, 0, tc->ct+tc->len,
+						tc->ctlen-tc->len) < 0)
+				result = TEST_FAILED;
 	}
 	ctx.functbl->fini(&ctx, 0);
 	if (memcmp(buf, tc->pt, tc->len))
@@ -344,8 +347,8 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	ftbl->init(&bctx, 0, NULL, NULL);
 	ftbl->setkey(&bctx, key, keysz, 0);
 	mctx.functbl->init(&mctx, 0, ldr, NULL);
-	mctx.functbl->setiv(&mctx, buf2, blksz);
 	mctx.functbl->setblock(&mctx, &bctx);
+	mctx.functbl->setiv(&mctx, buf2, blksz);
 	encrypt = (chunk & 15) ? mctx.functbl->encrypt : mctx.functbl->encryptfast;
 	for (i = 0; i < nchunks; i++)
 		encrypt(&mctx, buf, buf, chunk);
@@ -358,4 +361,131 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	print_speed_info(chunk, nchunks, &cstart, &cend);
 	
 	return 0;
+}
+
+// The version is not what it's supposed to be.
+#define MODE_BAD_VERSION	(1 <<  0)
+// The mode is using errno values for things other than ENOMEM.
+#define MODE_BAD_ERRNO		(1 <<  1)
+// The mode is using very odd values (non-power-of-two) for the quantum.
+#define MODE_BAD_QUANTUM	(1 <<  2)
+#define MODE_BAD_SIZE		(1 <<  3)
+#define MODE_BAD_BLKSIZE	(1 <<  4)
+#define MODE_BAD_BUFSIZE	(1 <<  5)
+#define MODE_BAD_ENDIAN		(1 <<  6)
+#define MODE_BAD_INTSIZE	(1 <<  7)
+#define MODE_BAD_NULLIFY	(1 <<  8)
+#define MODE_BAD_INIT		(1 <<  9)
+#define MODE_BAD_FUNCTBL	(1 << 10)
+#define MODE_BAD_UPDATEFAST	(1 << 11)
+#define MODE_BAD_CLONE		(1 << 12)
+#define MODE_BAD_UPDATE		(1 << 13)
+// Somehow, the clone was detected.
+#define MODE_BAD_CRACK		(1 << 14)
+#define MODE_BAD_PAD		(1 << 15)
+#define MODE_BAD_FINAL		(1 << 16)
+#define MODE_BAD_FINI		(1 << 17)
+#define MODE_BAD_ERROR		(1 << 18)
+
+int test_api_context(drew_mode_t *ctx, const drew_loader_t *ldr,
+		const drew_param_t *paramp, size_t intsize, size_t modesize,
+		size_t quantum)
+{
+	int flag = ctx->ctx ? DREW_MODE_FIXED : 0;
+	const drew_param_t *param = paramp && paramp->name ? paramp : NULL;
+	int retval = 0;
+	drew_mode_t clone[2], *newctx = clone;
+
+	if (ctx->functbl->init(ctx, flag, ldr, param)) {
+		retval |= MODE_BAD_INIT;
+		return retval;
+	}
+
+	if (ctx->functbl->clone(newctx, ctx, 0) ||
+		newctx->functbl != ctx->functbl || newctx->ctx == ctx->ctx)
+		retval |= MODE_BAD_CLONE;
+
+	if (newctx->functbl->fini(newctx, 0))
+		retval |= MODE_BAD_FINI;
+
+	if (ctx->functbl->fini(ctx, flag))
+		retval |= MODE_BAD_FINI;
+
+	return retval;
+}
+
+int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
+		const void *tbl)
+{
+	int res = 0, retval = 0, quantum = 1;
+	size_t intsize = 0, modesize = 0;
+	drew_mode_t c, *ctx = &c;
+	drew_param_t param;
+	void *mem;
+
+	memset(&param, 0, sizeof(param));
+
+	// Make sure our functinos are not NULL.
+	int (*p)() = tbl;
+	for (int i = 0; i < sizeof(*ctx->functbl)/sizeof(p); i++, p++)
+		if (!p) {
+			retval |= MODE_BAD_FUNCTBL;
+			return retval;
+		}
+
+	ctx->functbl = tbl;
+	res = ctx->functbl->info(DREW_MODE_VERSION, NULL);
+	if (is_forbidden_errno(res))
+		retval |= MODE_BAD_ERRNO;
+	if (res != 3)
+		retval |= MODE_BAD_VERSION;
+
+	res = ctx->functbl->info(DREW_MODE_QUANTUM, NULL);
+	if (is_forbidden_errno(res))
+		retval |= MODE_BAD_ERRNO;
+	if (res < 0)
+		retval |= MODE_BAD_QUANTUM;
+	else {
+		if (res & (res-1))
+			retval |= MODE_BAD_QUANTUM;
+		quantum = res;
+	}
+
+	res = ctx->functbl->info(DREW_MODE_FINAL_INSIZE, NULL);
+	if (is_forbidden_errno(res))
+		retval |= MODE_BAD_ERRNO;
+	if (res < 0 || res > (1024/8))
+		retval |= MODE_BAD_SIZE;
+
+	res = ctx->functbl->info(DREW_MODE_FINAL_OUTSIZE, NULL);
+	if (is_forbidden_errno(res))
+		retval |= MODE_BAD_ERRNO;
+	if (res < 0 || res > (1024/8))
+		retval |= MODE_BAD_SIZE;
+
+	res = ctx->functbl->info(DREW_MODE_INTSIZE, NULL);
+	if (is_forbidden_errno(res))
+		retval |= MODE_BAD_ERRNO;
+	if (res < 0 || res >= 1000)
+		retval |= MODE_BAD_INTSIZE;
+	else
+		intsize = res;
+
+	res = ctx->functbl->info(0xdeadbeef, NULL);
+	if (is_forbidden_errno(res))
+		retval |= MODE_BAD_ERRNO;
+	if (res != -DREW_ERR_INVALID)
+		retval |= MODE_BAD_ERROR;
+
+	ctx->ctx = NULL;
+	retval |= test_api_context(ctx, ldr, &param, intsize, modesize, quantum);
+	if (ctx->ctx)
+		retval |= MODE_BAD_NULLIFY;
+	ctx->ctx = mem = malloc(intsize);
+	retval |= test_api_context(ctx, ldr, &param, intsize, modesize, quantum);
+	if (ctx->ctx != mem)
+		retval |= MODE_BAD_NULLIFY;
+	free(mem);
+
+	return retval;
 }

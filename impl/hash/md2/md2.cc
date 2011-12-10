@@ -71,7 +71,6 @@ drew::MD2::MD2()
 void drew::MD2::Reset()
 {
 	memset(m_hash, 0, sizeof(m_hash));
-	m_l = 0;
 	Initialize();
 }
 
