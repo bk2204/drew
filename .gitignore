@@ -10,10 +10,13 @@ test/test-pkenc
 test/test-pksig
 test/test-kdf
 test/test-mem
+test/test-ecc
 test/plugin-main
 util/*sum
 util/drew-x509
 util/daniel
+util/version
+include/version.h
 *.d
 *.o
 *.gen

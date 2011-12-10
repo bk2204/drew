@@ -67,9 +67,19 @@ inline int GetCpuid(uint32_t func, uint32_t &a, uint32_t &b, uint32_t &c,
 		uint32_t &d)
 {
 #if defined(__GNUC__)
+#if defined(__amd64__)
 	__asm__ __volatile__("cpuid"
 			: "=a"(a), "=b"(b), "=c"(c), "=d"(d)
 			: "a"(func));
+#else
+	// GCC refuses to compile the code if we use the =b constraint because ebx
+	// is the PIC register.  Apparently it never occurred to it that it could
+	// surround the cpuid instruction with push/movl/pop.  We do it ourselves so
+	// that it will compile.
+	__asm__ __volatile__("push %%ebx\n\tcpuid\n\tmovl %%ebx, %1\n\tpop %%ebx\n"
+			: "=a"(a), "=r"(b), "=c"(c), "=d"(d)
+			: "a"(func));
+#endif
 	return 0;
 #else
 	return -DREW_ERR_NOT_IMPL;

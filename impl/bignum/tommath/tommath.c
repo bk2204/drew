@@ -71,10 +71,13 @@ static inline int fixup_return(int val)
 }
 
 static int bn_info(int op, void *p);
+static int bn_info2(const drew_bignum_t *, int, drew_param_t *,
+		const drew_param_t *);
 static int bn_init(drew_bignum_t *, int, const drew_loader_t *,
 		const drew_param_t *);
 static int bn_clone(drew_bignum_t *, const drew_bignum_t *, int);
 static int bn_fini(drew_bignum_t *, int);
+static int bn_nbits(const drew_bignum_t *);
 static int bn_nbytes(const drew_bignum_t *);
 static int bn_bytes(const drew_bignum_t *, uint8_t *, size_t);
 static int bn_setbytes(drew_bignum_t *, const uint8_t *, size_t);
@@ -83,6 +86,7 @@ static int bn_setsmall(drew_bignum_t *, long);
 static int bn_negate(drew_bignum_t *, const drew_bignum_t *);
 static int bn_abs(drew_bignum_t *, const drew_bignum_t *);
 static int bn_compare(const drew_bignum_t *, const drew_bignum_t *, int);
+static int bn_comparesmall(const drew_bignum_t *, long);
 static int bn_bitwiseor(drew_bignum_t *, const drew_bignum_t *,
 		const drew_bignum_t *);
 static int bn_bitwiseand(drew_bignum_t *, const drew_bignum_t *,
@@ -90,6 +94,8 @@ static int bn_bitwiseand(drew_bignum_t *, const drew_bignum_t *,
 static int bn_bitwisexor(drew_bignum_t *, const drew_bignum_t *,
 		const drew_bignum_t *);
 static int bn_bitwisenot(drew_bignum_t *, const drew_bignum_t *);
+static int bn_getbit(const drew_bignum_t *, size_t);
+static int bn_setbit(drew_bignum_t *, size_t, bool);
 static int bn_add(drew_bignum_t *, const drew_bignum_t *,
 		const drew_bignum_t *);
 static int bn_sub(drew_bignum_t *, const drew_bignum_t *,
@@ -108,16 +114,26 @@ static int bn_mod(drew_bignum_t *, const drew_bignum_t *, const drew_bignum_t *)
 static int bn_expsmall(drew_bignum_t *, const drew_bignum_t *, unsigned long);
 static int bn_expmod(drew_bignum_t *, const drew_bignum_t *,
 		const drew_bignum_t *, const drew_bignum_t *);
+static int bn_squaremod(drew_bignum_t *, const drew_bignum_t *,
+		const drew_bignum_t *);
+static int bn_addmod(drew_bignum_t *, const drew_bignum_t *,
+		const drew_bignum_t *, const drew_bignum_t *);
+static int bn_mulmod(drew_bignum_t *, const drew_bignum_t *,
+		const drew_bignum_t *, const drew_bignum_t *);
 static int bn_invmod(drew_bignum_t *, const drew_bignum_t *,
+		const drew_bignum_t *);
+static int bn_gcd(drew_bignum_t *, const drew_bignum_t *,
 		const drew_bignum_t *);
 static int bn_test(void *, const drew_loader_t *);
 
 
 static const drew_bignum_functbl_t bn_functbl = {
 	.info = bn_info,
+	.info2 = bn_info2,
 	.init = bn_init,
 	.clone = bn_clone,
 	.fini = bn_fini,
+	.nbits = bn_nbits,
 	.nbytes = bn_nbytes,
 	.bytes = bn_bytes,
 	.setbytes = bn_setbytes,
@@ -126,10 +142,13 @@ static const drew_bignum_functbl_t bn_functbl = {
 	.negate = bn_negate,
 	.abs = bn_abs,
 	.compare = bn_compare,
+	.comparesmall = bn_comparesmall,
 	.bitwiseor = bn_bitwiseor,
 	.bitwiseand = bn_bitwiseand,
 	.bitwisexor = bn_bitwisexor,
 	.bitwisenot = bn_bitwisenot,
+	.getbit = bn_getbit,
+	.setbit = bn_setbit,
 	.add = bn_add,
 	.sub = bn_sub,
 	.mul = bn_mul,
@@ -141,8 +160,12 @@ static const drew_bignum_functbl_t bn_functbl = {
 	.square = bn_square,
 	.mod = bn_mod,
 	.expsmall = bn_expsmall,
+	.squaremod = bn_squaremod,
+	.addmod = bn_addmod,
+	.mulmod = bn_mulmod,
 	.expmod = bn_expmod,
 	.invmod = bn_invmod,
+	.gcd = bn_gcd,
 	.test = bn_test
 };
 
@@ -150,12 +173,18 @@ static int bn_info(int op, void *p)
 {
 	switch (op) {
 		case DREW_BIGNUM_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_BIGNUM_INTSIZE:
 			return sizeof(struct bignum);
 		default:
 			return -DREW_ERR_INVALID;
 	}
+}
+
+static int bn_info2(const drew_bignum_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	return bn_info(op, NULL);
 }
 
 static int bn_init(drew_bignum_t *ctx, int flags, const drew_loader_t *ldr,
@@ -176,6 +205,15 @@ static int bn_init(drew_bignum_t *ctx, int flags, const drew_loader_t *ldr,
 static int bn_test(void *p, const drew_loader_t *ldr)
 {
 	return -DREW_ERR_NOT_IMPL;
+}
+
+static int bn_nbits(const drew_bignum_t *ctx)
+{
+	int nbytes;
+	drew_bignum_t t1, *t = &t1;
+	RETFAIL(bn_clone(t, ctx, 0));
+	nbytes = bn_nbytes(t);
+	return nbytes * 8;
 }
 
 static int bn_nbytes(const drew_bignum_t *ctx)
@@ -232,6 +270,12 @@ static int bn_compare(const drew_bignum_t *a, const drew_bignum_t *b, int flag)
 	return (res == MP_GT) ? 1 : ((res == MP_EQ) ? 0 : -1);
 }
 
+static int bn_comparesmall(const drew_bignum_t *ctx, long x)
+{
+	int res = mp_cmp_d(MPC(ctx), x);
+	return (res == MP_GT) ? 1 : ((res == MP_EQ) ? 0 : -1);
+}
+
 static int bn_bitwiseor(drew_bignum_t *c, const drew_bignum_t *a,
 		const drew_bignum_t *b)
 {
@@ -270,6 +314,35 @@ static int bn_bitwisenot(drew_bignum_t *res, const drew_bignum_t *in)
 	return 0;
 }
 
+static int bn_getbit(const drew_bignum_t *ctx, size_t bitno)
+{
+	bool bitval;
+	drew_bignum_t t1, *t = &t1;
+	RETFAIL(bn_clone(t, ctx, 0));
+	RETFAIL(bn_setsmall(t, 1));
+	RETFAIL(bn_shiftleft(t, t, bitno));
+	RETFAIL(bn_bitwiseand(t, t, ctx));
+	bitval = bn_comparesmall(t, 0);
+	RETFAIL(bn_fini(t, 0));
+	return bitval;
+}
+
+static int bn_setbit(drew_bignum_t *ctx, size_t bitno, bool val)
+{
+	drew_bignum_t t1, *t = &t1;
+	RETFAIL(bn_clone(t, ctx, 0));
+	RETFAIL(bn_setsmall(t, 1));
+	RETFAIL(bn_shiftleft(t, t, bitno));
+	if (val)
+		RETFAIL(bn_bitwiseor(ctx, t, ctx));
+	else {
+		RETFAIL(bn_bitwisenot(t, t));
+		RETFAIL(bn_bitwiseand(ctx, t, ctx));
+	}
+	RETFAIL(bn_fini(t, 0));
+	return 0;
+}
+
 static int bn_add(drew_bignum_t *res, const drew_bignum_t *a,
 		const drew_bignum_t *b)
 {
@@ -294,7 +367,7 @@ static int bn_mul(drew_bignum_t *c, const drew_bignum_t *a,
 static int bn_div(drew_bignum_t *quot, drew_bignum_t *rem,
 		const drew_bignum_t *dividend, const drew_bignum_t *divisor)
 {
-	RETFAIL(mp_div(MPC(dividend), MPC(divisor), MP(quot), MP(rem)));
+	RETFAIL(mp_div(MPC(dividend), MPC(divisor), MP(quot), rem ? MP(rem) : 0));
 	return 0;
 }
 
@@ -342,6 +415,30 @@ static int bn_expsmall(drew_bignum_t *res, const drew_bignum_t *a,
 	return 0;
 }
 
+static int bn_squaremod(drew_bignum_t *c, const drew_bignum_t *a,
+		const drew_bignum_t *n)
+{
+	RETFAIL(bn_square(c, a));
+	RETFAIL(bn_mod(c, c, n));
+	return 0;
+}
+
+static int bn_addmod(drew_bignum_t *c, const drew_bignum_t *a,
+		const drew_bignum_t *b, const drew_bignum_t *n)
+{
+	RETFAIL(bn_add(c, a, b));
+	RETFAIL(bn_mod(c, c, n));
+	return 0;
+}
+
+static int bn_mulmod(drew_bignum_t *c, const drew_bignum_t *a,
+		const drew_bignum_t *b, const drew_bignum_t *n)
+{
+	RETFAIL(bn_mul(c, a, b));
+	RETFAIL(bn_mod(c, c, n));
+	return 0;
+}
+
 static int bn_expmod(drew_bignum_t *res, const drew_bignum_t *g,
 		const drew_bignum_t *x, const drew_bignum_t *mod)
 {
@@ -353,6 +450,13 @@ static int bn_invmod(drew_bignum_t *res, const drew_bignum_t *a,
 		const drew_bignum_t *mod)
 {
 	RETFAIL(mp_invmod(MPC(a), MPC(mod), MP(res)));
+	return 0;
+}
+
+static int bn_gcd(drew_bignum_t *c, const drew_bignum_t *a,
+		const drew_bignum_t *b)
+{
+	RETFAIL(mp_gcd(MPC(a), MPC(b), MP(c)));
 	return 0;
 }
 
@@ -399,7 +503,7 @@ int DREW_PLUGIN_NAME(tommath)(void *ldr, int op, int id, void *p)
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 
 	if (id < 0 || id >= nplugins)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	switch (op) {
 		case DREW_LOADER_LOOKUP_NAME:
@@ -419,7 +523,7 @@ int DREW_PLUGIN_NAME(tommath)(void *ldr, int op, int id, void *p)
 			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1);
 			return 0;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
 UNEXPORT()

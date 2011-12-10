@@ -34,6 +34,8 @@
 #include "util.hh"
 
 HIDE()
+#define TABLE_SIZE (64 * 1024)
+
 typedef BigEndian E;
 
 extern "C" {
@@ -42,7 +44,7 @@ struct gcm;
 
 struct gcm {
 	const drew_loader_t *ldr;
-	const drew_block_t *algo;
+	drew_block_t *algo;
 	uint8_t y0[16] ALIGNED_T;
 	uint8_t y[16] ALIGNED_T;
 	uint8_t h[16] ALIGNED_T;
@@ -61,12 +63,14 @@ struct gcm {
 };
 
 static int gcm_info(int op, void *p);
+static int gcm_info2(const drew_mode_t *, int op, drew_param_t *,
+		const drew_param_t *);
 static int gcm_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param);
 static int gcmfl_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param);
 static int gcm_reset(drew_mode_t *ctx);
-static int gcm_setpad(drew_mode_t *ctx, const drew_pad_t *pad);
+static int gcm_resync(drew_mode_t *ctx);
 static int gcm_setblock(drew_mode_t *ctx, const drew_block_t *algoctx);
 static int gcm_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len);
 static int gcm_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
@@ -88,33 +92,64 @@ static int gcm_decryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 
 /* The slow implementation. */
 static const drew_mode_functbl_t gcm_functbl = {
-	gcm_info, gcm_init, gcm_clone, gcm_reset, gcm_fini, gcm_setpad,
+	gcm_info, gcm_info2, gcm_init, gcm_clone, gcm_reset, gcm_fini,
 	gcm_setblock, gcm_setiv, gcm_encrypt, gcm_decrypt,
 	gcm_encryptfast, gcm_decryptfast, gcm_setdata,
-	gcm_encryptfinal, gcm_decryptfinal, gcm_test
+	gcm_encryptfinal, gcm_decryptfinal, gcm_resync, gcm_test
 };
 /* The fastest implementation which uses large tables. */
 static const drew_mode_functbl_t gcmfl_functbl = {
-	gcm_info, gcmfl_init, gcm_clone, gcm_reset, gcm_fini, gcm_setpad,
+	gcm_info, gcm_info2, gcmfl_init, gcm_clone, gcm_reset, gcm_fini,
 	gcm_setblock, gcm_setiv, gcm_encrypt, gcm_decrypt,
 	gcm_encryptfast, gcm_decryptfast, gcm_setdata,
-	gcm_encryptfinal, gcm_decryptfinal, gcm_test
+	gcm_encryptfinal, gcm_decryptfinal, gcm_resync, gcm_test
 };
 
 static int gcm_info(int op, void *p)
 {
 	switch (op) {
 		case DREW_MODE_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_MODE_INTSIZE:
 			return sizeof(struct gcm);
 		case DREW_MODE_FINAL_INSIZE:
 		case DREW_MODE_FINAL_OUTSIZE:
 			return 16;
 		case DREW_MODE_QUANTUM:
+			return 1;
 		default:
-			return DREW_ERR_INVALID;
+			return -DREW_ERR_INVALID;
 	}
+}
+
+static int gcm_info2(const drew_mode_t *ctx, int op, drew_param_t *,
+		const drew_param_t *)
+{
+	switch (op) {
+		case DREW_MODE_VERSION:
+			return CURRENT_ABI;
+		case DREW_MODE_INTSIZE:
+			return sizeof(struct gcm);
+		case DREW_MODE_FINAL_INSIZE_CTX:
+		case DREW_MODE_FINAL_OUTSIZE_CTX:
+			if (ctx && ctx->ctx) {
+				const struct gcm *c = (const struct gcm *)ctx->ctx;
+				if (c->algo) {
+					return c->algo->functbl->info2(c->algo,
+							DREW_BLOCK_BLKSIZE_CTX, NULL, NULL);
+				}
+			}
+			return -DREW_ERR_MORE_INFO;
+		case DREW_MODE_QUANTUM:
+			return 1;
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
+static int gcm_resync(drew_mode_t *ctx)
+{
+	return -DREW_ERR_NOT_IMPL;
 }
 
 static int gcm_reset(drew_mode_t *ctx)
@@ -166,7 +201,7 @@ static int gcmfl_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	if (!(flags & DREW_MODE_FIXED))
 		newctx = (struct gcm *)drew_mem_smalloc(sizeof(*newctx));
 	memset(newctx, 0, sizeof(*newctx));
-	newctx->table = (uint64_t *)drew_mem_smalloc(64 * 1024);
+	newctx->table = (uint64_t *)drew_mem_smalloc(TABLE_SIZE);
 	if (!newctx->table) {
 		if (!(flags & DREW_MODE_FIXED))
 			drew_mem_sfree(newctx);
@@ -188,29 +223,21 @@ static int gcmfl_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	return 0;
 }
 
-static int gcm_setpad(drew_mode_t *ctx, const drew_pad_t *algoname)
-{
-	return -DREW_ERR_NOT_ALLOWED;
-}
-
 static int gcm_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 {
 	struct gcm *c = (struct gcm *)ctx->ctx;
 
 	if (!algoctx)
-		return DREW_ERR_INVALID;
+		return -DREW_ERR_INVALID;
 
-	c->algo = algoctx;
+	c->algo = (drew_block_t *)drew_mem_malloc(sizeof(*c->algo));
+	c->algo->functbl = algoctx->functbl;
+	c->algo->functbl->clone(c->algo, algoctx, 0);
 	c->blksize = c->algo->functbl->info(DREW_BLOCK_BLKSIZE, NULL);
 	if (c->blksize == 8)
 		return -DREW_ERR_NOT_IMPL;
 	if (c->blksize != 16)
 		return -DREW_ERR_INVALID;
-	memset(c->h, 0, sizeof(c->h));
-	algoctx->functbl->encryptfast(algoctx, c->h, c->h, 1);
-
-	if (c->mul == mul_fl)
-		gen_table_fl(c);
 
 	return 0;
 }
@@ -301,15 +328,29 @@ static inline void hash(struct gcm *c, uint8_t *buf, const uint8_t *block)
 	c->mul(c, buf);
 }
 
-static inline void hash_fast(struct gcm *c, uint8_t *buf, const uint8_t *block)
+static inline void hash_fast(struct gcm *c, uint8_t *buf, const uint8_t *block,
+		size_t mul)
 {
-	XorAligned(buf, block, 16);
-	c->mul(c, buf);
+	for (size_t i = 0; i < mul; i++, block += 16) {
+		XorAligned(buf, block, 16);
+		c->mul(c, buf);
+	}
 }
 
 static int gcm_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len)
 {
 	struct gcm *c = (struct gcm *)ctx->ctx;
+
+	memset(c->h, 0, sizeof(c->h));
+	memset(c->y, 0, sizeof(c->y));
+	memset(c->y0, 0, sizeof(c->y0));
+	memset(c->x, 0, sizeof(c->x));
+	memset(c->buf, 0, sizeof(c->buf));
+	memset(c->cbuf, 0, sizeof(c->cbuf));
+	c->algo->functbl->encryptfast(c->algo, c->h, c->h, 1);
+
+	if (c->mul == mul_fl)
+		gen_table_fl(c);
 
 	c->ivlen = len;
 	if (iv != c->iv)
@@ -346,7 +387,7 @@ static void increment_counter(uint8_t *ctr, size_t len)
 {
 	bool carry = 0;
 	carry = !++ctr[len - 1];
-	for (size_t i = len - 2; carry && i >= len - 4; i--) {
+	for (size_t i = len - 2; unlikely(carry && i >= len - 4); i--) {
 		if (!(carry = !++ctr[i]))
 			break;
 	}
@@ -402,18 +443,17 @@ static int gcm_encryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 	uint8_t *out = outp;
 	const uint8_t *in = inp;
 	const size_t blksize = 16;
+	const size_t chunks = len / blksize;
 
 	c->clen += len;
 
-	while (len >= blksize) {
+	for (size_t i = 0; i < len; i += blksize, out += blksize, in += blksize) {
 		increment_counter(c->y, blksize);
-		c->algo->functbl->encrypt(c->algo, c->buf, c->y);
-		XorAligned(out, c->buf, in, blksize);
-		hash_fast(c, c->x, out);
-		len -= blksize;
-		out += blksize;
-		in += blksize;
+		memcpy(out, c->y, blksize);
 	}
+	c->algo->functbl->encryptfast(c->algo, outp, outp, chunks);
+	XorAligned(outp, inp, len);
+	hash_fast(c, c->x, outp, chunks);
 
 	return 0;
 }
@@ -468,18 +508,18 @@ static int gcm_decryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 	uint8_t *out = outp;
 	const uint8_t *in = inp;
 	const size_t blksize = 16;
+	const size_t chunks = len / blksize;
 
 	c->clen += len;
 
-	while (len >= blksize) {
+	hash_fast(c, c->x, in, chunks);
+
+	for (size_t i = 0; i < len; i += blksize, out += blksize, in += blksize) {
 		increment_counter(c->y, blksize);
-		c->algo->functbl->encrypt(c->algo, c->buf, c->y);
-		hash_fast(c, c->x, in);
-		XorAligned(out, c->buf, in, blksize);
-		len -= blksize;
-		out += blksize;
-		in += blksize;
+		memcpy(out, c->y, blksize);
 	}
+	c->algo->functbl->encryptfast(c->algo, outp, outp, chunks);
+	XorAligned(outp, inp, len);
 
 	return 0;
 }
@@ -721,21 +761,34 @@ static int gcm_fini(drew_mode_t *ctx, int flags)
 {
 	struct gcm *c = (struct gcm *)ctx->ctx;
 
+	if (c->algo)
+		c->algo->functbl->fini(c->algo, 0);
+	drew_mem_free(c->algo);
 	drew_mem_sfree(c->iv);
 	drew_mem_sfree(c->table);
-	if (!(flags & DREW_MODE_FIXED))
+	if (!(flags & DREW_MODE_FIXED)) {
 		drew_mem_sfree(c);
+		ctx->ctx = NULL;
+	}
 
-	ctx->ctx = NULL;
 	return 0;
 }
 
 static int gcm_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags)
 {
+	struct gcm *c = (struct gcm *)oldctx->ctx, *cn;
+
 	if (!(flags & DREW_MODE_FIXED))
 		newctx->ctx = (struct gcm *)drew_mem_smalloc(sizeof(struct gcm));
 	memset(newctx->ctx, 0, sizeof(struct gcm));
 	memcpy(newctx->ctx, oldctx->ctx, sizeof(struct gcm));
+	cn = (struct gcm *)newctx->ctx;
+	if (c->algo) {
+		cn->algo = (drew_block_t *)drew_mem_memdup(c->algo, sizeof(*c->algo));
+		cn->algo->functbl->clone(cn->algo, c->algo, 0);
+	}
+	if (c->table)
+		cn->table = (uint64_t *)drew_mem_memdup(c->table, TABLE_SIZE);
 	newctx->functbl = oldctx->functbl;
 	return 0;
 }
@@ -756,7 +809,7 @@ int DREW_PLUGIN_NAME(gcm)(void *ldr, int op, int id, void *p)
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 
 	if (id < 0 || id >= nplugins)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	switch (op) {
 		case DREW_LOADER_LOOKUP_NAME:
@@ -776,7 +829,7 @@ int DREW_PLUGIN_NAME(gcm)(void *ldr, int op, int id, void *p)
 			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1);
 			return 0;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
 UNEXPORT()

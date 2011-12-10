@@ -26,21 +26,27 @@
  *
  * Code pulled from the GCC wiki.
  */
+#ifdef __cplusplus
+#define DREW_SYM_C_ABI extern "C"
+#else
+#define DREW_SYM_C_ABI
+#endif
+
 #if defined(_WIN32) || defined(__CYGWIN__)
 #ifdef DREW_IN_BUILD
 
 #ifdef __GNUC__
-#define DREW_SYM_PUBLIC __attribute__ ((dllexport))
+#define DREW_SYM_PUBLIC DREW_SYM_C_ABI __attribute__ ((dllexport))
 #else
-#define DREW_SYM_PUBLIC __declspec(dllexport)
+#define DREW_SYM_PUBLIC DREW_SYM_C_ABI __declspec(dllexport)
 #endif
 
 #else
 
 #ifdef __GNUC__
-#define DREW_SYM_PUBLIC __attribute__ ((dllimport))
+#define DREW_SYM_PUBLIC DREW_SYM_C_ABI __attribute__ ((dllimport))
 #else
-#define DREW_SYM_PUBLIC __declspec(dllimport)
+#define DREW_SYM_PUBLIC DREW_SYM_C_ABI __declspec(dllimport)
 #endif
 
 #endif
@@ -50,14 +56,17 @@
 #else
 
 #if defined(__GNUC__) && __GNUC__ >= 4
-#define DREW_SYM_PUBLIC __attribute__ ((visibility("default")))
-#define DREW_SYM_HIDDEN __attribute__ ((visibility("hidden")))
+#define DREW_SYM_PUBLIC DREW_SYM_C_ABI __attribute__ ((visibility("default")))
+#define DREW_SYM_HIDDEN DREW_SYM_C_ABI __attribute__ ((visibility("hidden")))
 #else
 #define DREW_SYM_PUBLIC
 #define DREW_SYM_HIDDEN
 #endif
 
 #endif
+
+DREW_SYM_PUBLIC
+int drew_get_version(int op, const char **sp, void *p);
 
 #include <drew/plugin.h>
 

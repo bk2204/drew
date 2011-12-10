@@ -28,5 +28,5 @@ int drew_plugin_info(void *ldr, int op, int id, void *p)
 	}
 	if (op == DREW_LOADER_GET_NPLUGINS)
 		return plugcnt;
-	return -EINVAL;
+	return -DREW_ERR_INVALID;
 }

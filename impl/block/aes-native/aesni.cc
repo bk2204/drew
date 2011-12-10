@@ -95,7 +95,7 @@ drew::AESNI::AESNI()
 {
 }
 
-int drew::AESNI::SetKey(const uint8_t *key, size_t len)
+int drew::AESNI::SetKeyInternal(const uint8_t *key, size_t len)
 {
 	switch (len) {
 		case 16:

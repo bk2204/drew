@@ -38,7 +38,7 @@
 
 struct ctr {
 	const drew_loader_t *ldr;
-	const drew_block_t *algo;
+	drew_block_t *algo;
 	uint8_t ctr[32] ALIGNED_T;
 	uint8_t buf[32] ALIGNED_T;
 	uint8_t iv[32];
@@ -47,10 +47,12 @@ struct ctr {
 };
 
 static int ctr_info(int op, void *p);
+static int ctr_info2(const drew_mode_t *, int op, drew_param_t *,
+		const drew_param_t *);
 static int ctr_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param);
 static int ctr_reset(drew_mode_t *ctx);
-static int ctr_setpad(drew_mode_t *ctx, const drew_pad_t *pad);
+static int ctr_resync(drew_mode_t *ctx);
 static int ctr_setblock(drew_mode_t *ctx, const drew_block_t *algoctx);
 static int ctr_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len);
 static int ctr_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
@@ -67,32 +69,53 @@ static int ctr_decryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 		const uint8_t *in, size_t inlen);
 
 static const drew_mode_functbl_t ctr_functbl = {
-	ctr_info, ctr_init, ctr_clone, ctr_reset, ctr_fini, ctr_setpad,
+	ctr_info, ctr_info2, ctr_init, ctr_clone, ctr_reset, ctr_fini,
 	ctr_setblock, ctr_setiv, ctr_encrypt, ctr_encrypt, ctr_encrypt, ctr_encrypt,
-	ctr_setdata, ctr_encryptfinal, ctr_decryptfinal, ctr_test
+	ctr_setdata, ctr_encryptfinal, ctr_decryptfinal, ctr_resync, ctr_test
 };
 
 static const drew_mode_functbl_t ctr_functbl_aligned = {
-	ctr_info, ctr_init, ctr_clone, ctr_reset, ctr_fini, ctr_setpad,
+	ctr_info, ctr_info2, ctr_init, ctr_clone, ctr_reset, ctr_fini,
 	ctr_setblock, ctr_setiv, ctr_encrypt, ctr_encrypt, ctr_encryptfast,
-	ctr_encryptfast, ctr_setdata, ctr_encryptfinal, ctr_decryptfinal, ctr_test
+	ctr_encryptfast, ctr_setdata, ctr_encryptfinal, ctr_decryptfinal,
+	ctr_resync, ctr_test
 };
 
 static int ctr_info(int op, void *p)
 {
 	switch (op) {
 		case DREW_MODE_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_MODE_INTSIZE:
 			return sizeof(struct ctr);
 		case DREW_MODE_FINAL_INSIZE:
 		case DREW_MODE_FINAL_OUTSIZE:
 			return 0;
 		case DREW_MODE_QUANTUM:
+			return 1;
 		default:
-			return DREW_ERR_INVALID;
+			return -DREW_ERR_INVALID;
 	}
 }
+
+static int ctr_info2(const drew_mode_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	switch (op) {
+		case DREW_MODE_VERSION:
+			return CURRENT_ABI;
+		case DREW_MODE_INTSIZE:
+			return sizeof(struct ctr);
+		case DREW_MODE_FINAL_INSIZE_CTX:
+		case DREW_MODE_FINAL_OUTSIZE_CTX:
+			return 0;
+		case DREW_MODE_BLKSIZE_CTX:
+			return 1;
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
 
 static int ctr_reset(drew_mode_t *ctx)
 {
@@ -105,6 +128,11 @@ static int ctr_reset(drew_mode_t *ctx)
 	return 0;
 }
 
+static int ctr_resync(drew_mode_t *ctx)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
 static int ctr_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param)
 {
@@ -112,6 +140,7 @@ static int ctr_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 
 	if (!(flags & DREW_MODE_FIXED))
 		newctx = drew_mem_smalloc(sizeof(*newctx));
+	memset(newctx, 0, sizeof(*newctx));
 	newctx->ldr = ldr;
 	newctx->algo = NULL;
 	newctx->boff = 0;
@@ -120,11 +149,6 @@ static int ctr_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	ctx->functbl = &ctr_functbl;
 
 	return 0;
-}
-
-static int ctr_setpad(drew_mode_t *ctx, const drew_pad_t *algoname)
-{
-	return -EINVAL;
 }
 
 static int ctr_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
@@ -138,7 +162,13 @@ static int ctr_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 	if (!algoctx)
 		return DREW_ERR_INVALID;
 
-	c->algo = algoctx;
+	if (c->algo) {
+		c->algo->functbl->fini(c->algo, 0);
+		drew_mem_free(c->algo);
+	}
+	c->algo = drew_mem_malloc(sizeof(*c->algo));
+	c->algo->functbl = algoctx->functbl;
+	c->algo->functbl->clone(c->algo, algoctx, 0);
 	c->blksize = c->algo->functbl->info(DREW_BLOCK_BLKSIZE, NULL);
 	if (c->blksize == FAST_ALIGNMENT)
 		ctx->functbl = &ctr_functbl_aligned;
@@ -151,7 +181,7 @@ static int ctr_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len)
 	struct ctr *c = ctx->ctx;
 
 	if (c->blksize != len)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	memcpy(c->ctr, iv, len);
 	memcpy(c->buf, iv, len);
@@ -166,7 +196,7 @@ static void increment_counter(uint8_t *ctr, size_t len)
 {
 	bool carry = 0;
 	carry = !++ctr[len - 1];
-	for (int i = len - 2; carry && i >= 0; i--) {
+	for (int i = len - 2; unlikely(carry && i >= 0); i--) {
 		if (!(carry = !++ctr[i]))
 			break;
 	}
@@ -215,13 +245,17 @@ static int ctr_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len)
 {
 	struct ctr *c = ctx->ctx;
+	uint8_t *outp = out;
+	const uint8_t *inp = in;
+	const size_t mul = len / c->blksize;
 
 	for (size_t i = 0; i < len; i += FAST_ALIGNMENT, out += FAST_ALIGNMENT,
 			in += FAST_ALIGNMENT) {
-		c->algo->functbl->encrypt(c->algo, c->buf, c->ctr);
+		memcpy(out, c->ctr, c->blksize);
 		increment_counter(c->ctr, c->blksize);
-		xor_aligned(out, c->buf, in, FAST_ALIGNMENT);
 	}
+	c->algo->functbl->encryptfast(c->algo, outp, outp, mul);
+	xor_aligned2(outp, inp, len);
 
 	return 0;
 }
@@ -359,7 +393,7 @@ static int ctr_test(void *p, const drew_loader_t *ldr)
 	int result = 0, tres;
 	size_t ntests = 0;
 	if (!ldr)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	if ((tres = ctr_test_aes128(ldr, &ntests)) >= 0) {
 		result <<= ntests;
@@ -373,18 +407,29 @@ static int ctr_fini(drew_mode_t *ctx, int flags)
 {
 	struct ctr *c = ctx->ctx;
 
-	if (!(flags & DREW_MODE_FIXED))
-		drew_mem_sfree(c);
+	if (c->algo)
+		c->algo->functbl->fini(c->algo, 0);
 
-	ctx->ctx = NULL;
+	if (!(flags & DREW_MODE_FIXED)) {
+		drew_mem_sfree(c);
+		ctx->ctx = NULL;
+	}
+
 	return 0;
 }
 
 static int ctr_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags)
 {
+	struct ctr *c = oldctx->ctx, *cn;
+
 	if (!(flags & DREW_MODE_FIXED))
 		newctx->ctx = drew_mem_smalloc(sizeof(struct ctr));
+	cn = newctx->ctx;
 	memcpy(newctx->ctx, oldctx->ctx, sizeof(struct ctr));
+	if (c->algo) {
+		cn->algo = drew_mem_memdup(c->algo, sizeof(*c->algo));
+		cn->algo->functbl->clone(cn->algo, c->algo, 0);
+	}
 	newctx->functbl = oldctx->functbl;
 	return 0;
 }
@@ -405,7 +450,7 @@ int DREW_PLUGIN_NAME(ctr)(void *ldr, int op, int id, void *p)
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 
 	if (id < 0 || id >= nplugins)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	switch (op) {
 		case DREW_LOADER_LOOKUP_NAME:
@@ -425,7 +470,7 @@ int DREW_PLUGIN_NAME(ctr)(void *ldr, int op, int id, void *p)
 			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1);
 			return 0;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
 UNEXPORT()

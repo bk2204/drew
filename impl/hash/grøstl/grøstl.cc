@@ -60,7 +60,7 @@ static int gr\u00f8stlinfo(int op, void *p)
 	const drew_hash_t *ctx = reinterpret_cast<const drew_hash_t *>(p);
 	switch (op) {
 		case DREW_HASH_VERSION:
-			return 2;
+			return 3;
 		case DREW_HASH_QUANTUM:
 			return sizeof(uint64_t);
 		case DREW_HASH_SIZE:
@@ -72,6 +72,73 @@ static int gr\u00f8stlinfo(int op, void *p)
 		case DREW_HASH_BUFSIZE:
 			if (p)
 				return ((const Gr\u00f8stl *)ctx->ctx)->GetBufferSize();
+			return -DREW_ERR_MORE_INFO;
+		case DREW_HASH_INTSIZE:
+			return sizeof(Gr\u00f8stl);
+		case DREW_HASH_ENDIAN:
+			return BigEndian::GetEndianness();
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
+static const int hash_sizes[] = {
+	224/8, 256/8, 384/8, 512/8
+};
+
+static const int block_sizes[] = {
+	512/8, 1024/8
+};
+
+static const int buffer_sizes[] = {
+	512/8, 1024/8
+};
+
+static int gr\u00f8stlinfo2(const drew_hash_t *ctxt, int op, drew_param_t *outp,
+		const drew_param_t *inp)
+{
+	using namespace drew;
+	switch (op) {
+		case DREW_HASH_VERSION:
+			return 3;
+		case DREW_HASH_SIZE_LIST:
+			for (drew_param_t *p = outp; p; p = p->next)
+				if (!strcmp(p->name, "digestSize")) {
+					p->param.array.ptr = (void *)hash_sizes;
+					p->param.array.len = DIM(hash_sizes);
+				}
+			return 0;
+		case DREW_HASH_BLKSIZE_LIST:
+			for (drew_param_t *p = outp; p; p = p->next)
+				if (!strcmp(p->name, "blockSize")) {
+					p->param.array.ptr = (void *)block_sizes;
+					p->param.array.len = DIM(block_sizes);
+				}
+			return 0;
+		case DREW_HASH_BUFSIZE_LIST:
+			for (drew_param_t *p = outp; p; p = p->next)
+				if (!strcmp(p->name, "bufferSize")) {
+					p->param.array.ptr = (void *)buffer_sizes;
+					p->param.array.len = DIM(buffer_sizes);
+				}
+			return 0;
+		case DREW_HASH_SIZE_CTX:
+			if (ctxt && ctxt->ctx) {
+				const Gr\u00f8stl *ctx = (const Gr\u00f8stl *)ctxt->ctx;
+				return ctx->GetDigestSize();
+			}
+			return -DREW_ERR_MORE_INFO;
+		case DREW_HASH_BLKSIZE_CTX:
+			if (ctxt && ctxt->ctx) {
+				const Gr\u00f8stl *ctx = (const Gr\u00f8stl *)ctxt->ctx;
+				return ctx->GetBlockSize();
+			}
+			return -DREW_ERR_MORE_INFO;
+		case DREW_HASH_BUFSIZE_CTX:
+			if (ctxt && ctxt->ctx) {
+				const Gr\u00f8stl *ctx = (const Gr\u00f8stl *)ctxt->ctx;
+				return ctx->GetBufferSize();
+			}
 			return -DREW_ERR_MORE_INFO;
 		case DREW_HASH_INTSIZE:
 			return sizeof(Gr\u00f8stl);
@@ -1278,7 +1345,7 @@ void drew::Gr\u00f8stl256::Transform(uint64_t *state, const uint8_t *block)
 	XorBuffers(state, b, sizeof(b));
 }
 
-void drew::Gr\u00f8stl256::GetDigest(uint8_t *digest, bool nopad)
+void drew::Gr\u00f8stl256::GetDigest(uint8_t *digest, size_t len, bool nopad)
 {
 	uint64_t p[8] ALIGNED_T;
 	uint64_t x[8] ALIGNED_T;
@@ -1304,7 +1371,7 @@ void drew::Gr\u00f8stl256::GetDigest(uint8_t *digest, bool nopad)
 
 	uint8_t buf[sizeof(p)];
 	E::Copy(buf, m_hash, sizeof(buf));
-	memcpy(digest, buf+off, m_size);
+	memcpy(digest, buf+off, len);
 }
 
 drew::Gr\u00f8stl512::Gr\u00f8stl512(size_t sz)
@@ -1442,7 +1509,7 @@ void drew::Gr\u00f8stl512::Transform(uint64_t *state, const uint8_t *block)
 	XorBuffers(state, b, sizeof(b));
 }
 
-void drew::Gr\u00f8stl512::GetDigest(uint8_t *digest, bool nopad)
+void drew::Gr\u00f8stl512::GetDigest(uint8_t *digest, size_t len, bool nopad)
 {
 	uint64_t p[16] ALIGNED_T;
 	uint64_t x[16] ALIGNED_T;
@@ -1472,5 +1539,5 @@ void drew::Gr\u00f8stl512::GetDigest(uint8_t *digest, bool nopad)
 
 	uint8_t buf[sizeof(p)];
 	E::Copy(buf, m_hash, sizeof(buf));
-	memcpy(digest, buf+off, m_size);
+	memcpy(digest, buf+off, len);
 }

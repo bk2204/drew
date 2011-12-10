@@ -38,22 +38,28 @@
 
 struct cbc {
 	const drew_loader_t *ldr;
-	const drew_block_t *algo;
+	drew_block_t *algo;
 	uint8_t *buf;
 	uint8_t *iv;
 	size_t blksize;
 };
 
 static int cbc_info(int op, void *p);
+static int cbc_info2(const drew_mode_t *, int op, drew_param_t *,
+		const drew_param_t *);
 static int cbc_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param);
 static int cbc_reset(drew_mode_t *ctx);
-static int cbc_setpad(drew_mode_t *ctx, const drew_pad_t *pad);
+static int cbc_resync(drew_mode_t *ctx);
 static int cbc_setblock(drew_mode_t *ctx, const drew_block_t *algoctx);
 static int cbc_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len);
 static int cbc_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
 static int cbc_decrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len);
+static int cbc_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len);
+static int cbc_decryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
 static int cbc_fini(drew_mode_t *ctx, int flags);
 static int cbc_test(void *p, const drew_loader_t *ldr);
@@ -65,26 +71,62 @@ static int cbc_decryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 		const uint8_t *in, size_t inlen);
 
 static const drew_mode_functbl_t cbc_functbl = {
-	cbc_info, cbc_init, cbc_clone, cbc_reset, cbc_fini, cbc_setpad,
-	cbc_setblock, cbc_setiv, cbc_encrypt, cbc_decrypt, cbc_encrypt, cbc_decrypt,
-	cbc_setdata, cbc_encryptfinal, cbc_decryptfinal, cbc_test
+	cbc_info, cbc_info2, cbc_init, cbc_clone, cbc_reset, cbc_fini,
+	cbc_setblock, cbc_setiv, cbc_encrypt, cbc_decrypt,
+	cbc_encrypt, cbc_decrypt, cbc_setdata,
+	cbc_encryptfinal, cbc_decryptfinal, cbc_resync, cbc_test
+};
+
+static const drew_mode_functbl_t cbcfast_functbl = {
+	cbc_info, cbc_info2, cbc_init, cbc_clone, cbc_reset, cbc_fini,
+	cbc_setblock, cbc_setiv, cbc_encrypt, cbc_decrypt,
+	cbc_encryptfast, cbc_decryptfast, cbc_setdata,
+	cbc_encryptfinal, cbc_decryptfinal, cbc_resync, cbc_test
 };
 
 static int cbc_info(int op, void *p)
 {
 	switch (op) {
 		case DREW_MODE_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_MODE_INTSIZE:
 			return sizeof(struct cbc);
 		case DREW_MODE_FINAL_INSIZE:
 		case DREW_MODE_FINAL_OUTSIZE:
 			return 0;
 		case DREW_MODE_QUANTUM:
+			return 1;
 		default:
-			return DREW_ERR_INVALID;
+			return -DREW_ERR_INVALID;
 	}
 }
+
+static int cbc_info2(const drew_mode_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	struct cbc *c = NULL;
+
+	if (ctx && ctx->ctx)
+		c = ctx->ctx;
+
+	switch (op) {
+		case DREW_MODE_VERSION:
+			return CURRENT_ABI;
+		case DREW_MODE_INTSIZE:
+			return sizeof(struct cbc);
+		case DREW_MODE_FINAL_INSIZE_CTX:
+		case DREW_MODE_FINAL_OUTSIZE_CTX:
+			return 0;
+		case DREW_MODE_BLKSIZE_CTX:
+			if (!c || !c->algo)
+				return -DREW_ERR_MORE_INFO;
+			return c->algo->functbl->info2(c->algo, DREW_BLOCK_BLKSIZE_CTX,
+					NULL, NULL);
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
 
 static int cbc_reset(drew_mode_t *ctx)
 {
@@ -96,6 +138,11 @@ static int cbc_reset(drew_mode_t *ctx)
 	return 0;
 }
 
+static int cbc_resync(drew_mode_t *ctx)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
 static int cbc_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param)
 {
@@ -103,6 +150,7 @@ static int cbc_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 
 	if (!(flags & DREW_MODE_FIXED))
 		newctx = drew_mem_malloc(sizeof(*newctx));
+	memset(newctx, 0, sizeof(*newctx));
 	newctx->ldr = ldr;
 	newctx->algo = NULL;
 	
@@ -110,11 +158,6 @@ static int cbc_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	ctx->functbl = &cbc_functbl;
 
 	return 0;
-}
-
-static int cbc_setpad(drew_mode_t *ctx, const drew_pad_t *algoname)
-{
-	return -DREW_ERR_NOT_IMPL;
 }
 
 static int cbc_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
@@ -128,12 +171,16 @@ static int cbc_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 	if (!algoctx)
 		return -DREW_ERR_INVALID;
 
-	c->algo = algoctx;
+	c->algo = drew_mem_malloc(sizeof(*c->algo));
+	c->algo->functbl = algoctx->functbl;
+	c->algo->functbl->clone(c->algo, algoctx, 0);
 	c->blksize = c->algo->functbl->info(DREW_BLOCK_BLKSIZE, NULL);
 	if (!(c->buf = drew_mem_smalloc(c->blksize)))
 		return -ENOMEM;
 	if (!(c->iv = drew_mem_smalloc(c->blksize)))
 		return -ENOMEM;
+	if (c->blksize == 16)
+		ctx->functbl = &cbcfast_functbl;
 
 	return 0;
 }
@@ -143,7 +190,7 @@ static int cbc_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len)
 	struct cbc *c = ctx->ctx;
 
 	if (c->blksize != len)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	memcpy(c->buf, iv, len);
 	if (iv != c->iv)
@@ -163,8 +210,22 @@ static int cbc_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		return -DREW_ERR_INVALID;
 
 	for (; len >= bs; len -= bs, out += bs, in += bs) {
-		for (size_t i = 0; i < bs; i++)
-			c->buf[i] ^= in[i];
+		xor_buffers2(c->buf, in, bs);
+		c->algo->functbl->encrypt(c->algo, c->buf, c->buf);
+		memcpy(out, c->buf, bs);
+	}
+
+	return 0;
+}
+
+static int cbc_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len)
+{
+	struct cbc *c = ctx->ctx;
+	const size_t bs = c->blksize;
+
+	for (; len >= bs; len -= bs, out += bs, in += bs) {
+		xor_aligned2(c->buf, in, bs);
 		c->algo->functbl->encrypt(c->algo, c->buf, c->buf);
 		memcpy(out, c->buf, bs);
 	}
@@ -183,8 +244,22 @@ static int cbc_decrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 
 	for (; len >= bs; len -= bs, out += bs, in += bs) {
 		c->algo->functbl->decrypt(c->algo, out, in);
-		for (size_t i = 0; i < bs; i++)
-			out[i] ^= c->buf[i];
+		xor_buffers2(out, c->buf, bs);
+		memcpy(c->buf, in, bs);
+	}
+
+	return 0;
+}
+
+static int cbc_decryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
+		size_t len)
+{
+	struct cbc *c = ctx->ctx;
+	const size_t bs = c->blksize;
+
+	for (; len >= bs; len -= bs, out += bs, in += bs) {
+		c->algo->functbl->decrypt(c->algo, out, in);
+		xor_aligned2(out, c->buf, bs);
 		memcpy(c->buf, in, bs);
 	}
 
@@ -334,7 +409,7 @@ static int cbc_test(void *p, const drew_loader_t *ldr)
 	int result = 0, tres;
 	size_t ntests = 0;
 	if (!ldr)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	if ((tres = cbc_test_blowfish(ldr, &ntests)) >= 0) {
 		result <<= ntests;
@@ -352,23 +427,36 @@ static int cbc_fini(drew_mode_t *ctx, int flags)
 {
 	struct cbc *c = ctx->ctx;
 
+	if (c->algo)
+		c->algo->functbl->fini(c->algo, 0);
 	memset(c->buf, 0, c->blksize);
 	drew_mem_sfree(c->buf);
 	memset(c->iv, 0, c->blksize);
 	drew_mem_sfree(c->iv);
 	memset(c, 0, sizeof(*c));
-	if (!(flags & DREW_MODE_FIXED))
+	if (!(flags & DREW_MODE_FIXED)) {
 		drew_mem_free(c);
+		ctx->ctx = NULL;
+	}
 
-	ctx->ctx = NULL;
 	return 0;
 }
 
 static int cbc_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags)
 {
+	struct cbc *c = oldctx->ctx, *cn;
 	if (!(flags & DREW_MODE_FIXED))
 		newctx->ctx = drew_mem_malloc(sizeof(struct cbc));
+	cn = newctx->ctx;
 	memcpy(newctx->ctx, oldctx->ctx, sizeof(struct cbc));
+	if (c->algo) {
+		cn->algo = drew_mem_memdup(c->algo, sizeof(*cn->algo));
+		cn->algo->functbl->clone(cn->algo, c->algo, 0);
+	}
+	if (c->buf)
+		cn->buf = drew_mem_memdup(c->buf, c->blksize);
+	if (c->iv)
+		cn->iv = drew_mem_memdup(c->iv, c->blksize);
 	newctx->functbl = oldctx->functbl;
 	return 0;
 }
@@ -388,7 +476,7 @@ int DREW_PLUGIN_NAME(cbc)(void *ldr, int op, int id, void *p)
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);
 
 	if (id < 0 || id >= nplugins)
-		return -EINVAL;
+		return -DREW_ERR_INVALID;
 
 	switch (op) {
 		case DREW_LOADER_LOOKUP_NAME:
@@ -408,7 +496,7 @@ int DREW_PLUGIN_NAME(cbc)(void *ldr, int op, int id, void *p)
 			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1);
 			return 0;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
 UNEXPORT()

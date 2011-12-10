@@ -196,7 +196,7 @@ drew::TEA::TEA()
 {
 }
 
-int drew::TEA::SetKey(const uint8_t *key, size_t len)
+int drew::TEA::SetKeyInternal(const uint8_t *key, size_t len)
 {
 	E::Copy(m_k, key, len);
 	return 0;

@@ -1,4 +1,5 @@
 PLUGINS_MAC-${CFG_HMAC}		+= hmac/hmac
+PLUGINS_MAC-${CFG_CMAC}		+= cmac/cmac
 
 MAC_DIR			:= impl/mac
 MAC_PLUGINS		:= $(patsubst %,${MAC_DIR}/%,$(PLUGINS_MAC-m))

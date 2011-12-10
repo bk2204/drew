@@ -115,14 +115,10 @@ void prefix ## Pad(drew_hash_t *ctx) \
 DREW_SYM_PUBLIC \
 void prefix ## Final(uint8_t *digest, drew_hash_t *ctx) \
 { \
-	(ctx->functbl->final)(ctx, digest, 0); \
-} \
- \
-DREW_SYM_PUBLIC \
-void prefix ## Transform(void *state, const uint8_t *block) \
-{ \
-	drew_impl_libmd_init(); \
-	(plugins[CONCAT(PLUGIN_, name)].tbl->transform)(NULL, state, block); \
+	int size; \
+	size = (plugins[CONCAT(PLUGIN_, name)].tbl->info2)(ctx, \
+			DREW_HASH_SIZE_CTX, NULL, NULL); \
+	(ctx->functbl->final)(ctx, digest, size, 0); \
 } \
  \
 DREW_SYM_PUBLIC \
@@ -133,7 +129,8 @@ char *prefix ## End(drew_hash_t *ctx, char *buf) \
 	int size = 0; \
 	int i; \
  \
-	size = (plugins[CONCAT(PLUGIN_, name)].tbl->info)(DREW_HASH_SIZE, ctx); \
+	size = (plugins[CONCAT(PLUGIN_, name)].tbl->info2)(ctx, \
+			DREW_HASH_SIZE_CTX, NULL, NULL); \
 	data = malloc(size); \
 	if (!data) \
 		goto errout; \

@@ -86,7 +86,7 @@ int process(uint8_t *val, const char *name, int mode, drew_hash_t *hash)
 			return -1;
 		}
 	}
-	hash->functbl->final(hash, val, 0);
+	hash->functbl->final(hash, val, ALGO_DIGEST_SIZE, 0);
 
 	fclose(fp);
 	return 0;

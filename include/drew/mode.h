@@ -35,21 +35,24 @@
 #error "mismatched alignment values"
 #endif
 
-/* The ABI version of the hash interface. */
-#define DREW_MODE_VERSION 0 /* Not implemented. */
+/* The ABI version of the mode interface. */
+#define DREW_MODE_VERSION 0
 /* The number of bytes per quantum. */
-#define DREW_MODE_QUANTUM 1 /* Not implemented. */
+#define DREW_MODE_QUANTUM 1 /* Not implemented in version 3 and later. */
 /* The size of the underlying implementation's context.  This is useful for the
  * clone function if there's a need to copy the actual context into a given
  * block of memory, such as locked memory.
  */
-#define DREW_MODE_INTSIZE 2 /* Not implemented. */
+#define DREW_MODE_INTSIZE 2
 /* The number of bytes to pass as input to the final method instead of to the
  * normal one.
  */
-#define DREW_MODE_FINAL_INSIZE 3
+#define DREW_MODE_FINAL_INSIZE 3 /* Not implemented in version 3 and later. */
 /* The number of bytes required for output from the final method. */
-#define DREW_MODE_FINAL_OUTSIZE 4
+#define DREW_MODE_FINAL_OUTSIZE 4 /* Not implemented in version 3 and later. */
+#define DREW_MODE_FINAL_INSIZE_CTX 5
+#define DREW_MODE_FINAL_OUTSIZE_CTX 6
+#define DREW_MODE_BLKSIZE_CTX 7
 
 /* This bit indicates that the ctx member of drew_mode_t is externally
  * allocated and sufficiently large.
@@ -100,7 +103,31 @@ typedef struct {
 	int (*test)(void *, const drew_loader_t *);
 } drew_mode_functbl2_t;
 
-typedef drew_mode_functbl2_t drew_mode_functbl_t;
+typedef struct {
+	int (*info)(int op, void *p);
+	int (*info2)(const drew_mode_t *, int op, drew_param_t *,
+			const drew_param_t *);
+	int (*init)(drew_mode_t *, int, const drew_loader_t *,
+			const drew_param_t *);
+	int (*clone)(drew_mode_t *, const drew_mode_t *, int);
+	int (*reset)(drew_mode_t *);
+	int (*fini)(drew_mode_t *, int);
+	int (*setblock)(drew_mode_t *, const drew_block_t *);
+	int (*setiv)(drew_mode_t *, const uint8_t *, size_t);
+	int (*encrypt)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
+	int (*decrypt)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
+	int (*encryptfast)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
+	int (*decryptfast)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
+	int (*setdata)(drew_mode_t *, const uint8_t *, size_t);
+	int (*encryptfinal)(drew_mode_t *, uint8_t *, size_t, const uint8_t *,
+			size_t);
+	int (*decryptfinal)(drew_mode_t *, uint8_t *, size_t, const uint8_t *,
+			size_t);
+	int (*resync)(drew_mode_t *);
+	int (*test)(void *, const drew_loader_t *);
+} drew_mode_functbl3_t;
+
+typedef drew_mode_functbl3_t drew_mode_functbl_t;
 
 struct drew_mode_s {
 	void *ctx;

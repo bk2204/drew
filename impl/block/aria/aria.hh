@@ -33,17 +33,16 @@
 HIDE()
 namespace drew {
 
-class ARIA : public BlockCipher<16>
+class ARIA : public BlockCipher<16, BigEndian>
 {
 	public:
-		typedef BigEndian endian_t;
 		ARIA();
 		~ARIA() {};
-		virtual int SetKey(const uint8_t *key, size_t sz) = 0;
 		int Encrypt(uint8_t *out, const uint8_t *in) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
 	protected:
 		typedef AlignedBlock<uint8_t, 16> AlignedData;
+		virtual int SetKeyInternal(const uint8_t *key, size_t sz) = 0;
 		void Permute(uint8_t *out, const uint8_t *in) const;
 		inline void sl1(AlignedData &out, const AlignedData &in,
 				const AlignedData &x) const
@@ -157,8 +156,8 @@ class ARIA : public BlockCipher<16>
 class ARIA128 : public ARIA
 {
 	public:
-		int SetKey(const uint8_t *key, size_t sz);
 	protected:
+		int SetKeyInternal(const uint8_t *key, size_t sz);
 		typedef unsigned __int128 uint128_t;
 		uint128_t fo128(uint128_t a, uint128_t b) const;
 		uint128_t fe128(uint128_t a, uint128_t b) const;
@@ -167,8 +166,8 @@ class ARIA128 : public ARIA
 class ARIABytewise : public ARIA
 {
 	public:
-		int SetKey(const uint8_t *key, size_t sz);
 	protected:
+		int SetKeyInternal(const uint8_t *key, size_t sz);
 		void RotateRightAndXor(AlignedData &out, const AlignedData &in,
 				const AlignedData &x, size_t offset) const;
 };

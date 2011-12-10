@@ -34,6 +34,8 @@ extern "C" {
 
 static int hc128_test(void *, const drew_loader_t *);
 static int hc128_info(int op, void *p);
+static int hc128_info2(const drew_stream_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in);
 static int hc128_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
 static int hc128_reset(drew_stream_t *ctx);
@@ -46,7 +48,7 @@ static int hc128_encrypt(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
 static int hc128_fini(drew_stream_t *ctx, int flags);
 
-PLUGIN_FUNCTBL(hc128, hc128_info, hc128_init, hc128_setiv, hc128_setkey, hc128_encrypt, hc128_encrypt, hc128_encrypt, hc128_encrypt, hc128_test, hc128_fini, hc128_clone, hc128_reset);
+PLUGIN_FUNCTBL(hc128, hc128_info, hc128_info2, hc128_init, hc128_setiv, hc128_setkey, hc128_encrypt, hc128_encrypt, hc128_encrypt, hc128_encrypt, hc128_test, hc128_fini, hc128_clone, hc128_reset);
 
 static int hc128_repeated_test(void)
 {
@@ -130,12 +132,13 @@ static int hc128_test(void *, const drew_loader_t *)
 }
 
 static const int hc128_keysz[] = {16};
+static const int hc128_ivsz[] = {16};
 
 static int hc128_info(int op, void *p)
 {
 	switch (op) {
 		case DREW_STREAM_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_STREAM_KEYSIZE:
 			for (size_t i = 0; i < DIM(hc128_keysz); i++) {
 				const int *x = reinterpret_cast<int *>(p);
@@ -148,7 +151,40 @@ static int hc128_info(int op, void *p)
 		case DREW_STREAM_BLKSIZE:
 			return 4;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
+	}
+}
+
+static int hc128_info2(const drew_stream_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	switch (op) {
+		case DREW_STREAM_VERSION:
+			return CURRENT_ABI;
+		case DREW_STREAM_KEYSIZE_LIST:
+			for (drew_param_t *p = out; p; p = p->next)
+				if (!strcmp(p->name, "keySize")) {
+					p->param.array.ptr = (void *)hc128_keysz;
+					p->param.array.len = DIM(hc128_keysz);
+				}
+			return 0;
+		case DREW_STREAM_KEYSIZE_CTX:
+			return 16;
+		case DREW_STREAM_IVSIZE_LIST:
+			for (drew_param_t *p = out; p; p = p->next)
+				if (!strcmp(p->name, "ivSize")) {
+					p->param.array.ptr = (void *)hc128_ivsz;
+					p->param.array.len = DIM(hc128_ivsz);
+				}
+			return 0;
+		case DREW_STREAM_IVSIZE_CTX:
+			return 16;
+		case DREW_STREAM_INTSIZE:
+			return sizeof(drew::HC128);
+		case DREW_STREAM_BLKSIZE:
+			return 4;
+		default:
+			return -DREW_ERR_INVALID;
 	}
 }
 

@@ -129,7 +129,7 @@ drew::CAST6::CAST6()
 	k[0] ^= f1(k[1], tm[6][i], tr[6][i]); \
 	k[7] ^= f2(k[0], tm[7][i], tr[7][i]); \
 } while (0)
-int drew::CAST6::SetKey(const uint8_t *key, size_t sz)
+int drew::CAST6::SetKeyInternal(const uint8_t *key, size_t sz)
 {
 	uint32_t keys[8];
 	uint32_t cm = 0x5a827999, tm[8][24];

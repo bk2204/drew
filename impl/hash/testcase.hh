@@ -68,7 +68,7 @@ class HashTestCase
 			T *hash = CreateInstance();
 			for (size_t i = 0; i < m_reps; i++)
 				hash->Update(m_buf, m_len);
-			hash->GetDigest(m_result, 0);
+			hash->GetDigest(m_result, hash->GetDigestSize(), 0);
 
 			int result = !memcmp(buf, m_result, N);
 			delete hash;
@@ -113,14 +113,14 @@ class HashTestCase
 				uint8_t md[N];
 
 				T clone(*ctxt[imod]);
-				clone.GetDigest(md, false);
+				clone.GetDigest(md, clone.GetDigestSize(), false);
 				context->Update(md, N);
 				ctxt[imod]->Update(buf[imod], 256);
 			}
 			for (size_t i = 0; i < NBYTEVALS; i++)
 				delete ctxt[i];
 			uint8_t md[N];
-			context->GetDigest(md, false);
+			context->GetDigest(md, context->GetDigestSize(), false);
 			delete context;
 
 			bool res = !memcmp(md, output, N);

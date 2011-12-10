@@ -145,7 +145,7 @@ uint32_t drew::Twofish::h(uint32_t x, const uint32_t *k, size_t len) const
 }
 
 #define MAXKEYSZ 32
-int drew::Twofish::SetKey(const uint8_t *key, size_t sz)
+int drew::Twofish::SetKeyInternal(const uint8_t *key, size_t sz)
 {
 	uint32_t buf[MAXKEYSZ];
 	size_t len = sz / 8;
@@ -219,51 +219,47 @@ void drew::Twofish::finv(const uint32_t *k, uint32_t a, uint32_t b, uint32_t &c,
 
 int drew::Twofish::Encrypt(uint8_t *out, const uint8_t *in) const
 {
-	uint32_t data[4];
+	uint32_t a, b, c, d;
 
-	endian_t::Copy(data, in, sizeof(data));
-
-	for (size_t i = 0; i < 4; i++)
-		data[i] ^= m_k[i];
+	a = endian_t::Convert<uint32_t>(in +  0) ^ m_k[0];
+	b = endian_t::Convert<uint32_t>(in +  4) ^ m_k[1];
+	c = endian_t::Convert<uint32_t>(in +  8) ^ m_k[2];
+	d = endian_t::Convert<uint32_t>(in + 12) ^ m_k[3];
 
 	const uint32_t *k = m_k + 8;
 	for (size_t i = 0; i < 16; i+=2, k+=4) {
-		f(k, data[0], data[1], data[2], data[3]);
-		f(k+2, data[2], data[3], data[0], data[1]);
+		f(k, a, b, c, d);
+		f(k+2, c, d, a, b);
 	}
-	std::swap(data[0], data[2]);
-	std::swap(data[1], data[3]);
 
 	k = m_k + 4;
-	for (size_t i = 0; i < 4; i++)
-		data[i] ^= k[i];
-
-	endian_t::Copy(out, data, sizeof(data));
+	endian_t::Convert(out +  0, c ^ k[0]);
+	endian_t::Convert(out +  4, d ^ k[1]);
+	endian_t::Convert(out +  8, a ^ k[2]);
+	endian_t::Convert(out + 12, b ^ k[3]);
 	return 0;
 }
 
 int drew::Twofish::Decrypt(uint8_t *out, const uint8_t *in) const
 {
-	uint32_t data[4];
-
-	endian_t::Copy(data, in, sizeof(data));
+	uint32_t a, b, c, d;
 
 	const uint32_t *k = m_k + 4;
-	for (size_t i = 0; i < 4; i++)
-		data[i] ^= m_k[i + 4];
-
-	std::swap(data[0], data[2]);
-	std::swap(data[1], data[3]);
+	c = endian_t::Convert<uint32_t>(in +  0) ^ k[0];
+	d = endian_t::Convert<uint32_t>(in +  4) ^ k[1];
+	a = endian_t::Convert<uint32_t>(in +  8) ^ k[2];
+	b = endian_t::Convert<uint32_t>(in + 12) ^ k[3];
 
 	k = m_k + 38;
 	for (int i = 15; i >= 0; i-=2, k-=4) {
-		finv(k, data[2], data[3], data[0], data[1]);
-		finv(k-2, data[0], data[1], data[2], data[3]);
+		finv(k, c, d, a, b);
+		finv(k-2, a, b, c, d);
 	}
 
-	for (size_t i = 0; i < 4; i++)
-		data[i] ^= m_k[i];
-	endian_t::Copy(out, data, sizeof(data));
+	endian_t::Convert(out +  0, a ^ m_k[0]);
+	endian_t::Convert(out +  4, b ^ m_k[1]);
+	endian_t::Convert(out +  8, c ^ m_k[2]);
+	endian_t::Convert(out + 12, d ^ m_k[3]);
 	return 0;
 }
 

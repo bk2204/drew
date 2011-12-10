@@ -106,7 +106,7 @@ drew::ARIA128::uint128_t drew::ARIA128::fe128(uint128_t a, uint128_t b) const
 	return c;
 }
 
-int drew::ARIA128::SetKey(const uint8_t *key, size_t len)
+int drew::ARIA128::SetKeyInternal(const uint8_t *key, size_t len)
 {
 	// There are only three constants, but they're repeated for convenience.
 	static const uint128_t c[5] = {

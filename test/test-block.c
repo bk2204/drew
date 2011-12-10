@@ -20,9 +20,6 @@
 
 #define FILENAME "test/vectors-block"
 
-#define STUBS_API 1
-#include "stubs.c"
-
 int test_get_type(void)
 {
 	return DREW_TYPE_BLOCK;
@@ -41,7 +38,8 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 }
 
 inline int test_speed_loop(const drew_block_functbl_t *functbl, uint8_t *buf,
-		uint8_t *buf2, uint8_t *key, int keysz, int chunk, size_t nbytes)
+		uint8_t *buf2, uint8_t *key, int keysz, int chunk, size_t nbytes,
+		int mul)
 {
 	int i;
 	drew_block_t ctx;
@@ -49,7 +47,7 @@ inline int test_speed_loop(const drew_block_functbl_t *functbl, uint8_t *buf,
 	functbl->init(&ctx, 0, NULL, NULL);
 	functbl->setkey(&ctx, key, keysz, DREW_BLOCK_MODE_ENCRYPT);
 	for (i = 0; !framework_sigflag && i < nbytes; i += chunk)
-		functbl->encrypt(&ctx, buf2, buf);
+		functbl->encryptfast(&ctx, buf2, buf, mul);
 	functbl->fini(&ctx, 0);
 
 	return i;
@@ -138,7 +136,10 @@ int test_execute(void *data, const char *name, const void *tbl,
 
 	drew_block_t ctx;
 	ctx.functbl = tbl;
-	ctx.functbl->init(&ctx, 0, tep->ldr, NULL);
+	if (ctx.functbl->init(&ctx, 0, tep->ldr, NULL)) {
+		result = TEST_INTERNAL_ERR;
+		goto out;
+	}
 	if (ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0) == -DREW_ERR_NOT_IMPL) {
 		result = TEST_NOT_FOR_US;
 		goto out;
@@ -150,7 +151,10 @@ int test_execute(void *data, const char *name, const void *tbl,
 	}
 	ctx.functbl->fini(&ctx, 0);
 
-	ctx.functbl->init(&ctx, 0, tep->ldr, NULL);
+	if (ctx.functbl->init(&ctx, 0, tep->ldr, NULL)) {
+		result = TEST_INTERNAL_ERR;
+		goto out;
+	}
 	ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0);
 	ctx.functbl->decrypt(&ctx, buf, tc->ct);
 	if (memcmp(buf, tc->pt, len))
@@ -227,6 +231,216 @@ int test_process_testcase(void *data, int type, const char *item,
 	return TEST_OK;
 }
 
+// The version is not what it's supposed to be.
+#define BLOCK_BAD_VERSION		(1 <<  0)
+// The block is using errno values for things other than ENOMEM.
+#define BLOCK_BAD_ERRNO			(1 <<  1)
+// The block is using very odd values (non-power-of-two) for the quantum.
+#define BLOCK_BAD_QUANTUM		(1 <<  2)
+#define BLOCK_BAD_BLKSIZE		(1 <<  3)
+#define BLOCK_BAD_KEYSIZE		(1 <<  4)
+#define BLOCK_BAD_ENDIAN		(1 <<  5)
+#define BLOCK_BAD_INTSIZE		(1 <<  6)
+#define BLOCK_BAD_NULLIFY		(1 <<  7)
+#define BLOCK_BAD_INIT			(1 <<  8)
+#define BLOCK_BAD_FUNCTBL		(1 <<  9)
+#define BLOCK_BAD_SETKEY		(1 << 10)
+#define BLOCK_BAD_CLONE			(1 << 11)
+#define BLOCK_BAD_ENCRYPT		(1 << 12)
+#define BLOCK_BAD_DECRYPT		(1 << 13)
+#define BLOCK_BAD_ENCRYPTFAST	(1 << 14)
+#define BLOCK_BAD_DECRYPTFAST	(1 << 15)
+// Somehow, the clone was detected.
+#define BLOCK_BAD_CRACK			(1 << 16)
+#define BLOCK_BAD_FINI			(1 << 17)
+#define BLOCK_BAD_ERROR			(1 << 18)
+#define BLOCK_BAD_RESET			(1 << 19)
+
+int test_api_context(drew_block_t *ctx, const drew_loader_t *ldr,
+		const drew_param_t *paramp, size_t intsize, size_t blocksize,
+		size_t keysize)
+{
+	int flag = ctx->ctx ? DREW_BLOCK_FIXED : 0;
+	const drew_param_t *param = paramp && paramp->name ? paramp : NULL;
+	int retval = 0;
+	uint8_t *buf;
+	const size_t page = 4096, niters = 4;
+	drew_block_t clone[3];
+
+	// One page, please.
+	posix_memalign((void **)&buf, 16, page*2);
+	memset(buf, 0xe1, page*2);
+
+	if (ctx->functbl->init(ctx, flag, ldr, param)) {
+		retval |= BLOCK_BAD_INIT;
+		return retval;
+	}
+
+	if (ctx->functbl->setkey(ctx, buf, keysize, 0))
+		retval |= BLOCK_BAD_SETKEY;
+
+	if (ctx->functbl->encryptfast(ctx, buf, buf, niters))
+		retval |= BLOCK_BAD_ENCRYPTFAST;
+
+	// Buffer: EN (first half encrypted, second half normal).
+	if (ctx->functbl->clone(&clone[0], ctx, 0) ||
+		clone[0].functbl != ctx->functbl || clone[0].ctx == ctx->ctx)
+		retval |= BLOCK_BAD_CLONE;
+
+	for (size_t i = 0; i < niters; i++) {
+		const size_t off = i * blocksize;
+		if (ctx->functbl->encrypt(ctx, buf+2048+off, buf+2048+off))
+			retval |= BLOCK_BAD_ENCRYPT;
+	}
+	
+	// Buffer: EE.
+	// Decrypt the beginning of the buffer.
+	for (size_t i = 0; i < niters; i++) {
+		const size_t off = i * blocksize;
+		if (clone[0].functbl->decrypt(&clone[0], buf+off, buf+off))
+			retval |= BLOCK_BAD_DECRYPT;
+	}
+
+	// Buffer: NE.
+	if (ctx->functbl->clone(&clone[1], ctx, 0) ||
+		clone[1].functbl != ctx->functbl || clone[1].ctx == ctx->ctx)
+		retval |= BLOCK_BAD_CLONE;
+
+	// Use the data we've encrypted as the key.
+	if (ctx->functbl->setkey(ctx, buf+2048, keysize, 0))
+		retval |= BLOCK_BAD_SETKEY;
+
+	if (clone[0].functbl->setkey(&clone[0], buf+2048, keysize, 0))
+		retval |= BLOCK_BAD_SETKEY;
+
+	// Now decrypt that area.
+	if (clone[1].functbl->decryptfast(&clone[1], buf+2048, buf+2048, niters))
+		retval |= BLOCK_BAD_DECRYPTFAST;
+
+	// Buffer: NN.
+	if (clone[1].functbl->fini(&clone[1], 0))
+		retval |= BLOCK_BAD_FINI;
+
+	if (clone[0].functbl->clone(&clone[2], &clone[0], 0) ||
+		clone[2].functbl != clone[0].functbl || clone[2].ctx == clone[0].ctx)
+		retval |= BLOCK_BAD_CLONE;
+
+	if (clone[0].functbl->fini(&clone[0], 0))
+		retval |= BLOCK_BAD_FINI;
+
+	if (clone[2].functbl->reset(ctx))
+		retval |= BLOCK_BAD_RESET;
+
+	if (ctx->functbl->encryptfast(ctx, buf, buf, niters))
+		retval |= BLOCK_BAD_ENCRYPTFAST;
+
+	if (ctx->functbl->fini(ctx, flag))
+		retval |= BLOCK_BAD_FINI;
+
+	if (clone[2].functbl->decryptfast(&clone[2], buf, buf, niters))
+		retval |= BLOCK_BAD_DECRYPTFAST;
+
+	if (memcmp(buf, buf+page, page))
+		retval |= BLOCK_BAD_CRACK;
+
+	if (clone[2].functbl->fini(&clone[2], 0))
+		retval |= BLOCK_BAD_FINI;
+
+	free(buf);
+
+	return retval;
+}
+
+int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
+		const void *tbl)
+{
+	int res = 0, retval = 0, quantum = 1;
+	size_t intsize = 0, blocksize = 0;
+	int keysize = 0, apiver = 0;
+	drew_block_t c, *ctx = &c;
+	void *mem;
+
+	// Make sure our functinos are not NULL.
+	int (*p)() = tbl;
+	for (int i = 0; i < sizeof(*ctx->functbl)/sizeof(p); i++, p++)
+		if (!p) {
+			retval |= BLOCK_BAD_FUNCTBL;
+			return retval;
+		}
+
+	ctx->functbl = tbl;
+	apiver = res = ctx->functbl->info(DREW_BLOCK_VERSION, NULL);
+	if (is_forbidden_errno(res))
+		retval |= BLOCK_BAD_ERRNO;
+	if (res != 3)
+		retval |= BLOCK_BAD_VERSION;
+
+	res = ctx->functbl->info(DREW_BLOCK_QUANTUM, NULL);
+	if (is_forbidden_errno(res))
+		retval |= BLOCK_BAD_ERRNO;
+	if (apiver < 3) {
+		if (res < 0)
+			retval |= BLOCK_BAD_QUANTUM;
+		else {
+			if (res & (res-1))
+				retval |= BLOCK_BAD_QUANTUM;
+			quantum = res;
+		}
+	}
+
+	res = ctx->functbl->info(DREW_BLOCK_BLKSIZE, NULL);
+	if (is_forbidden_errno(res))
+		retval |= BLOCK_BAD_ERRNO;
+	if (res < 0 || res > (512/8) || (res % quantum))
+		retval |= BLOCK_BAD_BLKSIZE;
+	else
+		blocksize = res;
+
+	res = ctx->functbl->info(DREW_BLOCK_ENDIAN, NULL);
+	if (is_forbidden_errno(res))
+		retval |= BLOCK_BAD_ERRNO;
+	if (res && res != 4321 && res != 1234)
+		retval |= BLOCK_BAD_ENDIAN;
+
+	res = ctx->functbl->info(DREW_BLOCK_INTSIZE, NULL);
+	if (is_forbidden_errno(res))
+		retval |= BLOCK_BAD_ERRNO;
+	if (res <= 0 || res >= 65536)
+		retval |= BLOCK_BAD_INTSIZE;
+	else
+		intsize = res;
+
+	res = ctx->functbl->info(0xdeadbeef, NULL);
+	if (is_forbidden_errno(res))
+		retval |= BLOCK_BAD_ERRNO;
+	if (res != -DREW_ERR_INVALID)
+		retval |= BLOCK_BAD_ERROR;
+
+	for (;;) {
+		res = ctx->functbl->info(DREW_BLOCK_KEYSIZE, &keysize);
+		if (is_forbidden_errno(res))
+			retval |= BLOCK_BAD_ERRNO;
+		if (!res)
+			break;
+		if (res < 0 || res > (4096/8))
+			retval |= BLOCK_BAD_KEYSIZE;
+		else
+			keysize = res;
+
+		ctx->ctx = NULL;
+		retval |= test_api_context(ctx, ldr, NULL, intsize, blocksize, keysize);
+		if (ctx->ctx)
+			retval |= BLOCK_BAD_NULLIFY;
+		ctx->ctx = mem = malloc(intsize);
+		retval |= test_api_context(ctx, ldr, NULL, intsize, blocksize, keysize);
+		if (ctx->ctx != mem)
+			retval |= BLOCK_BAD_NULLIFY;
+		free(mem);
+	}
+
+	return retval;
+}
+
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		const void *tbl, int chunk, int nchunks)
 {
@@ -236,8 +450,14 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	struct timespec cstart, cend;
 	const drew_block_functbl_t *functbl = tbl;
 	const size_t nbytes = chunk * nchunks;
+	int realchunk = chunk;
+	int mul = 1;
 
 	chunk = functbl->info(DREW_BLOCK_BLKSIZE, NULL);
+	if (!(realchunk % chunk)) {
+		mul = realchunk / chunk;
+		chunk = realchunk;
+	}
 	keysz = functbl->info(DREW_BLOCK_KEYSIZE, &keysz);
 	buf = calloc(chunk, 1);
 	if (!buf)
@@ -254,7 +474,7 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	fwdata = framework_setup();
 
 	clock_gettime(USED_CLOCK, &cstart);
-	i = test_speed_loop(functbl, buf, buf2, key, keysz, chunk, nbytes);
+	i = test_speed_loop(functbl, buf, buf2, key, keysz, chunk, nbytes, mul);
 	clock_gettime(USED_CLOCK, &cend);
 
 	framework_teardown(fwdata);

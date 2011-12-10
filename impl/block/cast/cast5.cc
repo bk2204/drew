@@ -113,7 +113,7 @@ drew::CAST5::CAST5()
 {
 }
 
-int drew::CAST5::SetKey(const uint8_t *key, size_t sz)
+int drew::CAST5::SetKeyInternal(const uint8_t *key, size_t sz)
 {
 	// We copy into this buffer because we're going to load this into a buffer
 	// of uint32_ts, but the key size only has to be a multiple of 8 bits.

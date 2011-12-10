@@ -30,6 +30,9 @@
 #endif
 #define _BSD_SOURCE 1
 #define DREW_IN_BUILD 1
+#define CURRENT_ABI	3
+
+#define CURRENT_ABI	3
 
 #if defined(DREW_AS_PLUGIN)
 #define DREW_PLUGIN_NAME(x) drew_plugin_info
