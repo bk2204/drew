@@ -290,7 +290,6 @@ int drew_tls_priority_get_cipher_suite_info(drew_tls_priority_t prio,
 int drew_tls_priority_get_cipher_suites(drew_tls_priority_t prio,
 		drew_tls_cipher_suite_t **suites, size_t *nsuites)
 {
-	int res = 0;
 	LOCK(prio);
 
 	// Yes, this is two-pass.

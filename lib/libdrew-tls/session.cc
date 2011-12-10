@@ -54,6 +54,7 @@ static int make_primitive(const drew_loader_t *ldr, const char *name,
 	return res;
 }
 
+#if 0
 /* Returns 0 on success or a negative value on error.  On success, hash will be
  * initialized and of the type specified in name.
  */
@@ -67,6 +68,7 @@ static int make_hash(const drew_loader_t *ldr, const char *name,
 	res = hash->functbl->init(hash, 0, ldr, NULL);
 	return res;
 }
+#endif
 
 static int make_prng(const drew_loader_t *ldr, const char *name,
 		drew_prng_t *prng)
@@ -82,6 +84,7 @@ static int make_prng(const drew_loader_t *ldr, const char *name,
 	return res;
 }
 
+#if 0
 static int make_mode(const drew_loader_t *ldr, const char *name,
 		drew_mode_t *mode)
 {
@@ -106,6 +109,7 @@ static int make_mac(const drew_loader_t *ldr, const char *name,
 	res = mac->functbl->init(mac, 0, ldr, hash ? &param : NULL);
 	return res;
 }
+#endif
 
 int drew_tls_session_init(drew_tls_session_t *sess, const drew_loader_t *ldr)
 {
@@ -236,8 +240,6 @@ static int encrypt_block(drew_tls_session_t sess, Record &rec,
 static int encrypt_stream(drew_tls_session_t sess, Record &rec,
 		const uint8_t *inbuf, uint16_t inlen)
 {
-	int res = 0;
-
 	return -DREW_ERR_NOT_IMPL;
 }
 
@@ -292,14 +294,12 @@ static int decrypt_block(drew_tls_session_t sess, Record &rec,
 	rec.data = decbuffer;
 	sess->inseqnum++;
 
-	return 0;
+	return res;
 }
 
 static int decrypt_stream(drew_tls_session_t sess, Record &rec,
 		SerializedBuffer &sbuf)
 {
-	int res = 0;
-
 	return -DREW_ERR_NOT_IMPL;
 }
 
@@ -309,7 +309,6 @@ static int send_record(drew_tls_session_t sess, const uint8_t *buf,
 {
 	int res = 0;
 	Record rec;
-	uint16_t belen;
 
 	// Records cannot be greater than 2^14.
 	if (len > 0x3000) {
@@ -353,7 +352,7 @@ static int recv_bytes(drew_tls_session_t sess, SerializedBuffer &buf,
 		size_t len, int flags)
 {
 	ssize_t nrecvd = 0;
-	while (nrecvd < len) {
+	while (nrecvd < ssize_t(len)) {
 		ssize_t nbytes;
 		uint8_t buffer[512];
 		nbytes = sess->data_infunc(sess->data_inp, buffer,
@@ -404,6 +403,7 @@ static int recv_record(drew_tls_session_t sess, Record &rec)
 	return res;
 }
 
+#if 0
 // This function must be externally locked.
 static int send_handshake(drew_tls_session_t sess, uint8_t *buf,
 		size_t len, uint8_t type)
@@ -466,13 +466,12 @@ static int handshake_send_client_hello(drew_tls_session_t sess)
 
 static int handshake_send_server_hello(drew_tls_session_t sess)
 {
-	drew_tls_server_hello_t sh;
-	
 	LOCK(sess);
 	UNLOCK(sess);
 
 	return -DREW_ERR_NOT_IMPL;
 }
+#endif
 
 static int parse_handshake(drew_tls_session_t sess, const Record &rec,
 		SerializedBuffer &buf, uint32_t *length, uint8_t *type)
@@ -757,8 +756,6 @@ int client_send_client_finished(drew_tls_session_t sess)
 
 int client_send_client_data(drew_tls_session_t sess)
 {
-	int res = 0;
-
 	while (sess->handshake_state != CLIENT_HANDSHAKE_CLIENT_FINISHED) {
 		switch (sess->handshake_state) {
 			case CLIENT_HANDSHAKE_NEED_CLIENT_CERT:
@@ -978,7 +975,6 @@ static int handshake_client(drew_tls_session_t sess)
 
 int drew_tls_session_handshake(drew_tls_session_t sess)
 {
-	int res = 0;
 	LOCK(sess);
 	//URETFAIL(sess, make_hash(sess->ldr, "MD5", &sess->handshake.md5));
 	//URETFAIL(sess, make_hash(sess->ldr, "SHA-1", &sess->handshake.sha1));
