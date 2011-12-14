@@ -8,10 +8,6 @@ TEST_SRC		+= libmd/testsuite.c
 TEST_OBJ		:= ${SRC:.c=.o} ${TEST_SRC:.c=.o}
 TEST_EXE		:= libmd/testsuite
 
-PLUG_SRC		+= test/plugin-main.c
-PLUG_OBJ		:= ${SRC:.c=.o} ${PLUG_SRC:.c=.o}
-PLUG_EXE		:= test/plugin-main
-
 RM				?= rm
 RMDIR			?= rmdir
 
@@ -71,7 +67,7 @@ OBJECTS			+= $(EXTRA_OBJECTS-y) $(EXTRA_OBJECTS-m)
 
 DEPFILES		:= $(OBJECTS:.o=.d)
 
-all: ${PLUG_EXE} ${DREW_SONAME} standard
+all: ${DREW_SONAME} standard
 
 depend: $(DEPFILES)
 
@@ -80,9 +76,6 @@ standard: $(TEST_BINARIES) $(UTILITIES)
 
 ${TEST_EXE}: ${TEST_SRC} ${MD_SONAME} ${DREW_SONAME} ${DREW_IMPL_SONAME}
 	${CC} -Ilibmd/include ${CPPFLAGS} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
-
-${PLUG_EXE}: ${PLUG_OBJ} ${DREW_SONAME} ${DREW_IMPL_SONAME}
-	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
 .c.o:
 	${CC} ${CPPFLAGS} ${CFLAGS} -c -o ${.TARGET} ${.IMPSRC}
@@ -126,7 +119,6 @@ plugins: ${PLUGINS}
 clean:
 	${RM} -f *.o test/*.o
 	${RM} -f ${TEST_EXE}
-	${RM} -f ${PLUG_EXE}
 	${RM} -f ${MD_SONAME} ${MD_OBJS}
 	${RM} -f ${DREW_SONAME} ${DREW_SYMLINK}
 	${RM} -f ${TEST_BINARIES}
