@@ -7,5 +7,5 @@ UTILITIES				+= $(SUMS_PROGS)
 
 $(SUMS_PROGS:=.o): util/sum.c
 
-util/%: util/%.o $(DREW_SONAME) $(DREW_IMPL_SONAME)
+util/%: util/%.o | $(DREW_SONAME) $(DREW_IMPL_SONAME)
 	$(CC) $(CFLAGS) -o $(.TARGET) $(.ALLSRC) $(LIBS)
