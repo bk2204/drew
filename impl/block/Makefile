@@ -39,8 +39,9 @@ ${BLOCK_DIR}/linux/linuxblock.so:	impl/multi/linux/af-alg.o
 EXTRA_OBJECTS-${CFG_SHACAL}		+= ${HASH_DIR}/sha1/sha1.o
 EXTRA_OBJECTS-${CFG_LINUXBLOCK}	+= impl/multi/linux/af-alg.o
 
-${BLOCK_DIR}/shacal/shacal.o: CPPFLAGS += -I${HASH_DIR}
-${BLOCK_DIR}/shacal/shacal.d: CPPFLAGS += -I${HASH_DIR}
+${BLOCK_DIR}/shacal/shacal.o:		CPPFLAGS += -I${HASH_DIR}
+${BLOCK_DIR}/shacal/shacal.d:		CPPFLAGS += -I${HASH_DIR}
+${BLOCK_DIR}/aes-native/aesni.o:	CXXFLAGS += $(call TEST_ARG,-maes -msse4)
 
 BLOCK_PLUGINS	:= $(patsubst %,${BLOCK_DIR}/%,$(PLUGINS_BLOCK-m))
 BLOCK_MODULES	:= $(patsubst %,${BLOCK_DIR}/%.o,$(PLUGINS_BLOCK-y))
