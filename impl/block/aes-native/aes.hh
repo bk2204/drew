@@ -64,6 +64,8 @@ class AESNI : public AESNative
 		~AESNI() {};
 		int Encrypt(uint8_t *out, const uint8_t *in) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
+		int EncryptFast(FastBlock *bout, const FastBlock *bin, size_t n) const;
+		int DecryptFast(FastBlock *bout, const FastBlock *bin, size_t n) const;
 	protected:
 		int SetKeyInternal(const uint8_t *key, size_t sz);
 		void SetKeyEncrypt(const uint8_t *key, size_t sz);
