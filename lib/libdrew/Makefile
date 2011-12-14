@@ -15,4 +15,4 @@ ${DREW_DIR}/${DREW_SONAME}: $(DREW_OBJS)
 	${CC} ${CFLAGS} ${LIBCFLAGS} ${SONAME} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
 ${DREW_SONAME}: | ${DREW_DIR}/${DREW_SONAME}
-	[ -L $@ ] || ln -sf $^ $@
+	[ -L $@ ] || ln -sf $| $@

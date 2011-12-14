@@ -10,7 +10,7 @@ $(DREW_IMPL_DIR)/$(DREW_IMPL_SONAME): $(DREW_IMPL_DIR)/stub.o $(MODULES) $(EXTRA
 	$(CXX) $(CXXFLAGS) $(LIBCFLAGS) $(SONAME) -o $(.TARGET) $(.ALLSRC) $(LIBS)
 
 $(DREW_IMPL_SONAME): | $(DREW_IMPL_DIR)/$(DREW_IMPL_SONAME)
-	[ -L $@ ] || ln -sf $^ $@
+	[ -L $@ ] || ln -sf $| $@
 
 $(DREW_IMPL_GEN): $(MODULES) config
 	$(DREW_IMPL_DIR)/generate -m -o $(DREW_IMPL_GEN) $(patsubst %.o,%,$(MODULES))

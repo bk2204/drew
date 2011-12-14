@@ -22,4 +22,4 @@ test/test-prng: LIBS += -lm
 test/test-mem: | $(DREW_SONAME)
 
 test/test-%: test/test-%.o
-	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
+	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} $| ${LIBS}
