@@ -553,8 +553,13 @@ static int bn_fini(drew_bignum_t *ctx, int flags)
 	return 0;
 }
 
-static int bn_clone(drew_bignum_t *newctx, const drew_bignum_t *oldctx, int flags)
+static int bn_clone(drew_bignum_t *newctx, const drew_bignum_t *oldctx,
+		int flags)
 {
+	if (flags & DREW_BIGNUM_COPY) {
+		BN_copy(MP(newctx), MPC(oldctx));
+		return 0;
+	}
 	if (!(flags & DREW_BIGNUM_FIXED))
 		newctx->ctx = malloc(sizeof(struct bignum));
 
