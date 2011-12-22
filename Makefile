@@ -30,7 +30,7 @@ ifeq ($(CFG_STACK_CHECK),y)
 CLIKEFLAGS		+= -fstack-protector
 endif
 
-CPPFLAGS		+= -Iinclude
+CPPFLAGS		+= -Iinclude -I$(dir $@)
 CLIKEFLAGS		+= -Wall -Werror -fPIC -O3 -g -pipe
 CLIKEFLAGS		+= -D_POSIX_SOURCE=200112L -D_XOPEN_SOURCE=600
 CLIKEFLAGS		+= -fextended-identifiers
@@ -64,8 +64,11 @@ include util/Makefile
 include libmd/Makefile
 include doc/manual/Makefile
 
-OBJECTS			+= $(PLUGINS:=.o) $(MODULES)
+IMPL_OBJS		:= $(PLUGINS:=.o) $(MODULES)
+OBJECTS			+= $(IMPL_OBJS)
 OBJECTS			+= $(EXTRA_OBJECTS-y) $(EXTRA_OBJECTS-m)
+
+IMPL_DIRS		:= $(sort $(foreach obj,$(IMPL_OBJS),$(dir $(obj))))
 
 DEPFILES		:= $(OBJECTS:.o=.d)
 
@@ -87,9 +90,13 @@ ${TEST_EXE}: ${TEST_SRC} ${MD_SONAME} ${DREW_SONAME} ${DREW_IMPL_SONAME}
 
 %.d: %.c
 	$(CC) $(CPPFLAGS) -MM $< | sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
+	(x="$@"; [ -n "$${x##impl/*}" ] || \
+		printf "$*.o: $(@D)/metadata.gen\n" >> $@)
 
 %.d: %.cc
 	$(CC) $(CPPFLAGS) -MM $< | sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
+	(x="$@"; [ -n "$${x##impl/*}" ] || \
+		printf "$*.o: $(@D)/metadata.gen\n" >> $@)
 
 ${PLUGINS:=.o}: CPPFLAGS += ${PLUGINCFLAGS}
 
@@ -103,6 +110,9 @@ version:
 	printf '#define DREW_STRING_VERSION "$(VERSION)"\n' > $@
 	printf '#define DREW_VERSION %s\n' \
 		`echo $(VERSION) | perl -pe 's/v(\d+)(-.*)?/$$1/'` >> $@
+
+%/metadata.gen:
+	tools/generate-metadata -v $(dir $@)/metadata.rdf
 
 .PHONY: version tags
 
@@ -129,6 +139,7 @@ clean:
 	${RM} -fr ${PLUGINS} plugins/
 	${RM} -r install
 	${RM} -f tags
+	find -name '*.gen' | xargs -r rm
 	find -name '*.o' | xargs -r rm
 	find -name '*.d' | xargs -r rm
 	find -name '*.so' | xargs -r rm
