@@ -189,6 +189,7 @@ int main(int argc, char **argv)
 	int chunk = 0;
 	int nchunks = 0;
 	int retval = 0;
+	int verbose = 0;
 	int success_only = 0;
 	const char *optalgo = NULL;
 	const char *only = NULL;
@@ -199,7 +200,7 @@ int main(int argc, char **argv)
 	drew_loader_new(&ldr);
 	drew_mem_pool_adjust(NULL, DREW_MEM_SECMEM, DREW_MEM_SECMEM_NO_LOCK, NULL);
 
-	while ((opt = getopt(argc, argv, "hstipfa:c:n:o:r:")) != -1) {
+	while ((opt = getopt(argc, argv, "hstipfa:c:n:o:r:v")) != -1) {
 		switch (opt) {
 			case '?':
 			case ':':
@@ -235,6 +236,9 @@ int main(int argc, char **argv)
 				break;
 			case 'r':
 				resource = optarg;
+				break;
+			case 'v':
+				verbose++;
 				break;
 		}
 	}
