@@ -87,7 +87,7 @@ sub process_file($$) {
 		print $output "};\n";
 	}
 
-	print "#define DREW_PLUGIN_METADATA_NONEMPTY 1\n" if $nonempty;
+	print $output "#define DREW_PLUGIN_METADATA_NONEMPTY 1\n" if $nonempty;
 }
 
 $verbose = 0;
