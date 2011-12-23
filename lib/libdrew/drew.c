@@ -297,6 +297,10 @@ int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
 
 	if (plugin && !path) {
 		int npaths = drew_loader_get_search_path(ldr, 0, NULL), i;
+
+		if (npaths < 0)
+			return npaths;
+
 		for (i = 0; i < npaths; i++) {
 			drew_loader_get_search_path(ldr, i, &path);
 			if (!load_library(ldr, plugin, path, &lib))
