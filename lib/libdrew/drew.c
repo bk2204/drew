@@ -204,9 +204,11 @@ static int load_library_info(drew_loader_t *ldr, library_t *lib)
 		if (!p->functbl)
 			goto out;
 
-		p->metadata = malloc(mdsize);
-		if (mdsize && !p->metadata)
-			goto out;
+		if (mdsize) {
+			p->metadata = malloc(mdsize);
+			if (!p->metadata)
+				goto out;
+		}
 
 		p->name = malloc(namesize);
 		if (!p->name)
