@@ -34,7 +34,9 @@ extern "C" {
 #include <drew/plugin.h>
 #include <drew/block.h>
 
+#ifndef DEPEND
 #include "metadata.gen"
+#endif
 
 #define PLUGIN_FUNCTBL(prefix, info, info2, init, setkey, encrypt, decrypt, encryptmult, decryptmult, test, fini, clone, reset) \
 \

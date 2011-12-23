@@ -89,12 +89,12 @@ ${TEST_EXE}: ${TEST_SRC} ${MD_SONAME} ${DREW_SONAME} ${DREW_IMPL_SONAME}
 	${CXX} ${CPPFLAGS} ${CXXFLAGS} -c -o ${.TARGET} ${.IMPSRC}
 
 %.d: %.c
-	$(CC) $(CPPFLAGS) -MM $< | sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
+	$(CC) $(CPPFLAGS) -DDEPEND -MM $< | sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
 	(x="$@"; [ -n "$${x##impl/*}" ] || \
 		printf "$*.o: $(@D)/metadata.gen\n" >> $@)
 
 %.d: %.cc
-	$(CC) $(CPPFLAGS) -MM $< | sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
+	$(CC) $(CPPFLAGS) -DDEPEND -MM $< | sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
 	(x="$@"; [ -n "$${x##impl/*}" ] || \
 		printf "$*.o: $(@D)/metadata.gen\n" >> $@)
 
