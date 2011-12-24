@@ -31,7 +31,13 @@ while (<>) {
 	elsif (/cipher=([0-9A-Fa-f]+)/) {
 		my $sz = length($1)/2;
 		$want = 1 if ($sz == ($blksz / 2));
-		printf "T%04x c%s%s", $cnt, lc($1), $want ? "" : "\n";
+		printf "T%04x r1 c%s%s", $cnt, lc($1), $want ? "" : "\n";
+	}
+	elsif (/Iterated (\d+) times=([0-9A-Fa-f]+)/) {
+		my $sz = length($2)/2;
+		$want = 1 if ($sz == ($blksz / 2));
+		$cnt++;
+		printf "T%04x r%d c%s%s", $cnt, $1, lc($2), $want ? "" : "\n";
 	}
 	elsif ($want && /([0-9A-Fa-f]+)/) {
 		$want = 0;
