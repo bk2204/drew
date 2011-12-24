@@ -20,6 +20,7 @@ PLUGINS_BLOCK-${CFG_ARIABYTE}	+= aria/ariabyte
 PLUGINS_BLOCK-${CFG_SHACAL}		+= shacal/shacal
 PLUGINS_BLOCK-${CFG_MARS}		+= mars/mars
 PLUGINS_BLOCK-${CFG_LINUXBLOCK}	+= linux/linuxblock
+PLUGINS_BLOCK-${CFG_RC5}		+= rc5/rc5
 
 ${BLOCK_DIR}/cast/cast5.so: ${BLOCK_DIR}/cast/sboxes.o
 ${BLOCK_DIR}/cast/cast6.so: ${BLOCK_DIR}/cast/sboxes.o
