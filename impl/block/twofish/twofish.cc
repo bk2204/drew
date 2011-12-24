@@ -196,11 +196,10 @@ void drew::Twofish::f(const uint32_t *k, uint32_t a, uint32_t b, uint32_t &c,
 	x = g0(a);
 	y = g1(b);
 	x += y;
-	y += x;
-	d = RotateLeft(d, 1);
-	c ^= x + k[0];
-	d ^= y + k[1];
-	c = RotateRight(c, 1);
+	y += x + k[1];
+	x += k[0];
+	d = RotateLeft(d, 1) ^ y;
+	c = RotateRight(c ^ x, 1);
 }
 
 void drew::Twofish::finv(const uint32_t *k, uint32_t a, uint32_t b, uint32_t &c,
