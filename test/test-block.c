@@ -59,6 +59,7 @@ struct testcase {
 	size_t klen;
 	uint8_t *key;
 	size_t blksize;
+	size_t nrepeats;
 	uint8_t *pt;
 	uint8_t *ct;
 };
@@ -96,6 +97,7 @@ void *test_clone_data(void *tc, int flags)
 	q->algo = strdup(p->algo);
 	q->klen = p->klen;
 	q->blksize = p->blksize;
+	q->nrepeats = p->nrepeats;
 	q->key = malloc(q->klen);
 	memcpy(q->key, p->key, q->klen);
 	q->pt = malloc(q->blksize);
@@ -130,6 +132,7 @@ int test_execute(void *data, const char *name, const void *tbl,
 	if (strcmp(name, tc->algo))
 		return TEST_NOT_FOR_US;
 	size_t len = tc->blksize;
+	size_t nrepeats = tc->nrepeats;
 	if (!tc->pt || !tc->ct)
 		return TEST_CORRUPT | 2;
 	uint8_t *buf = malloc(len);
@@ -144,7 +147,9 @@ int test_execute(void *data, const char *name, const void *tbl,
 		result = TEST_NOT_FOR_US;
 		goto out;
 	}
-	ctx.functbl->encrypt(&ctx, buf, tc->pt);
+	memcpy(buf, tc->pt, len);
+	for (size_t i = 0; i < nrepeats; i++)
+		ctx.functbl->encrypt(&ctx, buf, buf);
 	if (memcmp(buf, tc->ct, len)) {
 		result = TEST_FAILED | 'e';
 		goto out;
@@ -156,7 +161,9 @@ int test_execute(void *data, const char *name, const void *tbl,
 		goto out;
 	}
 	ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0);
-	ctx.functbl->decrypt(&ctx, buf, tc->ct);
+	memcpy(buf, tc->ct, len);
+	for (size_t i = 0; i < nrepeats; i++)
+		ctx.functbl->decrypt(&ctx, buf, buf);
 	if (memcmp(buf, tc->pt, len))
 		result = TEST_FAILED | 'd';
 
@@ -203,6 +210,10 @@ int test_process_testcase(void *data, int type, const char *item,
 			free(tc->algo);
 			tc->algo = strdup(item);
 			tc->blksize = get_block_size(tep, tc);
+			break;
+		case 'r':
+			if (sscanf(item, "%zu", &tc->nrepeats) != 1)
+				return TEST_CORRUPT;
 			break;
 		case 'K':
 			if (sscanf(item, "%zu", &tc->klen) != 1)
