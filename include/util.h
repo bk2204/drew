@@ -29,6 +29,8 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+#include <drew/util.h>
+
 /* There are a couple different types of functionality we need from the system.
  * One of them is a definition of BYTE_ORDER, LITTLE_ENDIAN, and BIG_ENDIAN.
  * Another is a consistent big-endian or little-endian presentation of bytes on
@@ -113,13 +115,13 @@
 #endif
 
 #define FAST_ALIGNMENT 16
-#if defined(__GNUC__)
+#if defined(DREW_COMPILER_GCCLIKE)
 #define ALIGNED_T __attribute__((aligned(FAST_ALIGNMENT)))
 #else
 #define ALIGNED_T
 #endif
 
-#if defined(__GNUC__)
+#if defined(DREW_COMPILER_GCCLIKE)
 /* Enable the use of vector types.  If the processor supports vectorization, GCC
  * will generate vectorized code.  If they are not, GCC will automatically
  * generate equivalent non-vector code.
@@ -135,7 +137,7 @@ typedef __uint128_t uint128_t;
 #endif
 #endif
 
-#ifdef __GNUC__
+#ifdef DREW_COMPILER_GCCLIKE
 #define HIDE() _Pragma("GCC visibility push(hidden)")
 #define UNHIDE() _Pragma("GCC visibility pop")
 #define EXPORT() _Pragma("GCC visibility push(default)")

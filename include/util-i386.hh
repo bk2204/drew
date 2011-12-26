@@ -66,7 +66,7 @@ ROTATE(64, Right, q, r, >>, <<)
 inline int GetCpuid(uint32_t func, uint32_t &a, uint32_t &b, uint32_t &c,
 		uint32_t &d)
 {
-#if defined(__GNUC__)
+#if defined(DREW_COMPILER_GCCLIKE)
 #if defined(__amd64__)
 	__asm__ __volatile__("cpuid"
 			: "=a"(a), "=b"(b), "=c"(c), "=d"(d)
@@ -93,7 +93,7 @@ inline uint8_t EndianBase::GetArrayByte(const uint64_t *arr, size_t n)
 	return p[n];
 }
 
-#if defined(__GNUC__) && defined(__SSSE3__) && defined(VECTOR_T)
+#if defined(DREW_COMPILER_GCCLIKE) && defined(__SSSE3__) && defined(VECTOR_T)
 template<>
 template<>
 inline uint8_t *Endian<DREW_BIG_ENDIAN>::Copy<uint32_t>(uint8_t *dest, const uint32_t *src, size_t len)
