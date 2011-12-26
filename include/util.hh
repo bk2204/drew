@@ -33,6 +33,10 @@
 #else
 #define DREW_BYTE_ORDER		DREW_LITTLE_ENDIAN
 #endif
+#elif defined(__LITTLE_ENDIAN__)
+#define DREW_BYTE_ORDER		DREW_LITTLE_ENDIAN
+#elif defined(__BIG_ENDIAN__)
+#define DREW_BYTE_ORDER		DREW_BIG_ENDIAN
 #elif BYTE_ORDER == BIG_ENDIAN
 #define DREW_BYTE_ORDER		DREW_BIG_ENDIAN
 #else
