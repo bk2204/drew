@@ -31,7 +31,7 @@
 #include "util.hh"
 
 #if defined(__i386__) || defined(__amd64__) || defined(__x86_64__)
-#if defined(__GNUC__) && defined(__AES__)
+#if defined(__GNUC__) && defined(__AES__) && defined(__SSE4_1__)
 #define FEATURE_AESNI
 #endif
 #endif
