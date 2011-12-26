@@ -82,8 +82,26 @@
 #define FEATURE_BYTESWAP
 #endif
 
-#if !defined(BYTE_ORDER) || !defined(LITTLE_ENDIAN) || !defined(BIG_ENDIAN)
-#error "BYTE_ORDER macros must be defined!"
+#define DREW_BIG_ENDIAN		4321U
+#define DREW_LITTLE_ENDIAN	1234U
+#if !defined(BYTE_ORDER) && defined(__BYTE_ORDER__)
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define DREW_BYTE_ORDER		DREW_BIG_ENDIAN
+#else
+#define DREW_BYTE_ORDER		DREW_LITTLE_ENDIAN
+#endif
+#elif defined(__LITTLE_ENDIAN__)
+#define DREW_BYTE_ORDER		DREW_LITTLE_ENDIAN
+#elif defined(__BIG_ENDIAN__)
+#define DREW_BYTE_ORDER		DREW_BIG_ENDIAN
+#elif BYTE_ORDER == BIG_ENDIAN
+#define DREW_BYTE_ORDER		DREW_BIG_ENDIAN
+#else
+#define DREW_BYTE_ORDER		DREW_LITTLE_ENDIAN
+#endif
+
+#if !defined(DREW_BYTE_ORDER)
+#error "DREW_BYTE_ORDER macros must be defined!"
 #endif
 
 #if defined(__i386__) || defined(__amd64__)
