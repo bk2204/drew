@@ -21,6 +21,8 @@
  * public domain) and subsequently rewritten.
  */
 
+#if !defined(__clang__)
+/* clang doesn't support extended identifiers.  A bug has been filed. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -1541,3 +1543,4 @@ void drew::Gr\u00f8stl512::GetDigest(uint8_t *digest, size_t len, bool nopad)
 	E::Copy(buf, m_hash, sizeof(buf));
 	memcpy(digest, buf+off, len);
 }
+#endif
