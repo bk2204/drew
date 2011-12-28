@@ -349,7 +349,9 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	mctx.functbl->init(&mctx, 0, ldr, NULL);
 	mctx.functbl->setblock(&mctx, &bctx);
 	mctx.functbl->setiv(&mctx, buf2, blksz);
-	encrypt = (chunk & 15) ? mctx.functbl->encrypt : mctx.functbl->encryptfast;
+	encrypt = flags & FLAG_DECRYPT ?
+		((chunk & 15) ? mctx.functbl->decrypt : mctx.functbl->decryptfast) :
+		((chunk & 15) ? mctx.functbl->encrypt : mctx.functbl->encryptfast);
 	for (i = 0; i < nchunks; i++)
 		encrypt(&mctx, buf, buf, chunk);
 	clock_gettime(USED_CLOCK, &cend);
