@@ -60,7 +60,7 @@ static inline int test_speed_loop(drew_bignum_t *ctx, uint8_t *buf,
 #include "stubs.c"
 
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
-		const void *tbl, int chunk, int nchunks)
+		const void *tbl, int chunk, int nchunks, int flags)
 {
 	int i;
 	uint8_t *buf, *mod;

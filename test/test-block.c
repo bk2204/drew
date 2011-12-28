@@ -453,7 +453,7 @@ int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
 }
 
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
-		const void *tbl, int chunk, int nchunks)
+		const void *tbl, int chunk, int nchunks, int flags)
 {
 	int i, keysz = 0;
 	uint8_t *buf, *buf2, *key;

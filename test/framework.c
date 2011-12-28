@@ -190,6 +190,7 @@ int main(int argc, char **argv)
 	int nchunks = 0;
 	int retval = 0;
 	int verbose = 0;
+	int flags = 0;
 	int success_only = 0;
 	const char *optalgo = NULL;
 	const char *only = NULL;
@@ -200,7 +201,7 @@ int main(int argc, char **argv)
 	drew_loader_new(&ldr);
 	drew_mem_pool_adjust(NULL, DREW_MEM_SECMEM, DREW_MEM_SECMEM_NO_LOCK, NULL);
 
-	while ((opt = getopt(argc, argv, "hstipfa:c:n:o:r:v")) != -1) {
+	while ((opt = getopt(argc, argv, "hstipfda:c:n:o:r:v")) != -1) {
 		switch (opt) {
 			case '?':
 			case ':':
@@ -239,6 +240,9 @@ int main(int argc, char **argv)
 				break;
 			case 'v':
 				verbose++;
+				break;
+			case 'd':
+				flags = FLAG_DECRYPT;
 				break;
 		}
 	}
@@ -322,7 +326,8 @@ int main(int argc, char **argv)
 
 		switch (mode) {
 			case MODE_SPEED:
-				result = test_speed(ldr, name, algo, functbl, chunk, nchunks);
+				result = test_speed(ldr, name, algo, functbl, chunk, nchunks,
+						flags);
 				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
 					error++;
 				if (result == -DREW_ERR_NOT_IMPL)

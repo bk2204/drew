@@ -44,7 +44,7 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 #include "stubs.c"
 
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
-		const void *tbl, int chunk, int nchunks)
+		const void *tbl, int chunk, int nchunks, int flags)
 {
 	return -DREW_ERR_NOT_IMPL;
 }

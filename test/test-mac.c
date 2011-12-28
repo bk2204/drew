@@ -255,7 +255,7 @@ static int make_new_ctx(const drew_loader_t *ldr, const char *name, void *ctx,
 }
 
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
-		const void *tbl, int chunk, int nchunks)
+		const void *tbl, int chunk, int nchunks, int flags)
 {
 	int i, keysz = 32, resultsz = 512, res = 0;
 	uint8_t *buf, *key, *result;
