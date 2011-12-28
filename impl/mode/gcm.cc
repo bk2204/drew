@@ -393,6 +393,17 @@ static void increment_counter(uint8_t *ctr, size_t len)
 	}
 }
 
+static void increment_fast(uint32_t *ctr)
+{
+	const size_t len = 4;
+	bool carry = 0;
+	carry = !++ctr[len - 1];
+	for (int i = len - 2; unlikely(carry && i >= 0); i--) {
+		if (!(carry = !++ctr[i]))
+			break;
+	}
+}
+
 static int gcm_encrypt(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 		size_t len)
 {
@@ -436,6 +447,7 @@ static int gcm_encrypt(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 	return 0;
 }
 
+/* This is only ever called for 16-byte block ciphers. */
 static int gcm_encryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 		size_t len)
 {
@@ -444,15 +456,18 @@ static int gcm_encryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 	const uint8_t *in = inp;
 	const size_t blksize = 16;
 	const size_t chunks = len / blksize;
+	uint32_t ctr[4];
 
 	c->clen += len;
+	E::Copy(ctr, c->y, sizeof(ctr));
 
 	for (size_t i = 0; i < len; i += blksize, out += blksize, in += blksize) {
-		increment_counter(c->y, blksize);
-		memcpy(out, c->y, blksize);
+		increment_fast(ctr);
+		E::Copy(out, ctr, sizeof(ctr));
 	}
 	c->algo->functbl->encryptfast(c->algo, outp, outp, chunks);
 	XorAligned(outp, inp, len);
+	E::Copy(c->y, ctr, sizeof(ctr));
 	hash_fast(c, c->x, outp, chunks);
 
 	return 0;
