@@ -50,6 +50,7 @@ CFG_SHACAL		= y
 CFG_MARS		= y
 CFG_RC5			= No, thanks.  I'm patented.
 CFG_RC6			= No, thanks.  I'm patented.
+CFG_SAFER		= y
 
 # Modes.
 CFG_CFB			= y

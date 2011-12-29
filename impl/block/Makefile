@@ -22,6 +22,7 @@ PLUGINS_BLOCK-${CFG_MARS}		+= mars/mars
 PLUGINS_BLOCK-${CFG_LINUXBLOCK}	+= linux/linuxblock
 PLUGINS_BLOCK-${CFG_RC5}		+= rc5/rc5
 PLUGINS_BLOCK-${CFG_RC6}		+= rc6/rc6
+PLUGINS_BLOCK-${CFG_SAFER}		+= safer/safer
 
 ${BLOCK_DIR}/cast/cast5.so: ${BLOCK_DIR}/cast/sboxes.o
 ${BLOCK_DIR}/cast/cast6.so: ${BLOCK_DIR}/cast/sboxes.o
