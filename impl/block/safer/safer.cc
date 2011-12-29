@@ -54,6 +54,14 @@ static int safertest(void *, const drew_loader_t *)
 	res <<= 2;
 	res |= BlockTestCase<SAFER>("0807060504030201", 8).Test("0102030405060708",
 			"c8f29cdd87783ed9");
+	res <<= 2;
+	res |= BlockTestCase<SAFER>(new SAFER(12),
+			"08070605040302010807060504030201", 16).Test("0102030405060708",
+				"dd3584a31ffb5bbb");
+	res <<= 2;
+	res |= BlockTestCase<SAFER>(new SAFER(12),
+			"08070605040302010807060504030201", 16).Test("f8f9fafbfcfdfeff",
+				"bfe1b589b8498842");
 
 	return res;
 }
@@ -70,32 +78,59 @@ extern "C" {
 
 typedef drew::SAFER::endian_t E;
 
-drew::SAFER::SAFER()
+drew::SAFER::SAFER() : rounds(0)
+{
+}
+
+drew::SAFER::SAFER(size_t r) : rounds(r)
 {
 }
 
 int drew::SAFER::SetKeyInternal(const uint8_t *key, size_t sz)
 {
-	uint8_t r[8];
+	uint8_t r[16];
 
 	switch (sz) {
 		case 8:
-			rounds = 6;
+			memcpy(r, key, 8);
+			if (!rounds)
+				rounds = 6;
 			break;
 		case 16:
-			rounds = 10;
-			return -DREW_ERR_NOT_IMPL;
+			memcpy(r, key, 16);
+			if (!rounds)
+				rounds = 10;
 			break;
 		default:
 			return -DREW_ERR_INVALID;
 	}
 
-	memcpy(r, key, 8);
-	memcpy(k[0], r, 8);
-	for (unsigned i = 1; i < (2 * rounds) + 1; i++) {
-		for (int j = 0; j < 8; j++) {
-			r[j] = RotateLeft(r[j], 3);
-			k[i][j] = r[j] + s[s[(9 * (i+1)) + j + 1]];
+	if (rounds > MAX_ROUNDS)
+		return -DREW_ERR_NOT_IMPL;
+
+	if (sz == 8) {
+		memcpy(k[0], r, 8);
+		for (unsigned i = 1; i < (2 * rounds) + 1; i++) {
+			for (int j = 0; j < 8; j++) {
+				r[j] = RotateLeft(r[j], 3);
+				k[i][j] = r[j] + s[s[(9 * (i+1)) + j + 1]];
+			}
+		}
+	}
+	else {
+		memcpy(k[0], r+8, 8);
+		uint8_t *r1 = r, *r2 = r + 8;
+		for (int i = 0; i < 8; i++)
+			r1[i] = RotateRight(r1[i], 3);
+		for (unsigned i = 1; i < (2 * rounds) + 1; i += 2) {
+			for (int j = 0; j < 8; j++) {
+				r1[j] = RotateLeft(r1[j], 6);
+				k[i][j] = r1[j] + s[s[(9 * (i+1)) + j + 1]];
+			}
+			for (int j = 0; j < 8; j++) {
+				r2[j] = RotateLeft(r2[j], 6);
+				k[i+1][j] = r2[j] + s[s[(9 * (i+2)) + j + 1]];
+			}
 		}
 	}
 	return 0;

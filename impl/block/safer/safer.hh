@@ -31,10 +31,12 @@
 HIDE()
 namespace drew {
 
+#define MAX_ROUNDS 16
 class SAFER : public BlockCipher<8, NonEndian>
 {
 	public:
 		SAFER();
+		SAFER(size_t);
 		~SAFER() {};
 		int Encrypt(uint8_t *out, const uint8_t *in) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
@@ -52,7 +54,7 @@ class SAFER : public BlockCipher<8, NonEndian>
 		static void SubstituteForward(uint8_t *);
 		static void SubstituteInverse(uint8_t *);
 		virtual int SetKeyInternal(const uint8_t *key, size_t sz);
-		uint8_t k[21][8];
+		uint8_t k[(MAX_ROUNDS * 2) + 1][8];
 		unsigned rounds;
 		static const uint8_t s[256], sinv[256];
 	private:
