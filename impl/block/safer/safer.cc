@@ -37,6 +37,11 @@ static const int saferkeysz[] =
 	8, 16
 };
 
+static const int saferskkeysz[] =
+{
+	8, 16
+};
+
 static int safertest(void *, const drew_loader_t *)
 {
 	using namespace drew;
@@ -66,12 +71,31 @@ static int safertest(void *, const drew_loader_t *)
 	return res;
 }
 
+static int safersktest(void *, const drew_loader_t *)
+{
+	using namespace drew;
+
+	typedef BlockTestCase<SAFER_SK> BTC;
+
+	int res = 0;
+
+	res |= BTC("0000000000000001", 8).Test("0000000000000000",
+			"fb9073d344573b0c");
+	res <<= 2;
+	res |= BTC("00000000000000010000000000000001", 16).Test("0000000000000000",
+			"f9b0ab1bdc61bde6");
+
+	return res;
+}
+
 }
 
 extern "C" {
 	PLUGIN_STRUCTURE(safer, SAFER)
+	PLUGIN_STRUCTURE(safersk, SAFER_SK)
 	PLUGIN_DATA_START()
 	PLUGIN_DATA(safer, "SAFER-K")
+	PLUGIN_DATA(safersk, "SAFER-SK")
 	PLUGIN_DATA_END()
 	PLUGIN_INTERFACE(safer)
 }
@@ -135,6 +159,67 @@ int drew::SAFER::SetKeyInternal(const uint8_t *key, size_t sz)
 	}
 	return 0;
 }
+
+int drew::SAFER_SK::SetKeyInternal(const uint8_t *key, size_t sz)
+{
+	uint8_t r[18];
+
+	switch (sz) {
+		case 8:
+			memcpy(r, key, 8);
+			if (!rounds)
+				rounds = 6;
+			break;
+		case 16:
+			memcpy(r, key, 8);
+			memcpy(r+9, key+8, 8);
+			if (!rounds)
+				rounds = 10;
+			break;
+		default:
+			return -DREW_ERR_INVALID;
+	}
+
+	if (rounds > MAX_ROUNDS)
+		return -DREW_ERR_NOT_IMPL;
+
+	if (sz == 8) {
+		r[8] = 0;
+		for (int j = 0; j < 8; j++)
+			r[8] ^= r[j];
+		memcpy(k[0], r, 8);
+		for (unsigned i = 1; i < (2 * rounds) + 1; i++) {
+			for (int j = 0; j < 9; j++)
+				r[j] = RotateLeft(r[j], 3);
+			for (int j = 0; j < 8; j++)
+				k[i][j] = r[(i + j) % 9] + s[s[(9 * (i+1)) + j + 1]];
+		}
+	}
+	else {
+		memcpy(k[0], r+9, 8);
+		uint8_t *r1 = r, *r2 = r + 9;
+		r1[8] = 0;
+		r2[8] = 0;
+		for (int j = 0; j < 8; j++) {
+			r1[8] ^= r1[j];
+			r2[8] ^= r2[j];
+		}
+		for (int i = 0; i < 9; i++)
+			r1[i] = RotateRight(r1[i], 3);
+		for (unsigned i = 1; i < (2 * rounds) + 1; i += 2) {
+			for (int j = 0; j < 9; j++) {
+				r1[j] = RotateLeft(r1[j], 6);
+				r2[j] = RotateLeft(r2[j], 6);
+			}
+			for (int j = 0; j < 8; j++)
+				k[i][j] = r1[(i + j) % 9] + s[s[(9 * (i+1)) + j + 1]];
+			for (int j = 0; j < 8; j++)
+				k[i+1][j] = r2[(i + j + 1) % 9] + s[s[(9 * (i+2)) + j + 1]];
+		}
+	}
+	return 0;
+}
+
 
 inline void drew::SAFER::F(uint8_t &a, uint8_t &b, uint8_t l, uint8_t r)
 {

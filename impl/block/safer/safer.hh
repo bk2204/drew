@@ -60,6 +60,17 @@ class SAFER : public BlockCipher<8, NonEndian>
 	private:
 };
 
+class SAFER_SK : public SAFER
+{
+	public:
+		SAFER_SK() : SAFER() {}
+		SAFER_SK(size_t r) : SAFER(r) {}
+		~SAFER_SK() {};
+	protected:
+		virtual int SetKeyInternal(const uint8_t *key, size_t sz);
+	private:
+};
+
 }
 UNHIDE()
 
