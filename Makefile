@@ -112,7 +112,11 @@ version:
 		`echo $(VERSION) | perl -pe 's/v(\d+)(-.*)?/$$1/'` >> $@
 
 %/metadata.gen:
+ifeq ($(CFG_METADATA),y)
 	tools/generate-metadata -v $(dir $@)/metadata.rdf
+else
+	touch $@
+endif
 
 .PHONY: version tags
 
