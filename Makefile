@@ -4,10 +4,6 @@ VERSION			:= $(shell test -d .git && git describe)
 
 CATEGORIES		:= hash block mode mac stream prng bignum pkenc pksig kdf ecc
 
-TEST_SRC		+= libmd/testsuite.c
-TEST_OBJ		:= ${SRC:.c=.o} ${TEST_SRC:.c=.o}
-TEST_EXE		:= libmd/testsuite
-
 RM				?= rm
 RMDIR			?= rmdir
 
@@ -57,11 +53,11 @@ SONAME			= -Wl,-soname,$(@F)
 all:
 
 include lib/libdrew/Makefile
+include lib/libmd/Makefile
 include $(patsubst %,impl/%/Makefile,$(CATEGORIES))
 include lib/libdrew-impl/Makefile
 include test/Makefile
 include util/Makefile
-include libmd/Makefile
 include doc/manual/Makefile
 
 IMPL_OBJS		:= $(PLUGINS:=.o) $(MODULES)
@@ -76,11 +72,8 @@ all: ${DREW_SONAME} standard
 
 depend: $(DEPFILES)
 
-standard: ${DREW_SONAME} ${MD_SONAME} plugins libmd/testsuite
+standard: ${DREW_SONAME} ${MD_SONAME} plugins
 standard: $(TEST_BINARIES) $(UTILITIES)
-
-${TEST_EXE}: ${TEST_SRC} ${MD_SONAME} ${DREW_SONAME} ${DREW_IMPL_SONAME}
-	${CC} -Ilibmd/include ${CPPFLAGS} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
 .c.o:
 	${CC} ${CPPFLAGS} ${CFLAGS} -c -o ${.TARGET} ${.IMPSRC}
@@ -134,7 +127,6 @@ plugins: ${PLUGINS}
 
 clean:
 	${RM} -f *.o test/*.o
-	${RM} -f ${TEST_EXE}
 	${RM} -f ${MD_SONAME} ${MD_OBJS}
 	${RM} -f ${DREW_SONAME} ${DREW_SYMLINK}
 	${RM} -f ${TEST_BINARIES}
@@ -156,9 +148,9 @@ test: .PHONY
 test check: test-scripts testx-scripts test-libmd
 speed speed-test: speed-scripts
 
-test-libmd: ${TEST_EXE}
-	env LD_LIBRARY_PATH=. ./${TEST_EXE} -x | \
-		grep -v 'bytes in' | diff -u libmd/test-results -
+test-libmd: $(TEST_BINARIES) plugins
+	env LD_LIBRARY_PATH=. test/libmd-testsuite -x | \
+		grep -v 'bytes in' | diff -u test/libmd-test-results -
 
 test-scripts: $(TEST_BINARIES) plugins
 	set -e; for i in $(CATEGORIES); do \
