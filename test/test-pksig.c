@@ -1,5 +1,5 @@
 /*-
- * brian m. carlson <sandals@crustytoothpaste.ath.cx> wrote this source code.
+ * brian m. carlson <sandals@crustytoothpaste.net> wrote this source code.
  * This source code is in the public domain; you may do whatever you please with
  * it.  However, a credit in the documentation, although not required, would be
  * appreciated.
@@ -312,7 +312,7 @@ int test_process_testcase(void *data, int type, const char *item,
 }
 
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
-		const void *tbl, int chunk, int nchunks)
+		const void *tbl, int chunk, int nchunks, int flags)
 {
 	return -DREW_ERR_NOT_IMPL;
 }

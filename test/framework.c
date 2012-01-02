@@ -1,5 +1,5 @@
 /*-
- * brian m. carlson <sandals@crustytoothpaste.ath.cx> wrote this source code.
+ * brian m. carlson <sandals@crustytoothpaste.net> wrote this source code.
  * This source code is in the public domain; you may do whatever you please with
  * it.  However, a credit in the documentation, although not required, would be
  * appreciated.
@@ -21,6 +21,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <drew/mem.h>
 #include <drew/plugin.h>
 
 bool is_forbidden_errno(int val)
@@ -57,7 +58,7 @@ void *framework_setup(void)
 	struct framework_data *fwdata;
 	struct sigaction act;
 
-	fwdata = malloc(sizeof(*fwdata));
+	fwdata = drew_mem_malloc(sizeof(*fwdata));
 	if (!fwdata)
 		return NULL;
 
@@ -139,17 +140,18 @@ void print_speed_info(int chunk, int nchunks, const struct timespec *cstart,
 int process_bytes(ssize_t len, uint8_t **buf, const char *data)
 {
 	uint8_t *p;
+	drew_mem_free(*buf);
+	*buf = 0;
 	if (len < 0)
 		return TEST_CORRUPT;
 	if (strlen(data) != len * 2) {
 		return TEST_CORRUPT;
 	}
-	free(*buf);
 	// Make sure we don't get a NULL pointer if len is 0.
-	*buf = p = malloc(len ? len : 1);
+	*buf = p = drew_mem_malloc(len ? len : 1);
 	for (size_t i = 0; i < len; i++) {
 		if (sscanf(data+(i*2), "%02hhx", p+i) != 1) {
-			free(p);
+			drew_mem_free(p);
 			return TEST_CORRUPT;
 		}
 	}
@@ -187,6 +189,8 @@ int main(int argc, char **argv)
 	int chunk = 0;
 	int nchunks = 0;
 	int retval = 0;
+	int verbose = 0;
+	int flags = 0;
 	int success_only = 0;
 	const char *optalgo = NULL;
 	const char *only = NULL;
@@ -195,8 +199,9 @@ int main(int argc, char **argv)
 	struct test_external tes;
 
 	drew_loader_new(&ldr);
+	drew_mem_pool_adjust(NULL, DREW_MEM_SECMEM, DREW_MEM_SECMEM_NO_LOCK, NULL);
 
-	while ((opt = getopt(argc, argv, "hstipfa:c:n:o:r:")) != -1) {
+	while ((opt = getopt(argc, argv, "hstipfda:c:n:o:r:v")) != -1) {
 		switch (opt) {
 			case '?':
 			case ':':
@@ -233,6 +238,12 @@ int main(int argc, char **argv)
 			case 'r':
 				resource = optarg;
 				break;
+			case 'v':
+				verbose++;
+				break;
+			case 'd':
+				flags = FLAG_DECRYPT;
+				break;
 		}
 	}
 
@@ -267,21 +278,33 @@ int main(int argc, char **argv)
 	nplugins = drew_loader_get_nplugins(ldr, -1);
 	type = test_get_type();
 
-	if (mode == MODE_TEST &&
-			(retval = test_external_parse(ldr, resource, &tes)))
-		tes.results = -DREW_ERR_NOT_IMPL;
+	if (mode == MODE_TEST)
+		test_external_parse(ldr, resource, &tes);
 
 	for (i = 0; i < nplugins; i++) {
 		const void *functbl;
 		const char *name;
 		const char *algo;
-		int result = 0;
+		const char *pluginname = NULL;
+		drew_metadata_t md;
+		char buf[32];
+		int result = 0, nmetadata = 0;
 
 		if (drew_loader_get_type(ldr, i) != type)
 			continue;
 
 		drew_loader_get_functbl(ldr, i, &functbl);
 		drew_loader_get_algo_name(ldr, i, &name);
+		nmetadata = drew_loader_get_metadata(ldr, i, -1, NULL);
+
+		for (int j = 0; j < nmetadata; j++) {
+			drew_loader_get_metadata(ldr, i, j, &md);
+			if (!strcmp(md.predicate, "http://www.w3.org/2002/07/owl#sameAs")) {
+				pluginname = strrchr(md.object, '/');
+				if (pluginname)
+					pluginname++;
+			}
+		}
 
 		if (only && strcmp(only, name))
 			continue;
@@ -289,18 +312,22 @@ int main(int argc, char **argv)
 		algo = optalgo;
 		if (!algo && mode != MODE_TEST)
 			algo = test_get_default_algo(ldr, name);
-		if (algo) {
-			char buf[16];
-			snprintf(buf, sizeof(buf), "%s(%s)", name, algo);
-			printf("%-15s: ", buf);
-		}
+		if (algo)
+			snprintf(buf, sizeof(buf)/2, "%s(%s)", name, algo);
 		else
-			printf("%-15s: ", name);
+			snprintf(buf, sizeof(buf)/2, "%s", name);
+
+		if (pluginname && verbose) {
+			size_t off = strlen(buf);
+			snprintf(buf+off, sizeof(buf)-off, " (%s) ", pluginname);
+		}
+		printf("%-32s: ", buf);
 		fflush(stdout);
 
 		switch (mode) {
 			case MODE_SPEED:
-				result = test_speed(ldr, name, algo, functbl, chunk, nchunks);
+				result = test_speed(ldr, name, algo, functbl, chunk, nchunks,
+						flags);
 				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
 					error++;
 				if (result == -DREW_ERR_NOT_IMPL)

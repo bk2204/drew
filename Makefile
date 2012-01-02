@@ -1,14 +1,8 @@
 include config
 
-CATEGORIES		:= hash block mode mac stream prng bignum pkenc pksig
+VERSION			:= $(shell test -d .git && git describe)
 
-TEST_SRC		+= libmd/testsuite.c
-TEST_OBJ		:= ${SRC:.c=.o} ${TEST_SRC:.c=.o}
-TEST_EXE		:= libmd/testsuite
-
-PLUG_SRC		+= test/plugin-main.c
-PLUG_OBJ		:= ${SRC:.c=.o} ${PLUG_SRC:.c=.o}
-PLUG_EXE		:= test/plugin-main
+CATEGORIES		:= hash block mode mac stream prng bignum pkenc pksig kdf ecc
 
 RM				?= rm
 RMDIR			?= rmdir
@@ -16,6 +10,8 @@ RMDIR			?= rmdir
 INSTALL_PROG	?= install
 INSTALL_OPTS	:= $(shell [ `id -u` -eq 0 ] && printf -- "-o root -g root\n" || printf "\n")
 INSTALL			:= $(INSTALL_PROG) $(INSTALL_OPTS)
+
+TEST_ARG		= $(shell $(CC) $(1) -x c -o /dev/null -c /dev/null 2>/dev/null && echo $(1))
 
 ifdef PROF
 CLIKEFLAGS		+= -pg
@@ -30,51 +26,70 @@ ifeq ($(CFG_STACK_CHECK),y)
 CLIKEFLAGS		+= -fstack-protector
 endif
 
-CPPFLAGS		+= -Iinclude
-CLIKEFLAGS		+= -Wall -fPIC -O3 -g -pipe -D_POSIX_SOURCE=200112L -D_XOPEN_SOURCE=600
+CPPFLAGS		+= -Iinclude -I$(dir $@)
+CLIKEFLAGS		+= -Wall -Werror -fPIC -O3 -g -pipe
+CLIKEFLAGS		+= -D_POSIX_SOURCE=200112L -D_XOPEN_SOURCE=600
+CLIKEFLAGS		+= -fextended-identifiers
 CLIKEFLAGS		+= -floop-interchange -floop-block
+CLIKEFLAGS		+= -fvisibility=hidden
 CLIKEFLAGS		+= ${CFLAGS-y}
 CXXFLAGS		:= ${CLIKEFLAGS}
 CFLAGS			:= ${CLIKEFLAGS}
-CXXFLAGS		+= -fno-rtti -fno-exceptions
+CXXFLAGS		+= -fno-rtti
 CFLAGS			+= -std=c99
 
 LIBCFLAGS		+= -shared
 PLUGINCFLAGS	+= -I.
 
-LDFLAGS			+= -Wl,--version-script,misc/limited-symbols.ld -Wl,--as-needed
+LDFLAGS			+= -Wl,--as-needed
 LIBS			+= ${LDFLAGS} -lrt -ldl
 
 .TARGET			= $@
 .ALLSRC			= $^
 .IMPSRC			= $<
 
+SONAME			= -Wl,-soname,$(@F)
+
 all:
 
 include lib/libdrew/Makefile
+include lib/libmd/Makefile
 include $(patsubst %,impl/%/Makefile,$(CATEGORIES))
 include lib/libdrew-impl/Makefile
 include test/Makefile
 include util/Makefile
-include libmd/Makefile
 include doc/manual/Makefile
 
-all: ${PLUG_EXE} ${DREW_SONAME} standard
+IMPL_OBJS		:= $(PLUGINS:=.o) $(MODULES)
+OBJECTS			+= $(IMPL_OBJS)
+OBJECTS			+= $(EXTRA_OBJECTS-y) $(EXTRA_OBJECTS-m)
 
-standard: ${DREW_SONAME} ${MD_SONAME} plugins libmd/testsuite
+IMPL_DIRS		:= $(sort $(foreach obj,$(IMPL_OBJS),$(dir $(obj))))
+
+DEPFILES		:= $(OBJECTS:.o=.d)
+
+all: ${DREW_SONAME} standard
+
+depend: $(DEPFILES)
+
+standard: ${DREW_SONAME} ${MD_SONAME} plugins
 standard: $(TEST_BINARIES) $(UTILITIES)
-
-${TEST_EXE}: ${TEST_SRC} ${MD_SONAME} ${DREW_SONAME} ${DREW_IMPL_SONAME}
-	${CC} -Ilibmd/include ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
-
-${PLUG_EXE}: ${PLUG_OBJ} ${DREW_SONAME}
-	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
 .c.o:
 	${CC} ${CPPFLAGS} ${CFLAGS} -c -o ${.TARGET} ${.IMPSRC}
 
 .cc.o:
 	${CXX} ${CPPFLAGS} ${CXXFLAGS} -c -o ${.TARGET} ${.IMPSRC}
+
+%.d: %.c
+	$(CC) $(CPPFLAGS) -DDEPEND -MM $< | sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
+	(x="$@"; [ -n "$${x##impl/*}" ] || \
+		printf "$*.o: $(@D)/metadata.gen\n" >> $@)
+
+%.d: %.cc
+	$(CC) $(CPPFLAGS) -DDEPEND -MM $< | sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
+	(x="$@"; [ -n "$${x##impl/*}" ] || \
+		printf "$*.o: $(@D)/metadata.gen\n" >> $@)
 
 ${PLUGINS:=.o}: CPPFLAGS += ${PLUGINCFLAGS}
 
@@ -84,21 +99,45 @@ ${PLUGINS}: %: %.so
 $(PLUGINS:=.so): %.so: %.o
 	${CXX} ${LIBCFLAGS} ${CXXFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
+version:
+	printf '#define DREW_STRING_VERSION "$(VERSION)"\n' > $@
+	printf '#define DREW_VERSION %s\n' \
+		`echo $(VERSION) | perl -pe 's/v(\d+)(-.*)?/$$1/'` >> $@
+
+%/metadata.gen:
+ifeq ($(CFG_METADATA),y)
+	tools/generate-metadata -v $(dir $@)/metadata.rdf
+else
+	touch $@
+endif
+
+.PHONY: version tags
+
+include/version.h: version
+	if ! cmp -s $@ $<; then mv $< $@; else $(RM) $<; fi
+
+tags:
+	$(RM) tags
+	find -name '*.c' -o -name '*.cc' -o -name '*.h' -o -name '*.hh' | \
+		xargs ctags -a
+
 plugins: ${PLUGINS}
 	[ -d plugins ] || mkdir plugins
 	for i in ${.ALLSRC}; do cp $$i.so plugins/`basename $$i .so`; done
 
 clean:
 	${RM} -f *.o test/*.o
-	${RM} -f ${TEST_EXE}
-	${RM} -f ${PLUG_EXE}
 	${RM} -f ${MD_SONAME} ${MD_OBJS}
 	${RM} -f ${DREW_SONAME} ${DREW_SYMLINK}
 	${RM} -f ${TEST_BINARIES}
 	${RM} -f ${UTILITIES}
+	${RM} -f include/version.h
 	${RM} -fr ${PLUGINS} plugins/
 	${RM} -r install
+	${RM} -f tags
+	find -name '*.gen' | xargs -r rm
 	find -name '*.o' | xargs -r rm
+	find -name '*.d' | xargs -r rm
 	find -name '*.so' | xargs -r rm
 	find -name '*.so.*' | xargs -r rm
 	find -name '*.pdf' | xargs -r rm
@@ -109,9 +148,9 @@ test: .PHONY
 test check: test-scripts testx-scripts test-libmd
 speed speed-test: speed-scripts
 
-test-libmd: ${TEST_EXE}
-	env LD_LIBRARY_PATH=. ./${TEST_EXE} -x | \
-		grep -v 'bytes in' | diff -u libmd/test-results -
+test-libmd: $(TEST_BINARIES) plugins
+	env LD_LIBRARY_PATH=. test/libmd-testsuite -x | \
+		grep -v 'bytes in' | diff -u test/libmd-test-results -
 
 test-scripts: $(TEST_BINARIES) plugins
 	set -e; for i in $(CATEGORIES); do \
@@ -125,6 +164,13 @@ testx-scripts: $(TEST_BINARIES) plugins
 		find plugins -type f | sed -e 's,.*/,,g' | \
 		sort | grep -vE '.rdf$$' | \
 		xargs env LD_LIBRARY_PATH=. test/test-$$i -t; \
+		done
+
+test-api: $(TEST_BINARIES) plugins
+	for i in $(CATEGORIES); do \
+		find plugins -type f | sed -e 's,.*/,,g' | \
+		sort | grep -vE '.rdf$$' | \
+		xargs env LD_LIBRARY_PATH=. test/test-$$i -p; \
 		done
 
 speed-scripts: $(TEST_BINARIES) plugins
@@ -141,7 +187,8 @@ INSTDIR			:= $(CFG_INSTALL_DIR)
 install: all
 	$(INSTALL) -m 755 -d $(INSTDIR)/lib/drew/plugins
 	$(INSTALL) -m 755 -d $(INSTDIR)/include
-	for i in plugins/*; do $(INSTALL) -m 644 $$i $(INSTDIR)/lib/drew/plugins; done
+	find plugins -type f | \
+		xargs -I%s $(INSTALL) -m 644 %s $(INSTDIR)/lib/drew/plugins
 	$(INSTALL) -m 644 libdrew*.so.* $(INSTDIR)/lib
 	for i in include/*; do \
 		[ -f $$i ] || \
@@ -152,10 +199,14 @@ install: all
 
 uninstall:
 	$(RM) $(INSTDIR)/lib/libdrew*.so.*
-	for i in plugins/*; do $(RM) $(INSTDIR)/lib/drew/$$i; done
+	find plugins -type f | xargs -I%s $(RM) $(INSTDIR)/lib/drew/%s
 	for i in include/*; do \
 		[ -f $$i ] || \
 			($(RM) $(INSTDIR)/$$i/*.h; $(RMDIR) $(INSTDIR)/$$i); \
 		done
 	$(RMDIR) $(INSTDIR)/lib/drew/plugins || true
 	$(RMDIR) $(INSTDIR)/lib/drew || true
+
+ifneq "$(MAKECMDGOALS)" "clean"
+-include $(DEPFILES)
+endif

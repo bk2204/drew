@@ -1,3 +1,9 @@
+/*-
+ * brian m. carlson <sandals@crustytoothpaste.net> wrote this source code.
+ * This source code is in the public domain; you may do whatever you please with
+ * it.  However, a credit in the documentation, although not required, would be
+ * appreciated.
+ */
 #include <internal.h>
 #include <drew/plugin.h>
 
@@ -8,6 +14,7 @@
 
 #define DIM(x) (sizeof(x)/sizeof((x)[0]))
 
+DREW_SYM_PUBLIC
 int drew_plugin_info(void *ldr, int op, int id, void *p)
 {
 	int plugcnt = 0;
@@ -21,5 +28,5 @@ int drew_plugin_info(void *ldr, int op, int id, void *p)
 	}
 	if (op == DREW_LOADER_GET_NPLUGINS)
 		return plugcnt;
-	return -EINVAL;
+	return -DREW_ERR_INVALID;
 }

@@ -32,6 +32,11 @@ arithmetic and will only compile on certain platforms and only with a recent
 GCC.  Since alternatives are provided for machines that do not meet those
 requirements, it is safe to disable them without any loss of functionality.
 
+By default, the Perl module RDF::Trine is used to generate embedded RDF metadata
+that can be queried programmatically as triples.  If this is not useful for you
+or you do not want to install RDF::Trine, simply disable the CFG_METADATA option
+in the configuration file.
+
 The only module which has external dependencies is the tommath plugin, which
 depends on the public domain libtommath for its implementation.  Since this is
 currently the only bignum implementation, public key software will not work
@@ -52,6 +57,30 @@ files, type "make uninstall".
 Some documentation on the interface is provided; type "make doc" to build it.
 You will need Apache FOP and the DocBook XSL-NS Stylesheets.
 
+Please be aware that the entire project is in and assumes UTF-8 (except for
+wchar_t, where it assumes UCS-4).  Files and filenames are presumed to be in
+UTF-8 and some algorithm and symbol names take advantage of this.  Functions
+accepting possibly-const-qualified pointers to char are UTF-8 strings.  This is
+not always checked and things may break if you do not ensure this.
+
 Please report bugs and wishlist requests on the github issue tracker.  Until a
 mailing list is set up, please send email to brian m. carlson at
 <sandals@crustytoothpaste.net>.
+
+Contributing
+------------
+
+Contributions are generally welcome.  Implementations of algorithms are
+generally acceptable provided that they are under the GPLv2/Apache 2.0
+dual-license, under the MIT License, or in the public domain.  If your
+implementation is the first implementation of an algorithm in the project, it
+should be written in portable C or C++ and come with a variety of tests, both
+internal and external.  A new implementation of an algorithm for which there is
+already an implementation should offer something that the original does not,
+such as speed or more options, even if these are limited to a particular
+platform.  A different license is generally not sufficient in this case.
+
+Algorithms should be legitimate, publicly documented cryptographic algorithms.
+Specifications and test vectors should be available at no cost via the Internet.
+
+Contributions are generally preferred as git repositories.

@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -166,7 +185,8 @@ void drew::SHA224::Reset()
 	Initialize();
 }
 
-void drew::SHA256Transform::Transform(uint32_t *state, const uint8_t *block)
+void drew::SHA256Transform::ForwardTransform(uint32_t *state,
+		const uint32_t *block)
 {
 	// This is normally defined automatically by Hash.
 	const size_t block_size = 64;
@@ -174,6 +194,8 @@ void drew::SHA256Transform::Transform(uint32_t *state, const uint8_t *block)
 	uint32_t blk[64];
 	size_t i;
 	uint32_t a, b, c, d, e, f, g, h;
+
+	memcpy(blk, block, block_size);
 
 	a = state[0];
 	b = state[1];
@@ -183,8 +205,6 @@ void drew::SHA256Transform::Transform(uint32_t *state, const uint8_t *block)
 	f = state[5];
 	g = state[6];
 	h = state[7];
-
-	endian::Copy(blk, block, block_size);
 
 	for (i = 0; i < words; i += 8) {
 		ROUND(a, b, c, d, e, f, g, h, k[i  ], blk[i  ]);
@@ -207,12 +227,72 @@ void drew::SHA256Transform::Transform(uint32_t *state, const uint8_t *block)
 		ROUND2(b, c, d, e, f, g, h, a, k[i+7], i+7);
 	}
 
-	state[0] += a;
-	state[1] += b;
-	state[2] += c;
-	state[3] += d;
-	state[4] += e;
-	state[5] += f;
-	state[6] += g;
-	state[7] += h;
+	state[0] = a;
+	state[1] = b;
+	state[2] = c;
+	state[3] = d;
+	state[4] = e;
+	state[5] = f;
+	state[6] = g;
+	state[7] = h;
+}
+
+#define INVROUND(a, b, c, d, e, f, g, h, k, blk) \
+	h-=S0(a)+Maj(a, b, c); \
+	d-=h; \
+	h-=S1(e)+Ch(e, f, g)+k+blk;
+
+void drew::SHA256Transform::InverseTransform(uint32_t *state,
+		const uint32_t *blk)
+{
+	ssize_t i;
+	uint32_t a, b, c, d, e, f, g, h;
+
+	a = state[0];
+	b = state[1];
+	c = state[2];
+	d = state[3];
+	e = state[4];
+	f = state[5];
+	g = state[6];
+	h = state[7];
+
+	for (i = 63; i > 0; i -= 8) {
+		INVROUND(b, c, d, e, f, g, h, a, k[i  ], blk[i  ]);
+		INVROUND(c, d, e, f, g, h, a, b, k[i-1], blk[i-1]);
+		INVROUND(d, e, f, g, h, a, b, c, k[i-2], blk[i-2]);
+		INVROUND(e, f, g, h, a, b, c, d, k[i-3], blk[i-3]);
+		INVROUND(f, g, h, a, b, c, d, e, k[i-4], blk[i-4]);
+		INVROUND(g, h, a, b, c, d, e, f, k[i-5], blk[i-5]);
+		INVROUND(h, a, b, c, d, e, f, g, k[i-6], blk[i-6]);
+		INVROUND(a, b, c, d, e, f, g, h, k[i-7], blk[i-7]);
+	}
+
+	state[0] = a;
+	state[1] = b;
+	state[2] = c;
+	state[3] = d;
+	state[4] = e;
+	state[5] = f;
+	state[6] = g;
+	state[7] = h;
+}
+
+void drew::SHA256Transform::Transform(uint32_t *state, const uint8_t *block)
+{
+	uint32_t b[8];
+	uint32_t blk[64/sizeof(uint32_t)];
+	memcpy(b, state, sizeof(b));
+
+	endian::Copy(blk, block, sizeof(blk));
+	ForwardTransform(b, blk);
+
+	state[0] += b[0];
+	state[1] += b[1];
+	state[2] += b[2];
+	state[3] += b[3];
+	state[4] += b[4];
+	state[5] += b[5];
+	state[6] += b[6];
+	state[7] += b[7];
 }

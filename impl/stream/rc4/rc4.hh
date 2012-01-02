@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #ifndef RC4_HH
 #define RC4_HH
 
@@ -6,6 +25,7 @@
 
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 template<class T>
@@ -50,6 +70,10 @@ class RC4Keystream
 				*buf++ = s[uint8_t(x + y)];
 			}
 		}
+		void FillBufferAligned(uint8_t buf[256])
+		{
+			return FillBuffer(buf);
+		}
 	protected:
 	private:
 		obj_t s[256];
@@ -68,16 +92,23 @@ class RC4
 		void SetKey(const uint8_t *key, size_t sz);
 		void Encrypt(uint8_t *out, const uint8_t *in, size_t len);
 		void Decrypt(uint8_t *out, const uint8_t *in, size_t len);
+		void EncryptFast(uint8_t *out, const uint8_t *in, size_t len);
+		void DecryptFast(uint8_t *out, const uint8_t *in, size_t len);
+		size_t GetKeySize() const
+		{
+			return m_sz;
+		}
 	protected:
 	private:
-		RC4Keystream<int> m_ks;
+		RC4Keystream<unsigned> m_ks;
 		size_t m_drop;
 		uint8_t m_key[256];
-		uint8_t m_buf[256];
+		uint8_t m_buf[256] ALIGNED_T;
 		size_t m_nbytes;
 		size_t m_sz;
 };
 
 }
+UNHIDE()
 
 #endif

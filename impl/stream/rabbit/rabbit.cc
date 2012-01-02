@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include <utility>
 
 #include <stdio.h>
@@ -10,6 +29,7 @@
 #include "stream-plugin.h"
 #include "testcase.hh"
 
+HIDE()
 extern "C" {
 
 static int rabbit_test(void *, const drew_loader_t *)
@@ -63,7 +83,7 @@ static int rabbit_info(int op, void *p)
 {
 	switch (op) {
 		case DREW_STREAM_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_STREAM_KEYSIZE:
 			{
 				const int *x = reinterpret_cast<int *>(p);
@@ -74,7 +94,43 @@ static int rabbit_info(int op, void *p)
 		case DREW_STREAM_BLKSIZE:
 			return 16;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
+	}
+}
+
+static const int rabbit_keysz[] = {16};
+static const int rabbit_ivsz[] = {8};
+
+static int rabbit_info2(const drew_stream_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	switch (op) {
+		case DREW_STREAM_VERSION:
+			return CURRENT_ABI;
+		case DREW_STREAM_KEYSIZE_LIST:
+			for (drew_param_t *p = out; p; p = p->next)
+				if (!strcmp(p->name, "keySize")) {
+					p->param.array.ptr = (void *)rabbit_keysz;
+					p->param.array.len = DIM(rabbit_keysz);
+				}
+			return 0;
+		case DREW_STREAM_KEYSIZE_CTX:
+			return 16;
+		case DREW_STREAM_IVSIZE_LIST:
+			for (drew_param_t *p = out; p; p = p->next)
+				if (!strcmp(p->name, "ivSize")) {
+					p->param.array.ptr = (void *)rabbit_ivsz;
+					p->param.array.len = DIM(rabbit_ivsz);
+				}
+			return 0;
+		case DREW_STREAM_IVSIZE_CTX:
+			return 8;
+		case DREW_STREAM_INTSIZE:
+			return sizeof(drew::Rabbit);
+		case DREW_STREAM_BLKSIZE:
+			return 16;
+		default:
+			return -DREW_ERR_INVALID;
 	}
 }
 
@@ -135,7 +191,7 @@ static int rabbit_fini(drew_stream_t *ctx, int flags)
 	return 0;
 }
 
-PLUGIN_FUNCTBL(rabbit, rabbit_info, rabbit_init, rabbit_setiv, rabbit_setkey, rabbit_encrypt, rabbit_encrypt, rabbit_encrypt, rabbit_encrypt, rabbit_test, rabbit_fini, rabbit_clone, rabbit_reset);
+PLUGIN_FUNCTBL(rabbit, rabbit_info, rabbit_info2, rabbit_init, rabbit_setiv, rabbit_setkey, rabbit_encrypt, rabbit_encrypt, rabbit_encrypt, rabbit_encrypt, rabbit_test, rabbit_fini, rabbit_clone, rabbit_reset);
 PLUGIN_DATA_START()
 PLUGIN_DATA(rabbit, "Rabbit")
 PLUGIN_DATA_END()
@@ -292,3 +348,4 @@ void drew::RabbitKeystream::FillBuffer(uint8_t buf[16])
 	GetValue(s);
 	E::Copy(buf, s, sizeof(s));
 }
+UNHIDE()

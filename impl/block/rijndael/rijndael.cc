@@ -1,7 +1,7 @@
 /*-
- * Copyright © 2000-2009 The Legion Of The Bouncy Castle
+ * Copyright © 2000–2009 The Legion Of The Bouncy Castle
  * (http://www.bouncycastle.org)
- * Copyright © 2010 brian m. carlson
+ * Copyright © 2010–2011 brian m. carlson
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,6 +38,7 @@
 #include "block-plugin.h"
 #include "rijndael.hh"
 
+HIDE()
 static drew::Rijndael *rijndael_new(size_t blksz)
 {
 	drew::Rijndael *p = 0;
@@ -269,7 +270,7 @@ static int aes256test(void *p, const drew_loader_t *ldr)
 	PLUGIN_INTERFACE(rijndael)
 }
 
-typedef drew::Rijndael::endian_t E;
+typedef BigEndian E;
 
 drew::Rijndael::Rijndael()
 {
@@ -291,7 +292,7 @@ template<unsigned N>
 const size_t drew::GenericRijndael<N>::shiftoffset = (drew::GenericRijndael<N>::m_nb-4);
 
 template<unsigned N>
-int drew::GenericRijndael<N>::SetKey(const uint8_t *key, size_t len)
+int drew::GenericRijndael<N>::SetKeyInternal(const uint8_t *key, size_t len)
 {
 	m_nk = (len / 4);
 	m_nr = 6 + std::max(m_nb, m_nk);
@@ -1273,3 +1274,4 @@ const uint32_t drew::Rijndael::Et3[] = {
 	0xeb13f8f8, 0xe910f9f9, 0xef15fafa, 0xed16fbfb, 
 	0xe31ffcfc, 0xe11cfdfd, 0xe719fefe, 0xe51affff, 
 };
+UNHIDE()

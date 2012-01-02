@@ -1,3 +1,26 @@
+/*-
+ * Copyright © 2000–2009 The Legion Of The Bouncy Castle
+ * (http://www.bouncycastle.org)
+ * Copyright © 2010–2011 brian m. carlson
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 #ifndef GRIJNDAEL_HH
 #define GRIJNDAEL_HH
 
@@ -9,14 +32,14 @@
 
 #define MAXROUNDS 14
 
+HIDE()
 namespace drew {
 
 class Rijndael
 {
 	public:
-		typedef BigEndian endian_t;
 		Rijndael();
-		~Rijndael() {};
+		virtual ~Rijndael() {};
 		virtual int SetKey(const uint8_t *key, size_t sz) = 0;
 		virtual int Encrypt(uint8_t *out, const uint8_t *in) const = 0;
 		virtual int Decrypt(uint8_t *out, const uint8_t *in) const;
@@ -52,17 +75,22 @@ class Rijndael
 };
 
 template<unsigned BlockSize>
-class GenericRijndael : public Rijndael, public BlockCipher<BlockSize/8>
+class GenericRijndael : public Rijndael,
+	public BlockCipher<BlockSize/8, BigEndian>
 {
 	public:
 		static const size_t block_size = BlockSize / 8;
-		int SetKey(const uint8_t *key, size_t sz);
 		int Encrypt(uint8_t *, const uint8_t *) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const
 		{
 			return Rijndael::Decrypt(out, in);
 		}
+		int SetKey(const uint8_t *key, size_t sz)
+		{
+			return this->BlockCipher<BlockSize/8, BigEndian>::SetKey(key, sz);
+		}
 	protected:
+		int SetKeyInternal(const uint8_t *key, size_t sz);
 		static const size_t m_nb;
 		static const size_t m_bc;
 		static const uint64_t m_bcmask;
@@ -144,5 +172,6 @@ class Rijndael256 : public GenericRijndael<256>
 
 
 }
+UNHIDE()
 
 #endif

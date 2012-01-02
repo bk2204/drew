@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include <utility>
 
 #include <stdio.h>
@@ -10,10 +29,13 @@
 #include "stream-plugin.h"
 #include "testcase.hh"
 
+HIDE()
 extern "C" {
 
 static int hc256_test(void *, const drew_loader_t *);
 static int hc256_info(int op, void *p);
+static int hc256_info2(const drew_stream_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in);
 static int hc256_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
 static int hc256_reset(drew_stream_t *ctx);
@@ -26,7 +48,7 @@ static int hc256_encrypt(drew_stream_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
 static int hc256_fini(drew_stream_t *ctx, int flags);
 
-PLUGIN_FUNCTBL(hc256, hc256_info, hc256_init, hc256_setiv, hc256_setkey, hc256_encrypt, hc256_encrypt, hc256_encrypt, hc256_encrypt, hc256_test, hc256_fini, hc256_clone, hc256_reset);
+PLUGIN_FUNCTBL(hc256, hc256_info, hc256_info2, hc256_init, hc256_setiv, hc256_setkey, hc256_encrypt, hc256_encrypt, hc256_encrypt, hc256_encrypt, hc256_test, hc256_fini, hc256_clone, hc256_reset);
 
 static int hc256_repeated_test(void)
 {
@@ -115,12 +137,13 @@ static int hc256_test(void *, const drew_loader_t *)
 }
 
 static const int hc256_keysz[] = {32};
+static const int hc256_ivsz[] = {32};
 
 static int hc256_info(int op, void *p)
 {
 	switch (op) {
 		case DREW_STREAM_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_STREAM_KEYSIZE:
 			for (size_t i = 0; i < DIM(hc256_keysz); i++) {
 				const int *x = reinterpret_cast<int *>(p);
@@ -133,7 +156,40 @@ static int hc256_info(int op, void *p)
 		case DREW_STREAM_BLKSIZE:
 			return 4;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
+	}
+}
+
+static int hc256_info2(const drew_stream_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	switch (op) {
+		case DREW_STREAM_VERSION:
+			return CURRENT_ABI;
+		case DREW_STREAM_KEYSIZE_LIST:
+			for (drew_param_t *p = out; p; p = p->next)
+				if (!strcmp(p->name, "keySize")) {
+					p->param.array.ptr = (void *)hc256_keysz;
+					p->param.array.len = DIM(hc256_keysz);
+				}
+			return 0;
+		case DREW_STREAM_KEYSIZE_CTX:
+			return 16;
+		case DREW_STREAM_IVSIZE_LIST:
+			for (drew_param_t *p = out; p; p = p->next)
+				if (!strcmp(p->name, "ivSize")) {
+					p->param.array.ptr = (void *)hc256_ivsz;
+					p->param.array.len = DIM(hc256_ivsz);
+				}
+			return 0;
+		case DREW_STREAM_IVSIZE_CTX:
+			return 16;
+		case DREW_STREAM_INTSIZE:
+			return sizeof(drew::HC256);
+		case DREW_STREAM_BLKSIZE:
+			return 4;
+		default:
+			return -DREW_ERR_INVALID;
 	}
 }
 
@@ -326,3 +382,4 @@ void drew::HC256Keystream::FillBuffer(uint8_t buf[8192])
 	}
 	E::Copy(buf, tbuf, sizeof(tbuf));
 }
+UNHIDE()

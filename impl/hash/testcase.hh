@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #ifndef HASH_TESTCASE_HH
 #define HASH_TESTCASE_HH
 
@@ -49,7 +68,7 @@ class HashTestCase
 			T *hash = CreateInstance();
 			for (size_t i = 0; i < m_reps; i++)
 				hash->Update(m_buf, m_len);
-			hash->GetDigest(m_result, 0);
+			hash->GetDigest(m_result, hash->GetDigestSize(), 0);
 
 			int result = !memcmp(buf, m_result, N);
 			delete hash;
@@ -94,14 +113,14 @@ class HashTestCase
 				uint8_t md[N];
 
 				T clone(*ctxt[imod]);
-				clone.GetDigest(md, false);
+				clone.GetDigest(md, clone.GetDigestSize(), false);
 				context->Update(md, N);
 				ctxt[imod]->Update(buf[imod], 256);
 			}
 			for (size_t i = 0; i < NBYTEVALS; i++)
 				delete ctxt[i];
 			uint8_t md[N];
-			context->GetDigest(md, false);
+			context->GetDigest(md, context->GetDigestSize(), false);
 			delete context;
 
 			bool res = !memcmp(md, output, N);

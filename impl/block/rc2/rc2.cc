@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include <internal.h>
 
 #include <stdio.h>
@@ -11,6 +30,7 @@
 #include "rc2.hh"
 #include "btestcase.hh"
 
+HIDE()
 extern "C" {
 
 	PLUGIN_STRUCTURE2(rc2, RC2)
@@ -23,9 +43,11 @@ static int rc2info(int op, void *p)
 {
 	switch (op) {
 		case DREW_BLOCK_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_BLOCK_BLKSIZE:
 			return 8;
+		case DREW_BLOCK_ENDIAN:
+			return drew::RC2::endian_t::GetEndianness();
 		case DREW_BLOCK_KEYSIZE:
 			{
 				const int *x = reinterpret_cast<int *>(p);
@@ -36,7 +58,56 @@ static int rc2info(int op, void *p)
 		case DREW_BLOCK_INTSIZE:
 			return sizeof(drew::RC2);
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
+	}
+}
+
+static int rc2keysz[] = {
+	1, 2, 3, 4, 5, 6, 7, 8,
+	9, 10, 11, 12, 13, 14, 15, 16,
+	17, 18, 19, 20, 21, 22, 23, 24,
+	25, 26, 27, 28, 29, 30, 31, 32,
+	33, 34, 35, 36, 37, 38, 39, 40,
+	41, 42, 43, 44, 45, 46, 47, 48,
+	49, 50, 51, 52, 53, 54, 55, 56,
+	57, 58, 59, 60, 61, 62, 63, 64,
+	65, 66, 67, 68, 69, 70, 71, 72,
+	73, 74, 75, 76, 77, 78, 79, 80,
+	81, 82, 83, 84, 85, 86, 87, 88,
+	89, 90, 91, 92, 93, 94, 95, 96,
+	97, 98, 99, 100, 101, 102, 103, 104,
+	105, 106, 107, 108, 109, 110, 111, 112,
+	113, 114, 115, 116, 117, 118, 119, 120,
+	121, 122, 123, 124, 125, 126, 127, 128
+};
+
+static int rc2info2(const drew_block_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	switch (op) {
+		case DREW_BLOCK_VERSION:
+			return CURRENT_ABI;
+		case DREW_BLOCK_BLKSIZE:
+			return 8;
+		case DREW_BLOCK_ENDIAN:
+			return drew::RC2::endian_t::GetEndianness();
+		case DREW_BLOCK_KEYSIZE_LIST:
+			for (drew_param_t *p = out; p; p = p->next)
+				if (!strcmp(p->name, "keySize")) {
+					p->param.array.ptr = (void *)rc2keysz;
+					p->param.array.len = DIM(rc2keysz);
+				}
+			return 0;
+		case DREW_BLOCK_KEYSIZE_CTX:
+			if (ctx && ctx->ctx) {
+				const drew::RC2 *p = (const drew::RC2 *)ctx->ctx;
+				return p->GetKeySize();
+			}
+			return -DREW_ERR_MORE_INFO;
+		case DREW_BLOCK_INTSIZE:
+			return sizeof(drew::RC2);
+		default:
+			return -DREW_ERR_INVALID;
 	}
 }
 
@@ -81,7 +152,7 @@ drew::RC2::RC2()
 {
 }
 
-int drew::RC2::SetKey(const uint8_t *key, size_t len)
+int drew::RC2::SetKeyInternal(const uint8_t *key, size_t len)
 {
 	uint8_t k[128];
 	const size_t t8 = len;
@@ -230,3 +301,4 @@ const uint8_t drew::RC2::pitable[] = {
 	0xc5, 0xf3, 0xdb, 0x47, 0xe5, 0xa5, 0x9c, 0x77,
 	0x0a, 0xa6, 0x20, 0x68, 0xfe, 0x7f, 0xc1, 0xad
 };
+UNHIDE()

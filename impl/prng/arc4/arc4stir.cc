@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include "arc4stir.hh"
 
 #include <fcntl.h>
@@ -46,9 +65,12 @@
 // This is a non-blocking random device.  If you don't have one, use /dev/null.
 #define DEVICE "/dev/urandom"
 
+HIDE()
 extern "C" {
 
 static int a4s_info(int op, void *p);
+static int a4s_info2(const drew_prng_t *, int op, drew_param_t *,
+		const drew_param_t *);
 static int a4s_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
 static int a4s_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags);
@@ -59,13 +81,13 @@ static int a4s_entropy(const drew_prng_t *ctx);
 static int a4s_fini(drew_prng_t *ctx, int flags);
 static int a4s_test(void *, const drew_loader_t *);
 
-PLUGIN_FUNCTBL(arc4stir, a4s_info, a4s_init, a4s_clone, a4s_fini, a4s_seed, a4s_bytes, a4s_entropy, a4s_test);
+PLUGIN_FUNCTBL(arc4stir, a4s_info, a4s_info2, a4s_init, a4s_clone, a4s_fini, a4s_seed, a4s_bytes, a4s_entropy, a4s_test);
 
 static int a4s_info(int op, void *p)
 {
 	switch (op) {
 		case DREW_PRNG_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_PRNG_BLKSIZE:
 			return 256;
 		case DREW_PRNG_SEEDABLE:
@@ -77,7 +99,28 @@ static int a4s_info(int op, void *p)
 		case DREW_PRNG_BLOCKING:
 			return 0;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
+	}
+}
+
+static int a4s_info2(const drew_prng_t *, int op, drew_param_t *,
+		const drew_param_t *)
+{
+	switch (op) {
+		case DREW_PRNG_VERSION:
+			return CURRENT_ABI;
+		case DREW_PRNG_BLKSIZE_CTX:
+			return 256;
+		case DREW_PRNG_SEEDABLE:
+			return 1;
+		case DREW_PRNG_MUST_SEED:
+			return 0;
+		case DREW_PRNG_INTSIZE:
+			return sizeof(drew::ARC4Stir);
+		case DREW_PRNG_BLOCKING:
+			return 0;
+		default:
+			return -DREW_ERR_INVALID;
 	}
 }
 
@@ -226,3 +269,4 @@ void drew::ARC4Stir::Stir(const uint8_t *k)
 {
 	m_ks->Stir(k, InternalGetByte());
 }
+UNHIDE()

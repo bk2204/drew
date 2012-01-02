@@ -78,5 +78,21 @@
 		sensible way in such a case.  An implementation may (but should not)
 		crash or otherwise misbehave in such an event.
 	</para>
+	<section>
+		<title>Assumptions about the Runtime Environment</title>
+		<para>
+			While libdrew itself does not use the <type>wchar_t</type> type,
+			some of the libraries that depend on it do.  It is expected that
+			this type is capable of holding the value of any character defined
+			now or hereafter in Unicode.  That means that it must support all
+			character values from 0 to 0x10ffff, inclusive.  If
+			<type>wchar_t</type> is too small (if, for example, it is 16-bit),
+			the library will redefine it internally to be equivalent to either a
+			<type>int32_t</type> or a <type>uint32_t</type>, depending on the
+			signedness of the original <type>wchar_t</type> type; any public
+			interface taking a <type>wchar_t</type> will therefore need to be
+			passed the replacement type instead.
+		</para>
+	</section>
 </article>
 <!-- vim: set ft=docbkxml: -->

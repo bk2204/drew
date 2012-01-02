@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -8,6 +27,7 @@
 #include "testcase.hh"
 #include "hash-plugin.hh"
 
+HIDE()
 extern "C" {
 PLUGIN_STRUCTURE(sha512, SHA512)
 PLUGIN_STRUCTURE(sha384, SHA384)
@@ -50,7 +70,7 @@ static int sha512tinfo(int op, void *p)
 	const drew_param_t *param = reinterpret_cast<const drew_param_t *>(p);
 	switch (op) {
 		case DREW_HASH_VERSION:
-			return 2;
+			return 3;
 		case DREW_HASH_QUANTUM:
 			return sizeof(SHA512t::quantum_t);
 		case DREW_HASH_SIZE:
@@ -67,6 +87,66 @@ static int sha512tinfo(int op, void *p)
 			return -DREW_ERR_INVALID;
 	}
 }
+
+static const int hash_sizes[] = {
+	224/8, 256/8
+};
+
+static const int block_sizes[] = {
+	224/8, 256/8, 384/8, 512/8
+};
+
+static const int buffer_sizes[] = {
+	1024/8
+};
+
+static int sha512tinfo2(const drew_hash_t *ctxt, int op, drew_param_t *outp,
+		const drew_param_t *inp)
+{
+	using namespace drew;
+	switch (op) {
+		case DREW_HASH_VERSION:
+			return 3;
+		case DREW_HASH_SIZE_LIST:
+			for (drew_param_t *p = outp; p; p = p->next)
+				if (!strcmp(p->name, "digestSize")) {
+					p->param.array.ptr = (void *)hash_sizes;
+					p->param.array.len = DIM(hash_sizes);
+				}
+			return 0;
+		case DREW_HASH_BLKSIZE_LIST:
+			for (drew_param_t *p = outp; p; p = p->next)
+				if (!strcmp(p->name, "blockSize")) {
+					p->param.array.ptr = (void *)block_sizes;
+					p->param.array.len = DIM(block_sizes);
+				}
+			return 0;
+		case DREW_HASH_BUFSIZE_LIST:
+			for (drew_param_t *p = outp; p; p = p->next)
+				if (!strcmp(p->name, "bufferSize")) {
+					p->param.array.ptr = (void *)buffer_sizes;
+					p->param.array.len = DIM(buffer_sizes);
+				}
+			return 0;
+		case DREW_HASH_SIZE_CTX:
+			if (ctxt && ctxt->ctx) {
+				const SHA512t *ctx = (const SHA512t *)ctxt->ctx;
+				return ctx->GetDigestSize();
+			}
+			return -DREW_ERR_MORE_INFO;
+		case DREW_HASH_BLKSIZE_CTX:
+			return SHA512t::block_size;
+		case DREW_HASH_BUFSIZE_CTX:
+			return SHA512t::buffer_size;
+		case DREW_HASH_INTSIZE:
+			return sizeof(SHA512t);
+		case DREW_HASH_ENDIAN:
+			return SHA512t::endian_t::GetEndianness();
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
 
 static int sha512tinit(drew_hash_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *param)
@@ -393,3 +473,4 @@ void drew::SHA512Transform::Transform(uint64_t *state, const uint8_t *block)
 	state[6] += g;
 	state[7] += h;
 }
+UNHIDE()

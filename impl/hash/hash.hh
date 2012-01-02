@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #ifndef HASH_HH
 #define HASH_HH
 
@@ -11,6 +30,7 @@
 
 #include "util.hh"
 
+HIDE()
 namespace drew {
 
 template<class T, unsigned Size, unsigned BufSize, unsigned BlkSize, class E>
@@ -98,12 +118,12 @@ class Hash
 			E::Copy(buf+trip, len, sizeof(len), sizeof(len));
 			Transform(buf);
 		}
-		virtual void GetDigest(uint8_t *digest, bool nopad)
+		virtual void GetDigest(uint8_t *digest, size_t len, bool nopad)
 		{
 			if (!nopad)
 				Pad();
 
-			E::CopyCarefully(digest, m_hash, Size);
+			E::CopyCarefully(digest, m_hash, len);
 		}
 		virtual size_t GetDigestSize() const
 		{
@@ -112,12 +132,13 @@ class Hash
 		static inline void Transform(T *, const uint8_t *data);
 	protected:
 		virtual void Transform(const uint8_t *data) = 0;
-		T m_len[2];
-		T m_hash[BufSize/sizeof(T)];
+		T m_hash[BufSize/sizeof(T)] ALIGNED_T;
 		uint8_t m_buf[BlkSize];
+		T m_len[2];
 	private:
 };
 
 }
+UNHIDE()
 
 #endif

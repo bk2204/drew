@@ -1,4 +1,3 @@
-testsuite
 test/test-hash
 test/test-block
 test/test-mode
@@ -8,13 +7,22 @@ test/test-prng
 test/test-bignum
 test/test-pkenc
 test/test-pksig
+test/test-kdf
+test/test-mem
+test/test-ecc
 test/plugin-main
+test/libmd-testsuite
 util/*sum
+util/daniel
+util/version
+include/version.h
+*.d
 *.o
 *.gen
 *.so*
 plugins/*
 gmon.out
+tags
 misc/devel
 *.pdf
 *.ps

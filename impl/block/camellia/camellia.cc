@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include <utility>
 
 #include <stdio.h>
@@ -8,6 +27,7 @@
 #include "block-plugin.hh"
 #include "btestcase.hh"
 
+HIDE()
 extern "C" {
 
 static const int camelliakeysz[] =
@@ -18,8 +38,14 @@ static const int camelliakeysz[] =
 static int camellia128_test(void)
 {
 	using namespace drew;
+	int res = 0;
 	const char *key = "0123456789abcdeffedcba9876543210";
-	return BlockTestCase<Camellia>(key).Test(key, "67673138549669730857065648eabe43");
+	res |= BlockTestCase<Camellia>(key).Test(key, "67673138549669730857065648eabe43");
+	res <<= 1;
+	res |= BlockTestCase<Camellia>("80000000000000000000000000000000").Test(
+			"00000000000000000000000000000000",
+			"6c227f749319a3aa7da235a9bba05a2c");
+	return res;
 }
 
 static int camellia_big_test(void)
@@ -39,6 +65,24 @@ static int camellia_big_test(void)
 	return res;
 }
 
+static int camellia_maintenance_test(void)
+{
+	using namespace drew;
+	int res = 0;
+	res |= BlockTestCase<Camellia>::MaintenanceTest("77beeaacb982572db94fc7536"
+			"bb2336ea9439214bc626c753ee9d07b21d0fded050e4022c43fd5ccd3711f1367"
+			"ce02c8fd3da2c9b016f87dab4f73983506d56f", 16, 16);
+	res <<= 4;
+	res |= BlockTestCase<Camellia>::MaintenanceTest("7e5c6a1d132e28dd7070154cc"
+			"778586b48a07855f3a5bd04e9eeef498614cdf97fcb1e5a8a94f9a7d5940bf8d2"
+			"bedb0e4ea91c1c051a6c584f172ba2ab073b7c", 24, 16);
+	res <<= 4;
+	res |= BlockTestCase<Camellia>::MaintenanceTest("90f262db9d51876f16f668a95"
+			"6fe5772f9a98b5fb70e5651e1515947c713c0dee3419a18e7334cb3fe3328c9e2"
+			"5f834e4ba9c78b15415aa6120407b3616e915c", 32, 16);
+	return res;
+}
+
 static int camelliatest(void *, const drew_loader_t *)
 {
 	int res = 0;
@@ -46,6 +90,8 @@ static int camelliatest(void *, const drew_loader_t *)
 	res |= camellia128_test();
 	res <<= 4;
 	res |= camellia_big_test();
+	res <<= 12;
+	res |= camellia_maintenance_test();
 
 	return res;
 }
@@ -77,7 +123,7 @@ drew::Camellia::Camellia()
 
 // Number of bits in a uint64_t.
 #define NBITS (64)
-int drew::Camellia::SetKey(const uint8_t *key, size_t sz)
+int drew::Camellia::SetKeyInternal(const uint8_t *key, size_t sz)
 {
 	uint64_t ko[4];
 	
@@ -89,7 +135,7 @@ int drew::Camellia::SetKey(const uint8_t *key, size_t sz)
 	else if (sz == 32)
 		SetKey256(ko);
 	else
-		return DREW_ERR_INVALID;
+		return -DREW_ERR_INVALID;
 	return 0;
 }
 
@@ -318,8 +364,9 @@ void drew::Camellia::Decrypt128(uint64_t d[2]) const
 	DecryptPair(x, y,  4);
 	DecryptPair(x, y,  2);
 	DecryptPair(x, y,  0);
-	x ^= kw[0];
-	y ^= kw[1];
+	x ^= kw[1];
+	y ^= kw[0];
+	std::swap(x, y);
 }
 
 void drew::Camellia::Decrypt256(uint64_t d[2]) const
@@ -346,8 +393,10 @@ void drew::Camellia::Decrypt256(uint64_t d[2]) const
 	DecryptPair(x, y,  4);
 	DecryptPair(x, y,  2);
 	DecryptPair(x, y,  0);
-	x ^= kw[0];
-	y ^= kw[1];
+	x ^= kw[1];
+	y ^= kw[0];
+	std::swap(x, y);
 }
 
 #include "tables.cc"
+UNHIDE()

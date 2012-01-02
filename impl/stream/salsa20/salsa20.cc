@@ -1,19 +1,56 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include <utility>
 
 #include <stdio.h>
 #include <string.h>
 
 #include <internal.h>
+#include <drew/drew.h>
 #include <drew/plugin.h>
 #include <drew/stream.h>
 #include "salsa20.hh"
 #include "stream-plugin.h"
 #include "testcase.hh"
 
+HIDE()
 extern "C" {
+
+#ifdef SALSA_HAVE_ASM
+typedef drew::Salsa20AssemblerKeystream::AlignedData salsa_ctx_t;
+
+void salsa_asm_encrypt_bytes(salsa_ctx_t *, const uint8_t *pt, uint8_t *ct,
+		uint32_t msglen);
+void salsa_asm_keysetup(salsa_ctx_t *, const uint8_t *key, uint32_t keysz,
+		uint32_t ivsize);
+void salsa_asm_ivsetup(salsa_ctx_t *, const uint8_t *key);
+
+static int salsa_asm_test(void *, const drew_loader_t *);
+static int salsa_asm_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
+		const drew_param_t *);
+#endif
 
 static int salsa20_test(void *, const drew_loader_t *);
 static int salsa20_info(int op, void *p);
+static int salsa20_info2(const drew_stream_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in);
 static int salsa20_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
 static int salsa20_clone(drew_stream_t *newctx, const drew_stream_t *oldctx,
@@ -28,7 +65,11 @@ static int salsa20_encryptfast(drew_stream_t *ctx, uint8_t *out,
 		const uint8_t *in, size_t len);
 static int salsa20_fini(drew_stream_t *ctx, int flags);
 
-PLUGIN_FUNCTBL(salsa20, salsa20_info, salsa20_init, salsa20_setiv, salsa20_setkey, salsa20_encrypt, salsa20_encrypt, salsa20_encryptfast, salsa20_encryptfast, salsa20_test, salsa20_fini, salsa20_clone, salsa20_reset);
+PLUGIN_FUNCTBL(salsa20, salsa20_info, salsa20_info2, salsa20_init, salsa20_setiv, salsa20_setkey, salsa20_encrypt, salsa20_encrypt, salsa20_encryptfast, salsa20_encryptfast, salsa20_test, salsa20_fini, salsa20_clone, salsa20_reset);
+
+#ifdef SALSA_HAVE_ASM
+PLUGIN_FUNCTBL(salsa_asm, salsa20_info, salsa20_info2, salsa_asm_init, salsa20_setiv, salsa20_setkey, salsa20_encrypt, salsa20_encrypt, salsa20_encryptfast, salsa20_encryptfast, salsa_asm_test, salsa20_fini, salsa20_clone, salsa20_reset);
+#endif
 
 static int salsa20_maintenance_test(void)
 {
@@ -62,12 +103,13 @@ static int salsa20_test(void *, const drew_loader_t *)
 }
 
 static const int salsa_keysz[] = {16, 32};
+static const int salsa_ivsz[] = {8};
 
 static int salsa20_info(int op, void *p)
 {
 	switch (op) {
 		case DREW_STREAM_VERSION:
-			return 1;
+			return CURRENT_ABI;
 		case DREW_STREAM_KEYSIZE:
 			for (size_t i = 0; i < DIM(salsa_keysz); i++) {
 				const int *x = reinterpret_cast<int *>(p);
@@ -80,18 +122,64 @@ static int salsa20_info(int op, void *p)
 		case DREW_STREAM_BLKSIZE:
 			return 64;
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
+	}
+}
+
+static int salsa20_info2(const drew_stream_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	switch (op) {
+		case DREW_STREAM_VERSION:
+			return CURRENT_ABI;
+		case DREW_STREAM_KEYSIZE_LIST:
+			for (drew_param_t *p = out; p; p = p->next)
+				if (!strcmp(p->name, "keySize")) {
+					p->param.array.ptr = (void *)salsa_keysz;
+					p->param.array.len = DIM(salsa_keysz);
+				}
+			return 0;
+		case DREW_STREAM_KEYSIZE_CTX:
+			if (ctx && ctx->ctx) {
+				const drew::Salsa20 *algo = (const drew::Salsa20 *)ctx->ctx;
+				return algo->GetKeySize();
+			}
+			return -DREW_ERR_MORE_INFO;
+		case DREW_STREAM_IVSIZE_LIST:
+			for (drew_param_t *p = out; p; p = p->next)
+				if (!strcmp(p->name, "ivSize")) {
+					p->param.array.ptr = (void *)salsa_ivsz;
+					p->param.array.len = DIM(salsa_ivsz);
+				}
+			return 0;
+		case DREW_STREAM_IVSIZE_CTX:
+			return 8;
+		case DREW_STREAM_INTSIZE:
+			return sizeof(drew::Salsa20);
+		case DREW_STREAM_BLKSIZE:
+			return 64;
+		default:
+			return -DREW_ERR_INVALID;
 	}
 }
 
 static int salsa20_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
-		const drew_param_t *)
+		const drew_param_t *param)
 {
 	drew::Salsa20 *p;
+	size_t rounds = 20;
+
+	for (const drew_param_t *pp = param; pp; pp = pp->next) {
+		if (!strcmp(pp->name, "rounds"))
+			rounds = pp->param.number;
+	}
+
+	rounds /= 2;
+
 	if (flags & DREW_STREAM_FIXED)
-		p = new (ctx->ctx) drew::Salsa20;
+		p = new (ctx->ctx) drew::Salsa20(rounds);
 	else
-		p = new drew::Salsa20;
+		p = new drew::Salsa20(rounds);
 	ctx->ctx = p;
 	ctx->functbl = &salsa20functbl;
 	return 0;
@@ -159,43 +247,92 @@ static int salsa20_fini(drew_stream_t *ctx, int flags)
 	return 0;
 }
 
+#ifdef SALSA_HAVE_ASM
+static int salsa_asm_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
+		const drew_param_t *param)
+{
+	drew::Salsa20 *p;
+	size_t rounds = 20;
+
+	for (const drew_param_t *pp = param; pp; pp = pp->next) {
+		if (!strcmp(pp->name, "rounds"))
+			rounds = pp->param.number;
+	}
+
+	if (rounds != 20)
+		return -DREW_ERR_INVALID;
+
+	if (flags & DREW_STREAM_FIXED)
+		p = new (ctx->ctx) drew::Salsa20(new drew::Salsa20AssemblerKeystream);
+	else
+		p = new drew::Salsa20(new drew::Salsa20AssemblerKeystream);
+	ctx->ctx = p;
+	ctx->functbl = &salsa_asmfunctbl;
+	return 0;
+}
+
+static int salsa_asm_test(void *, const drew_loader_t *)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+#endif
+
 PLUGIN_DATA_START()
+#ifdef SALSA_HAVE_ASM
+PLUGIN_DATA(salsa_asm, "Salsa20")
+#endif
 PLUGIN_DATA(salsa20, "Salsa20")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE(salsa20)
 
 }
 
-drew::Salsa20::Salsa20()
+drew::Salsa20::Salsa20() : m_ks(new Salsa20Keystream)
 {
+	m_ks->SetRounds(10);
+}
+
+drew::Salsa20::Salsa20(size_t nrounds) : m_ks(new Salsa20Keystream)
+{
+	m_ks->SetRounds(nrounds);
+}
+
+drew::Salsa20::Salsa20(Salsa20GenericKeystream *ks) : m_ks(ks)
+{
+	m_ks->SetRounds(10);
+}
+
+drew::Salsa20::Salsa20(Salsa20GenericKeystream *ks, size_t nrounds) : m_ks(ks)
+{
+	m_ks->SetRounds(nrounds);
 }
 
 void drew::Salsa20::Reset()
 {
-	m_ks.Reset();
+	m_ks->Reset();
 	m_nbytes = 0;
 }
 
 void drew::Salsa20::SetKey(const uint8_t *key, size_t sz)
 {
-	m_ks.Reset();
-	m_ks.SetKey(key, sz);
+	m_ks->Reset();
+	m_ks->SetKey(key, sz);
 	m_nbytes = 0;
 }
 
 void drew::Salsa20::SetNonce(const uint8_t *iv, size_t sz)
 {
-	m_ks.SetNonce(iv, sz);
+	m_ks->SetNonce(iv, sz);
 }
 
 void drew::Salsa20::EncryptFast(uint8_t *out, const uint8_t *in, size_t len)
 {
-	CopyAndXorAligned(out, in, len, m_buf, sizeof(m_buf), m_ks);
+	CopyAndXorAligned(out, in, len, m_buf, sizeof(m_buf), *m_ks);
 }
 
 void drew::Salsa20::Encrypt(uint8_t *out, const uint8_t *in, size_t len)
 {
-	CopyAndXor(out, in, len, m_buf, sizeof(m_buf), m_nbytes, m_ks);
+	CopyAndXor(out, in, len, m_buf, sizeof(m_buf), m_nbytes, *m_ks);
 }
 
 void drew::Salsa20::Decrypt(uint8_t *out, const uint8_t *in, size_t len)
@@ -209,6 +346,11 @@ drew::Salsa20Keystream::Salsa20Keystream()
 {
 	Reset();
 	ctr = 0;
+}
+
+void drew::Salsa20Keystream::SetRounds(size_t rounds)
+{
+	nrounds = rounds;
 }
 
 void drew::Salsa20Keystream::SetKey(const uint8_t *key, size_t sz)
@@ -241,7 +383,7 @@ inline void drew::Salsa20Keystream::DoHash(AlignedData &cur)
 	const AlignedData &st = state;
 	memcpy(cur.buf, st.buf, 16 * sizeof(uint32_t));
 
-	for (size_t i = 0; i < 10; i++) {
+	for (size_t i = 0; i < nrounds; i++) {
 		cur.buf[ 4] ^= RotateLeft(cur.buf[ 0] + cur.buf[12],  7);
 		cur.buf[ 8] ^= RotateLeft(cur.buf[ 4] + cur.buf[ 0],  9);
 		cur.buf[12] ^= RotateLeft(cur.buf[ 8] + cur.buf[ 4], 13);
@@ -314,3 +456,37 @@ void drew::Salsa20Keystream::FillBufferAligned(uint8_t bufp[64])
 	}
 	ctr++;
 }
+
+#ifdef SALSA_HAVE_ASM
+drew::Salsa20AssemblerKeystream::Salsa20AssemblerKeystream()
+{
+}
+
+void drew::Salsa20AssemblerKeystream::SetKey(const uint8_t *key, size_t sz)
+{
+	salsa_asm_keysetup(&state, key, sz*8, 64);
+}
+
+void drew::Salsa20AssemblerKeystream::SetNonce(const uint8_t *iv, size_t sz)
+{
+	salsa_asm_ivsetup(&state, iv);
+}
+
+void drew::Salsa20AssemblerKeystream::Reset()
+{
+	// FIXME: implement.
+}
+
+void drew::Salsa20AssemblerKeystream::FillBuffer(uint8_t buf[64])
+{
+	memset(buf, 0, 64);
+	salsa_asm_encrypt_bytes(&state, buf, buf, 64);
+}
+
+void drew::Salsa20AssemblerKeystream::FillBufferAligned(uint8_t bufp[64])
+{
+	memset(bufp, 0, 64);
+	salsa_asm_encrypt_bytes(&state, bufp, bufp, 64);
+}
+#endif
+UNHIDE()

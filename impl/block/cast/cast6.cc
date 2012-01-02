@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include <utility>
 
 #include <stdio.h>
@@ -10,6 +29,7 @@
 #include "block-plugin.hh"
 #include "btestcase.hh"
 
+HIDE()
 extern "C" {
 
 static const int cast6keysz[] =
@@ -109,7 +129,7 @@ drew::CAST6::CAST6()
 	k[0] ^= f1(k[1], tm[6][i], tr[6][i]); \
 	k[7] ^= f2(k[0], tm[7][i], tr[7][i]); \
 } while (0)
-int drew::CAST6::SetKey(const uint8_t *key, size_t sz)
+int drew::CAST6::SetKeyInternal(const uint8_t *key, size_t sz)
 {
 	uint32_t keys[8];
 	uint32_t cm = 0x5a827999, tm[8][24];
@@ -208,3 +228,4 @@ int drew::CAST6::Decrypt(uint8_t *out, const uint8_t *in) const
 	
 	return 0;
 }
+UNHIDE()

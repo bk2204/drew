@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2010–2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #ifndef HASH_PLUGIN_H
 #define HASH_PLUGIN_H
 
@@ -15,10 +34,10 @@ extern "C" {
 #include <drew/plugin.h>
 #include <drew/hash.h>
 
-#define PLUGIN_FUNCTBL(prefix, info, init, update, updatefast, pad, final, transform, test, fini, clone, reset) \
+#define PLUGIN_FUNCTBL(prefix, info, info2, init, update, updatefast, pad, final, test, fini, clone, reset) \
 \
 static drew_hash_functbl_t prefix ## functbl = { \
-	info, init, clone, reset, fini, update, updatefast, pad, final, transform, test \
+	info, info2, init, clone, reset, fini, update, updatefast, pad, final, test \
 };
 
 struct plugin {
@@ -33,19 +52,20 @@ struct plugin {
 #define PLUGIN_INFO(name) static const char *pname = name
 #define PLUGIN_INTERFACE(x) \
 \
+EXPORT() \
 int DREW_PLUGIN_NAME(x)(void *ldr, int op, int id, void *p) \
 { \
 \
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]); \
 	if (id < 0 || id >= nplugins) \
-		return -EINVAL; \
+		return -DREW_ERR_INVALID; \
 	switch (op) { \
 		case DREW_LOADER_LOOKUP_NAME: \
 			return 0; \
 		case DREW_LOADER_GET_NPLUGINS: \
 			return nplugins; \
 		case DREW_LOADER_GET_TYPE: \
-			return 1; \
+			return DREW_TYPE_HASH; \
 		case DREW_LOADER_GET_FUNCTBL_SIZE: \
 			return sizeof(drew_hash_functbl_t); \
 		case DREW_LOADER_GET_FUNCTBL: \
@@ -57,9 +77,10 @@ int DREW_PLUGIN_NAME(x)(void *ldr, int op, int id, void *p) \
 			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1); \
 			return 0; \
 		default: \
-			return -EINVAL; \
+			return -DREW_ERR_INVALID; \
 	} \
-}
+} \
+UNEXPORT()
 
 #ifdef __cplusplus
 }

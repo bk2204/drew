@@ -1,3 +1,7 @@
+/*-
+ * This file is in the public domain since it consists of nothing original and
+ * was automatically generated.
+ */
 const uint64_t drew::Camellia::s[8][256] = {{
 
 	0x7070700070000070, 0x8282820082000082, 0x2c2c2c002c00002c, 0xececec00ec0000ec, 

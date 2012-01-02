@@ -1,3 +1,9 @@
+/*-
+ * brian m. carlson <sandals@crustytoothpaste.net> wrote this source code.
+ * This source code is in the public domain; you may do whatever you please with
+ * it.  However, a credit in the documentation, although not required, would be
+ * appreciated.
+ */
 #include <errno.h>
 #include <limits.h>
 #include <stdint.h>
@@ -80,7 +86,7 @@ int process(uint8_t *val, const char *name, int mode, drew_hash_t *hash)
 			return -1;
 		}
 	}
-	hash->functbl->final(hash, val, 0);
+	hash->functbl->final(hash, val, ALGO_DIGEST_SIZE, 0);
 
 	fclose(fp);
 	return 0;

@@ -1,3 +1,22 @@
+/*-
+ * Copyright © 2011 brian m. carlson
+ *
+ * This file is part of the Drew Cryptography Suite.
+ *
+ * This file is free software; you can redistribute it and/or modify it under
+ * the terms of your choice of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation or version 2.0 of the Apache
+ * License as published by the Apache Software Foundation.
+ *
+ * This file is distributed in the hope that it will be useful, but without
+ * any warranty; without even the implied warranty of merchantability or fitness
+ * for a particular purpose.
+ *
+ * Note that people who make modified versions of this file are not obligated to
+ * dual-license their modified versions; it is their choice whether to do so.
+ * If a modified version is not distributed under both licenses, the copyright
+ * and permission notices should be updated accordingly.
+ */
 #include <internal.h>
 
 #include <stdio.h>
@@ -11,6 +30,7 @@
 #include "xtea.hh"
 #include "btestcase.hh"
 
+HIDE()
 extern "C" {
 
 static const int xteakeysz[] =
@@ -41,9 +61,11 @@ static int xteainfo(int op, void *p)
 	using namespace drew;
 	switch (op) {
 		case DREW_BLOCK_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_BLOCK_BLKSIZE:
 			return XTEA::block_size;
+		case DREW_BLOCK_ENDIAN:
+			return XTEA::endian_t::GetEndianness();
 		case DREW_BLOCK_KEYSIZE:
 			for (size_t i = 0; i < DIM(xteakeysz); i++) {
 				const int *x = reinterpret_cast<int *>(p);
@@ -54,9 +76,41 @@ static int xteainfo(int op, void *p)
 		case DREW_BLOCK_INTSIZE:
 			return sizeof(XTEA);
 		default:
-			return -EINVAL;
+			return -DREW_ERR_INVALID;
 	}
 }
+
+static int xteainfo2(const drew_block_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	using namespace drew;
+	switch (op) {
+		case DREW_BLOCK_VERSION:
+			return CURRENT_ABI;
+		case DREW_BLOCK_BLKSIZE:
+			return XTEA::block_size;
+		case DREW_BLOCK_ENDIAN:
+			return drew::XTEA::endian_t::GetEndianness();
+		case DREW_BLOCK_KEYSIZE_LIST:
+			for (drew_param_t *p = out; p; p = p->next)
+				if (!strcmp(p->name, "keySize")) {
+					p->param.array.ptr = (void *)xteakeysz;
+					p->param.array.len = DIM(xteakeysz);
+				}
+			return 0;
+		case DREW_BLOCK_KEYSIZE_CTX:
+			if (ctx && ctx->ctx) {
+				const drew::XTEA *p = (const drew::XTEA *)ctx->ctx;
+				return p->GetKeySize();
+			}
+			return -DREW_ERR_MORE_INFO;
+		case DREW_BLOCK_INTSIZE:
+			return sizeof(drew::XTEA);
+		default:
+			return -DREW_ERR_INVALID;
+	}
+}
+
 
 static int xteainit(drew_block_t *ctx, int flags,
 		const drew_loader_t *, const drew_param_t *param)
@@ -81,7 +135,7 @@ static int xteainit(drew_block_t *ctx, int flags,
 
 typedef drew::XTEA::endian_t E;
 
-int drew::XTEA::SetKey(const uint8_t *key, size_t len)
+int drew::XTEA::SetKeyInternal(const uint8_t *key, size_t len)
 {
 	E::Copy(m_k, key, len);
 	return 0;
@@ -132,3 +186,4 @@ int drew::XTEA::Decrypt(uint8_t *out, const uint8_t *in) const
 	E::Copy(out, v, sizeof(v));
 	return 0;
 }
+UNHIDE()
