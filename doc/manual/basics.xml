@@ -79,6 +79,40 @@
 		crash or otherwise misbehave in such an event.
 	</para>
 	<section>
+		<title>Parameters</title>
+		<para>
+			Some algorithms take parameters, such as the number of rounds.
+			These parameters are passed by the use of the
+			<classname>drew_param_t</classname> type, which is a linked list.
+			The type has three field: <varname>next</varname>, which is either
+			<constant>NULL</constant> or a pointer to the next item in the list;
+			<varname>name</varname>, which is a string naming the parameter; and
+			<varname>param</varname>, which is a union containing the actual
+			data.
+		</para>
+		<para>
+			When parameters are defined, this is usually done with the syntax
+			<literal><replaceable>name</replaceable>:
+				<replaceable>value</replaceable></literal>.  This means that the
+			parameter in question has <replaceable>name</replaceable> in the
+			name field and that the value is described by
+			<replaceable>value</replaceable>.  If the value is described as
+			being a string, number, pointer, or array, the
+			<varname>string</varname>, <varname>number</varname>,
+			<varname>value</varname>, or <varname>array</varname> field
+			of <varname>param</varname> respectively is being used to store the
+			data.
+		</para>
+		<para>
+			If a <classname>drew_param_t</classname> is passed through a
+			<literal>const</literal> pointer, the data is considered an in
+			parameter and if it is not <literal>const</literal>, then it is
+			considered an out parameter.  The
+			<classname>drew_param_t</classname> type is also used in
+			<function>info2</function> functions.
+		</para>
+	</section>
+	<section>
 		<title>Assumptions about the Runtime Environment</title>
 		<para>
 			While libdrew itself does not use the <type>wchar_t</type> type,
