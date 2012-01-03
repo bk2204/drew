@@ -314,19 +314,14 @@ static int cfb_decryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 	struct aligned *out = (struct aligned *)outp;
 	const struct aligned *cur = (const struct aligned *)c->prev;
 	const struct aligned *in = (const struct aligned *)inp;
-	size_t nchunks = len / (DREW_MODE_ALIGNMENT / c->chunks);
 
-	if (!len)
-		return 0;
+	len /= DREW_MODE_ALIGNMENT;
 
-	memcpy(out, cur, c->blksize);
-	cur++;
-	memcpy(out+1, in, c->blksize * (nchunks-1));
-	c->algo->functbl->encryptfast(c->algo, out->data, out->data,
-			c->chunks * nchunks);
-	xor_aligned2(out->data, in->data, len);
-
-	memcpy(c->prev, in+(nchunks-1), c->chunks);
+	for (size_t j = 0; j < len; j++, out++, in++) {
+		c->algo->functbl->encryptfast(c->algo, c->buf, cur->data, c->chunks);
+		memcpy(c->prev, in, c->blksize);
+		xor_aligned(out->data, c->buf, in->data, DREW_MODE_ALIGNMENT);
+	}
 
 	return 0;
 }
