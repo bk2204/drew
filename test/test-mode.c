@@ -195,10 +195,11 @@ int test_execute(void *data, const char *name, const void *tbl,
 		ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
 		if (tc->aadlen)
 			ctx.functbl->setdata(&ctx, tc->aad, tc->aadlen);
+		memcpy(buffer, tc->pt, tc->len);
 		if (!i)
-			ctx.functbl->encrypt(&ctx, buffer, tc->pt, tc->len);
+			ctx.functbl->encrypt(&ctx, buffer, buffer, tc->len);
 		else
-			ctx.functbl->encryptfast(&ctx, buffer, tc->pt, tc->len);
+			ctx.functbl->encryptfast(&ctx, buffer, buffer, tc->len);
 		if (tc->len != tc->ctlen)
 			ctx.functbl->encryptfinal(&ctx, buffer+tc->len, tc->ctlen-tc->len,
 					NULL, 0);
@@ -220,10 +221,11 @@ int test_execute(void *data, const char *name, const void *tbl,
 		ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
 		if (tc->aadlen)
 			ctx.functbl->setdata(&ctx, tc->aad, tc->aadlen);
+		memcpy(buffer, tc->ct, tc->len);
 		if (!i)
-			ctx.functbl->decrypt(&ctx, buffer, tc->ct, tc->len);
+			ctx.functbl->decrypt(&ctx, buffer, buffer, tc->len);
 		else
-			ctx.functbl->decryptfast(&ctx, buffer, tc->ct, tc->len);
+			ctx.functbl->decryptfast(&ctx, buffer, buffer, tc->len);
 		if (tc->len != tc->ctlen)
 			if (ctx.functbl->decryptfinal(&ctx, NULL, 0, tc->ct+tc->len,
 						tc->ctlen-tc->len) < 0)
