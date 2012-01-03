@@ -1,6 +1,6 @@
 ifeq ($(CFG_DCT_XSLT),y)
 FO_SHEETDIR		:= $(HOME)/.crustytoothpaste/groups/xsl-sheets/docbook/fo
-XHTML_SHEETDIR	:= $(HOME)/.crustytoothpaste/groups/xsl-sheets/docbook/xhtml
+XHTML_SHEETDIR	:= $(HOME)/.crustytoothpaste/groups/xsl-sheets/docbook/xhtml5
 
 FO_STYLE		:= base
 XHTML_STYLE		:= base
