@@ -24,11 +24,12 @@ STYLEARGS	:= --param fop1.extensions 1
 STYLEARGS	+= --param free.fonts.only 1
 STYLEARGS	+= --stringparam funcsynopsis.style ansi
 
-GEN_SUFFIXES	:= .pdf .fo .txml
+GEN_SUFFIXES	:= .pdf .ps .fo .txml
 
 .SUFFIXES: .xml .mx $(GEN_SUFFIXES)
 
 doc: $(MANUAL_DIR)/drew.pdf
+doc: $(MANUAL_DIR)/drew.ps
 
 DREW_COMPONENTS	:= intro interface basics hash block stream libdrew
 
@@ -36,6 +37,9 @@ $(MANUAL_DIR)/drew.fo: $(patsubst %,$(MANUAL_DIR)/%.xml,$(DREW_COMPONENTS))
 
 .fo.pdf:
 	$(FOP) $(FOP_CONFIG) -fo $< -pdf $@
+
+.fo.ps:
+	$(FOP) $(FOP_CONFIG) -fo $< -ps $@
 
 .mx.txml:
 	$(TSTROFF) -mxd -Txml $(CUR) > $@
