@@ -40,6 +40,7 @@ struct cbc {
 	const drew_loader_t *ldr;
 	drew_block_t *algo;
 	uint8_t *buf;
+	uint8_t *buf2;
 	uint8_t *iv;
 	size_t blksize;
 };
@@ -177,6 +178,8 @@ static int cbc_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 	c->blksize = c->algo->functbl->info(DREW_BLOCK_BLKSIZE, NULL);
 	if (!(c->buf = drew_mem_smalloc(c->blksize)))
 		return -ENOMEM;
+	if (!(c->buf2 = drew_mem_smalloc(c->blksize)))
+		return -ENOMEM;
 	if (!(c->iv = drew_mem_smalloc(c->blksize)))
 		return -ENOMEM;
 	if (c->blksize == 16)
@@ -243,9 +246,10 @@ static int cbc_decrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		return -DREW_ERR_INVALID;
 
 	for (; len >= bs; len -= bs, out += bs, in += bs) {
+		memcpy(c->buf2, in, bs);
 		c->algo->functbl->decrypt(c->algo, out, in);
 		xor_buffers2(out, c->buf, bs);
-		memcpy(c->buf, in, bs);
+		memcpy(c->buf, c->buf2, bs);
 	}
 
 	return 0;
@@ -258,9 +262,10 @@ static int cbc_decryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 	const size_t bs = c->blksize;
 
 	for (; len >= bs; len -= bs, out += bs, in += bs) {
+		memcpy(c->buf2, in, bs);
 		c->algo->functbl->decrypt(c->algo, out, in);
-		xor_aligned2(out, c->buf, bs);
-		memcpy(c->buf, in, bs);
+		xor_buffers2(out, c->buf, bs);
+		memcpy(c->buf, c->buf2, bs);
 	}
 
 	return 0;
@@ -431,6 +436,7 @@ static int cbc_fini(drew_mode_t *ctx, int flags)
 		c->algo->functbl->fini(c->algo, 0);
 	memset(c->buf, 0, c->blksize);
 	drew_mem_sfree(c->buf);
+	drew_mem_sfree(c->buf2);
 	memset(c->iv, 0, c->blksize);
 	drew_mem_sfree(c->iv);
 	memset(c, 0, sizeof(*c));
