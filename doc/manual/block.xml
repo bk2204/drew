@@ -53,6 +53,13 @@
 		present with this prototype.
 	</para>
 	<para>
+		While this function may always be used to determine the
+		<acronym>ABI</acronym>, if the <acronym>ABI</acronym> is 3 or greater,
+		the <function>info2</function> function should be used to determine
+		information instead of this function.  Certain information may still be
+		exposed through this function, but it is not guaranteed that it will be.
+	</para>
+	<para>
 		The following table indicates the valid values for
 		<parameter>op</parameter> and <parameter>p</parameter>, as well as the
 		expected return value.  If <parameter>p</parameter> is specified as
@@ -107,7 +114,7 @@
 					<entry><constant>DREW_BLOCK_VERSION</constant></entry>
 					<entry><constant>NULL</constant></entry>
 					<entry>the current <acronym>ABI</acronym> version (currently
-						2)</entry>
+						3)</entry>
 				</row>
 			</tbody>
 		</tgroup>
@@ -122,6 +129,98 @@
 		with the previous returned value will enumerate all of the available key
 		sizes.
 	</para><!--}}}-->
+	<!--{{{ info2-->
+	<funcsynopsis language="C">
+		<funcprototype>
+			<funcdef>int <function>info2</function></funcdef>
+			<paramdef>const drew_block_t *<parameter>ctx</parameter></paramdef>
+			<paramdef>int <parameter>op</parameter></paramdef>
+			<paramdef>drew_param_t *<parameter>out</parameter></paramdef>
+			<paramdef>const drew_param_t *<parameter>in</parameter></paramdef>
+		</funcprototype>
+	</funcsynopsis>
+	<para>
+		This function provides information about the algorithm in question if
+		the <acronym>ABI</acronym> is 3 or greater.  If it is not, this function
+		does not exist and the <function>info</function> function must be used
+		instead.  The type of information depends on the
+		<parameter>op</parameter> parameter.
+	</para>
+	<para>
+		The following table indicates the valid values for the parameters, as
+		well as the expected return value.  If a parameter is marked as being
+		<constant>NULL</constant>, it is still acceptable to pass data of an
+		appropriate type; however, it will be ignored.  The
+		<parameter>in</parameter> and <parameter>out</parameter> parameters, if
+		non-<constant>NULL</constant>, point to a linked list of
+		<classname>drew_param_t</classname>.  They are specified as
+		<literal><replaceable>name</replaceable>:
+			<replaceable>value</replaceable></literal>.  This means that one of
+		the items in the linked list must have the specified name attribute and
+		(for the <parameter>in</parameter> parameter) the specified value or
+		(for the <parameter>out</parameter> parameter) the specified value will
+		be provided in the appropriate slot.
+	</para>
+	<table>
+		<title>drew Block Cipher Info Operations</title>
+		<tgroup cols="5">
+			<colspec colnum="1" colwidth="25*"/>
+			<colspec colnum="2" colwidth="10*"/>
+			<colspec colnum="3" colwidth="5*"/>
+			<colspec colnum="4" colwidth="15*"/>
+			<colspec colnum="5" colwidth="20*"/>
+			<thead>
+				<row>
+					<entry><parameter>op</parameter></entry>
+					<entry><parameter>ctx</parameter></entry>
+					<entry><parameter>in</parameter></entry>
+					<entry><parameter>out</parameter></entry>
+					<entry>Return Value</entry>
+				</row>
+			</thead>
+			<tbody>
+				<row>
+					<entry><constant>DREW_BLOCK_BLKSIZE_CTX</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry>the number of bytes processed by each iteration of
+						this block cipher</entry>
+				</row>
+				<row>
+					<entry><constant>DREW_BLOCK_ENDIAN</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry>4321 if the algorithm is big-endian, 1234 if the
+						algorithm is little-endian, and 0 if the algorithm is
+						completely endian-neutral (byte-oriented)</entry>
+				</row>
+				<row>
+					<entry><constant>DREW_BLOCK_INTSIZE</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry>the size of the implementation context</entry>
+				</row>
+				<row>
+					<entry><constant>DREW_BLOCK_KEYSIZE_CTX</constant></entry>
+					<entry><constant>context</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry>the size of the key used in this context</entry>
+				</row>
+				<row>
+					<entry><constant>DREW_BLOCK_KEYSIZE_LIST</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry><constant>NULL</constant></entry>
+					<entry><literal>keySize</literal>: a sorted array of
+						<type>int</type> representing valid key sizes</entry>
+					<entry>0</entry>
+				</row>
+			</tbody>
+		</tgroup>
+	</table><!--}}}-->
 	<!--{{{ init-->
 	<funcsynopsis language="C">
 		<funcprototype>
