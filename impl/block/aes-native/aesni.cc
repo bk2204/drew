@@ -97,6 +97,11 @@ drew::AESNI::AESNI()
 
 int drew::AESNI::SetKeyInternal(const uint8_t *key, size_t len)
 {
+	return SetKeyInternal(key, len, 0);
+}
+
+int drew::AESNI::SetKeyInternal(const uint8_t *key, size_t len, int mode)
+{
 	switch (len) {
 		case 16:
 		case 24:
@@ -112,7 +117,8 @@ int drew::AESNI::SetKeyInternal(const uint8_t *key, size_t len)
 	m_nr = 6 + std::max(m_nb, m_nk);
 
 	SetKeyEncrypt(key, len);
-	SetKeyDecrypt();
+	if (mode != DREW_BLOCK_MODE_ENCRYPT)
+		SetKeyDecrypt();
 	return 0;
 }
 
