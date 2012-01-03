@@ -206,17 +206,6 @@ static void increment_counter(uint8_t *ctr, size_t len)
 	}
 }
 
-static void increment_fast(uint32_t *ctr)
-{
-	const size_t len = 4;
-	bool carry = 0;
-	carry = !++ctr[len - 1];
-	for (int i = len - 2; unlikely(carry && i >= 0); i--) {
-		if (!(carry = !++ctr[i]))
-			break;
-	}
-}
-
 static int ctr_encrypt(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 		size_t len)
 {
@@ -261,21 +250,14 @@ static int ctr_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len)
 {
 	struct ctr *c = (struct ctr *)ctx->ctx;
-	uint8_t *outp = out;
-	const uint8_t *inp = in;
-	const size_t mul = len / c->blksize;
-	uint32_t ctr[4];
-
-	E::Copy(ctr, c->ctr, sizeof(ctr));
+	uint8_t buf[FAST_ALIGNMENT] ALIGNED_T;
 
 	for (size_t i = 0; i < len; i += FAST_ALIGNMENT, out += FAST_ALIGNMENT,
 			in += FAST_ALIGNMENT) {
-		E::Copy(out, ctr, sizeof(ctr));
-		increment_fast(ctr);
+		c->algo->functbl->encryptfast(c->algo, buf, c->ctr, 1);
+		increment_counter(c->ctr, c->blksize);
+		XorAligned(out, buf, in, FAST_ALIGNMENT);
 	}
-	c->algo->functbl->encryptfast(c->algo, outp, outp, mul);
-	xor_aligned2(outp, inp, len);
-	E::Copy(c->ctr, ctr, sizeof(ctr));
 
 	return 0;
 }
