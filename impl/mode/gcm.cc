@@ -448,27 +448,37 @@ static int gcm_encrypt(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 }
 
 /* This is only ever called for 16-byte block ciphers. */
-static int gcm_encryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
+static int gcm_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len)
 {
 	struct gcm *c = (struct gcm *)ctx->ctx;
-	uint8_t *out = outp;
-	const uint8_t *in = inp;
-	const size_t blksize = 16;
-	const size_t chunks = len / blksize;
 	uint32_t ctr[4];
+	uint8_t tmp[4096] ALIGNED_T;
 
 	c->clen += len;
 	E::Copy(ctr, c->y, sizeof(ctr));
 
-	for (size_t i = 0; i < len; i += blksize, out += blksize, in += blksize) {
-		increment_fast(ctr);
-		E::Copy(out, ctr, sizeof(ctr));
+	while (len) {
+		const size_t x = std::min(sizeof(tmp), len);
+		const size_t chunks = x / FAST_ALIGNMENT;
+		uint8_t *outp = out;
+		const uint8_t *inp = in;
+		uint8_t *buf = tmp;
+
+		for (size_t i = 0; i < x; i += FAST_ALIGNMENT, buf += FAST_ALIGNMENT,
+				in += FAST_ALIGNMENT) {
+			increment_fast(ctr);
+			E::Copy(buf, ctr, sizeof(ctr));
+		}
+		c->algo->functbl->encryptfast(c->algo, tmp, tmp, chunks);
+		XorAligned(outp, tmp, inp, len);
+
+		hash_fast(c, c->x, outp, chunks);
+		len -= x;
+		out += sizeof(tmp);
+		in += sizeof(tmp);
 	}
-	c->algo->functbl->encryptfast(c->algo, outp, outp, chunks);
-	XorAligned(outp, inp, len);
 	E::Copy(c->y, ctr, sizeof(ctr));
-	hash_fast(c, c->x, outp, chunks);
 
 	return 0;
 }
@@ -516,25 +526,37 @@ static int gcm_decrypt(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 	return 0;
 }
 
-static int gcm_decryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
+static int gcm_decryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len)
 {
 	struct gcm *c = (struct gcm *)ctx->ctx;
-	uint8_t *out = outp;
-	const uint8_t *in = inp;
-	const size_t blksize = 16;
-	const size_t chunks = len / blksize;
+	uint32_t ctr[4];
+	uint8_t tmp[4096] ALIGNED_T;
 
 	c->clen += len;
+	E::Copy(ctr, c->y, sizeof(ctr));
 
-	hash_fast(c, c->x, in, chunks);
+	while (len) {
+		const size_t x = std::min(sizeof(tmp), len);
+		const size_t chunks = x / FAST_ALIGNMENT;
+		uint8_t *outp = out;
+		const uint8_t *inp = in;
+		uint8_t *buf = tmp;
 
-	for (size_t i = 0; i < len; i += blksize, out += blksize, in += blksize) {
-		increment_counter(c->y, blksize);
-		memcpy(out, c->y, blksize);
+		hash_fast(c, c->x, in, chunks);
+		for (size_t i = 0; i < x; i += FAST_ALIGNMENT, buf += FAST_ALIGNMENT,
+				in += FAST_ALIGNMENT) {
+			increment_fast(ctr);
+			E::Copy(buf, ctr, sizeof(ctr));
+		}
+		c->algo->functbl->encryptfast(c->algo, tmp, tmp, chunks);
+		XorAligned(outp, tmp, inp, len);
+
+		len -= x;
+		out += sizeof(tmp);
+		in += sizeof(tmp);
 	}
-	c->algo->functbl->encryptfast(c->algo, outp, outp, chunks);
-	XorAligned(outp, inp, len);
+	E::Copy(c->y, ctr, sizeof(ctr));
 
 	return 0;
 }
