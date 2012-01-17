@@ -72,13 +72,16 @@
 
 #include "util.hh"
 
-#include "gcm-impl.cc"
-
 #if defined(DREW_COMPILER_GCCLIKE) && defined(VECTOR_T)
 #if (defined(__i386__) || defined(__amd64__)) && defined(__PCLMUL__)
 #define FEATURE_PCLMULQDQ
+
+typedef long long int vector_t __attribute__((vector_size(16)));
+typedef int vector4i_t __attribute__((vector_size(16)));
 #endif
 #endif
+
+#include "gcm-impl.cc"
 
 HIDE()
 
@@ -126,15 +129,12 @@ static int gcm_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	return 0;
 }
 
-typedef long long int vector_t __attribute__((vector_size(16)));
-typedef int vector4i_t __attribute__((vector_size(16)));
-
 static inline void mul(struct gcm *ctx, uint8_t *buf)
 {
 	vector_t a, b, res;
 	vector_t t3, t4, t5, t6;
 	E::Copy(&a, buf, sizeof(a));
-	E::Copy(&b, ctx->h, sizeof(b));
+	b = ctx->hv;
 
 	t3 = __builtin_ia32_pclmulqdq128(a, b, 0x00);
 	t4 = __builtin_ia32_pclmulqdq128(a, b, 0x01);

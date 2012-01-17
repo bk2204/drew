@@ -32,6 +32,9 @@ struct gcm {
 	uint8_t x[16] ALIGNED_T;
 	uint8_t buf[16] ALIGNED_T;
 	uint8_t cbuf[16] ALIGNED_T;
+#ifdef FEATURE_PCLMULQDQ
+	vector_t hv;
+#endif
 	uint8_t *iv;
 	uint64_t *table;
 	void (*mul)(struct gcm *, uint8_t *);
@@ -173,6 +176,9 @@ static int gcm_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len)
 	memset(c->buf, 0, sizeof(c->buf));
 	memset(c->cbuf, 0, sizeof(c->cbuf));
 	c->algo->functbl->encryptfast(c->algo, c->h, c->h, 1);
+#ifdef FEATURE_PCLMULQDQ
+	E::Copy(&c->hv, c->h, sizeof(c->hv));
+#endif
 
 #ifdef TABLE_SIZE
 	if (c->mul == mul_fl)
