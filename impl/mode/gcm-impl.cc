@@ -127,9 +127,6 @@ static int gcm_reset(drew_mode_t *ctx)
 	return 0;
 }
 
-static inline void mul_fl(struct gcm *ctx, uint8_t *buf);
-static inline void gen_table_fl(struct gcm *ctx);
-
 static int gcm_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 {
 	struct gcm *c = (struct gcm *)ctx->ctx;
@@ -177,8 +174,10 @@ static int gcm_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len)
 	memset(c->cbuf, 0, sizeof(c->cbuf));
 	c->algo->functbl->encryptfast(c->algo, c->h, c->h, 1);
 
+#ifdef TABLE_SIZE
 	if (c->mul == mul_fl)
 		gen_table_fl(c);
+#endif
 
 	c->ivlen = len;
 	if (iv != c->iv)
@@ -655,8 +654,10 @@ static int gcm_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags)
 		cn->algo = (drew_block_t *)drew_mem_memdup(c->algo, sizeof(*c->algo));
 		cn->algo->functbl->clone(cn->algo, c->algo, 0);
 	}
+#ifdef TABLE_SIZE
 	if (c->table)
 		cn->table = (uint64_t *)drew_mem_memdup(c->table, TABLE_SIZE);
+#endif
 	newctx->functbl = oldctx->functbl;
 	return 0;
 }

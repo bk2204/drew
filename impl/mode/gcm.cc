@@ -34,6 +34,10 @@
 #include "util.hh"
 
 #define TABLE_SIZE (64 * 1024)
+extern "C" {
+static inline void mul_fl(struct gcm *ctx, uint8_t *buf);
+static inline void gen_table_fl(struct gcm *ctx);
+}
 #include "gcm-impl.cc"
 
 HIDE()
