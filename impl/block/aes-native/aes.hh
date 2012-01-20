@@ -31,7 +31,7 @@
 #include "util.hh"
 
 #if defined(__i386__) || defined(__amd64__) || defined(__x86_64__)
-#if defined(__GNUC__) && defined(__AES__)
+#if defined(__GNUC__) && defined(__AES__) && defined(__SSE4_1__)
 #define FEATURE_AESNI
 #endif
 #endif
@@ -64,8 +64,11 @@ class AESNI : public AESNative
 		~AESNI() {};
 		int Encrypt(uint8_t *out, const uint8_t *in) const;
 		int Decrypt(uint8_t *out, const uint8_t *in) const;
+		int EncryptFast(FastBlock *bout, const FastBlock *bin, size_t n) const;
+		int DecryptFast(FastBlock *bout, const FastBlock *bin, size_t n) const;
 	protected:
 		int SetKeyInternal(const uint8_t *key, size_t sz);
+		int SetKeyInternal(const uint8_t *key, size_t sz, int mode);
 		void SetKeyEncrypt(const uint8_t *key, size_t sz);
 		void SetKeyDecrypt(void);
 		void SetKeyEncrypt128(const uint8_t *key);

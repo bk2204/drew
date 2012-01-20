@@ -48,6 +48,9 @@ CFG_ARIABYTE	= y
 CFG_ARIA128		= y
 CFG_SHACAL		= y
 CFG_MARS		= y
+CFG_RC5			= No, thanks.  I'm patented.
+CFG_RC6			= No, thanks.  I'm patented.
+CFG_SAFER		= y
 
 # Modes.
 CFG_CFB			= y
@@ -55,6 +58,7 @@ CFG_OFB			= y
 CFG_CBC			= y
 CFG_CTR			= y
 CFG_GCM			= y
+CFG_GCM_PCLMUL	= y
 
 # MACs.
 CFG_HMAC		= y
@@ -75,6 +79,7 @@ CFG_ARC4IL		= y
 CFG_SP80090		= y
 CFG_SYSPRNG		= y
 CFG_ISAAC64		= y
+CFG_ISAACPLUS	= y
 
 ## Bignum implementations.
 CFG_TOMMATH		= y
@@ -100,6 +105,8 @@ CFG_LIBMD		= y
 ## Build options.
 # Use the DCT XSLT Stylesheets to build instead of the standard DocBook ones.
 CFG_DCT_XSLT	= n
+# Use RDF::Trine to generate and embed RDF metadata into plugins.
+CFG_METADATA	= y
 
 ## Settings.
 CFG_SEARCH_PATH	= /lib/drew/plugins /usr/lib/drew/plugins /usr/local/lib/drew/plugins

@@ -37,11 +37,11 @@ extern "C" {
 #define DREW_LOADER_MD_BLANK 2
 
 typedef struct {
-	int version;		/* Must be one. */
-	char *subject;		/* Must be NULL (rdf:about="") or a blank node name. */
-	char *predicate;	/* The full IRI of an RDF predicate. */
-	int type;			/* A DREW_LOADER_MD constant. */
-	char *object;		/* An IRI, literal value, or blank node name. */
+	int version;			// Must be one.
+	const char *subject;	// Must be NULL (rdf:about="") or a blank node name.
+	const char *predicate;	// The full IRI of an RDF predicate.
+	int type;				// A DREW_LOADER_MD constant.
+	const char *object;		// An IRI, literal value, or blank node name.
 } drew_metadata_t;
 
 struct drew_loader_s;

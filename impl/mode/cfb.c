@@ -307,22 +307,27 @@ static int cfb_encryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 	return 0;
 }
 
-static int cfb_decryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
+static int cfb_decryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len)
 {
 	struct cfb *c = ctx->ctx;
-	struct aligned *out = (struct aligned *)outp;
-	const struct aligned *cur = (const struct aligned *)c->prev;
-	const struct aligned *in = (const struct aligned *)inp;
 
-	len /= DREW_MODE_ALIGNMENT;
+	while (len) {
+		uint8_t buf[4096] ALIGNED_T;
+		const size_t x = MIN(sizeof(buf), len);
+		const size_t blksize = c->blksize;
+		const size_t mul = x / blksize;
 
-	for (size_t j = 0; j < len; j++, out++, in++) {
-		c->algo->functbl->encryptfast(c->algo, c->buf, cur->data, c->chunks);
-		xor_aligned(out->data, c->buf, in->data, DREW_MODE_ALIGNMENT);
-		cur = in;
+		memcpy(buf, c->prev, blksize);
+		memcpy(buf+blksize, in, x-blksize);
+		memcpy(c->prev, in+x-blksize, blksize);
+		c->algo->functbl->encryptfast(c->algo, buf, buf, mul);
+		xor_aligned(out, buf, in, len);
+
+		len -= x;
+		out += sizeof(buf);
+		in += sizeof(buf);
 	}
-	memcpy(c->prev, cur, DREW_MODE_ALIGNMENT);
 
 	return 0;
 }

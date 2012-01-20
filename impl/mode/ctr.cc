@@ -32,7 +32,7 @@
 #include <drew/block.h>
 #include <drew/plugin.h>
 
-#include "util.h"
+#include "util.hh"
 
 #define DIM(x) (sizeof(x)/sizeof((x)[0]))
 
@@ -46,6 +46,7 @@ struct ctr {
 	size_t boff;
 };
 
+extern "C" {
 static int ctr_info(int op, void *p);
 static int ctr_info2(const drew_mode_t *, int op, drew_param_t *,
 		const drew_param_t *);
@@ -67,6 +68,7 @@ static int ctr_encryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 		const uint8_t *in, size_t inlen);
 static int ctr_decryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 		const uint8_t *in, size_t inlen);
+}
 
 static const drew_mode_functbl_t ctr_functbl = {
 	ctr_info, ctr_info2, ctr_init, ctr_clone, ctr_reset, ctr_fini,
@@ -80,6 +82,8 @@ static const drew_mode_functbl_t ctr_functbl_aligned = {
 	ctr_encryptfast, ctr_setdata, ctr_encryptfinal, ctr_decryptfinal,
 	ctr_resync, ctr_test
 };
+
+typedef BigEndian E;
 
 static int ctr_info(int op, void *p)
 {
@@ -119,7 +123,7 @@ static int ctr_info2(const drew_mode_t *ctx, int op, drew_param_t *out,
 
 static int ctr_reset(drew_mode_t *ctx)
 {
-	struct ctr *c = ctx->ctx;
+	struct ctr *c = (struct ctr *)ctx->ctx;
 	int res = 0;
 
 	if ((res = ctr_setiv(ctx, c->iv, c->blksize)))
@@ -136,10 +140,10 @@ static int ctr_resync(drew_mode_t *ctx)
 static int ctr_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 		const drew_param_t *param)
 {
-	struct ctr *newctx = ctx->ctx;
+	struct ctr *newctx = (struct ctr *)ctx->ctx;
 
 	if (!(flags & DREW_MODE_FIXED))
-		newctx = drew_mem_smalloc(sizeof(*newctx));
+		newctx = (struct ctr *)drew_mem_smalloc(sizeof(*newctx));
 	memset(newctx, 0, sizeof(*newctx));
 	newctx->ldr = ldr;
 	newctx->algo = NULL;
@@ -153,7 +157,7 @@ static int ctr_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 
 static int ctr_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 {
-	struct ctr *c = ctx->ctx;
+	struct ctr *c = (struct ctr *)ctx->ctx;
 
 	/* You really do need to pass something for the algoctx parameter, because
 	 * otherwise you haven't set a key for the algorithm.  That's a bit bizarre,
@@ -166,7 +170,7 @@ static int ctr_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 		c->algo->functbl->fini(c->algo, 0);
 		drew_mem_free(c->algo);
 	}
-	c->algo = drew_mem_malloc(sizeof(*c->algo));
+	c->algo = (drew_block_t *)drew_mem_malloc(sizeof(*c->algo));
 	c->algo->functbl = algoctx->functbl;
 	c->algo->functbl->clone(c->algo, algoctx, 0);
 	c->blksize = c->algo->functbl->info(DREW_BLOCK_BLKSIZE, NULL);
@@ -178,7 +182,7 @@ static int ctr_setblock(drew_mode_t *ctx, const drew_block_t *algoctx)
 
 static int ctr_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len)
 {
-	struct ctr *c = ctx->ctx;
+	struct ctr *c = (struct ctr *)ctx->ctx;
 
 	if (c->blksize != len)
 		return -DREW_ERR_INVALID;
@@ -202,10 +206,21 @@ static void increment_counter(uint8_t *ctr, size_t len)
 	}
 }
 
+static void increment_fast(uint32_t *ctr)
+{
+	const size_t len = 4;
+	bool carry = 0;
+	carry = !++ctr[len - 1];
+	for (int i = len - 2; unlikely(carry && i >= 0); i--) {
+		if (!(carry = !++ctr[i]))
+			break;
+	}
+}
+
 static int ctr_encrypt(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 		size_t len)
 {
-	struct ctr *c = ctx->ctx;
+	struct ctr *c = (struct ctr *)ctx->ctx;
 	uint8_t *out = outp;
 	const uint8_t *in = inp;
 
@@ -241,21 +256,36 @@ static int ctr_encrypt(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 	return 0;
 }
 
+/* This is only ever called with 16-bit block ciphers. */
 static int ctr_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len)
 {
-	struct ctr *c = ctx->ctx;
-	uint8_t *outp = out;
-	const uint8_t *inp = in;
-	const size_t mul = len / c->blksize;
+	struct ctr *c = (struct ctr *)ctx->ctx;
+	uint32_t ctr[4];
+	uint8_t tmp[4096] ALIGNED_T;
 
-	for (size_t i = 0; i < len; i += FAST_ALIGNMENT, out += FAST_ALIGNMENT,
-			in += FAST_ALIGNMENT) {
-		memcpy(out, c->ctr, c->blksize);
-		increment_counter(c->ctr, c->blksize);
+	E::Copy(ctr, c->ctr, sizeof(ctr));
+
+	while (len) {
+		const size_t x = std::min(sizeof(tmp), len);
+		const size_t mul = x / FAST_ALIGNMENT;
+		uint8_t *outp = out;
+		const uint8_t *inp = in;
+		uint8_t *buf = tmp;
+
+		for (size_t i = 0; i < x; i += FAST_ALIGNMENT, buf += FAST_ALIGNMENT,
+				in += FAST_ALIGNMENT) {
+			E::Copy(buf, ctr, sizeof(ctr));
+			increment_fast(ctr);
+		}
+		c->algo->functbl->encryptfast(c->algo, tmp, tmp, mul);
+		XorAligned(outp, tmp, inp, len);
+
+		len -= x;
+		out += sizeof(tmp);
+		in += sizeof(tmp);
 	}
-	c->algo->functbl->encryptfast(c->algo, outp, outp, mul);
-	xor_aligned2(outp, inp, len);
+	E::Copy(c->ctr, ctr, sizeof(ctr));
 
 	return 0;
 }
@@ -305,7 +335,7 @@ static int ctr_test_generic(const drew_loader_t *ldr, const char *name,
 		return id;
 
 	drew_loader_get_functbl(ldr, id, &tmp);
-	functbl = tmp;
+	functbl = (const drew_block_functbl_t *)tmp;
 	functbl->init(&algo, 0, ldr, NULL);
 
 	for (size_t i = 0; i < ntests; i++) {
@@ -405,7 +435,7 @@ static int ctr_test(void *p, const drew_loader_t *ldr)
 
 static int ctr_fini(drew_mode_t *ctx, int flags)
 {
-	struct ctr *c = ctx->ctx;
+	struct ctr *c = (struct ctr *)ctx->ctx;
 
 	if (c->algo)
 		c->algo->functbl->fini(c->algo, 0);
@@ -420,14 +450,14 @@ static int ctr_fini(drew_mode_t *ctx, int flags)
 
 static int ctr_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags)
 {
-	struct ctr *c = oldctx->ctx, *cn;
+	struct ctr *c = (struct ctr *)oldctx->ctx, *cn;
 
 	if (!(flags & DREW_MODE_FIXED))
 		newctx->ctx = drew_mem_smalloc(sizeof(struct ctr));
-	cn = newctx->ctx;
+	cn = (struct ctr *)newctx->ctx;
 	memcpy(newctx->ctx, oldctx->ctx, sizeof(struct ctr));
 	if (c->algo) {
-		cn->algo = drew_mem_memdup(c->algo, sizeof(*c->algo));
+		cn->algo = (drew_block_t *)drew_mem_memdup(c->algo, sizeof(*c->algo));
 		cn->algo->functbl->clone(cn->algo, c->algo, 0);
 	}
 	newctx->functbl = oldctx->functbl;
@@ -445,6 +475,7 @@ static struct plugin plugin_data[] = {
 };
 
 EXPORT()
+extern "C"
 int DREW_PLUGIN_NAME(ctr)(void *ldr, int op, int id, void *p)
 {
 	int nplugins = sizeof(plugin_data)/sizeof(plugin_data[0]);

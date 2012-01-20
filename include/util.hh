@@ -25,20 +25,6 @@
 #include <algorithm>
 #include "util.h"
 
-#define DREW_BIG_ENDIAN		4321U
-#define DREW_LITTLE_ENDIAN	1234U
-#if !defined(BYTE_ORDER) && defined(__BYTE_ORDER__)
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-#define DREW_BYTE_ORDER		DREW_BIG_ENDIAN
-#else
-#define DREW_BYTE_ORDER		DREW_LITTLE_ENDIAN
-#endif
-#elif BYTE_ORDER == BIG_ENDIAN
-#define DREW_BYTE_ORDER		DREW_BIG_ENDIAN
-#else
-#define DREW_BYTE_ORDER		DREW_LITTLE_ENDIAN
-#endif
-
 HIDE()
 template<class T, size_t N>
 struct AlignedBlock
@@ -55,7 +41,7 @@ inline bool IsAligned(const void *p, size_t mul)
 template<class T>
 inline bool IsAligned(const void *p)
 {
-#if defined(__GNUC__)
+#if defined(DREW_COMPILER_GCCLIKE)
 	return IsAligned(p, __alignof__(T));
 #else
 	return IsAligned(p, sizeof(T));
@@ -67,7 +53,7 @@ inline size_t GetNeededAlignment()
 {
 #if defined(NEEDS_ALIGNMENT) && (NEEDS_ALIGNMENT-0 == 0)
 	return 1;
-#elif defined(__GNUC__)
+#elif defined(DREW_COMPILER_GCCLIKE)
 	return __alignof__(T);
 #else
 	return sizeof(T);

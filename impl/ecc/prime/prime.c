@@ -180,8 +180,9 @@ static int ecp_init(drew_ecc_t *ctx, int flags, const drew_loader_t *ldr,
 static int ecp_clone(drew_ecc_t *new, const drew_ecc_t *old, int flags)
 {
 	struct curve *cn, *co = old->ctx;
+	int flg = flags & DREW_ECC_COPY ? DREW_BIGNUM_COPY : 0;
 
-	if (!(flags & DREW_ECC_FIXED))
+	if (!(flags & (DREW_ECC_FIXED | DREW_ECC_COPY)))
 		if (!(new->ctx = drew_mem_malloc(sizeof(struct curve))))
 			return -ENOMEM;
 
@@ -189,13 +190,13 @@ static int ecp_clone(drew_ecc_t *new, const drew_ecc_t *old, int flags)
 	cn = new->ctx;
 	cn->name = co->name;
 	memcpy(cn, co, sizeof(*cn));
-	cn->p.functbl->clone(&cn->p, &co->p, 0);
-	cn->a.functbl->clone(&cn->a, &co->a, 0);
-	cn->b.functbl->clone(&cn->b, &co->b, 0);
-	cn->n.functbl->clone(&cn->n, &co->n, 0);
-	cn->h.functbl->clone(&cn->h, &co->h, 0);
-	cn->g.x.functbl->clone(&cn->g.x, &co->g.x, 0);
-	cn->g.y.functbl->clone(&cn->g.y, &co->g.y, 0);
+	cn->p.functbl->clone(&cn->p, &co->p, flg);
+	cn->a.functbl->clone(&cn->a, &co->a, flg);
+	cn->b.functbl->clone(&cn->b, &co->b, flg);
+	cn->n.functbl->clone(&cn->n, &co->n, flg);
+	cn->h.functbl->clone(&cn->h, &co->h, flg);
+	cn->g.x.functbl->clone(&cn->g.x, &co->g.x, flg);
+	cn->g.y.functbl->clone(&cn->g.y, &co->g.y, flg);
 	cn->g.curve = cn;
 	return 0;
 }

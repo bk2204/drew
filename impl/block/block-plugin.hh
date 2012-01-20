@@ -151,7 +151,7 @@ static int prefix ## setkey(drew_block_t *ctx, const uint8_t *key, size_t len, \
 { \
 	using namespace drew; \
 	bname *p = reinterpret_cast<bname *>(ctx->ctx); \
-	return p->SetKey(key, len); \
+	return p->SetKey(key, len, mode); \
 } \
  \
 static int prefix ## reset(drew_block_t *ctx) \

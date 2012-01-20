@@ -312,7 +312,7 @@ int test_process_testcase(void *data, int type, const char *item,
 }
 
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
-		const void *tbl, int chunk, int nchunks)
+		const void *tbl, int chunk, int nchunks, int flags)
 {
 	return -DREW_ERR_NOT_IMPL;
 }

@@ -4,20 +4,14 @@ VERSION			:= $(shell test -d .git && git describe)
 
 CATEGORIES		:= hash block mode mac stream prng bignum pkenc pksig kdf ecc
 
-TEST_SRC		+= libmd/testsuite.c
-TEST_OBJ		:= ${SRC:.c=.o} ${TEST_SRC:.c=.o}
-TEST_EXE		:= libmd/testsuite
-
-PLUG_SRC		+= test/plugin-main.c
-PLUG_OBJ		:= ${SRC:.c=.o} ${PLUG_SRC:.c=.o}
-PLUG_EXE		:= test/plugin-main
-
 RM				?= rm
 RMDIR			?= rmdir
 
 INSTALL_PROG	?= install
 INSTALL_OPTS	:= $(shell [ `id -u` -eq 0 ] && printf -- "-o root -g root\n" || printf "\n")
 INSTALL			:= $(INSTALL_PROG) $(INSTALL_OPTS)
+
+TEST_ARG		= $(shell $(CC) $(1) -x c -o /dev/null -c /dev/null 2>/dev/null && echo $(1))
 
 ifdef PROF
 CLIKEFLAGS		+= -pg
@@ -32,7 +26,7 @@ ifeq ($(CFG_STACK_CHECK),y)
 CLIKEFLAGS		+= -fstack-protector
 endif
 
-CPPFLAGS		+= -Iinclude
+CPPFLAGS		+= -Iinclude -I$(dir $@)
 CLIKEFLAGS		+= -Wall -Werror -fPIC -O3 -g -pipe
 CLIKEFLAGS		+= -D_POSIX_SOURCE=200112L -D_XOPEN_SOURCE=600
 CLIKEFLAGS		+= -fextended-identifiers
@@ -60,35 +54,32 @@ all:
 
 include lib/libdrew/Makefile
 include lib/libdrew-util/Makefile
+include lib/libmd/Makefile
 include $(patsubst %,impl/%/Makefile,$(CATEGORIES))
 include lib/libdrew-impl/Makefile
 include lib/libdrew-tls/Makefile
 include lib/libdrew-gnutls/Makefile
 include test/Makefile
 include util/Makefile
-include libmd/Makefile
 include doc/manual/Makefile
 
-OBJECTS			+= $(PLUGINS:=.o) $(MODULES)
+IMPL_OBJS		:= $(PLUGINS:=.o) $(MODULES)
+OBJECTS			+= $(IMPL_OBJS)
 OBJECTS			+= $(EXTRA_OBJECTS-y) $(EXTRA_OBJECTS-m)
+
+IMPL_DIRS		:= $(sort $(foreach obj,$(IMPL_OBJS),$(dir $(obj))))
 
 DEPFILES		:= $(OBJECTS:.o=.d)
 
-all: ${PLUG_EXE} ${DREW_SONAME} standard
+all: ${DREW_SONAME} standard
 
 depend: $(DEPFILES)
 
-standard: ${DREW_SONAME} ${MD_SONAME} plugins libmd/testsuite
+standard: ${DREW_SONAME} ${MD_SONAME} plugins
 standard: $(TEST_BINARIES)
 standard: $(DREW_TLS_SONAME) $(DREW_GNUTLS_SONAME)
 standard: $(DREW_UTIL_SONAME)
 standard: $(TEST_BINARIES) $(UTILITIES)
-
-${TEST_EXE}: ${TEST_SRC} ${MD_SONAME} ${DREW_SONAME} ${DREW_IMPL_SONAME}
-	${CC} -Ilibmd/include ${CPPFLAGS} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
-
-${PLUG_EXE}: ${PLUG_OBJ} ${DREW_SONAME} ${DREW_IMPL_SONAME}
-	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
 
 .c.o:
 	${CC} ${CPPFLAGS} ${CFLAGS} -c -o ${.TARGET} ${.IMPSRC}
@@ -97,10 +88,14 @@ ${PLUG_EXE}: ${PLUG_OBJ} ${DREW_SONAME} ${DREW_IMPL_SONAME}
 	${CXX} ${CPPFLAGS} ${CXXFLAGS} -c -o ${.TARGET} ${.IMPSRC}
 
 %.d: %.c
-	$(CC) $(CPPFLAGS) -MM $< | sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
+	$(CC) $(CPPFLAGS) -DDEPEND -MM $< | sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
+	(x="$@"; [ -n "$${x##impl/*}" ] || \
+		printf "$*.o: $(@D)/metadata.gen\n" >> $@)
 
 %.d: %.cc
-	$(CC) $(CPPFLAGS) -MM $< | sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
+	$(CC) $(CPPFLAGS) -DDEPEND -MM $< | sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
+	(x="$@"; [ -n "$${x##impl/*}" ] || \
+		printf "$*.o: $(@D)/metadata.gen\n" >> $@)
 
 ${PLUGINS:=.o}: CPPFLAGS += ${PLUGINCFLAGS}
 
@@ -115,10 +110,22 @@ version:
 	printf '#define DREW_VERSION %s\n' \
 		`echo $(VERSION) | perl -pe 's/v(\d+)(-.*)?/$$1/'` >> $@
 
-.PHONY: version
+%/metadata.gen:
+ifeq ($(CFG_METADATA),y)
+	tools/generate-metadata -v $(dir $@)/metadata.rdf
+else
+	touch $@
+endif
+
+.PHONY: version tags
 
 include/version.h: version
 	if ! cmp -s $@ $<; then mv $< $@; else $(RM) $<; fi
+
+tags:
+	$(RM) tags
+	find -name '*.c' -o -name '*.cc' -o -name '*.h' -o -name '*.hh' | \
+		xargs ctags -a
 
 plugins: ${PLUGINS}
 	[ -d plugins ] || mkdir plugins
@@ -126,8 +133,6 @@ plugins: ${PLUGINS}
 
 clean:
 	${RM} -f *.o test/*.o
-	${RM} -f ${TEST_EXE}
-	${RM} -f ${PLUG_EXE}
 	${RM} -f ${MD_SONAME} ${MD_OBJS}
 	${RM} -f ${DREW_SONAME} ${DREW_SYMLINK}
 	${RM} -f ${TEST_BINARIES}
@@ -135,6 +140,8 @@ clean:
 	${RM} -f include/version.h
 	${RM} -fr ${PLUGINS} plugins/
 	${RM} -r install
+	${RM} -f tags
+	find -name '*.gen' | xargs -r rm
 	find -name '*.o' | xargs -r rm
 	find -name '*.d' | xargs -r rm
 	find -name '*.so' | xargs -r rm
@@ -147,9 +154,9 @@ test: .PHONY
 test check: test-scripts testx-scripts test-libmd
 speed speed-test: speed-scripts
 
-test-libmd: ${TEST_EXE}
-	env LD_LIBRARY_PATH=. ./${TEST_EXE} -x | \
-		grep -v 'bytes in' | diff -u libmd/test-results -
+test-libmd: $(TEST_BINARIES) plugins
+	env LD_LIBRARY_PATH=. test/libmd-testsuite -x | \
+		grep -v 'bytes in' | diff -u test/libmd-test-results -
 
 test-scripts: $(TEST_BINARIES) plugins
 	set -e; for i in $(CATEGORIES); do \

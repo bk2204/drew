@@ -46,6 +46,11 @@
  * value of these quantities.
  */
 #define DREW_BIGNUM_ABS 2
+/* This bit indicates that the clone operation should not create a new context
+ * for the destination argument, but instead simply copy the value to an
+ * already-existing context.
+ */
+#define DREW_BIGNUM_COPY 4
 
 struct drew_bignum_s;
 typedef struct drew_bignum_s drew_bignum_t;

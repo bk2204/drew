@@ -97,6 +97,11 @@ drew::AESNI::AESNI()
 
 int drew::AESNI::SetKeyInternal(const uint8_t *key, size_t len)
 {
+	return SetKeyInternal(key, len, 0);
+}
+
+int drew::AESNI::SetKeyInternal(const uint8_t *key, size_t len, int mode)
+{
 	switch (len) {
 		case 16:
 		case 24:
@@ -112,7 +117,8 @@ int drew::AESNI::SetKeyInternal(const uint8_t *key, size_t len)
 	m_nr = 6 + std::max(m_nb, m_nk);
 
 	SetKeyEncrypt(key, len);
-	SetKeyDecrypt();
+	if (mode != DREW_BLOCK_MODE_ENCRYPT)
+		SetKeyDecrypt();
 	return 0;
 }
 
@@ -196,6 +202,87 @@ int drew::AESNI::Decrypt(uint8_t *out, const uint8_t *in) const
 		data = __builtin_ia32_aesdec128(data, m_rkd[i]);
 	data = __builtin_ia32_aesdeclast128(data, m_rkd[m_nr]);
 	memcpy(out, &data, 16);
+	return 0;
+}
+
+
+int drew::AESNI::EncryptFast(FastBlock *bout, const FastBlock *bin,
+		size_t n) const
+{
+	const vector_t *in = (const vector_t *)bin;
+	vector_t *out = (vector_t *)bout;
+	vector_t x0 = m_rk[0], x1 = m_rk[1], x2 = m_rk[2], x3 = m_rk[3];
+	vector_t x4 = m_rk[4], x5 = m_rk[5], x6 = m_rk[6], x7 = m_rk[7];
+	vector_t x8 = m_rk[8], x9 = m_rk[9], x10 = m_rk[10], x11 = m_rk[11];
+	vector_t x12 = m_rk[12], x13 = m_rk[13], x14 = m_rk[14];
+
+	for (size_t i = 0; i < n; i++, in++, out++) {
+		vector_t data;
+		data = *in ^ x0;
+		data = __builtin_ia32_aesenc128(data, x1);
+		data = __builtin_ia32_aesenc128(data, x2);
+		data = __builtin_ia32_aesenc128(data, x3);
+		data = __builtin_ia32_aesenc128(data, x4);
+		data = __builtin_ia32_aesenc128(data, x5);
+		data = __builtin_ia32_aesenc128(data, x6);
+		data = __builtin_ia32_aesenc128(data, x7);
+		data = __builtin_ia32_aesenc128(data, x8);
+		data = __builtin_ia32_aesenc128(data, x9);
+		if (m_nr == 10)
+			data = __builtin_ia32_aesenclast128(data, x10);
+		else {
+			data = __builtin_ia32_aesenc128(data, x10);
+			data = __builtin_ia32_aesenc128(data, x11);
+			if (m_nr == 12)
+				data = __builtin_ia32_aesenclast128(data, x12);
+			else {
+				data = __builtin_ia32_aesenc128(data, x12);
+				data = __builtin_ia32_aesenc128(data, x13);
+				data = __builtin_ia32_aesenclast128(data, x14);
+			}
+		}
+		*out = data;
+	}
+	return 0;
+}
+
+int drew::AESNI::DecryptFast(FastBlock *bout, const FastBlock *bin,
+		size_t n) const
+{
+	const vector_t *in = (const vector_t *)bin;
+	vector_t *out = (vector_t *)bout;
+	vector_t x0 = m_rkd[0], x1 = m_rkd[1], x2 = m_rkd[2], x3 = m_rkd[3];
+	vector_t x4 = m_rkd[4], x5 = m_rkd[5], x6 = m_rkd[6], x7 = m_rkd[7];
+	vector_t x8 = m_rkd[8], x9 = m_rkd[9], x10 = m_rkd[10], x11 = m_rkd[11];
+	vector_t x12 = m_rkd[12], x13 = m_rkd[13], x14 = m_rkd[14];
+
+	for (size_t i = 0; i < n; i++, in++, out++) {
+		vector_t data;
+		data = *in ^ x0;
+		data = __builtin_ia32_aesdec128(data, x1);
+		data = __builtin_ia32_aesdec128(data, x2);
+		data = __builtin_ia32_aesdec128(data, x3);
+		data = __builtin_ia32_aesdec128(data, x4);
+		data = __builtin_ia32_aesdec128(data, x5);
+		data = __builtin_ia32_aesdec128(data, x6);
+		data = __builtin_ia32_aesdec128(data, x7);
+		data = __builtin_ia32_aesdec128(data, x8);
+		data = __builtin_ia32_aesdec128(data, x9);
+		if (m_nr == 10)
+			data = __builtin_ia32_aesdeclast128(data, x10);
+		else {
+			data = __builtin_ia32_aesdec128(data, x10);
+			data = __builtin_ia32_aesdec128(data, x11);
+			if (m_nr == 12)
+				data = __builtin_ia32_aesdeclast128(data, x12);
+			else {
+				data = __builtin_ia32_aesdec128(data, x12);
+				data = __builtin_ia32_aesdec128(data, x13);
+				data = __builtin_ia32_aesdeclast128(data, x14);
+			}
+		}
+		*out = data;
+	}
 	return 0;
 }
 

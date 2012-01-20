@@ -20,6 +20,9 @@ PLUGINS_BLOCK-${CFG_ARIABYTE}	+= aria/ariabyte
 PLUGINS_BLOCK-${CFG_SHACAL}		+= shacal/shacal
 PLUGINS_BLOCK-${CFG_MARS}		+= mars/mars
 PLUGINS_BLOCK-${CFG_LINUXBLOCK}	+= linux/linuxblock
+PLUGINS_BLOCK-${CFG_RC5}		+= rc5/rc5
+PLUGINS_BLOCK-${CFG_RC6}		+= rc6/rc6
+PLUGINS_BLOCK-${CFG_SAFER}		+= safer/safer
 
 ${BLOCK_DIR}/cast/cast5.so: ${BLOCK_DIR}/cast/sboxes.o
 ${BLOCK_DIR}/cast/cast6.so: ${BLOCK_DIR}/cast/sboxes.o
@@ -39,8 +42,9 @@ ${BLOCK_DIR}/linux/linuxblock.so:	impl/multi/linux/af-alg.o
 EXTRA_OBJECTS-${CFG_SHACAL}		+= ${HASH_DIR}/sha1/sha1.o
 EXTRA_OBJECTS-${CFG_LINUXBLOCK}	+= impl/multi/linux/af-alg.o
 
-${BLOCK_DIR}/shacal/shacal.o: CPPFLAGS += -I${HASH_DIR}
-${BLOCK_DIR}/shacal/shacal.d: CPPFLAGS += -I${HASH_DIR}
+${BLOCK_DIR}/shacal/shacal.o:		CPPFLAGS += -I${HASH_DIR}
+${BLOCK_DIR}/shacal/shacal.d:		CPPFLAGS += -I${HASH_DIR}
+${BLOCK_DIR}/aes-native/aesni.o:	CXXFLAGS += $(call TEST_ARG,-maes -msse4)
 
 BLOCK_PLUGINS	:= $(patsubst %,${BLOCK_DIR}/%,$(PLUGINS_BLOCK-m))
 BLOCK_MODULES	:= $(patsubst %,${BLOCK_DIR}/%.o,$(PLUGINS_BLOCK-y))

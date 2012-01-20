@@ -53,6 +53,8 @@
 #define TEST_RESET_ZERO		4
 #define TEST_RESET_FULL		(~0)
 
+#define FLAG_DECRYPT		1
+
 /* When performing speed tests, try to operate on NCHUNKS chunks of size CHUNK
  * each, but not for longer than NSECONDS.
  */
@@ -78,7 +80,7 @@ extern volatile sig_atomic_t framework_sigflag;
 
 int test_get_type(void);
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
-		const void *functbl, int chunk, int nchunks);
+		const void *functbl, int chunk, int nchunks, int flags);
 int test_internal(drew_loader_t *ldr, const char *name, const void *functbl);
 const char *test_get_default_algo(drew_loader_t *ldr, const char *name);
 void print_speed_info(int chunk, int nchunks, const struct timespec *cstart,

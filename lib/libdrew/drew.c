@@ -204,9 +204,11 @@ static int load_library_info(drew_loader_t *ldr, library_t *lib)
 		if (!p->functbl)
 			goto out;
 
-		p->metadata = malloc(mdsize);
-		if (mdsize && !p->metadata)
-			goto out;
+		if (mdsize) {
+			p->metadata = malloc(mdsize);
+			if (!p->metadata)
+				goto out;
+		}
 
 		p->name = malloc(namesize);
 		if (!p->name)
@@ -295,6 +297,10 @@ int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
 
 	if (plugin && !path) {
 		int npaths = drew_loader_get_search_path(ldr, 0, NULL), i;
+
+		if (npaths < 0)
+			return npaths;
+
 		for (i = 0; i < npaths; i++) {
 			drew_loader_get_search_path(ldr, i, &path);
 			if (!load_library(ldr, plugin, path, &lib))
@@ -456,14 +462,16 @@ static int special_metadata(const drew_loader_t *ldr, int id,
 
 	if (!stat(rdfpath, &st)) {
 		if (meta) {
+			char *obj;
 			meta->version = 1;
 			meta->subject = NULL;
 			meta->predicate =
 				strdup("http://www.w3.org/2000/01/rdf-schema#seeAlso");
 			meta->type = DREW_LOADER_MD_URI;
-			meta->object = malloc(strlen(prefix) + strlen(rdfpath) + 1);
-			strncpy(meta->object, prefix, prefixlen);
-			strncpy(meta->object+prefixlen, rdfpath, sz+1);
+			obj = malloc(strlen(prefix) + strlen(rdfpath) + 1);
+			strncpy(obj, prefix, prefixlen);
+			strncpy(obj+prefixlen, rdfpath, sz+1);
+			meta->object = obj;
 		}
 		free(rdfpath);
 		return 0;
@@ -505,8 +513,8 @@ int drew_loader_get_metadata(const drew_loader_t *ldr, int id, int item,
 		retval = special_metadata(ldr, id,
 				(item - ldr->plugin[id].nmetadata), &md);
 		if (retval < 0) {
-			free(md.predicate);
-			free(md.object);
+			free((void *)md.predicate);
+			free((void *)md.object);
 			return -DREW_ERR_NONEXISTENT;
 		}
 		memcpy(meta, &md, sizeof(*meta));
