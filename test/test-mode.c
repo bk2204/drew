@@ -195,10 +195,11 @@ int test_execute(void *data, const char *name, const void *tbl,
 		ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
 		if (tc->aadlen)
 			ctx.functbl->setdata(&ctx, tc->aad, tc->aadlen);
+		memcpy(buffer, tc->pt, tc->len);
 		if (!i)
-			ctx.functbl->encrypt(&ctx, buffer, tc->pt, tc->len);
+			ctx.functbl->encrypt(&ctx, buffer, buffer, tc->len);
 		else
-			ctx.functbl->encryptfast(&ctx, buffer, tc->pt, tc->len);
+			ctx.functbl->encryptfast(&ctx, buffer, buffer, tc->len);
 		if (tc->len != tc->ctlen)
 			ctx.functbl->encryptfinal(&ctx, buffer+tc->len, tc->ctlen-tc->len,
 					NULL, 0);
@@ -220,10 +221,11 @@ int test_execute(void *data, const char *name, const void *tbl,
 		ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
 		if (tc->aadlen)
 			ctx.functbl->setdata(&ctx, tc->aad, tc->aadlen);
+		memcpy(buffer, tc->ct, tc->len);
 		if (!i)
-			ctx.functbl->decrypt(&ctx, buffer, tc->ct, tc->len);
+			ctx.functbl->decrypt(&ctx, buffer, buffer, tc->len);
 		else
-			ctx.functbl->decryptfast(&ctx, buffer, tc->ct, tc->len);
+			ctx.functbl->decryptfast(&ctx, buffer, buffer, tc->len);
 		if (tc->len != tc->ctlen)
 			if (ctx.functbl->decryptfinal(&ctx, NULL, 0, tc->ct+tc->len,
 						tc->ctlen-tc->len) < 0)
@@ -307,7 +309,7 @@ int test_process_testcase(void *data, int type, const char *item,
 }
 
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
-		const void *tbl, int chunk, int nchunks)
+		const void *tbl, int chunk, int nchunks, int flags)
 {
 	int i, keysz = 0, blksz;
 	drew_block_t bctx;
@@ -349,7 +351,9 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	mctx.functbl->init(&mctx, 0, ldr, NULL);
 	mctx.functbl->setblock(&mctx, &bctx);
 	mctx.functbl->setiv(&mctx, buf2, blksz);
-	encrypt = (chunk & 15) ? mctx.functbl->encrypt : mctx.functbl->encryptfast;
+	encrypt = flags & FLAG_DECRYPT ?
+		((chunk & 15) ? mctx.functbl->decrypt : mctx.functbl->decryptfast) :
+		((chunk & 15) ? mctx.functbl->encrypt : mctx.functbl->encryptfast);
 	for (i = 0; i < nchunks; i++)
 		encrypt(&mctx, buf, buf, chunk);
 	clock_gettime(USED_CLOCK, &cend);

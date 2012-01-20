@@ -42,6 +42,11 @@
  * already-existing memory at *newctx.
  */
 #define DREW_ECC_FIXED  1
+/* This bit indicates that the clone operation should not create a new context
+ * for the destination argument, but instead simply copy the value to an
+ * already-existing context.
+ */
+#define DREW_ECC_COPY  4
 
 /* Whether the value is the x coordinate, the y coordinate, or a serialized
  * point representation specified in the SEC format.

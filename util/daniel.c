@@ -46,6 +46,7 @@ static const char *prefix = "DrewPassChart: Version 0x00000000: ";
  * version of the password generated.
  */
 #define FLAG_EXPLICIT_VERSION	0x40
+#define FLAG_DEFAULT			(FLAG_NO_SPACES|FLAG_NO_SYMBOLS_OTHER)
 
 struct crypto {
 	drew_loader_t *ldr;
@@ -440,19 +441,38 @@ int generate_password_from_reminder(struct crypto *c, struct data *d,
 	return 0;
 }
 
+#define FLAG_VALUE(x) #x, x
+void help(void)
+{
+	printf("%s help\n", program);
+	printf("\t-l length: create a password of length characters\n"
+			"\t-v ver: create password version ver\n"
+			"\t-f f: set flags to f instead of %d\n", FLAG_DEFAULT);
+	printf("\tflag values are as follows:\n");
+	printf("\t\t%-22s: %d\n", FLAG_VALUE(FLAG_NO_NUMBERS));
+	printf("\t\t%-22s: %d\n", FLAG_VALUE(FLAG_NO_SPACES));
+	printf("\t\t%-22s: %d\n", FLAG_VALUE(FLAG_NO_SYMBOLS_TOP));
+	printf("\t\t%-22s: %d\n", FLAG_VALUE(FLAG_NO_SYMBOLS_OTHER));
+	printf("\t\t%-22s: %d\n", FLAG_VALUE(FLAG_NO_LETTERS));
+}
+
 int main(int argc, char **argv)
 {
 	int retval = 0, ch;
 	struct crypto c;
 	struct data *d;
 
-	program = argv[0];
+	program = strchr(argv[0], '/');
+	program = program ? program+1 : argv[0];
 
 	d = drew_mem_scalloc(1, sizeof(*d));
-	d->flags = FLAG_NO_SPACES | FLAG_NO_SYMBOLS_OTHER;
+	d->flags = FLAG_DEFAULT;
 
-	while ((ch = getopt(argc, argv, "f:v:l:")) > 0) {
+	while ((ch = getopt(argc, argv, "hf:v:l:")) > 0) {
 		switch (ch) {
+			case 'h':
+				help();
+				return 0;
 			case 'f':
 				d->flags = atoi(optarg);
 				break;

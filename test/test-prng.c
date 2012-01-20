@@ -150,7 +150,7 @@ int test_external_cleanup(struct test_external *tes)
 #include "stubs.c"
 
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
-		const void *tbl, int chunk, int nchunks)
+		const void *tbl, int chunk, int nchunks, int flags)
 {
 	int i, blksz = 0;
 	uint8_t *buf, *blk;

@@ -10,5 +10,5 @@ $(SUMS_PROGS:=.o): util/sum.c
 
 util/drew-x509: $(DREW_UTIL_SONAME)
 
-util/%: util/%.o $(DREW_SONAME) $(DREW_IMPL_SONAME)
-	$(CC) $(CFLAGS) -o $(.TARGET) $(.ALLSRC) $(LIBS)
+util/%: util/%.o | $(DREW_SONAME) $(DREW_IMPL_SONAME)
+	$(CC) $(CFLAGS) -o $(.TARGET) $(.ALLSRC) $| $(LIBS)

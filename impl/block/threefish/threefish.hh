@@ -44,7 +44,11 @@ class Threefish : public BlockCipher<64, LittleEndian>
 		int SetKey(const uint64_t *key);
 		int SetKey(const uint8_t *key, size_t len)
 		{
-			return BlockCipher<64, LittleEndian>::SetKey(key, len);
+			return SetKey(key, len, 0);
+		}
+		int SetKey(const uint8_t *key, size_t len, int mode)
+		{
+			return BlockCipher<64, LittleEndian>::SetKey(key, len, mode);
 		}
 	protected:
 		inline void InjectKey(uint64_t *x, const size_t r) const;

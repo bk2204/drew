@@ -229,20 +229,12 @@ static int ofb_encryptfast(drew_mode_t *ctx, uint8_t *outp, const uint8_t *inp,
 	struct ofb *c = ctx->ctx;
 	struct aligned *out = (struct aligned *)outp;
 	const struct aligned *in = (const struct aligned *)inp;
-	const size_t iters = len / DREW_MODE_ALIGNMENT;
 
-	if (!len)
-		return 0;
-
-	c->algo->functbl->encryptfast(c->algo, out->data, c->buf, c->chunks);
-	in++;
-	out++;
-	for (size_t i = 1; i < iters; i++, in++, out++) {
-		c->algo->functbl->encryptfast(c->algo, out->data, (out-1)->data,
-				c->chunks);
+	len /= DREW_MODE_ALIGNMENT;
+	for (size_t iters = 0; iters < len; iters++, in++, out++) {
+		c->algo->functbl->encryptfast(c->algo, c->buf, c->buf, c->chunks);
+		xor_aligned(out->data, c->buf, in->data, DREW_MODE_ALIGNMENT);
 	}
-	memcpy(c->buf, outp+len-c->blksize, c->blksize);
-	xor_aligned2(outp, inp, len);
 	return 0;
 }
 

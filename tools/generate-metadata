@@ -1,0 +1,104 @@
+#!/usr/bin/perl -w
+
+use List::MoreUtils;
+use RDF::Trine::Model;
+use RDF::Trine::Parser;
+
+sub serialize($$$$$) {
+	my ($output, $pnode, $subj, $pred, $obj) = @_;
+	my ($ssubj, $spred, $sobj, $sobjtype);
+
+	if ($subj->is_blank) {
+		$ssubj = "\"" . $subj->blank_identifier . "\"";
+	}
+	elsif ($subj->is_resource && $subj->as_string eq $pnode->as_string) {
+		$ssubj = "NULL";
+	}
+	else {
+		die "Invalid subject $subj";
+	}
+
+	$spred = $pred->uri_value;
+
+	if ($obj->is_blank) {
+		$sobjtype = "BLANK";
+		$sobj = $obj->blank_identifier;
+	}
+	elsif ($obj->is_resource) {
+		$sobjtype = "URI";
+		$sobj = $obj->uri_value;
+	}
+	elsif ($obj->is_literal) {
+		$sobjtype = "LITERAL";
+		$sobj = $obj->literal_value;
+	}
+	else {
+		die "Invalid object $obj";
+	}
+	print $output <<EOL;
+\t{1, $ssubj, "$spred", DREW_LOADER_MD_$sobjtype, "$sobj"},
+EOL
+}
+
+sub process_file($$) {
+	my ($file, $output) = @_;
+
+	my $model = RDF::Trine::Model->temporary_model;
+	my $parser = RDF::Trine::Parser->new('rdfxml');
+	$parser->parse_file_into_model("http://example.org/", $file, $model);
+
+	my $nonempty = 0;
+	
+	for my $subj ($model->subjects) {
+		my $pat = qr,^(http://ns\.crustytoothpaste\.net/drew/plugins/),;
+		next unless $subj->is_resource;
+		my $uri = $subj->uri_value;
+		next if $uri !~ $pat;
+		my (undef, undef, $plugin) = split /$pat/, $uri;
+		print STDERR "Generating metadata for plugin $plugin\n" if ($verbose);
+
+		$nonempty = 1;
+	
+		my @items = ($subj);
+		my ($count, $oldcount) = (1, 0);
+	
+		while ($count != $oldcount) {
+			my @t = @items;
+			for my $item (@t) {
+				push @items, $model->objects($item);
+			}
+			@items = List::MoreUtils::uniq(@items);
+			$oldcount = $count;
+			$count = scalar @items;
+		}
+	
+		print $output
+			"static const drew_metadata_t ${plugin}_metadata[] = {\n";
+		my $same_as =
+			RDF::Trine::Node::Resource->new("http://www.w3.org/2002/07/owl#sameAs");
+		serialize($output, $subj, $subj, $same_as, $subj);
+		for my $node (@items) {
+			my $iter = $model->get_statements($node);
+			while (my $row = $iter->next) {
+				serialize($output, $subj, $row->subject, $row->predicate,
+					$row->object);
+			}
+		}
+		print $output "};\n";
+	}
+
+	print $output "#define DREW_PLUGIN_METADATA_NONEMPTY 1\n" if $nonempty;
+}
+
+$verbose = 0;
+$verbose = 1, shift if $ARGV[0] eq "-v";
+
+for my $file (@ARGV) {
+	my $gen = $file;
+	$gen =~ s,^(.*)/(\w+)\.rdf$,$1/$2.gen,;
+
+	my $output = IO::File->new("> $gen");
+
+	next unless -f $file;
+	process_file($file, $output);
+}

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns:cc="http://creativecommons.org/ns#">
+	<rdf:Description
+		rdf:about="http://ns.crustytoothpaste.net/drew/plugins/rijndael">
+		<cc:license
+			rdf:resource="http://opensource.org/licenses/mit-license.php"/>
+	</rdf:Description>
+</rdf:RDF>

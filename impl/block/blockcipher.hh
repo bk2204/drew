@@ -44,8 +44,12 @@ namespace drew {
 			}
 			virtual int SetKey(const uint8_t *key, size_t len)
 			{
+				return SetKey(key, len, 0);
+			}
+			virtual int SetKey(const uint8_t *key, size_t len, int flags)
+			{
 				keysz = len;
-				return SetKeyInternal(key, len);
+				return SetKeyInternal(key, len, flags);
 			}
 			virtual int GetKeySize() const
 			{
@@ -97,6 +101,10 @@ namespace drew {
 				return 0;
 			}
 		protected:
+			virtual int SetKeyInternal(const uint8_t *key, size_t len, int)
+			{
+				return SetKeyInternal(key, len);
+			}
 			virtual int SetKeyInternal(const uint8_t *key, size_t len) = 0;
 			size_t keysz;
 		private:

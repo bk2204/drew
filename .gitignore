@@ -1,4 +1,3 @@
-testsuite
 test/test-hash
 test/test-block
 test/test-mode
@@ -12,6 +11,7 @@ test/test-kdf
 test/test-mem
 test/test-ecc
 test/plugin-main
+test/libmd-testsuite
 util/*sum
 util/drew-x509
 util/daniel
@@ -23,6 +23,7 @@ include/version.h
 *.so*
 plugins/*
 gmon.out
+tags
 misc/devel
 *.pdf
 *.ps

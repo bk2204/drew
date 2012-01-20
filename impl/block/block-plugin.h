@@ -34,6 +34,10 @@ extern "C" {
 #include <drew/plugin.h>
 #include <drew/block.h>
 
+#ifndef DEPEND
+#include "metadata.gen"
+#endif
+
 #define PLUGIN_FUNCTBL(prefix, info, info2, init, setkey, encrypt, decrypt, encryptmult, decryptmult, test, fini, clone, reset) \
 \
 static const drew_block_functbl_t prefix ## functbl = { \
@@ -51,6 +55,16 @@ struct plugin {
 #define PLUGIN_DATA(prefix, name) { name, & prefix ## functbl },
 
 #define PLUGIN_INFO(name) static const char *pname = name
+#ifdef DREW_PLUGIN_METADATA_NONEMPTY
+#define PLUGIN_INTERFACE_METADATA(x) \
+		case DREW_LOADER_GET_METADATA_SIZE: \
+			return sizeof(x ## _metadata); \
+		case DREW_LOADER_GET_METADATA: \
+			memcpy(p, x ## _metadata, sizeof(x ## _metadata)); \
+			return 0;
+#else
+#define PLUGIN_INTERFACE_METADATA(x)
+#endif
 #define PLUGIN_INTERFACE(x) \
 \
 EXPORT() \
@@ -77,6 +91,7 @@ int DREW_PLUGIN_NAME(x)(void *ldr, int op, int id, void *p) \
 		case DREW_LOADER_GET_NAME: \
 			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1); \
 			return 0; \
+		PLUGIN_INTERFACE_METADATA(x) \
 		default: \
 			return -DREW_ERR_INVALID; \
 	} \

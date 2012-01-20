@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns:cc="http://creativecommons.org/ns#">
+	<rdf:Description
+		rdf:about="http://ns.crustytoothpaste.net/drew/plugins/rc2">
+		<cc:license>
+			<rdf:Alt>
+				<rdf:li
+					rdf:resource="http://creativecommons.org/licenses/GPL/2.0/"/>
+				<rdf:li
+					rdf:resource="http://www.apache.org/licenses/LICENSE-2.0"/>
+			</rdf:Alt>
+		</cc:license>
+	</rdf:Description>
+</rdf:RDF>

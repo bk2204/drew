@@ -189,6 +189,8 @@ int main(int argc, char **argv)
 	int chunk = 0;
 	int nchunks = 0;
 	int retval = 0;
+	int verbose = 0;
+	int flags = 0;
 	int success_only = 0;
 	const char *optalgo = NULL;
 	const char *only = NULL;
@@ -199,7 +201,7 @@ int main(int argc, char **argv)
 	drew_loader_new(&ldr);
 	drew_mem_pool_adjust(NULL, DREW_MEM_SECMEM, DREW_MEM_SECMEM_NO_LOCK, NULL);
 
-	while ((opt = getopt(argc, argv, "hstipfa:c:n:o:r:")) != -1) {
+	while ((opt = getopt(argc, argv, "hstipfda:c:n:o:r:v")) != -1) {
 		switch (opt) {
 			case '?':
 			case ':':
@@ -235,6 +237,12 @@ int main(int argc, char **argv)
 				break;
 			case 'r':
 				resource = optarg;
+				break;
+			case 'v':
+				verbose++;
+				break;
+			case 'd':
+				flags = FLAG_DECRYPT;
 				break;
 		}
 	}
@@ -277,13 +285,26 @@ int main(int argc, char **argv)
 		const void *functbl;
 		const char *name;
 		const char *algo;
-		int result = 0;
+		const char *pluginname = NULL;
+		drew_metadata_t md;
+		char buf[32];
+		int result = 0, nmetadata = 0;
 
 		if (drew_loader_get_type(ldr, i) != type)
 			continue;
 
 		drew_loader_get_functbl(ldr, i, &functbl);
 		drew_loader_get_algo_name(ldr, i, &name);
+		nmetadata = drew_loader_get_metadata(ldr, i, -1, NULL);
+
+		for (int j = 0; j < nmetadata; j++) {
+			drew_loader_get_metadata(ldr, i, j, &md);
+			if (!strcmp(md.predicate, "http://www.w3.org/2002/07/owl#sameAs")) {
+				pluginname = strrchr(md.object, '/');
+				if (pluginname)
+					pluginname++;
+			}
+		}
 
 		if (only && strcmp(only, name))
 			continue;
@@ -291,18 +312,22 @@ int main(int argc, char **argv)
 		algo = optalgo;
 		if (!algo && mode != MODE_TEST)
 			algo = test_get_default_algo(ldr, name);
-		if (algo) {
-			char buf[16];
-			snprintf(buf, sizeof(buf), "%s(%s)", name, algo);
-			printf("%-15s: ", buf);
-		}
+		if (algo)
+			snprintf(buf, sizeof(buf)/2, "%s(%s)", name, algo);
 		else
-			printf("%-15s: ", name);
+			snprintf(buf, sizeof(buf)/2, "%s", name);
+
+		if (pluginname && verbose) {
+			size_t off = strlen(buf);
+			snprintf(buf+off, sizeof(buf)-off, " (%s) ", pluginname);
+		}
+		printf("%-32s: ", buf);
 		fflush(stdout);
 
 		switch (mode) {
 			case MODE_SPEED:
-				result = test_speed(ldr, name, algo, functbl, chunk, nchunks);
+				result = test_speed(ldr, name, algo, functbl, chunk, nchunks,
+						flags);
 				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
 					error++;
 				if (result == -DREW_ERR_NOT_IMPL)

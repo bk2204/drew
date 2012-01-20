@@ -39,15 +39,19 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 
 inline int test_speed_loop(const drew_block_functbl_t *functbl, uint8_t *buf,
 		uint8_t *buf2, uint8_t *key, int keysz, int chunk, size_t nbytes,
-		int mul)
+		int mul, int flags)
 {
 	int i;
 	drew_block_t ctx;
+	int mode = (flags & FLAG_DECRYPT) ? DREW_BLOCK_MODE_DECRYPT :
+		DREW_BLOCK_MODE_ENCRYPT;
+	int (*op)(const drew_block_t *, uint8_t *, const uint8_t *, size_t);
 
 	functbl->init(&ctx, 0, NULL, NULL);
-	functbl->setkey(&ctx, key, keysz, DREW_BLOCK_MODE_ENCRYPT);
+	functbl->setkey(&ctx, key, keysz, mode);
+	op = (flags & FLAG_DECRYPT) ? functbl->decryptfast : functbl->encryptfast;
 	for (i = 0; !framework_sigflag && i < nbytes; i += chunk)
-		functbl->encryptfast(&ctx, buf2, buf, mul);
+		op(&ctx, buf2, buf, mul);
 	functbl->fini(&ctx, 0);
 
 	return i;
@@ -59,6 +63,7 @@ struct testcase {
 	size_t klen;
 	uint8_t *key;
 	size_t blksize;
+	size_t nrepeats;
 	uint8_t *pt;
 	uint8_t *ct;
 };
@@ -96,6 +101,7 @@ void *test_clone_data(void *tc, int flags)
 	q->algo = strdup(p->algo);
 	q->klen = p->klen;
 	q->blksize = p->blksize;
+	q->nrepeats = p->nrepeats;
 	q->key = malloc(q->klen);
 	memcpy(q->key, p->key, q->klen);
 	q->pt = malloc(q->blksize);
@@ -130,6 +136,7 @@ int test_execute(void *data, const char *name, const void *tbl,
 	if (strcmp(name, tc->algo))
 		return TEST_NOT_FOR_US;
 	size_t len = tc->blksize;
+	size_t nrepeats = tc->nrepeats;
 	if (!tc->pt || !tc->ct)
 		return TEST_CORRUPT | 2;
 	uint8_t *buf = malloc(len);
@@ -144,7 +151,9 @@ int test_execute(void *data, const char *name, const void *tbl,
 		result = TEST_NOT_FOR_US;
 		goto out;
 	}
-	ctx.functbl->encrypt(&ctx, buf, tc->pt);
+	memcpy(buf, tc->pt, len);
+	for (size_t i = 0; i < nrepeats; i++)
+		ctx.functbl->encrypt(&ctx, buf, buf);
 	if (memcmp(buf, tc->ct, len)) {
 		result = TEST_FAILED | 'e';
 		goto out;
@@ -156,7 +165,9 @@ int test_execute(void *data, const char *name, const void *tbl,
 		goto out;
 	}
 	ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0);
-	ctx.functbl->decrypt(&ctx, buf, tc->ct);
+	memcpy(buf, tc->ct, len);
+	for (size_t i = 0; i < nrepeats; i++)
+		ctx.functbl->decrypt(&ctx, buf, buf);
 	if (memcmp(buf, tc->pt, len))
 		result = TEST_FAILED | 'd';
 
@@ -203,6 +214,10 @@ int test_process_testcase(void *data, int type, const char *item,
 			free(tc->algo);
 			tc->algo = strdup(item);
 			tc->blksize = get_block_size(tep, tc);
+			break;
+		case 'r':
+			if (sscanf(item, "%zu", &tc->nrepeats) != 1)
+				return TEST_CORRUPT;
 			break;
 		case 'K':
 			if (sscanf(item, "%zu", &tc->klen) != 1)
@@ -442,7 +457,7 @@ int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
 }
 
 int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
-		const void *tbl, int chunk, int nchunks)
+		const void *tbl, int chunk, int nchunks, int flags)
 {
 	int i, keysz = 0;
 	uint8_t *buf, *buf2, *key;
@@ -474,7 +489,8 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	fwdata = framework_setup();
 
 	clock_gettime(USED_CLOCK, &cstart);
-	i = test_speed_loop(functbl, buf, buf2, key, keysz, chunk, nbytes, mul);
+	i = test_speed_loop(functbl, buf, buf2, key, keysz, chunk, nbytes, mul,
+			flags);
 	clock_gettime(USED_CLOCK, &cend);
 
 	framework_teardown(fwdata);

@@ -32,6 +32,11 @@ arithmetic and will only compile on certain platforms and only with a recent
 GCC.  Since alternatives are provided for machines that do not meet those
 requirements, it is safe to disable them without any loss of functionality.
 
+By default, the Perl module RDF::Trine is used to generate embedded RDF metadata
+that can be queried programmatically as triples.  If this is not useful for you
+or you do not want to install RDF::Trine, simply disable the CFG_METADATA option
+in the configuration file.
+
 The only module which has external dependencies is the tommath plugin, which
 depends on the public domain libtommath for its implementation.  Since this is
 currently the only bignum implementation, public key software will not work

@@ -5,6 +5,8 @@ $want = 0;
 $cnt = -1;
 $keysz = 0;
 $blksz = 0;
+$cursz = 0;
+$wantsz = 0;
 
 while (<>) {
 	if (/Primitive Name:\s+(\w+)/) {
@@ -19,22 +21,33 @@ while (<>) {
 	}
 	elsif (/key=([0-9A-Fa-f]+)/) {
 		$cnt++;
-		my $sz = length($1)/2;
-		$want = 1 if ($sz == ($keysz / 2));
+		$cursz = length($1)/2;
+		$wantsz = $keysz;
+		$want = 1 if ($cursz < $wantsz);
 		printf "T%04x k%s%s", $cnt, lc($1), $want ? "" : "\n";
 	}
 	elsif (/plain=([0-9A-Fa-f]+)/) {
-		my $sz = length($1)/2;
-		$want = 1 if ($sz == ($blksz / 2));
+		$cursz = length($1)/2;
+		$wantsz = $blksz;
+		$want = 1 if ($cursz < $wantsz);
 		printf "T%04x p%s%s", $cnt, lc($1), $want ? "" : "\n";
 	}
 	elsif (/cipher=([0-9A-Fa-f]+)/) {
-		my $sz = length($1)/2;
-		$want = 1 if ($sz == ($blksz / 2));
-		printf "T%04x c%s%s", $cnt, lc($1), $want ? "" : "\n";
+		$cursz = length($1)/2;
+		$wantsz = $blksz;
+		$want = 1 if ($cursz < $wantsz);
+		printf "T%04x r1 c%s%s", $cnt, lc($1), $want ? "" : "\n";
+	}
+	elsif (/Iterated (\d+) times=([0-9A-Fa-f]+)/) {
+		$cursz = length($2)/2;
+		$wantsz = $blksz;
+		$want = 1 if ($cursz < $wantsz);
+		$cnt++;
+		printf "T%04x r%d c%s%s", $cnt, $1, lc($2), $want ? "" : "\n";
 	}
 	elsif ($want && /([0-9A-Fa-f]+)/) {
-		$want = 0;
-		printf "%s\n", lc($1);
+		$cursz += length($1)/2;
+		$want = 0 unless ($cursz < $wantsz);
+		printf "%s%s", lc($1), $want ? "" : "\n";
 	}
 }

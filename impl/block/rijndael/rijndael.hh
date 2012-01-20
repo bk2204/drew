@@ -85,9 +85,14 @@ class GenericRijndael : public Rijndael,
 		{
 			return Rijndael::Decrypt(out, in);
 		}
+		int SetKey(const uint8_t *key, size_t sz, int mode)
+		{
+			return this->BlockCipher<BlockSize/8, BigEndian>::SetKey(key, sz,
+					mode);
+		}
 		int SetKey(const uint8_t *key, size_t sz)
 		{
-			return this->BlockCipher<BlockSize/8, BigEndian>::SetKey(key, sz);
+			return SetKey(key, sz, 0);
 		}
 	protected:
 		int SetKeyInternal(const uint8_t *key, size_t sz);

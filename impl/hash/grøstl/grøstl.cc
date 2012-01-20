@@ -21,6 +21,8 @@
  * public domain) and subsequently rewritten.
  */
 
+#if !defined(__clang__)
+/* clang doesn't support extended identifiers.  A bug has been filed. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -1222,7 +1224,7 @@ static const uint64_t table[8*256] =  {
 	0x0c61d661dad66d6d, 0x624e3a4e583a2c2c
 };
 
-#ifdef __GNUC__
+#ifdef DREW_COMPILER_GCCLIKE
 static inline uint64_t ComputeColumn(const uint64_t *x, int c0, int c1, int c2,
 		int c3, int c4, int c5, int c6, int c7) __attribute__((always_inline));
 #endif
@@ -1541,3 +1543,4 @@ void drew::Gr\u00f8stl512::GetDigest(uint8_t *digest, size_t len, bool nopad)
 	E::Copy(buf, m_hash, sizeof(buf));
 	memcpy(digest, buf+off, len);
 }
+#endif
