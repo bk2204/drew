@@ -1,5 +1,5 @@
-#ifndef DREW_UTIL_H
-#define DREW_UTIL_H
+#ifndef DREW_UTIL_DREW_UTIL_H
+#define DREW_UTIL_DREW_UTIL_H
 
 /* An incorrect ASN.1 tag was found. */
 #define DREW_UTIL_ERR_TAG_MISMATCH			0x50001
