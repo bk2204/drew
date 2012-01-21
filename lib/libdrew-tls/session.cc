@@ -677,6 +677,8 @@ static int client_parse_server_keyex(drew_tls_session_t sess,
 
 	if (!strcmp("Diffie-Hellman", keyex))
 		RETFAIL(client_parse_dh_params(sess, msg, off));
+	else if (!strcmp("RSA", keyex))
+		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
 	else
 		return -DREW_ERR_NOT_IMPL;
 
@@ -684,6 +686,8 @@ static int client_parse_server_keyex(drew_tls_session_t sess,
 		RETFAIL(client_verify_dsa_sig(sess, msg, off));
 	else if (!strcmp("RSA", pkauth))
 		RETFAIL(client_verify_rsa_sig(sess, msg, off));
+	else
+		return -DREW_ERR_NOT_IMPL;
 
 	sess->handshake_state = CLIENT_HANDSHAKE_CERT_REQ_OR_DONE;
 
