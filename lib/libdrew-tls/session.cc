@@ -43,8 +43,15 @@
 #include <drew-tls/priority.h>
 #include <drew-tls/session.h>
 
+#include "util.hh"
 #include "structs.h"
 #include "structures.hh"
+
+#define COMPRESSION_TYPE_NONE 0
+
+#define CONTENT_TYPE_HANDSHAKE 22
+
+#define HANDSHAKE_TYPE_CLIENT_HELLO 1
 
 struct generic {
 	void *ctx;
@@ -383,6 +390,13 @@ static int send_record(drew_tls_session_t sess, const uint8_t *buf,
 	return res;
 }
 
+// This function must be externally locked.
+static int send_record(drew_tls_session_t sess, SerializedBuffer &data,
+		uint8_t type)
+{
+	return send_record(sess, data.GetPointer(0), data.GetLength(), type);
+}
+
 static int recv_bytes(drew_tls_session_t sess, SerializedBuffer &buf,
 		size_t len, int flags)
 {
@@ -438,23 +452,26 @@ static int recv_record(drew_tls_session_t sess, Record &rec)
 	return res;
 }
 
-#if 0
 // This function must be externally locked.
-static int send_handshake(drew_tls_session_t sess, uint8_t *buf,
-		size_t len, uint8_t type)
+static int send_handshake(drew_tls_session_t sess, SerializedBuffer &buf,
+		uint8_t type)
 {
 	int res = 0;
-	uint8_t *data = buf;
-	uint32_t length = len - HANDSHAKE_OVERHEAD;
-	
-	BWR32(data, length);
-	buf[0] = type;
+	SerializedBuffer b2;
 
-	res = send_record(sess, buf, len, 0x16);
-	free(buf);
+	buf.ResetPosition();
+
+	b2.Put(type); // HandshakeType
+	b2.Put(uint8_t(buf.GetLength() >> 16));
+	b2.Put(uint8_t(buf.GetLength() >> 8));
+	b2.Put(uint8_t(buf.GetLength()));
+	b2.Put(buf);
+
+	res = send_record(sess, b2, CONTENT_TYPE_HANDSHAKE);
 	return res;
 }
 
+#if 0
 static int handshake_send_client_hello(drew_tls_session_t sess)
 {
 	int res = 0;
