@@ -144,6 +144,8 @@ typedef struct {
 	drew_hash_t msgs[2]; // The hash contexts for the above.
 } drew_tls_handshake_t;
 
+
+#define HELLO_RANDOM_SIZE 32
 struct drew_tls_session_s {
 	int client; // is this the client end or the server end?
 	int enc_type;
@@ -162,6 +164,8 @@ struct drew_tls_session_s {
 	drew_tls_handshake_t handshake;
 	int handshake_state;
 	int state;
+	uint8_t client_random[HELLO_RANDOM_SIZE];
+	uint8_t server_random[HELLO_RANDOM_SIZE];
 	drew_tls_priority_t prio;
 	drew_tls_session_id_t session_id;
 	drew_tls_protocol_version_t protover;

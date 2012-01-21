@@ -728,7 +728,33 @@ int client_parse_server_finished(drew_tls_session_t sess,
 
 int client_send_client_hello(drew_tls_session_t sess)
 {
-	return -DREW_ERR_NOT_IMPL;
+	drew_tls_cipher_suite_t *suites;
+	size_t nsuites = 0;
+	uint32_t t = time(NULL);
+	SerializedBuffer buf;
+
+	BigEndian::Copy(sess->client_random, &t, sizeof(t));
+	sess->prng->functbl->bytes(sess->prng, sess->client_random+sizeof(t),
+			sizeof(sess->client_random)-sizeof(t));
+
+	RETFAIL(drew_tls_priority_get_cipher_suites(sess->prio, &suites,
+				&nsuites));
+
+	buf.Put(sess->protover.major);
+	buf.Put(sess->protover.minor);
+	buf.Put(sess->client_random, sizeof(sess->client_random));
+	// We don't yet support resuming sessions, so don't bother sending a
+	// session_id.
+	buf.Put((uint8_t)0);
+	buf.Put((const uint8_t *)suites, nsuites * 2);
+	// We don't support any compression methods, either, so just use
+	// uncompressed.
+	buf.Put((uint8_t)1);
+	buf.Put((uint8_t)COMPRESSION_TYPE_NONE);
+
+	RETFAIL(send_handshake(sess, buf, HANDSHAKE_TYPE_CLIENT_HELLO));
+
+	return 0;
 }
 
 int client_send_client_cert(drew_tls_session_t sess)
