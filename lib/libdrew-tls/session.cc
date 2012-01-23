@@ -1,7 +1,7 @@
 /*-
  * Copyright © 2000–2011 The Legion Of The Bouncy Castle
  * (http://www.bouncycastle.org)
- * Copyright © 2010–2011 brian m. carlson
+ * Copyright © 2010–2012 brian m. carlson
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,6 +36,7 @@
 #include <time.h>
 
 #include <drew/drew.h>
+#include <drew/bignum.h>
 #include <drew/mem.h>
 #include <drew/plugin.h>
 
@@ -121,6 +122,16 @@ static int make_prng(const drew_loader_t *ldr, const char *name,
 	if ((res = make_primitive(ldr, name, prng, DREW_TYPE_HASH)))
 		return res;
 	res = prng->functbl->init(prng, 0, ldr, NULL);
+	return res;
+}
+
+static int make_bignum(const drew_loader_t *ldr, drew_bignum_t *bignum)
+{
+	int res = 0;
+
+	if ((res = make_primitive(ldr, "Bignum", bignum, DREW_TYPE_BIGNUM)))
+		return res;
+	res = bignum->functbl->init(bignum, 0, ldr, NULL);
 	return res;
 }
 
@@ -645,10 +656,72 @@ int client_parse_server_cert(drew_tls_session_t sess,
 	return res;
 }
 
+// Assuming off is 0, which it is in a server keyex message.
 static int client_parse_dh_params(drew_tls_session_t sess,
 		const HandshakeMessage &msg, size_t &off)
 {
-	return -DREW_ERR_NOT_IMPL;
+	int res;
+	SerializedBuffer b(msg.data);
+	uint16_t plen, glen, yslen;
+	uint8_t *p = 0, *g = 0, *ys = 0;
+
+	if (b.GetLength() < 2)
+		return -DREW_TLS_ERR_HANDSHAKE_FAILURE;
+
+	b.Get(plen);
+	if (b.BytesRemaining() < plen)
+		return -DREW_TLS_ERR_HANDSHAKE_FAILURE;
+
+	res = -ENOMEM;
+	if (!(p = (uint8_t *)drew_mem_malloc(plen)))
+		goto out;
+
+	b.Get(p, plen);
+	off += plen + sizeof(uint16_t);
+
+	b.Get(glen);
+
+	res = -DREW_TLS_ERR_HANDSHAKE_FAILURE;
+	if (b.BytesRemaining() < glen)
+		goto out;
+
+	res = -ENOMEM;
+	if (!(g = (uint8_t *)drew_mem_malloc(glen)))
+		goto out;
+
+	b.Get(g, glen);
+	off += glen + sizeof(uint16_t);
+
+	b.Get(yslen);
+
+	res = -DREW_TLS_ERR_HANDSHAKE_FAILURE;
+	if (b.BytesRemaining() < yslen)
+		goto out;
+
+	res = -ENOMEM;
+	if (!(ys = (uint8_t *)drew_mem_malloc(yslen)))
+		goto out;
+
+	b.Get(ys, yslen);
+	off += yslen + sizeof(uint16_t);
+
+	if ((res = make_bignum(sess->ldr, &sess->keyex.p)))
+		goto out;
+	if ((res = make_bignum(sess->ldr, &sess->keyex.g)))
+		goto out;
+	if ((res = make_bignum(sess->ldr, &sess->keyex.ys)))
+		goto out;
+
+	sess->keyex.p.functbl->setbytes(&sess->keyex.p, p, plen);
+	sess->keyex.g.functbl->setbytes(&sess->keyex.g, g, plen);
+	sess->keyex.ys.functbl->setbytes(&sess->keyex.ys, ys, plen);
+
+	res = 0;
+
+	drew_mem_free(p);
+	drew_mem_free(g);
+	drew_mem_free(ys);
+	return res;
 }
 
 static int client_verify_dsa_sig(drew_tls_session_t sess,

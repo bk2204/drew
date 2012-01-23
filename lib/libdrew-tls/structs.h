@@ -1,5 +1,5 @@
 /*-
- * Copyright © 2010–2011 brian m. carlson
+ * Copyright © 2010–2012 brian m. carlson
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -144,6 +144,11 @@ typedef struct {
 	drew_hash_t msgs[2]; // The hash contexts for the above.
 } drew_tls_handshake_t;
 
+typedef struct {
+	drew_bignum_t p;
+	drew_bignum_t q;
+	drew_bignum_t ys;
+} drew_tls_dh_keyex_t;
 
 #define HELLO_RANDOM_SIZE 32
 struct drew_tls_session_s {
@@ -166,6 +171,7 @@ struct drew_tls_session_s {
 	int state;
 	uint8_t client_random[HELLO_RANDOM_SIZE];
 	uint8_t server_random[HELLO_RANDOM_SIZE];
+	drew_tls_dh_keyex_t keyex;
 	drew_tls_priority_t prio;
 	drew_tls_session_id_t session_id;
 	drew_tls_protocol_version_t protover;
