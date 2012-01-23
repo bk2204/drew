@@ -718,6 +718,7 @@ static int client_parse_dh_params(drew_tls_session_t sess,
 
 	res = 0;
 
+out:
 	drew_mem_free(p);
 	drew_mem_free(g);
 	drew_mem_free(ys);

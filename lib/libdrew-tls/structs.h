@@ -25,6 +25,7 @@
 #include <stdbool.h>
 
 #include <drew/block.h>
+#include <drew/bignum.h>
 #include <drew/stream.h>
 #include <drew/mac.h>
 
@@ -146,7 +147,7 @@ typedef struct {
 
 typedef struct {
 	drew_bignum_t p;
-	drew_bignum_t q;
+	drew_bignum_t g;
 	drew_bignum_t ys;
 } drew_tls_dh_keyex_t;
 
