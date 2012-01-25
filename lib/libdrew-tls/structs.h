@@ -29,6 +29,8 @@
 #include <drew/stream.h>
 #include <drew/mac.h>
 
+#include <drew-util/x509.h>
+
 #include <drew-tls/drew-tls.h>
 #include <drew-tls/priority.h>
 #include <drew-tls/session.h>
@@ -172,6 +174,7 @@ struct drew_tls_session_s {
 	int state;
 	uint8_t client_random[HELLO_RANDOM_SIZE];
 	uint8_t server_random[HELLO_RANDOM_SIZE];
+	drew_util_x509_cert_t *server_cert;
 	drew_tls_dh_keyex_t keyex;
 	drew_tls_priority_t prio;
 	drew_tls_session_id_t session_id;
