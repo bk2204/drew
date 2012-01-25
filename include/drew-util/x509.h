@@ -29,6 +29,7 @@ typedef struct drew_util_x509_mpi_s {
 } drew_util_x509_mpi_t;
 
 typedef struct drew_util_x509_pubkey_s {
+	drew_util_asn1_oid_t oid;
 	drew_util_x509_mpi_t mpis[DREW_UTIL_X509_MAX_MPIS];
 	drew_util_asn1_oid_t curve;
 } drew_util_x509_pubkey_t;
@@ -59,6 +60,7 @@ typedef struct drew_util_x509_cert_s {
 	size_t subject_len;
 	int64_t not_before;
 	int64_t not_after;
+	drew_util_x509_pubkey_t pubkey;
 	drew_util_x509_extension_t *extensions;
 	size_t extensions_len;
 	int flags[8];
