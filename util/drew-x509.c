@@ -58,6 +58,12 @@ struct oids attr_types[] = {
 	{"u", 4, {2, 5, 4, 11}},
 };
 
+struct oids key_types[] = {
+	{"RSA", 7, {1, 2, 840, 113549, 1, 1, 1}},
+	{"DSA", 6, {1, 2, 840, 10040, 4, 1}},
+	{"ECDSA", 6, {1, 2, 840, 10045, 2, 1}},
+};
+
 const char *get_oidname(const struct oids *oidp, size_t noids,
 		const drew_util_asn1_oid_t *oid)
 {
@@ -77,8 +83,12 @@ const char *get_signame(const drew_util_asn1_oid_t *oid)
 
 const char *get_attrname(const drew_util_asn1_oid_t *oid)
 {
-
 	return get_oidname(attr_types, DIM(attr_types), oid);
+}
+
+const char *get_key_type(const drew_util_asn1_oid_t *oid)
+{
+	return get_oidname(key_types, DIM(key_types), oid);
 }
 
 int get_digest_length(const drew_util_x509_cert_t *cert)
@@ -144,8 +154,9 @@ int main(int argc, char **argv)
 		}
 		len = ret;
 	}
-	FAILCODE(8, drew_util_x509_parse_certificate(parser, decdata, len, &cert,
-				ldr));
+	if ((ret = drew_util_x509_parse_certificate(parser, decdata, len, &cert,
+				ldr)) && ret != -DREW_ERR_NOT_IMPL)
+		FAILCODE(8, ret);
 	printf("Certificate is version %d.\nSignature OID is ", cert.version);
 	for (size_t i = 0; i < cert.sig.algo.oid.length; i++)
 		printf("%zu%s", cert.sig.algo.oid.values[i],
@@ -206,6 +217,24 @@ int main(int argc, char **argv)
 			printf("%02x", ext->value[j]);
 		printf("\n");
 	}
+	const char *ktype = get_key_type(&cert.pubkey.oid);
+	printf("Key type is %s (", ktype ? ktype : "unknown");
+	for (size_t i = 0; i < cert.pubkey.oid.length; i++)
+		printf("%zu%s", cert.pubkey.oid.values[i],
+				(i == cert.pubkey.oid.length-1) ? "" : ".");
+	printf(")");
+	if (ktype) {
+		printf(":\n");
+		for (size_t i = 0; i < DREW_UTIL_X509_MAX_MPIS; i++) {
+			if (cert.pubkey.mpis[i].data) {
+				printf("MPI %zu: ", i);
+				for (size_t j = 0; j < cert.pubkey.mpis[i].len; j++)
+					printf("%02x", cert.pubkey.mpis[i].data[j]);
+				printf("\n");
+			}
+		}
+	}
+	printf("\n");
 	if (decdata != p)
 		drew_mem_free(decdata);
 	printf("Bye.\n");
