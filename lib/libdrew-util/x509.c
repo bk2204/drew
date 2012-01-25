@@ -1,11 +1,13 @@
 #include "internal.h"
 
 #include <errno.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
 
 #include <drew/drew.h>
+#include <drew/mem.h>
 #include <drew/hash.h>
 #include <drew/plugin.h>
 #include <drew-util/drew-util.h>
@@ -193,6 +195,87 @@ int parse_signature(drew_util_asn1_t asn,
 	return 0;
 }
 
+static int parse_pki_dsa(drew_util_asn1_t asn, drew_util_asn1_value_t *s,
+		const drew_util_asn1_value_t *algoid, drew_util_x509_pubkey_t *pubkey)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+static int parse_pki_rsa(drew_util_asn1_t asn, const drew_util_asn1_value_t *s,
+		const drew_util_asn1_value_t *algoid, drew_util_x509_pubkey_t *pubkey)
+{
+	drew_util_asn1_value_t encoded, *pki;
+	size_t nbytes = 0, npkis, dummy;
+	uint8_t *encodedseq;
+	int ret = 0;
+
+	if (s->constructed || s->tag != 3)
+		return -DREW_ERR_INVALID;
+	if (!(encodedseq = drew_mem_malloc(s->length)))
+		return -ENOMEM;
+	RETFAIL(drew_util_asn1_parse_bitstring(asn, s, encodedseq, &dummy));
+	if ((ret = drew_util_asn1_parse(asn, encodedseq, s->length, &encoded)) < 0)
+		return ret;
+
+	RETFAIL(drew_util_asn1_parse_sequence(asn, &encoded, &pki, &npkis));
+
+	if (npkis != 2)
+		return -DREW_ERR_INVALID;
+
+	// Two integers, n and e.
+	for (size_t i = 0; i < 2; i++) {
+		RETFAIL(drew_util_asn1_parse_large_integer(asn, pki+i, NULL, &nbytes));
+		if (nbytes != (uint16_t)nbytes)
+			return -DREW_ERR_INVALID;
+
+		if (!(pubkey->mpis[i].data = drew_mem_malloc(nbytes)))
+			return -ENOMEM;
+		RETFAIL(drew_util_asn1_parse_large_integer(asn, pki+i,
+					pubkey->mpis[i].data, &nbytes));
+		pubkey->mpis[i].len = nbytes;
+	}
+
+	return 0;
+}
+
+static int parse_pki(drew_util_asn1_t asn,
+		const drew_util_asn1_value_t *val, drew_util_x509_pubkey_t *pubkey)
+{
+	drew_util_asn1_value_t *sequence, *algoid;
+	size_t nitems, nalgoid;
+	const size_t rsavals[7] = {
+		1, 2, 840, 113549, 1, 1, 1
+	};
+	const size_t dsavals[6] = {
+		1, 2, 840, 10040, 4, 1
+	};
+	const size_t ecdsavals[] = {
+		1, 2, 840, 10045, 2, 1
+	};
+
+	RETFAIL(drew_util_asn1_parse_sequence(asn, val, &sequence, &nitems));
+	if (nitems != 2)
+		return -DREW_ERR_INVALID;
+
+	RETFAIL(drew_util_asn1_parse_sequence(asn, sequence, &algoid, &nalgoid));
+
+	if (nalgoid < 1)
+		return -DREW_ERR_INVALID;
+
+	RETFAIL(drew_util_asn1_parse_oid(asn, algoid, &pubkey->oid));
+
+	if (pubkey->oid.length == DIM(rsavals) &&
+			!memcmp(rsavals, pubkey->oid.values, sizeof(rsavals)))
+		return parse_pki_rsa(asn, sequence+1, algoid, pubkey);
+	else if (pubkey->oid.length == DIM(dsavals) &&
+			!memcmp(dsavals, pubkey->oid.values, sizeof(dsavals)))
+		return parse_pki_dsa(asn, sequence+1, algoid, pubkey);
+	else if (pubkey->oid.length == DIM(ecdsavals) &&
+			!memcmp(ecdsavals, pubkey->oid.values, sizeof(ecdsavals)))
+		return -DREW_ERR_NOT_IMPL;
+	return -DREW_ERR_NOT_IMPL;
+}
+
 int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 		const uint8_t *data, size_t len, drew_util_x509_cert_t *cert,
 		drew_loader_t *ldr)
@@ -232,6 +315,11 @@ int drew_util_x509_parse_certificate(drew_util_asn1_t asn,
 	RETFAIL(parse_validity(asn, &vals[3+valoff], cert));
 	RETFAIL(parse_name(asn, &vals[4+valoff], &cert->subject,
 				&cert->subject_len));
+	res = parse_pki(asn, &vals[5+valoff], &cert->pubkey);
+	// Don't completely error out if we just don't understand the public key
+	// type.  We can still get useful information about the certificate.
+	if (res < 0 && res != -DREW_ERR_NOT_IMPL)
+		return res;
 	// We don't really care about the unique IDs.  Other than fodder for the
 	// hash, they have no significance.  On to the extensions!
 	if (cert->version == 3) {
