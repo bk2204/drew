@@ -95,7 +95,6 @@ static int make_primitive(const drew_loader_t *ldr, const char *name,
 	return res;
 }
 
-#if 0
 /* Returns 0 on success or a negative value on error.  On success, hash will be
  * initialized and of the type specified in name.
  */
@@ -109,7 +108,6 @@ static int make_hash(const drew_loader_t *ldr, const char *name,
 	res = hash->functbl->init(hash, 0, ldr, NULL);
 	return res;
 }
-#endif
 
 static int make_prng(const drew_loader_t *ldr, const char *name,
 		drew_prng_t *prng)
@@ -725,15 +723,26 @@ out:
 	return res;
 }
 
+#define HASH_MD5 0
+#define HASH_SHA1 1
 static int client_verify_dsa_sig(drew_tls_session_t sess,
-		const HandshakeMessage &msg, size_t &off)
+		const HandshakeMessage &msg, size_t &off, drew_hash_t *hashes)
 {
+	uint8_t buf[20];
+
+	hashes[HASH_SHA1].functbl->final(&hashes[HASH_SHA1], buf, 20, 0);
+
 	return -DREW_ERR_NOT_IMPL;
 }
 
 static int client_verify_rsa_sig(drew_tls_session_t sess,
-		const HandshakeMessage &msg, size_t &off)
+		const HandshakeMessage &msg, size_t &off, drew_hash_t *hashes)
 {
+	uint8_t buf[16 + 20];
+
+	hashes[HASH_MD5].functbl->final(&hashes[HASH_MD5], buf, 16, 0);
+	hashes[HASH_SHA1].functbl->final(&hashes[HASH_SHA1], buf+16, 20, 0);
+
 	return -DREW_ERR_NOT_IMPL;
 }
 
@@ -743,11 +752,15 @@ static int client_parse_server_keyex(drew_tls_session_t sess,
 	int res = 0;
 	size_t off = 0;
 	const char *pkauth, *keyex;
+	drew_hash_t hashes[2];
 
 	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_SERVER_KEYEX)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
 
 	RETFAIL(get_pkalgos(sess->prio, sess->cs, &pkauth, &keyex));
+
+	make_hash(sess->ldr, "MD5", &hashes[HASH_MD5]);
+	make_hash(sess->ldr, "SHA-1", &hashes[HASH_SHA1]);
 
 	if (!strcmp("Diffie-Hellman", keyex))
 		RETFAIL(client_parse_dh_params(sess, msg, off));
@@ -756,10 +769,18 @@ static int client_parse_server_keyex(drew_tls_session_t sess,
 	else
 		return -DREW_ERR_NOT_IMPL;
 
+	for (size_t i = 0; i < DIM(hashes); i++) {
+		hashes[i].functbl->update(hashes+i, sess->client_random,
+				sizeof(sess->client_random));
+		hashes[i].functbl->update(hashes+i, sess->server_random,
+				sizeof(sess->server_random));
+		hashes[i].functbl->update(hashes+i, msg.data.GetPointer(0), off);
+	}
+
 	if (!strcmp("DSA", pkauth))
-		RETFAIL(client_verify_dsa_sig(sess, msg, off));
+		RETFAIL(client_verify_dsa_sig(sess, msg, off, hashes));
 	else if (!strcmp("RSA", pkauth))
-		RETFAIL(client_verify_rsa_sig(sess, msg, off));
+		RETFAIL(client_verify_rsa_sig(sess, msg, off, hashes));
 	else
 		return -DREW_ERR_NOT_IMPL;
 
