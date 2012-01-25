@@ -123,13 +123,16 @@ static int make_prng(const drew_loader_t *ldr, const char *name,
 	return res;
 }
 
-static int make_bignum(const drew_loader_t *ldr, drew_bignum_t *bignum)
+static int make_bignum(const drew_loader_t *ldr, drew_bignum_t *bignum,
+		const uint8_t *data, size_t len)
 {
 	int res = 0;
 
 	if ((res = make_primitive(ldr, "Bignum", bignum, DREW_TYPE_BIGNUM)))
 		return res;
 	res = bignum->functbl->init(bignum, 0, ldr, NULL);
+	if (!res && data)
+		res = bignum->functbl->setbytes(bignum, data, len);
 	return res;
 }
 
@@ -703,16 +706,12 @@ static int client_parse_dh_params(drew_tls_session_t sess,
 	b.Get(ys, yslen);
 	off += yslen + sizeof(uint16_t);
 
-	if ((res = make_bignum(sess->ldr, &sess->keyex.p)))
+	if ((res = make_bignum(sess->ldr, &sess->keyex.p, p, plen)))
 		goto out;
-	if ((res = make_bignum(sess->ldr, &sess->keyex.g)))
+	if ((res = make_bignum(sess->ldr, &sess->keyex.g, g, glen)))
 		goto out;
-	if ((res = make_bignum(sess->ldr, &sess->keyex.ys)))
+	if ((res = make_bignum(sess->ldr, &sess->keyex.ys, ys, yslen)))
 		goto out;
-
-	sess->keyex.p.functbl->setbytes(&sess->keyex.p, p, plen);
-	sess->keyex.g.functbl->setbytes(&sess->keyex.g, g, plen);
-	sess->keyex.ys.functbl->setbytes(&sess->keyex.ys, ys, plen);
 
 	res = 0;
 
