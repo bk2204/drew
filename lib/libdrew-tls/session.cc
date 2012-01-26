@@ -252,7 +252,8 @@ static int encrypt_block(drew_tls_session_t sess, Record &rec,
 		const uint8_t *inbuf, uint16_t inlen)
 {
 	drew_mac_t macimpl, *mac = &macimpl;
-	drew_mode_t *mode = sess->outmode;
+	drew_tls_secparams_t *conn = sess->client ? &sess->clientp : &sess->serverp;
+	drew_mode_t *mode = conn->mode;
 
 	// We always pad to a multiple of 256 to foil traffic analysis.  Also, this
 	// guarantees that our data is a multiple of 16, so we can use the more
@@ -266,13 +267,13 @@ static int encrypt_block(drew_tls_session_t sess, Record &rec,
 	content.Put(inbuf, inlen);
 
 	SerializedBuffer macdata(totallen);
-	macdata.Put(sess->outseqnum);
+	macdata.Put(conn->seqnum);
 	macdata.Put(rec.type);
 	rec.version.WriteToBuffer(macdata);
 	macdata.Put(inlen);
 	macdata.Put(inbuf, inlen);
 
-	sess->outmac->functbl->clone(mac, sess->outmac, 0);
+	conn->mac->functbl->clone(mac, conn->mac, 0);
 	mac->functbl->reset(mac);
 	mac->functbl->update(mac, macdata.GetPointer(0), macdata.GetLength());
 	mac->functbl->final(mac, content.GetPointer(inlen), 0);
@@ -286,7 +287,7 @@ static int encrypt_block(drew_tls_session_t sess, Record &rec,
 
 	rec.length = totallen;
 	rec.data = encbuf;
-	sess->outseqnum++;
+	conn->seqnum++;
 
 	return 0;
 }
@@ -302,14 +303,15 @@ static int decrypt_block(drew_tls_session_t sess, Record &rec,
 		SerializedBuffer &sbuf)
 {
 	int res = 0;
+	drew_tls_secparams_t *conn = sess->client ? &sess->serverp : &sess->clientp;
 	drew_mac_t macimpl, *mac = &macimpl;
-	drew_mode_t *mode = sess->inmode;
+	drew_mode_t *mode = conn->mode;
 	uint8_t *inbuf = rec.data.GetPointer(0);
 	uint16_t inlen = rec.length;
 	SerializedBuffer decbuffer(rec.length);
 	uint8_t *decbuf = decbuffer.GetPointer(0);
 	uint16_t declen, datalen = 0;
-	uint8_t beseqnum[sizeof(sess->inseqnum)];
+	uint8_t beseqnum[sizeof(conn->seqnum)];
 	uint8_t padbyte;
 	SerializedBuffer macbuf(128);
 
@@ -331,9 +333,9 @@ static int decrypt_block(drew_tls_session_t sess, Record &rec,
 	else
 		datalen = declen - sess->hash_size;
 
-	BigEndian::Copy(beseqnum, &sess->inseqnum, sizeof(beseqnum));
+	BigEndian::Copy(beseqnum, &conn->seqnum, sizeof(beseqnum));
 
-	sess->outmac->functbl->clone(mac, sess->outmac, 0);
+	conn->mac->functbl->clone(mac, conn->mac, 0);
 	mac->functbl->reset(mac);
 	mac->functbl->update(mac, beseqnum, sizeof(beseqnum));
 	mac->functbl->update(mac, sbuf.GetPointer(0), 5);
@@ -346,7 +348,7 @@ static int decrypt_block(drew_tls_session_t sess, Record &rec,
 
 	rec.length = datalen;
 	rec.data = decbuffer;
-	sess->inseqnum++;
+	conn->seqnum++;
 
 	return res;
 }
@@ -769,10 +771,10 @@ static int client_parse_server_keyex(drew_tls_session_t sess,
 		return -DREW_ERR_NOT_IMPL;
 
 	for (size_t i = 0; i < DIM(hashes); i++) {
-		hashes[i].functbl->update(hashes+i, sess->client_random,
-				sizeof(sess->client_random));
-		hashes[i].functbl->update(hashes+i, sess->server_random,
-				sizeof(sess->server_random));
+		hashes[i].functbl->update(hashes+i, sess->clientp.random,
+				sizeof(sess->clientp.random));
+		hashes[i].functbl->update(hashes+i, sess->serverp.random,
+				sizeof(sess->serverp.random));
 		hashes[i].functbl->update(hashes+i, msg.data.GetPointer(0), off);
 	}
 
@@ -827,16 +829,16 @@ int client_send_client_hello(drew_tls_session_t sess)
 	uint32_t t = time(NULL);
 	SerializedBuffer buf;
 
-	BigEndian::Copy(sess->client_random, &t, sizeof(t));
-	sess->prng->functbl->bytes(sess->prng, sess->client_random+sizeof(t),
-			sizeof(sess->client_random)-sizeof(t));
+	BigEndian::Copy(sess->clientp.random, &t, sizeof(t));
+	sess->prng->functbl->bytes(sess->prng, sess->clientp.random+sizeof(t),
+			sizeof(sess->clientp.random)-sizeof(t));
 
 	RETFAIL(drew_tls_priority_get_cipher_suites(sess->prio, &suites,
 				&nsuites));
 
 	buf.Put(sess->protover.major);
 	buf.Put(sess->protover.minor);
-	buf.Put(sess->client_random, sizeof(sess->client_random));
+	buf.Put(sess->clientp.random, sizeof(sess->clientp.random));
 	// We don't yet support resuming sessions, so don't bother sending a
 	// session_id.
 	buf.Put((uint8_t)0);

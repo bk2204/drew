@@ -62,24 +62,20 @@ typedef struct {
 	drew_block_t *block;
 	drew_stream_t *stream;
 	drew_mac_t *mac;
+	drew_mode_t *mode;
+	uint8_t *macbytes;
+	uint8_t *keybytes;
+	uint8_t *ivbytes;
+	uint64_t seqnum;
 	size_t key_size;
 	size_t key_material_length;
 	size_t hash_size;
 	bool is_exportable;
 	void *compression; 	// Not implemented; not currently used.
 	uint8_t master_secret[48];
-	uint8_t client_random[32];
-	uint8_t server_random[32];
-} drew_tls_security_parameters_t;
-
-typedef struct {
-	uint8_t *client_mac;
-	uint8_t *server_mac;
-	uint8_t *client_key;
-	uint8_t *server_key;
-	uint8_t *client_iv;
-	uint8_t *server_iv;
-} drew_tls_connection_parameters_t;
+	uint8_t random[32];
+	drew_util_x509_cert_t *cert;
+} drew_tls_secparams_t;
 
 typedef struct {
 	drew_tls_content_type_t type;
@@ -163,18 +159,11 @@ struct drew_tls_session_s {
 	drew_tls_session_queues_t queues;
 	uint8_t block_size;
 	uint8_t hash_size;
-	drew_mac_t *inmac;
-	drew_mode_t *inmode;
-	uint64_t inseqnum;
-	drew_mac_t *outmac;
-	drew_mode_t *outmode;
-	uint64_t outseqnum;
 	drew_tls_handshake_t handshake;
 	int handshake_state;
 	int state;
-	uint8_t client_random[HELLO_RANDOM_SIZE];
-	uint8_t server_random[HELLO_RANDOM_SIZE];
-	drew_util_x509_cert_t *server_cert;
+	drew_tls_secparams_t serverp;
+	drew_tls_secparams_t clientp;
 	drew_tls_dh_keyex_t keyex;
 	drew_tls_priority_t prio;
 	drew_tls_session_id_t session_id;
