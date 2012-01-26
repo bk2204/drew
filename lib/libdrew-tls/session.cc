@@ -1047,7 +1047,9 @@ static int client_parse_server_hello(drew_tls_session_t sess,
 	buf.Get(random, sizeof(random));
 	buf.Get(sess->session_id.length);
 
-	if (msg.length != minlength + sess->session_id.length)
+	// The entire message can be longer than this because of extensions.  At the
+	// moment, we completely ignore any extensions.
+	if (msg.length <= minlength + sess->session_id.length)
 		return -DREW_TLS_ERR_ILLEGAL_PARAMETER;
 
 	buf.Get(sess->session_id.sessionid, sess->session_id.length);
