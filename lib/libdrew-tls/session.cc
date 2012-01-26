@@ -37,6 +37,7 @@
 
 #include <drew/drew.h>
 #include <drew/bignum.h>
+#include <drew/pksig.h>
 #include <drew/mem.h>
 #include <drew/plugin.h>
 
@@ -133,6 +134,17 @@ static int make_bignum(const drew_loader_t *ldr, drew_bignum_t *bignum,
 	res = bignum->functbl->init(bignum, 0, ldr, NULL);
 	if (!res && data)
 		res = bignum->functbl->setbytes(bignum, data, len);
+	return res;
+}
+
+static int make_pksig(const drew_loader_t *ldr, const char *name,
+		drew_pksig_t *pksig)
+{
+	int res = 0;
+
+	if ((res = make_primitive(ldr, name, pksig, DREW_TYPE_PKSIG)))
+		return res;
+	res = pksig->functbl->init(pksig, 0, ldr, NULL);
 	return res;
 }
 
@@ -739,12 +751,69 @@ static int client_verify_dsa_sig(drew_tls_session_t sess,
 static int client_verify_rsa_sig(drew_tls_session_t sess,
 		const HandshakeMessage &msg, size_t &off, drew_hash_t *hashes)
 {
-	uint8_t buf[16 + 20];
+	uint8_t buf[16 + 20], *data;
+	drew_bignum_t c, p;
+	drew_pksig_t rsa;
+	int size, res = 0, offset = 0;
+
+	if (!sess->serverp.cert)
+		return -DREW_TLS_ERR_INTERNAL_ERROR;
+
+	drew_util_x509_pubkey_t *pubkey = &sess->serverp.cert->pubkey;
+
+	RETFAIL(make_bignum(sess->ldr, &c, msg.data.GetPointer(off),
+				msg.data.GetLength()-off));
+	RETFAIL(make_bignum(sess->ldr, &p, NULL, 0));
+	RETFAIL(make_pksig(sess->ldr, "RSA", &rsa));
+
+	rsa.functbl->setval(&rsa, "n", pubkey->mpis[0].data, pubkey->mpis[0].len);
+	rsa.functbl->setval(&rsa, "e", pubkey->mpis[1].data, pubkey->mpis[1].len);
+	rsa.functbl->verify(&rsa, &p, &c);
+	rsa.functbl->fini(&rsa, 0);
 
 	hashes[HASH_MD5].functbl->final(&hashes[HASH_MD5], buf, 16, 0);
 	hashes[HASH_SHA1].functbl->final(&hashes[HASH_SHA1], buf+16, 20, 0);
 
-	return -DREW_ERR_NOT_IMPL;
+	c.functbl->fini(&c, 0);
+
+	if ((size = p.functbl->nbytes(&p)) < 0)
+		return size;
+
+	if (size + 2 < pubkey->mpis[0].len)
+		return -DREW_ERR_INVALID;
+
+	// Make sure we have enough data to have valid padding.
+	if (size_t(size) < sizeof(buf) + 1 + 1 + 1)
+		return -DREW_ERR_INVALID;
+
+	if (!(data = (uint8_t *)drew_mem_malloc(size)))
+		return -ENOMEM;
+
+	p.functbl->bytes(&p, data, size);
+	p.functbl->fini(&p, 0);
+
+	/* Check the padding for block type 1.  The final 36 bytes are the hash, the
+	 * byte preceding that is 0, preceding that is a series of bytes with value
+	 * 0xff, and before that the value 1 (the block type).  Also, don't return
+	 * immediately if the data is corrupt to make timing attacks harder.
+	 */
+	if (memcmp(data+size-sizeof(buf), buf, sizeof(buf)))
+		res = -DREW_ERR_INVALID;
+	if (data[size-sizeof(buf)-1])
+		res = -DREW_ERR_INVALID;
+	if (data[0] == 0 && data[1] == 1)
+		offset = 2;
+	else if (data[0] == 1)
+		offset = 1;
+	else
+		res = -DREW_ERR_INVALID;
+	for (size_t i = offset; i < size-sizeof(buf)-1; i++)
+		if (data[i] != 0xff)
+			res = -DREW_ERR_INVALID;
+
+	drew_mem_free(data);
+
+	return res;
 }
 
 static int client_parse_server_keyex(drew_tls_session_t sess,
