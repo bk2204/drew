@@ -906,7 +906,7 @@ int client_parse_server_hello_done(drew_tls_session_t sess,
 	else
 		sess->handshake_state = CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX;
 
-	return -DREW_ERR_NOT_IMPL;
+	return 0;
 }
 
 int client_parse_server_finished(drew_tls_session_t sess,
