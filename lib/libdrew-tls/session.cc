@@ -677,7 +677,10 @@ int client_parse_server_cert(drew_tls_session_t sess,
 	RETFAIL(drew_util_asn1_fini(&asn));
 
 	// FIXME: use a dealloc function.
-	for (size_t i = 0; i < ncerts; i++)
+	// We don't dealloc the first certificate here because we keep it to
+	// validate the key exchange later.
+	sess->serverp.cert = (drew_util_x509_cert_t *)dcerts[i].x509;
+	for (size_t i = 1; i < ncerts; i++)
 		free((void *)dcerts[i].x509);
 	free(dcerts);
 	free(certs);
