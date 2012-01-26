@@ -54,6 +54,7 @@
 #define CONTENT_TYPE_HANDSHAKE 22
 
 #define HANDSHAKE_TYPE_CLIENT_HELLO 1
+#define HANDSHAKE_TYPE_CLIENT_KEYEX 16
 
 struct generic {
 	void *ctx;
@@ -956,18 +957,78 @@ int client_send_client_cert(drew_tls_session_t sess)
 	return -DREW_ERR_NOT_IMPL;
 }
 
+static int client_generate_keyex_dh(drew_tls_session_t sess, uint8_t **p,
+		size_t *len)
+{
+	SerializedBuffer buf;
+	drew_bignum_t x, y, z;
+	uint8_t *data;
+	size_t nbytes;
+	uint16_t publen;
+
+	nbytes = sess->keyex.p.functbl->nbytes(&sess->keyex.p);
+	if (!(data = drew_mem_malloc(nbytes)))
+		return -ENOMEM;
+
+	sess->prng->functbl->bytes(sess->prng, data, nbytes);
+
+	drew_mem_free(data);
+
+	RETFAIL(make_bignum(&x, data, nbytes));
+	RETFAIL(make_bignum(&y, NULL, 0));
+	RETFAIL(make_bignum(&z, NULL, 0));
+
+	// The public value.
+	y.functbl->expmod(&y, &sess->keyex.g, &sess->keyex.x, &sess->keyex.p);
+	// The pre-master secret.
+	z.functbl->expmod(&z, &sess->keyex.ys, &sess->keyex.x, &sess->keyex.p);
+
+	// Save the pre-master secret.
+	*len = z.functbl->nbytes(&z);
+	*p = drew_mem_malloc(*len);
+	z.functbl->bytes(&z, *p, *len);
+
+	plen = y.functbl->nbytes(&y);
+	data = drew_mem_malloc(plen);
+	y.functbl->bytes(&y, data, plen);
+	buf.Put(plen);
+	buf.Put(data, plen);
+
+	return send_handshake(sess, buf, HANDSHAKE_TYPE_CLIENT_KEYEX);
+}
+
+static int client_generate_keyex_rsa(drew_tls_session_t sess, uint8_t **p,
+		size_t *len)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+// Right now this only implements ephemeral DH and RSA.
 int client_send_client_keyex(drew_tls_session_t sess)
 {
+	uint8_t *pms;
+	size_t len;
+
 	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX &&
 			sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX_CERT)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+
+	if (!strcmp("Diffie-Hellman", keyex))
+		RETFAIL(client_generate_keyex_dh(sess, &pms, &len));
+	else if (!strcmp("RSA", keyex))
+		RETFAIL(client_generate_keyex_rsa(sess, &pms, &len));
+	else
+		return -DREW_ERR_NOT_IMPL;
+
+	// TODO: generate master secret from pre-master secret.
+	drew_mem_free(pms);
 
 	if (sess->handshake_state == CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX_CERT)
 		sess->handshake_state = CLIENT_HANDSHAKE_NEED_CLIENT_VERIFY;
 	else
 		sess->handshake_state = CLIENT_HANDSHAKE_NEED_CLIENT_CIPHER_SPEC;
 
-	return -DREW_ERR_NOT_IMPL;
+	return 0;
 }
 
 int client_send_client_verify(drew_tls_session_t sess)
