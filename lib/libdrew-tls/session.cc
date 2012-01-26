@@ -626,7 +626,9 @@ int client_parse_server_cert(drew_tls_session_t sess,
 	uint32_t certlen = 0, certoff = 3;
 	size_t ncerts = 0;
 	drew_tls_encoded_cert_t *certs = NULL;
+	drew_tls_cert_t *dcerts = NULL;
 	SerializedBuffer buf(msg.data);
+	drew_util_asn1_t asn;
 
 	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_SERVER_CERT)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
@@ -640,6 +642,8 @@ int client_parse_server_cert(drew_tls_session_t sess,
 	if (msg.length != certlen + 3)
 		return -DREW_TLS_ERR_ILLEGAL_PARAMETER;
 
+	RETFAIL(drew_util_asn1_init(&asn));
+
 	for (ncerts = 0; certoff < certlen; ncerts++) {
 		uint32_t thiscertlen = 0;
 		for (size_t i = 0; i < 3; i++) {
@@ -651,14 +655,31 @@ int client_parse_server_cert(drew_tls_session_t sess,
 			return -DREW_TLS_ERR_ILLEGAL_PARAMETER;
 		certs = (drew_tls_encoded_cert_t *)realloc(certs,
 				(ncerts+1)*sizeof(*certs));
-		if (!certs)
+		dcerts = (drew_tls_cert_t *)realloc(dcerts,
+				(ncerts+1)*sizeof(*dcerts));
+		if (!certs || !dcerts)
 			return -DREW_TLS_ERR_INTERNAL_ERROR;
 		certs[ncerts].len = thiscertlen;
-		certs[ncerts].data = buf.GetPointer(certoff + thiscertlen);
+		certs[ncerts].data = buf.GetPointer(certoff);
+		drew_util_x509_cert_t *dcert =
+			(drew_util_x509_cert_t *)drew_mem_malloc(sizeof(*dcert));
+		if (!dcert)
+			return -ENOMEM;
+
+		RETFAIL(drew_util_x509_parse_certificate(asn, certs[ncerts].data,
+					certs[ncerts].len, dcert, sess->ldr));
+		dcerts[ncerts].x509 = dcert;
+		certoff += thiscertlen;
 	}
 
-	res = sess->cert_callback(sess->cert_ctxt, sess, certs, ncerts);
+	res = sess->cert_callback(sess->cert_ctxt, sess, certs, dcerts, ncerts);
 
+	RETFAIL(drew_util_asn1_fini(&asn));
+
+	// FIXME: use a dealloc function.
+	for (size_t i = 0; i < ncerts; i++)
+		free((void *)dcerts[i].x509);
+	free(dcerts);
 	free(certs);
 
 	if (!res && (res = need_server_keyex(sess->prio, sess->cs))) {

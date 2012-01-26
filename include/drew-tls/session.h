@@ -12,6 +12,8 @@ extern "C" {
 #include <drew/mode.h>
 #include <drew/prng.h>
 
+#include <drew-util/x509.h>
+
 #include <drew-tls/drew-tls.h>
 #include <drew-tls/priority.h>
 
@@ -25,14 +27,19 @@ typedef struct {
 	uint8_t *data;
 } drew_tls_encoded_cert_t;
 
+typedef struct {
+	const drew_util_x509_cert_t *x509;
+	const void *pad[3];
+} drew_tls_cert_t;
+
 struct drew_tls_session_s;
 
 typedef struct drew_tls_session_s *drew_tls_session_t;
 
 typedef void *drew_tls_cert_ctxt_t;
 typedef int (*drew_tls_cert_callback_t)(drew_tls_cert_ctxt_t,
-		drew_tls_session_t, const drew_tls_encoded_cert_t *certs,
-		size_t ncerts);
+		drew_tls_session_t, const drew_tls_encoded_cert_t *ecerts,
+		const drew_tls_cert_t *dcerts, size_t ncerts);
 
 #ifdef __cplusplus
 }
