@@ -14,6 +14,7 @@ test/plugin-main
 test/libmd-testsuite
 util/*sum
 util/drew-x509
+util/drew-tls
 util/daniel
 util/version
 include/version.h
