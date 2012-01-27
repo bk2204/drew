@@ -680,7 +680,7 @@ int client_parse_server_cert(drew_tls_session_t sess,
 	// FIXME: use a dealloc function.
 	// We don't dealloc the first certificate here because we keep it to
 	// validate the key exchange later.
-	sess->serverp.cert = (drew_util_x509_cert_t *)dcerts[i].x509;
+	sess->serverp.cert = (drew_util_x509_cert_t *)dcerts[0].x509;
 	for (size_t i = 1; i < ncerts; i++)
 		free((void *)dcerts[i].x509);
 	free(dcerts);
@@ -964,32 +964,32 @@ static int client_generate_keyex_dh(drew_tls_session_t sess, uint8_t **p,
 	drew_bignum_t x, y, z;
 	uint8_t *data;
 	size_t nbytes;
-	uint16_t publen;
+	uint16_t plen;
 
 	nbytes = sess->keyex.p.functbl->nbytes(&sess->keyex.p);
-	if (!(data = drew_mem_malloc(nbytes)))
+	if (!(data = (uint8_t *)drew_mem_malloc(nbytes)))
 		return -ENOMEM;
 
 	sess->prng->functbl->bytes(sess->prng, data, nbytes);
 
 	drew_mem_free(data);
 
-	RETFAIL(make_bignum(&x, data, nbytes));
-	RETFAIL(make_bignum(&y, NULL, 0));
-	RETFAIL(make_bignum(&z, NULL, 0));
+	RETFAIL(make_bignum(sess->ldr, &x, data, nbytes));
+	RETFAIL(make_bignum(sess->ldr, &y, NULL, 0));
+	RETFAIL(make_bignum(sess->ldr, &z, NULL, 0));
 
 	// The public value.
-	y.functbl->expmod(&y, &sess->keyex.g, &sess->keyex.x, &sess->keyex.p);
+	y.functbl->expmod(&y, &sess->keyex.g, &x, &sess->keyex.p);
 	// The pre-master secret.
-	z.functbl->expmod(&z, &sess->keyex.ys, &sess->keyex.x, &sess->keyex.p);
+	z.functbl->expmod(&z, &sess->keyex.ys, &x, &sess->keyex.p);
 
 	// Save the pre-master secret.
 	*len = z.functbl->nbytes(&z);
-	*p = drew_mem_malloc(*len);
+	*p = (uint8_t *)drew_mem_malloc(*len);
 	z.functbl->bytes(&z, *p, *len);
 
 	plen = y.functbl->nbytes(&y);
-	data = drew_mem_malloc(plen);
+	data = (uint8_t *)drew_mem_malloc(plen);
 	y.functbl->bytes(&y, data, plen);
 	buf.Put(plen);
 	buf.Put(data, plen);
@@ -1008,10 +1008,13 @@ int client_send_client_keyex(drew_tls_session_t sess)
 {
 	uint8_t *pms;
 	size_t len;
+	const char *pkauth, *keyex;
 
 	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX &&
 			sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX_CERT)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+
+	RETFAIL(get_pkalgos(sess->prio, sess->cs, &pkauth, &keyex));
 
 	if (!strcmp("Diffie-Hellman", keyex))
 		RETFAIL(client_generate_keyex_dh(sess, &pms, &len));
