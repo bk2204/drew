@@ -101,9 +101,11 @@ static int make_primitive(const drew_loader_t *ldr, const char *name,
 		start = id + 1;
 		if (drew_loader_get_type(ldr, id) != type)
 			continue;
-		if ((res = drew_loader_get_functbl(ldr, id, &functbl)))
+		if ((res = drew_loader_get_functbl(ldr, id, &functbl)) < 0)
 			continue;
+		res = 0;
 		ctx->functbl = functbl;
+		break;
 	}
 	// FIXME: remove -ENOENT once libdrew stops using it.
 	if (res == -ENOENT)
