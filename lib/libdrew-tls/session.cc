@@ -500,10 +500,10 @@ static int send_record(drew_tls_session_t sess, const uint8_t *buf,
 	rec.WriteToBuffer(output);
 
 	if ((res = sess->data_outfunc(sess->data_outp, output.GetPointer(0),
-					output.GetLength())))
+					output.GetLength())) < 0)
 		return res;
 	
-	return res;
+	return 0;
 }
 
 // This function must be externally locked.
