@@ -1694,7 +1694,7 @@ static int handshake_client(drew_tls_session_t sess)
 		DEBUG("looping on handshake\n");
 
 		if (sess->state == STATE_DESTROYED)
-			return -DREW_ERR_BUG;
+			return -DREW_TLS_ERR_HANDSHAKE_FAILURE;
 
 		URETFAIL(sess, recv_record(sess, rec));
 		DEBUG("received record\n");
