@@ -1701,7 +1701,7 @@ static int handshake_client(drew_tls_session_t sess)
 
 	UNLOCK(sess);
 
-	return -DREW_ERR_NOT_IMPL;
+	return 0;
 }
 
 int drew_tls_session_handshake(drew_tls_session_t sess)
