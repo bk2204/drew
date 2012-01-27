@@ -147,6 +147,7 @@ static int hmac_clone(drew_mac_t *newctx, const drew_mac_t *oldctx, int flags)
 	memcpy(newctx->ctx, oldctx->ctx, sizeof(*h));
 	h = newctx->ctx;
 	oh = oldctx->ctx;
+	newctx->functbl = oldctx->functbl;
 
 	h->outside.functbl->clone(&h->outside, &oh->outside, 0);
 	h->inside.functbl->clone(&h->inside, &oh->inside, 0);
