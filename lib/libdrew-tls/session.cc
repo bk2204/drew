@@ -37,6 +37,7 @@
 
 #include <drew/drew.h>
 #include <drew/bignum.h>
+#include <drew/kdf.h>
 #include <drew/pksig.h>
 #include <drew/mem.h>
 #include <drew/plugin.h>
@@ -146,6 +147,34 @@ static int make_pksig(const drew_loader_t *ldr, const char *name,
 	if ((res = make_primitive(ldr, name, pksig, DREW_TYPE_PKSIG)))
 		return res;
 	res = pksig->functbl->init(pksig, 0, ldr, NULL);
+	return res;
+}
+
+// Make a TLS PRF using HMAC-name.
+static int make_prf(const drew_loader_t *ldr, const char *name,
+		drew_kdf_t *prf)
+{
+	int res = 0;
+	drew_hash_t hash;
+	drew_kdf_t hmac;
+	struct drew_param_t p, p2;
+
+	p.next = NULL;
+	p.name = "digest";
+	p.param.value = &hash;
+
+	p2.next = NULL;
+	p2.name = "prf";
+	p2.param.value = &hmac;
+
+	RETFAIL(make_hash(ldr, name, &hash));
+
+	RETFAIL(make_primitive(ldr, name, &hmac, DREW_TYPE_KDF));
+	RETFAIL(hmac.functbl->init(&hmac, 0, ldr, &p));
+
+	if ((res = make_primitive(ldr, name, prf, DREW_TYPE_KDF)))
+		return res;
+	res = prf->functbl->init(prf, 0, ldr, &p2);
 	return res;
 }
 
@@ -957,6 +986,49 @@ int client_send_client_cert(drew_tls_session_t sess)
 	return -DREW_ERR_NOT_IMPL;
 }
 
+static int generate_master_secret(drew_tls_session_t sess, const uint8_t *pms,
+		size_t len)
+{
+	const char label[] = "master secret";
+	const uint8_t *s1, *s2;
+	size_t slen;
+	drew_kdf_t prf[2];
+	uint8_t buf[sizeof(label) + sizeof(sess->clientp.random) +
+		sizeof(sess->serverp.random)];
+	uint8_t half[48], other_half[48];
+
+	// FIXME: change for TLS 1.2.
+	RETFAIL(make_prf(sess->ldr, "MD5", prf+HASH_MD5));
+	RETFAIL(make_prf(sess->ldr, "SHA-1", prf+HASH_SHA1));
+
+	slen = (len + 1) / 2;
+	s1 = pms;
+	s2 = pms + len - slen;
+
+	prf[HASH_MD5].functbl->setkey(&prf[HASH_MD5], s1, slen);
+	prf[HASH_SHA1].functbl->setkey(&prf[HASH_SHA1], s2, slen);
+
+	memcpy(buf, label, sizeof(label));
+	memcpy(buf+sizeof(label), sess->clientp.random,
+			sizeof(sess->clientp.random));
+	memcpy(buf+sizeof(label)+sizeof(sess->clientp.random),
+			sess->serverp.random, sizeof(sess->serverp.random));
+
+	prf[HASH_MD5].functbl->generate(&prf[HASH_MD5], half, sizeof(half),
+			buf, sizeof(buf));
+	prf[HASH_SHA1].functbl->generate(&prf[HASH_SHA1], other_half,
+			sizeof(other_half), buf, sizeof(buf));
+	XorBuffers(sess->clientp.master_secret, half, other_half,
+			sizeof(sess->clientp.master_secret));
+	memcpy(sess->serverp.master_secret, sess->clientp.master_secret,
+			sizeof(sess->serverp.master_secret));
+
+	prf[HASH_MD5].functbl->fini(&prf[HASH_MD5], 0);
+	prf[HASH_SHA1].functbl->fini(&prf[HASH_SHA1], 0);
+
+	return 0;
+}
+
 static int client_generate_keyex_dh(drew_tls_session_t sess, uint8_t **p,
 		size_t *len)
 {
@@ -1007,8 +1079,8 @@ static int client_generate_keyex_rsa(drew_tls_session_t sess, uint8_t **p,
 int client_send_client_keyex(drew_tls_session_t sess)
 {
 	uint8_t *pms;
-	size_t len;
 	const char *pkauth, *keyex;
+	size_t len;
 
 	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX &&
 			sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX_CERT)
@@ -1023,7 +1095,7 @@ int client_send_client_keyex(drew_tls_session_t sess)
 	else
 		return -DREW_ERR_NOT_IMPL;
 
-	// TODO: generate master secret from pre-master secret.
+	generate_master_secret(sess, pms, len);
 	drew_mem_free(pms);
 
 	if (sess->handshake_state == CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX_CERT)
