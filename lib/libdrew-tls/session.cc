@@ -1054,7 +1054,7 @@ static int client_send_client_hello(drew_tls_session_t sess)
 	// We don't yet support resuming sessions, so don't bother sending a
 	// session_id.
 	buf.Put((uint8_t)0);
-	buf.Put((uint16_t)nsuites * 2);
+	buf.Put(uint16_t(nsuites * 2));
 	buf.Put((const uint8_t *)suites, nsuites * 2);
 	// We don't support any compression methods, either, so just use
 	// uncompressed.
