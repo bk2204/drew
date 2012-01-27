@@ -1,4 +1,5 @@
 PLUGINS_KDF-${CFG_PBKDF2}		+= pbkdf/pbkdf2
+PLUGINS_KDF-${CFG_TLSPRF}		+= tls/tls-prf
 
 KDF_DIR			:= impl/kdf
 KDF_PLUGINS		:= $(patsubst %,${KDF_DIR}/%,$(PLUGINS_KDF-m))

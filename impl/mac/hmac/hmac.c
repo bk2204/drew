@@ -147,6 +147,7 @@ static int hmac_clone(drew_mac_t *newctx, const drew_mac_t *oldctx, int flags)
 	memcpy(newctx->ctx, oldctx->ctx, sizeof(*h));
 	h = newctx->ctx;
 	oh = oldctx->ctx;
+	newctx->functbl = oldctx->functbl;
 
 	h->outside.functbl->clone(&h->outside, &oh->outside, 0);
 	h->inside.functbl->clone(&h->inside, &oh->inside, 0);
@@ -438,12 +439,12 @@ int hmack_info2(const drew_kdf_t *kdf, int op, drew_param_t *out,
 		const drew_param_t *in)
 {
 	struct hmac *ctx;
-	int hop = DREW_HASH_BLKSIZE;
+	int hop = DREW_HASH_BLKSIZE_CTX;
 	switch (op) {
 		case DREW_KDF_VERSION:
 			return CURRENT_ABI;
 		case DREW_KDF_SIZE_CTX:
-			hop = DREW_HASH_SIZE;
+			hop = DREW_HASH_SIZE_CTX;
 		case DREW_KDF_BLKSIZE_CTX:
 			if (!kdf)
 				return -DREW_ERR_MORE_INFO;

@@ -98,6 +98,7 @@ CFG_ECDSA		= y
 
 # PRFs and KDFs.
 CFG_PBKDF2		= y
+CFG_TLSPRF		= y
 
 ## Additional libraries using libdrew.
 CFG_LIBMD		= y
