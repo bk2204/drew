@@ -267,6 +267,7 @@ int drew_tls_session_init(drew_tls_session_t *sess, const drew_loader_t *ldr)
 	s->data_infunc = (drew_tls_data_in_func_t)recv;
 	s->data_outfunc = (drew_tls_data_out_func_t)send;
 	s->prng = new drew_prng_t;
+	s->enc_type = cipher_type_null;
 	if ((res = make_prng(s->ldr, NULL, s->prng))) {
 		free(s);
 		return res;
