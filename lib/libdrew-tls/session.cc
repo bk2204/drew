@@ -1011,46 +1011,61 @@ int client_send_client_cert(drew_tls_session_t sess)
 	return -DREW_ERR_NOT_IMPL;
 }
 
-static int generate_master_secret(drew_tls_session_t sess, const uint8_t *pms,
-		size_t len)
+// This works for TLS 1.0 and 1.1, but will need to be adjusted for TLS 1.2,
+// since it uses a simple SHA-256-only PRF.
+static int do_tls_prf(drew_tls_session_t sess, uint8_t *out, size_t outlen,
+		const char *label, const uint8_t *secret, size_t len)
 {
-	const char label[] = "master secret";
 	const uint8_t *s1, *s2;
-	size_t slen;
+	size_t slen, blen, llen = strlen(label);
 	drew_kdf_t prf[2];
-	uint8_t buf[sizeof(label) + sizeof(sess->clientp.random) +
-		sizeof(sess->serverp.random)];
-	uint8_t half[48], other_half[48];
+	uint8_t *buf;
+	uint8_t *halves[2];
 
-	// FIXME: change for TLS 1.2.
+	blen = llen + sizeof(sess->clientp.random) + sizeof(sess->serverp.random);
+	buf = (uint8_t *)drew_mem_malloc(blen);
+	halves[0] = (uint8_t *)drew_mem_malloc(outlen);
+	halves[1] = (uint8_t *)drew_mem_malloc(outlen);
+
 	RETFAIL(make_prf(sess->ldr, "MD5", prf+HASH_MD5));
 	RETFAIL(make_prf(sess->ldr, "SHA-1", prf+HASH_SHA1));
 
 	slen = (len + 1) / 2;
-	s1 = pms;
-	s2 = pms + len - slen;
+	s1 = secret;
+	s2 = secret + len - slen;
 
 	prf[HASH_MD5].functbl->setkey(&prf[HASH_MD5], s1, slen);
 	prf[HASH_SHA1].functbl->setkey(&prf[HASH_SHA1], s2, slen);
 
-	memcpy(buf, label, sizeof(label));
-	memcpy(buf+sizeof(label), sess->clientp.random,
-			sizeof(sess->clientp.random));
-	memcpy(buf+sizeof(label)+sizeof(sess->clientp.random),
+	memcpy(buf, label, llen);
+	memcpy(buf+llen, sess->clientp.random, sizeof(sess->clientp.random));
+	memcpy(buf+llen+sizeof(sess->clientp.random),
 			sess->serverp.random, sizeof(sess->serverp.random));
 
-	prf[HASH_MD5].functbl->generate(&prf[HASH_MD5], half, sizeof(half),
-			buf, sizeof(buf));
-	prf[HASH_SHA1].functbl->generate(&prf[HASH_SHA1], other_half,
-			sizeof(other_half), buf, sizeof(buf));
-	XorBuffers(sess->clientp.master_secret, half, other_half,
-			sizeof(sess->clientp.master_secret));
-	memcpy(sess->serverp.master_secret, sess->clientp.master_secret,
-			sizeof(sess->serverp.master_secret));
+	prf[HASH_MD5].functbl->generate(&prf[HASH_MD5], halves[0], outlen, buf,
+			sizeof(buf));
+	prf[HASH_SHA1].functbl->generate(&prf[HASH_SHA1], halves[1], outlen, buf,
+			sizeof(buf));
+	XorBuffers(out, halves[0], halves[1], outlen);
 
 	prf[HASH_MD5].functbl->fini(&prf[HASH_MD5], 0);
 	prf[HASH_SHA1].functbl->fini(&prf[HASH_SHA1], 0);
 
+	drew_mem_free(buf);
+	drew_mem_free(halves[0]);
+	drew_mem_free(halves[1]);
+
+	return 0;
+}
+
+static int generate_master_secret(drew_tls_session_t sess, const uint8_t *pms,
+		size_t len)
+{
+	RETFAIL(do_tls_prf(sess, sess->clientp.master_secret,
+				sizeof(sess->clientp.master_secret), "master secret", pms,
+				len));
+	memcpy(sess->serverp.master_secret, sess->clientp.master_secret,
+			sizeof(sess->serverp.master_secret));
 	return 0;
 }
 
