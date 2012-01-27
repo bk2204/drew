@@ -53,6 +53,7 @@
 
 #define COMPRESSION_TYPE_NONE 0
 
+#define CONTENT_TYPE_CHANGE_CIPHER_SPEC 22
 #define CONTENT_TYPE_HANDSHAKE 22
 
 #define HANDSHAKE_TYPE_CLIENT_HELLO 1
@@ -539,6 +540,17 @@ static int send_handshake(drew_tls_session_t sess, SerializedBuffer &buf,
 	return res;
 }
 
+static int send_change_cipher_spec(drew_tls_session_t sess)
+{
+	int res = 0;
+	SerializedBuffer buf;
+
+	buf.Put((uint8_t)1);
+
+	res = send_record(sess, buf, CONTENT_TYPE_CHANGE_CIPHER_SPEC);
+	return res;
+}
+
 #if 0
 static int handshake_send_client_hello(drew_tls_session_t sess)
 {
@@ -610,8 +622,9 @@ static int handshake_server(drew_tls_session_t sess)
 #define CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX_CERT		9
 #define CLIENT_HANDSHAKE_NEED_CLIENT_VERIFY			10
 #define CLIENT_HANDSHAKE_NEED_CLIENT_CIPHER_SPEC	11
-#define CLIENT_HANDSHAKE_NEED_CLIENT_FINISHED		12
-#define CLIENT_HANDSHAKE_CLIENT_FINISHED			13
+#define CLIENT_HANDSHAKE_NEED_SERVER_CIPHER_SPEC	12
+#define CLIENT_HANDSHAKE_NEED_CLIENT_FINISHED		13
+#define CLIENT_HANDSHAKE_CLIENT_FINISHED			14
 #define CLIENT_HANDSHAKE_FINISHED					20
 
 #define ALERT_WARNING	1
@@ -1180,9 +1193,11 @@ int client_send_client_cipher_spec(drew_tls_session_t sess)
 	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_CIPHER_SPEC)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
 
-	sess->handshake_state = CLIENT_HANDSHAKE_NEED_CLIENT_FINISHED;
+	RETFAIL(send_change_cipher_spec(sess));
 
-	return -DREW_ERR_NOT_IMPL;
+	sess->handshake_state = CLIENT_HANDSHAKE_NEED_SERVER_CIPHER_SPEC;
+
+	return 0;
 }
 
 int client_send_client_finished(drew_tls_session_t sess)
@@ -1193,6 +1208,19 @@ int client_send_client_finished(drew_tls_session_t sess)
 	sess->handshake_state = CLIENT_HANDSHAKE_CLIENT_FINISHED;
 
 	return -DREW_ERR_NOT_IMPL;
+}
+
+int handle_server_change_cipher_spec(drew_tls_session_t sess, const Record &rec)
+{
+	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_SERVER_CIPHER_SPEC)
+		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+
+	if (*rec.data.GetPointer(0) != 1)
+		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+
+	sess->handshake_state = CLIENT_HANDSHAKE_NEED_CLIENT_FINISHED;
+
+	return 0;
 }
 
 int client_send_client_data(drew_tls_session_t sess)
@@ -1429,6 +1457,7 @@ static int handshake_client(drew_tls_session_t sess)
 		res = -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
 		switch (rec.type) {
 			case TYPE_CHANGE_CIPHER_SPEC:
+				URETFAIL(sess, handle_server_change_cipher_spec(sess, rec));
 				break;
 			case TYPE_ALERT:
 				URETFAIL(sess, handle_alert(sess, rec));
