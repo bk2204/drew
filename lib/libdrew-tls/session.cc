@@ -680,7 +680,7 @@ static int get_pkalgos(drew_tls_priority_t prio,
 	return 0;
 }
 
-int need_server_keyex(drew_tls_priority_t prio,
+static int need_server_keyex(drew_tls_priority_t prio,
 		const drew_tls_cipher_suite_t &cs)
 {
 	const char *keyex, *pkauth;
@@ -693,7 +693,7 @@ int need_server_keyex(drew_tls_priority_t prio,
 	return !!strcmp(keyex, pkauth);
 }
 
-int client_parse_server_cert(drew_tls_session_t sess,
+static int client_parse_server_cert(drew_tls_session_t sess,
 	const HandshakeMessage &msg)
 {
 	int res = 0;
@@ -958,7 +958,7 @@ static int client_parse_server_keyex(drew_tls_session_t sess,
 	return res;
 }
 
-int client_parse_server_certreq(drew_tls_session_t sess,
+static int client_parse_server_certreq(drew_tls_session_t sess,
 	const HandshakeMessage &msg)
 {
 	if (sess->handshake_state != CLIENT_HANDSHAKE_CERT_REQ_OR_DONE)
@@ -969,7 +969,7 @@ int client_parse_server_certreq(drew_tls_session_t sess,
 	return -DREW_ERR_NOT_IMPL;
 }
 
-int client_parse_server_hello_done(drew_tls_session_t sess,
+static int client_parse_server_hello_done(drew_tls_session_t sess,
 	const HandshakeMessage &msg)
 {
 	if (sess->handshake_state != CLIENT_HANDSHAKE_CERT_REQ_OR_DONE &&
@@ -984,13 +984,13 @@ int client_parse_server_hello_done(drew_tls_session_t sess,
 	return 0;
 }
 
-int client_parse_server_finished(drew_tls_session_t sess,
+static int client_parse_server_finished(drew_tls_session_t sess,
 	const HandshakeMessage &msg)
 {
 	return -DREW_ERR_NOT_IMPL;
 }
 
-int client_send_client_hello(drew_tls_session_t sess)
+static int client_send_client_hello(drew_tls_session_t sess)
 {
 	drew_tls_cipher_suite_t *suites;
 	size_t nsuites = 0;
@@ -1183,7 +1183,7 @@ static int client_generate_keyex_rsa(drew_tls_session_t sess, uint8_t **p,
 }
 
 // Right now this only implements ephemeral DH and RSA.
-int client_send_client_keyex(drew_tls_session_t sess)
+static int client_send_client_keyex(drew_tls_session_t sess)
 {
 	uint8_t *pms;
 	const char *pkauth, *keyex;
@@ -1213,7 +1213,7 @@ int client_send_client_keyex(drew_tls_session_t sess)
 	return 0;
 }
 
-int client_send_client_verify(drew_tls_session_t sess)
+static int client_send_client_verify(drew_tls_session_t sess)
 {
 	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_VERIFY)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
@@ -1223,7 +1223,7 @@ int client_send_client_verify(drew_tls_session_t sess)
 	return -DREW_ERR_NOT_IMPL;
 }
 
-int client_send_client_cipher_spec(drew_tls_session_t sess)
+static int client_send_client_cipher_spec(drew_tls_session_t sess)
 {
 	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_CIPHER_SPEC)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
@@ -1235,7 +1235,7 @@ int client_send_client_cipher_spec(drew_tls_session_t sess)
 	return 0;
 }
 
-int client_send_client_finished(drew_tls_session_t sess)
+static int client_send_client_finished(drew_tls_session_t sess)
 {
 	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_FINISHED)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
@@ -1245,7 +1245,8 @@ int client_send_client_finished(drew_tls_session_t sess)
 	return -DREW_ERR_NOT_IMPL;
 }
 
-int handle_server_change_cipher_spec(drew_tls_session_t sess, const Record &rec)
+static int handle_server_change_cipher_spec(drew_tls_session_t sess,
+		const Record &rec)
 {
 	drew_tls_cipher_suite_info_t csi;
 	drew_hash_t hash;
@@ -1358,7 +1359,7 @@ int handle_server_change_cipher_spec(drew_tls_session_t sess, const Record &rec)
 	return 0;
 }
 
-int client_send_client_data(drew_tls_session_t sess)
+static int client_send_client_data(drew_tls_session_t sess)
 {
 	while (sess->handshake_state != CLIENT_HANDSHAKE_CLIENT_FINISHED) {
 		switch (sess->handshake_state) {
