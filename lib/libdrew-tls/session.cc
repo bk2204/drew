@@ -30,6 +30,7 @@
 
 #include <arpa/inet.h>
 #include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -50,6 +51,12 @@
 #include "util.hh"
 #include "structs.h"
 #include "structures.hh"
+
+#ifdef DREW_DEBUG
+#define DEBUG printf
+#else
+#define DEBUG (void)
+#endif
 
 #define COMPRESSION_TYPE_NONE 0
 
