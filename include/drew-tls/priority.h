@@ -27,12 +27,23 @@ typedef struct {
 	int flags;
 } drew_tls_cipher_suite_info_t;
 
+DREW_SYM_PUBLIC
 int drew_tls_priority_init(drew_tls_priority_t *prio);
+
+DREW_SYM_PUBLIC
 int drew_tls_priority_get_cipher_suites(drew_tls_priority_t prio,
 		drew_tls_cipher_suite_t **suites, size_t *nsuites);
+
+DREW_SYM_PUBLIC
 int drew_tls_priority_set_sensible_default(drew_tls_priority_t prio);
+
+DREW_SYM_PUBLIC
 int drew_tls_priority_fini(drew_tls_priority_t *prio);
+
+DREW_SYM_PUBLIC
 int drew_tls_priority_set_string(drew_tls_priority_t prio, const char *s);
+
+DREW_SYM_PUBLIC
 int drew_tls_priority_get_cipher_suite_info(drew_tls_priority_t prio,
 		drew_tls_cipher_suite_info_t *info, const drew_tls_cipher_suite_t *cs);
 
