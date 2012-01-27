@@ -163,6 +163,28 @@ static int make_pkenc(const drew_loader_t *ldr, const char *name,
 	return res;
 }
 
+static int make_block(const drew_loader_t *ldr, const char *name,
+		drew_block_t *block)
+{
+	int res = 0;
+
+	if ((res = make_primitive(ldr, name, block, DREW_TYPE_BLOCK)))
+		return res;
+	res = block->functbl->init(block, 0, ldr, NULL);
+	return res;
+}
+
+static int make_stream(const drew_loader_t *ldr, const char *name,
+		drew_stream_t *stream)
+{
+	int res = 0;
+
+	if ((res = make_primitive(ldr, name, stream, DREW_TYPE_STREAM)))
+		return res;
+	res = stream->functbl->init(stream, 0, ldr, NULL);
+	return res;
+}
+
 // Make a TLS PRF using HMAC-name.
 static int make_prf(const drew_loader_t *ldr, const char *name,
 		drew_kdf_t *prf)
@@ -191,7 +213,6 @@ static int make_prf(const drew_loader_t *ldr, const char *name,
 	return res;
 }
 
-#if 0
 static int make_mode(const drew_loader_t *ldr, const char *name,
 		drew_mode_t *mode)
 {
@@ -216,7 +237,6 @@ static int make_mac(const drew_loader_t *ldr, const char *name,
 	res = mac->functbl->init(mac, 0, ldr, hash ? &param : NULL);
 	return res;
 }
-#endif
 
 int drew_tls_session_init(drew_tls_session_t *sess, const drew_loader_t *ldr)
 {
@@ -1227,11 +1247,111 @@ int client_send_client_finished(drew_tls_session_t sess)
 
 int handle_server_change_cipher_spec(drew_tls_session_t sess, const Record &rec)
 {
+	drew_tls_cipher_suite_info_t csi;
+	drew_hash_t hash;
+	size_t bytes_needed = 0;
+
 	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_SERVER_CIPHER_SPEC)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
 
 	if (*rec.data.GetPointer(0) != 1)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+
+	// Generate key material and key data.
+	drew_tls_priority_get_cipher_suite_info(sess->prio, &csi, &sess->cs);
+
+	sess->clientp.mac =
+		(drew_mac_t *)drew_mem_malloc(sizeof(*sess->clientp.mac));
+	sess->serverp.mac =
+		(drew_mac_t *)drew_mem_malloc(sizeof(*sess->serverp.mac));
+	sess->clientp.stream = sess->serverp.stream = 0;
+	sess->clientp.block = sess->serverp.block = 0;
+	sess->clientp.mode = sess->serverp.mode = 0;
+
+	RETFAIL(make_hash(sess->ldr, csi.hash, &hash));
+	RETFAIL(make_mac(sess->ldr, "HMAC", sess->clientp.mac, &hash));
+	RETFAIL(make_mac(sess->ldr, "HMAC", sess->serverp.mac, &hash));
+
+	sess->clientp.key_size = sess->serverp.key_size = csi.cipher_key_len;
+	sess->clientp.hash_size = sess->serverp.hash_size =
+		hash.functbl->info2(&hash, DREW_HASH_SIZE_CTX, NULL, NULL);
+
+	bytes_needed += sess->clientp.hash_size;
+	bytes_needed += csi.cipher_key_len;
+
+	if (!strcmp(csi.cipher, "RC4")) {
+		sess->clientp.stream =
+			(drew_stream_t *)drew_mem_malloc(sizeof(*sess->clientp.stream));
+		sess->serverp.stream =
+			(drew_stream_t *)drew_mem_malloc(sizeof(*sess->serverp.stream));
+		sess->enc_type = cipher_type_stream;
+
+		RETFAIL(make_stream(sess->ldr, csi.cipher, sess->clientp.stream));
+		RETFAIL(make_stream(sess->ldr, csi.cipher, sess->serverp.stream));
+	}
+	else {
+		sess->clientp.block =
+			(drew_block_t *)drew_mem_malloc(sizeof(*sess->clientp.block));
+		sess->serverp.block =
+			(drew_block_t *)drew_mem_malloc(sizeof(*sess->serverp.block));
+		sess->clientp.mode =
+			(drew_mode_t *)drew_mem_malloc(sizeof(*sess->clientp.mode));
+		sess->serverp.mode =
+			(drew_mode_t *)drew_mem_malloc(sizeof(*sess->serverp.mode));
+		sess->enc_type = cipher_type_block;
+
+		// For the IV.
+		bytes_needed += csi.cipher_key_len;
+
+		RETFAIL(make_block(sess->ldr, csi.cipher, sess->clientp.block));
+		RETFAIL(make_block(sess->ldr, csi.cipher, sess->serverp.block));
+		RETFAIL(make_mode(sess->ldr, "CBC", sess->clientp.mode));
+		RETFAIL(make_mode(sess->ldr, "CBC", sess->serverp.mode));
+	}
+
+	bytes_needed *= 2;
+
+	uint8_t *material = (uint8_t *)drew_mem_smalloc(bytes_needed);
+	do_tls_prf(sess, material, bytes_needed, "key expansion",
+			sess->clientp.master_secret, sizeof(sess->clientp.master_secret));
+	size_t off = 0;
+
+	sess->clientp.mac->functbl->setkey(sess->clientp.mac, material+off,
+			sess->clientp.hash_size);
+	off += sess->clientp.hash_size;
+	sess->serverp.mac->functbl->setkey(sess->serverp.mac, material+off,
+			sess->serverp.hash_size);
+	off += sess->serverp.hash_size;
+	if (sess->enc_type == cipher_type_stream) {
+		sess->clientp.stream->functbl->setkey(sess->clientp.stream,
+				material+off, csi.cipher_key_len, 0);
+		off += csi.cipher_key_len;
+		sess->serverp.stream->functbl->setkey(sess->serverp.stream,
+				material+off, csi.cipher_key_len, 0);
+		off += csi.cipher_key_len;
+	}
+	else {
+		sess->clientp.block->functbl->setkey(sess->clientp.block,
+				material+off, csi.cipher_key_len, 0);
+		off += csi.cipher_key_len;
+		sess->serverp.block->functbl->setkey(sess->serverp.block,
+				material+off, csi.cipher_key_len, 0);
+		off += csi.cipher_key_len;
+
+		sess->clientp.mode->functbl->setblock(sess->clientp.mode,
+				sess->clientp.block);
+		sess->serverp.mode->functbl->setblock(sess->serverp.mode,
+				sess->serverp.block);
+
+		sess->clientp.mode->functbl->setiv(sess->clientp.mode,
+				material+off, csi.cipher_key_len);
+		off += csi.cipher_key_len;
+		sess->serverp.mode->functbl->setiv(sess->serverp.mode,
+				material+off, csi.cipher_key_len);
+		off += csi.cipher_key_len;
+	}
+
+	drew_mem_sfree(material);
 
 	sess->handshake_state = CLIENT_HANDSHAKE_NEED_CLIENT_FINISHED;
 
