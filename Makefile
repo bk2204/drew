@@ -27,7 +27,7 @@ CLIKEFLAGS		+= -fstack-protector
 endif
 
 CPPFLAGS		+= -Iinclude -I$(dir $@)
-CLIKEFLAGS		+= -Wall -Werror -fPIC -O3 -g -pipe
+CLIKEFLAGS		+= -Wall -Werror -Wno-unused-value -fPIC -O3 -g -pipe
 CLIKEFLAGS		+= -D_POSIX_SOURCE=200112L -D_XOPEN_SOURCE=600
 CLIKEFLAGS		+= -fextended-identifiers
 CLIKEFLAGS		+= -floop-interchange -floop-block
