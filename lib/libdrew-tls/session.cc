@@ -468,6 +468,8 @@ static int send_record(drew_tls_session_t sess, const uint8_t *buf,
 	int res = 0;
 	Record rec;
 
+	DEBUG("in send record\n");
+
 	// Records cannot be greater than 2^14.
 	if (len > 0x3000) {
 		const size_t chunksz = 0x1000;
@@ -478,10 +480,15 @@ static int send_record(drew_tls_session_t sess, const uint8_t *buf,
 		return 0;
 	}
 
+	DEBUG("split record if necessary\n");
+
 	rec.type = type;
 	rec.version.major = sess->protover.major;
 	rec.version.minor = sess->protover.minor;
 	rec.data.Reset();
+
+	DEBUG("built buffer\n");
+	DEBUG("enc type is %d\n", sess->enc_type);
 	
 	switch (sess->enc_type) {
 		case cipher_type_null:
@@ -499,9 +506,13 @@ static int send_record(drew_tls_session_t sess, const uint8_t *buf,
 	SerializedBuffer output;
 	rec.WriteToBuffer(output);
 
+	DEBUG("wrote data to buffer\n");
+
 	if ((res = sess->data_outfunc(sess->data_outp, output.GetPointer(0),
 					output.GetLength())) < 0)
 		return res;
+
+	DEBUG("sent data\n");
 	
 	return 0;
 }
@@ -1035,6 +1046,7 @@ static int client_send_client_hello(drew_tls_session_t sess)
 
 	RETFAIL(drew_tls_priority_get_cipher_suites(sess->prio, &suites,
 				&nsuites));
+	DEBUG("got %zu cipher suites\n", nsuites);
 
 	buf.Put(sess->protover.major);
 	buf.Put(sess->protover.minor);
@@ -1048,8 +1060,10 @@ static int client_send_client_hello(drew_tls_session_t sess)
 	// uncompressed.
 	buf.Put((uint8_t)1);
 	buf.Put((uint8_t)COMPRESSION_TYPE_NONE);
+	DEBUG("sending %zu bytes in client_hello\n", buf.GetLength());
 
 	RETFAIL(send_handshake(sess, buf, HANDSHAKE_TYPE_CLIENT_HELLO));
+	DEBUG("sent handshake\n");
 
 	sess->handshake_state = CLIENT_HANDSHAKE_NEED_SERVER_HELLO;
 
@@ -1490,12 +1504,16 @@ static int client_parse_server_hello(drew_tls_session_t sess,
 	drew_tls_cipher_suite_t cs;
 	SerializedBuffer buf(msg.data);
 
+	DEBUG("got to server_hello\n");
+
 	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_SERVER_HELLO)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
 
 	// The session ID can be up to 32 bytes.
 	if (msg.length < minlength || msg.length > (minlength + 32))
 		return -DREW_TLS_ERR_ILLEGAL_PARAMETER;
+
+	DEBUG("got server_hello\n");
 
 	pv.ReadFromBuffer(buf);
 
@@ -1597,6 +1615,7 @@ static int client_handle_handshake(drew_tls_session_t sess)
 		hm.length = len;
 		hm.data.Put(buf+4, len);
 
+		DEBUG("dispatching handshake\n");
 		res = client_dispatch_handshake(sess, hm);
 
 		delete[] buf;
@@ -1667,14 +1686,18 @@ static int handshake_client(drew_tls_session_t sess)
 	sess->state = 0;
 
 	URETFAIL(sess, client_send_client_hello(sess));
+	DEBUG("passed client hello\n");
 
 	while (sess->handshake_state != CLIENT_HANDSHAKE_FINISHED) {
 		Record rec;
+
+		DEBUG("looping on handshake\n");
 
 		if (sess->state == STATE_DESTROYED)
 			return -DREW_ERR_BUG;
 
 		URETFAIL(sess, recv_record(sess, rec));
+		DEBUG("received record\n");
 		res = -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
 		switch (rec.type) {
 			case TYPE_CHANGE_CIPHER_SPEC:
@@ -1684,6 +1707,7 @@ static int handshake_client(drew_tls_session_t sess)
 				URETFAIL(sess, handle_alert(sess, rec));
 				break;
 			case TYPE_HANDSHAKE:
+				DEBUG("processing handshake\n");
 				sess->queues->handshake.AddData(rec.data.GetPointer(),
 						rec.length);
 				res = client_handle_handshake(sess);
