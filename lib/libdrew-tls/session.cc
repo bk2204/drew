@@ -300,6 +300,16 @@ int drew_tls_session_set_priority(drew_tls_session_t sess,
 	return 0;
 }
 
+int drew_tls_session_set_cert_callback(drew_tls_session_t sess,
+		drew_tls_cert_callback_t cb)
+{
+	LOCK(sess);
+	sess->cert_callback = cb;
+	UNLOCK(sess);
+
+	return 0;
+}
+
 int drew_tls_session_set_transport(drew_tls_session_t sess,
 		drew_tls_data_in_func_t inf, drew_tls_data_out_func_t outf,
 		drew_tls_data_ctxt_t inp, drew_tls_data_ctxt_t outp)
