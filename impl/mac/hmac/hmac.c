@@ -439,12 +439,12 @@ int hmack_info2(const drew_kdf_t *kdf, int op, drew_param_t *out,
 		const drew_param_t *in)
 {
 	struct hmac *ctx;
-	int hop = DREW_HASH_BLKSIZE;
+	int hop = DREW_HASH_BLKSIZE_CTX;
 	switch (op) {
 		case DREW_KDF_VERSION:
 			return CURRENT_ABI;
 		case DREW_KDF_SIZE_CTX:
-			hop = DREW_HASH_SIZE;
+			hop = DREW_HASH_SIZE_CTX;
 		case DREW_KDF_BLKSIZE_CTX:
 			if (!kdf)
 				return -DREW_ERR_MORE_INFO;
