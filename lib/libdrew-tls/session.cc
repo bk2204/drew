@@ -1661,6 +1661,7 @@ static int handshake_client(drew_tls_session_t sess)
 				sess->handshake.msgs+HASH_SHA1));
 
 	sess->handshake_state = CLIENT_HANDSHAKE_HELLO_REQUEST;
+	sess->state = 0;
 
 	URETFAIL(sess, client_send_client_hello(sess));
 
