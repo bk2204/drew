@@ -697,7 +697,14 @@ static int destroy_session(drew_tls_session_t sess)
 
 static int send_alert(drew_tls_session_t sess, int alert, int level)
 {
-	return -DREW_ERR_NOT_IMPL;
+	SerializedBuffer buf;
+
+	buf.Put((uint8_t)alert);
+	buf.Put((uint8_t)level);
+
+	// Don't care if this fails.
+	send_record(sess, buf, CONTENT_TYPE_ALERT);
+	return 0;
 }
 
 static int get_pkalgos(drew_tls_priority_t prio,
