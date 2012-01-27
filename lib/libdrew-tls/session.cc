@@ -58,6 +58,10 @@
 
 #define HANDSHAKE_TYPE_CLIENT_HELLO 1
 #define HANDSHAKE_TYPE_CLIENT_KEYEX 16
+#define HANDSHAKE_TYPE_CLIENT_FINISHED 20
+
+#define HASH_MD5 0
+#define HASH_SHA1 1
 
 struct generic {
 	void *ctx;
@@ -547,6 +551,7 @@ static int send_handshake(drew_tls_session_t sess, SerializedBuffer &buf,
 {
 	int res = 0;
 	SerializedBuffer b2;
+	drew_tls_handshake_t *hs = &sess->handshake;
 
 	buf.ResetPosition();
 
@@ -555,6 +560,11 @@ static int send_handshake(drew_tls_session_t sess, SerializedBuffer &buf,
 	b2.Put(uint8_t(buf.GetLength() >> 8));
 	b2.Put(uint8_t(buf.GetLength()));
 	b2.Put(buf);
+
+	hs->msgs[HASH_MD5].functbl->update(hs->msgs+HASH_MD5, b2.GetPointer(0),
+			b2.GetLength());
+	hs->msgs[HASH_SHA1].functbl->update(hs->msgs+HASH_SHA1, b2.GetPointer(0),
+			b2.GetLength());
 
 	res = send_record(sess, b2, CONTENT_TYPE_HANDSHAKE);
 	return res;
@@ -835,8 +845,6 @@ out:
 	return res;
 }
 
-#define HASH_MD5 0
-#define HASH_SHA1 1
 static int client_verify_dsa_sig(drew_tls_session_t sess,
 		const HandshakeMessage &msg, size_t &off, drew_hash_t *hashes)
 {
@@ -984,12 +992,6 @@ static int client_parse_server_hello_done(drew_tls_session_t sess,
 	return 0;
 }
 
-static int client_parse_server_finished(drew_tls_session_t sess,
-	const HandshakeMessage &msg)
-{
-	return -DREW_ERR_NOT_IMPL;
-}
-
 static int client_send_client_hello(drew_tls_session_t sess)
 {
 	drew_tls_cipher_suite_t *suites;
@@ -1034,7 +1036,8 @@ int client_send_client_cert(drew_tls_session_t sess)
 // This works for TLS 1.0 and 1.1, but will need to be adjusted for TLS 1.2,
 // since it uses a simple SHA-256-only PRF.
 static int do_tls_prf(drew_tls_session_t sess, uint8_t *out, size_t outlen,
-		const char *label, const uint8_t *secret, size_t len)
+		const char *label, const uint8_t *secret, size_t len, const uint8_t *in,
+		size_t inlen)
 {
 	const uint8_t *s1, *s2;
 	size_t slen, blen, llen = strlen(label);
@@ -1042,7 +1045,7 @@ static int do_tls_prf(drew_tls_session_t sess, uint8_t *out, size_t outlen,
 	uint8_t *buf;
 	uint8_t *halves[2];
 
-	blen = llen + sizeof(sess->clientp.random) + sizeof(sess->serverp.random);
+	blen = llen + inlen;
 	buf = (uint8_t *)drew_mem_malloc(blen);
 	halves[0] = (uint8_t *)drew_mem_malloc(outlen);
 	halves[1] = (uint8_t *)drew_mem_malloc(outlen);
@@ -1058,9 +1061,7 @@ static int do_tls_prf(drew_tls_session_t sess, uint8_t *out, size_t outlen,
 	prf[HASH_SHA1].functbl->setkey(&prf[HASH_SHA1], s2, slen);
 
 	memcpy(buf, label, llen);
-	memcpy(buf+llen, sess->clientp.random, sizeof(sess->clientp.random));
-	memcpy(buf+llen+sizeof(sess->clientp.random),
-			sess->serverp.random, sizeof(sess->serverp.random));
+	memcpy(buf+llen, in, inlen);
 
 	prf[HASH_MD5].functbl->generate(&prf[HASH_MD5], halves[0], outlen, buf,
 			sizeof(buf));
@@ -1076,6 +1077,36 @@ static int do_tls_prf(drew_tls_session_t sess, uint8_t *out, size_t outlen,
 	drew_mem_free(halves[1]);
 
 	return 0;
+}
+
+// This operates on the client_random and server_random implicitly.
+static int do_tls_prf(drew_tls_session_t sess, uint8_t *out, size_t outlen,
+		const char *label, const uint8_t *secret, size_t len)
+{
+	uint8_t randoms[sizeof(sess->clientp.random) * 2];
+
+	memcpy(randoms, sess->clientp.random, sizeof(sess->clientp.random));
+	memcpy(randoms+(sizeof(randoms)/2), sess->serverp.random,
+			sizeof(sess->serverp.random));
+
+	return do_tls_prf(sess, out, outlen, label, secret, len, randoms,
+			sizeof(randoms));
+}
+
+static int client_parse_server_finished(drew_tls_session_t sess,
+	const HandshakeMessage &msg)
+{
+	uint8_t verify_data[12];
+
+	if (msg.data.GetLength() != sizeof(verify_data))
+		return -DREW_TLS_ERR_HANDSHAKE_FAILURE;
+
+	RETFAIL(do_tls_prf(sess, verify_data, sizeof(verify_data),
+				"server finished", sess->handshake.final,
+				sizeof(sess->handshake.final)));
+
+	return memcmp(verify_data, msg.data.GetPointer(0), sizeof(verify_data)) ?
+		0 : -DREW_TLS_ERR_HANDSHAKE_FAILURE;
 }
 
 static int generate_master_secret(drew_tls_session_t sess, const uint8_t *pms,
@@ -1237,12 +1268,27 @@ static int client_send_client_cipher_spec(drew_tls_session_t sess)
 
 static int client_send_client_finished(drew_tls_session_t sess)
 {
+	uint8_t verify_data[12];
+	drew_tls_handshake_t *hs = &sess->handshake;
+	SerializedBuffer buf;
+
 	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_FINISHED)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
 
+	hs->msgs[HASH_MD5].functbl->final(hs->msgs+HASH_MD5, hs->final, 16, 0);
+	hs->msgs[HASH_SHA1].functbl->final(hs->msgs+HASH_SHA1, hs->final+16, 20, 0);
+
+	RETFAIL(do_tls_prf(sess, verify_data, sizeof(verify_data),
+				"client finished", sess->handshake.final,
+				sizeof(sess->handshake.final)));
+
+	buf.Put(verify_data, sizeof(verify_data));
+
+	RETFAIL(send_handshake(sess, buf, HANDSHAKE_TYPE_CLIENT_FINISHED));
+
 	sess->handshake_state = CLIENT_HANDSHAKE_CLIENT_FINISHED;
 
-	return -DREW_ERR_NOT_IMPL;
+	return 0;
 }
 
 static int handle_server_change_cipher_spec(drew_tls_session_t sess,
@@ -1578,7 +1624,12 @@ static int handshake_client(drew_tls_session_t sess)
 	int res = 0;
 
 	LOCK(sess);
-	
+
+	URETFAIL(sess, make_hash(sess->ldr, "MD5",
+				sess->handshake.msgs+HASH_MD5));
+	URETFAIL(sess, make_hash(sess->ldr, "SHA-1",
+				sess->handshake.msgs+HASH_SHA1));
+
 	sess->handshake_state = CLIENT_HANDSHAKE_HELLO_REQUEST;
 
 	URETFAIL(sess, client_send_client_hello(sess));
@@ -1615,6 +1666,9 @@ static int handshake_client(drew_tls_session_t sess)
 				break;
 		}
 	}
+
+	sess->handshake.msgs[HASH_MD5].functbl->fini(sess->handshake.msgs+HASH_MD5, 0);
+	sess->handshake.msgs[HASH_SHA1].functbl->fini(sess->handshake.msgs+HASH_SHA1, 0);
 
 	UNLOCK(sess);
 

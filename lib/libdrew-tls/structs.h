@@ -141,6 +141,7 @@ typedef struct drew_tls_session_queues_s *drew_tls_session_queues_t;
 typedef struct {
 	int nmsgs; // The number of hashes used to calculate Finished messages.
 	drew_hash_t msgs[2]; // The hash contexts for the above.
+	uint8_t final[16 + 20];
 } drew_tls_handshake_t;
 
 typedef struct {
