@@ -126,7 +126,7 @@ static int make_prng(const drew_loader_t *ldr, const char *name,
 	if (!name)
 		name = "ARC4Stir";
 
-	if ((res = make_primitive(ldr, name, prng, DREW_TYPE_HASH)))
+	if ((res = make_primitive(ldr, name, prng, DREW_TYPE_PRNG)))
 		return res;
 	res = prng->functbl->init(prng, 0, ldr, NULL);
 	return res;
@@ -257,6 +257,7 @@ int drew_tls_session_init(drew_tls_session_t *sess, const drew_loader_t *ldr)
 	s->data_outp = NULL;
 	s->data_infunc = (drew_tls_data_in_func_t)recv;
 	s->data_outfunc = (drew_tls_data_out_func_t)send;
+	s->prng = new drew_prng_t;
 	if ((res = make_prng(s->ldr, NULL, s->prng))) {
 		free(s);
 		return res;
@@ -276,6 +277,7 @@ int drew_tls_session_fini(drew_tls_session_t *sess)
 	drew_tls_session_t s = *sess;
 	// FIXME: free shit.
 	delete s->queues;
+	delete s->prng;
 	s->prng->functbl->fini(s->prng, 0);
 	free(*sess);
 	*sess = NULL;
