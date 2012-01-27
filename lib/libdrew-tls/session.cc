@@ -131,7 +131,7 @@ static int make_prng(const drew_loader_t *ldr, const char *name,
 	int res = 0;
 
 	if (!name)
-		name = "ARC4Stir";
+		name = "DevURandom";
 
 	if ((res = make_primitive(ldr, name, prng, DREW_TYPE_PRNG)))
 		return res;
