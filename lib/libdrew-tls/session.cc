@@ -38,6 +38,7 @@
 #include <drew/drew.h>
 #include <drew/bignum.h>
 #include <drew/kdf.h>
+#include <drew/pkenc.h>
 #include <drew/pksig.h>
 #include <drew/mem.h>
 #include <drew/plugin.h>
@@ -147,6 +148,17 @@ static int make_pksig(const drew_loader_t *ldr, const char *name,
 	if ((res = make_primitive(ldr, name, pksig, DREW_TYPE_PKSIG)))
 		return res;
 	res = pksig->functbl->init(pksig, 0, ldr, NULL);
+	return res;
+}
+
+static int make_pkenc(const drew_loader_t *ldr, const char *name,
+		drew_pkenc_t *pkenc)
+{
+	int res = 0;
+
+	if ((res = make_primitive(ldr, name, pkenc, DREW_TYPE_PKENC)))
+		return res;
+	res = pkenc->functbl->init(pkenc, 0, ldr, NULL);
 	return res;
 }
 
@@ -1072,7 +1084,54 @@ static int client_generate_keyex_dh(drew_tls_session_t sess, uint8_t **p,
 static int client_generate_keyex_rsa(drew_tls_session_t sess, uint8_t **p,
 		size_t *len)
 {
-	return -DREW_ERR_NOT_IMPL;
+	uint8_t *data;
+	size_t dlen;
+	drew_bignum_t pt, ct;
+	drew_pkenc_t rsa;
+	drew_util_x509_pubkey_t *pubkey = &sess->serverp.cert->pubkey;
+
+	if (!sess->serverp.cert)
+		return -DREW_TLS_ERR_INTERNAL_ERROR;
+
+	*len = 48;
+	*p = (uint8_t *)drew_mem_malloc(*len);
+
+	(*p)[0] = sess->protover.major;
+	(*p)[1] = sess->protover.minor;
+
+	dlen = pubkey->mpis[0].len;
+	if (dlen < *len + 4)
+		return -DREW_TLS_ERR_BAD_CERTIFICATE;
+	data = (uint8_t *)drew_mem_malloc(dlen);
+
+	sess->prng->functbl->bytes(sess->prng, (*p)+2, *len-2);
+
+	RETFAIL(make_pkenc(sess->ldr, "RSA", &rsa));
+	rsa.functbl->setval(&rsa, "n", pubkey->mpis[0].data, pubkey->mpis[0].len);
+	rsa.functbl->setval(&rsa, "e", pubkey->mpis[1].data, pubkey->mpis[1].len);
+
+	data[0] = 0;
+	data[1] = 2;
+	memcpy(data+dlen-*len, *p, *len);
+	data[dlen-*len-1] = 0;
+
+	// The padding bytes have to be nonzero.
+	for (size_t i = 2; i < dlen-*len-1; i++) {
+		do {
+			sess->prng->functbl->bytes(sess->prng, data+i, 1);
+		}
+		while (!data[i]);
+	}
+
+	RETFAIL(make_bignum(sess->ldr, &pt, data, dlen));
+	RETFAIL(make_bignum(sess->ldr, &ct, NULL, 0));
+
+	rsa.functbl->encrypt(&rsa, &ct, &pt);
+	rsa.functbl->fini(&rsa, 0);
+
+	drew_mem_free(data);
+
+	return 0;
 }
 
 // Right now this only implements ephemeral DH and RSA.
