@@ -1051,6 +1051,8 @@ static int client_send_client_hello(drew_tls_session_t sess)
 
 	RETFAIL(send_handshake(sess, buf, HANDSHAKE_TYPE_CLIENT_HELLO));
 
+	sess->handshake_state = CLIENT_HANDSHAKE_NEED_SERVER_HELLO;
+
 	return 0;
 }
 
