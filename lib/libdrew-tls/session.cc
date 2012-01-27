@@ -506,7 +506,7 @@ static int send_record(drew_tls_session_t sess, const uint8_t *buf,
 	SerializedBuffer output;
 	rec.WriteToBuffer(output);
 
-	DEBUG("wrote data to buffer\n");
+	DEBUG("wrote %zu bytes to buffer\n", output.GetLength());
 
 	if ((res = sess->data_outfunc(sess->data_outp, output.GetPointer(0),
 					output.GetLength())) < 0)
