@@ -55,6 +55,10 @@ class MutexLock
 class ByteQueue
 {
 	public:
+		ByteQueue()
+		{
+			pthread_mutex_init(&mutex, NULL);
+		}
 		void AddData(const uint8_t *data, size_t len)
 		{
 			LOCK(this);
