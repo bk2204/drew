@@ -106,6 +106,8 @@ class ByteQueue
 		void Remove(size_t len)
 		{
 			LOCK(this);
+			m_queue.erase(m_queue.begin(),
+					m_queue.begin()+std::min(len, m_queue.size()));
 		}
 	protected:
 		template<class T>
