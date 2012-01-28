@@ -211,6 +211,9 @@ struct Record
 	uint16_t length;
 	SerializedBuffer data;
 
+	Record() : type(0), length(0)
+	{
+	}
 	int PrereadFromBuffer(SerializedBuffer &buf)
 	{
 		if (buf.BytesRemaining() < 5)
