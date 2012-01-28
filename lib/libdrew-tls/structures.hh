@@ -211,13 +211,19 @@ struct Record
 	uint16_t length;
 	SerializedBuffer data;
 
-	int ReadFromBuffer(SerializedBuffer &buf)
+	int PrereadFromBuffer(SerializedBuffer &buf)
 	{
 		if (buf.BytesRemaining() < 5)
 			return -DREW_TLS_ERR_RECORD_OVERFLOW;
 		buf.Get(type);
 		version.ReadFromBuffer(buf);
 		buf.Get(length);
+		return 0;
+	}
+	int ReadFromBuffer(SerializedBuffer &buf)
+	{
+		if (PrereadFromBuffer(buf))
+			return -DREW_TLS_ERR_RECORD_OVERFLOW;
 		if (buf.BytesRemaining() < length)
 			return -DREW_TLS_ERR_RECORD_OVERFLOW;
 		buf.Get(data, length);
