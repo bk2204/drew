@@ -262,6 +262,7 @@ int drew_tls_session_init(drew_tls_session_t *sess, const drew_loader_t *ldr)
 
 	memset(s, 0, sizeof(*s));
 
+	pthread_mutex_init(&s->mutex, NULL);
 	s->ldr = ldr;
 	s->data_inp = NULL;
 	s->data_outp = NULL;
