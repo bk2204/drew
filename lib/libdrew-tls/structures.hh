@@ -133,6 +133,7 @@ class SerializedBuffer
 		SerializedBuffer(size_t sz);
 		SerializedBuffer(const SerializedBuffer &b);
 		~SerializedBuffer();
+		SerializedBuffer &operator=(const SerializedBuffer &b);
 		void ResetPosition();
 		void Reset();
 		void Put(uint8_t x);

@@ -24,11 +24,13 @@
 
 SerializedBuffer::SerializedBuffer()
 {
+	buf = 0;
 	Reset();
 }
 
 SerializedBuffer::SerializedBuffer(size_t sz)
 {
+	buf = 0;
 	Reset(sz);
 }
 
@@ -36,11 +38,20 @@ SerializedBuffer::~SerializedBuffer()
 {
 	memset(buf, 0, buflen);
 	free(buf);
+	buf = 0;
 }
 
 SerializedBuffer::SerializedBuffer(const SerializedBuffer &b)
 {
-	memset(buf, 0, buflen);
+	off = b.off;
+	len = b.len;
+	buflen = b.buflen;
+	posix_memalign((void **)&buf, 16, buflen);
+	memcpy(buf, b.buf, buflen);
+}
+
+SerializedBuffer &SerializedBuffer::operator=(const SerializedBuffer &b)
+{
 	free(buf);
 
 	off = b.off;
@@ -48,6 +59,7 @@ SerializedBuffer::SerializedBuffer(const SerializedBuffer &b)
 	buflen = b.buflen;
 	posix_memalign((void **)&buf, 16, buflen);
 	memcpy(buf, b.buf, buflen);
+	return *this;
 }
 
 void SerializedBuffer::ResetPosition()
@@ -67,6 +79,7 @@ void SerializedBuffer::Reset(size_t sz)
 	off = 0;
 	len = 0;
 	buflen = space;
+	memset(buf, 0, buflen);
 }
 
 void SerializedBuffer::Put(uint8_t x)
@@ -115,6 +128,7 @@ void SerializedBuffer::Reserve(size_t space)
 		size_t extra = (space - buflen + 0x1ff) & ~0x1ff;
 		uint8_t *tmp;
 		posix_memalign((void **)&tmp, 16, buflen + extra);
+		memset(tmp, 0, buflen + extra);
 		memcpy(tmp, buf, buflen);
 		memset(buf, 0, buflen);
 		free(buf);
