@@ -132,6 +132,7 @@ void SerializedBuffer::Reserve(size_t space)
 		memcpy(tmp, buf, buflen);
 		memset(buf, 0, buflen);
 		free(buf);
+		buf = tmp;
 		buflen += extra;
 	}
 }
