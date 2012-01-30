@@ -1518,6 +1518,7 @@ static int client_parse_server_hello(drew_tls_session_t sess,
 
 	DEBUG("got server_hello\n");
 
+	buf.ResetPosition();
 	pv.ReadFromBuffer(buf);
 
 	if (pv.major != 3)
@@ -1700,6 +1701,7 @@ static int handshake_client(drew_tls_session_t sess)
 			return -DREW_TLS_ERR_HANDSHAKE_FAILURE;
 
 		URETFAIL(sess, recv_record(sess, rec));
+		rec.data.ResetPosition();
 		DEBUG("received record\n");
 		res = -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
 		switch (rec.type) {
