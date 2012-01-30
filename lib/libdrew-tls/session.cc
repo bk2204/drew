@@ -575,6 +575,7 @@ static int recv_record(drew_tls_session_t sess, Record &rec)
 		case cipher_type_block:
 			return decrypt_block(sess, rec, buf);
 		case cipher_type_null:
+			rec.data.Put(buf);
 			break;
 	}
 
