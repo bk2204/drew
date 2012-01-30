@@ -44,10 +44,6 @@ PLUGINCFLAGS	+= -I.
 LDFLAGS			+= -Wl,--as-needed
 LIBS			+= $(LDFLAGS) -lrt -ldl
 
-.TARGET			= $@
-.ALLSRC			= $^
-.IMPSRC			= $<
-
 SONAME			= -Wl,-soname,$(@F)
 
 all:
@@ -76,10 +72,10 @@ standard: $(DREW_SONAME) $(MD_SONAME) plugins
 standard: $(TEST_BINARIES) $(UTILITIES)
 
 .c.o:
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $(.TARGET) $(.IMPSRC)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
 .cc.o:
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $(.TARGET) $(.IMPSRC)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 %.d: %.c
 	$(CC) $(CPPFLAGS) -DDEPEND -MM $< | sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
@@ -97,7 +93,7 @@ $(PLUGINS): %: %.so
 	@:
 
 $(PLUGINS:=.so): %.so: %.o
-	$(CXX) $(LIBCFLAGS) $(CXXFLAGS) -o $(.TARGET) $(.ALLSRC) $(LIBS)
+	$(CXX) $(LIBCFLAGS) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 version:
 	printf '#define DREW_STRING_VERSION "$(VERSION)"\n' > $@
@@ -123,7 +119,7 @@ tags:
 
 plugins: $(PLUGINS)
 	[ -d plugins ] || mkdir plugins
-	for i in $(.ALLSRC); do cp $$i.so plugins/`basename $$i .so`; done
+	for i in $^; do cp $$i.so plugins/`basename $$i .so`; done
 
 clean:
 	$(RM) -f *.o test/*.o

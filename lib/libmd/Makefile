@@ -6,7 +6,7 @@ MD_SONAME				:= ${MD_SHOBJ-y}
 libmd: $(MD_DIR)/$(MD_SONAME)
 
 $(MD_DIR)/$(MD_SONAME): $(MD_OBJS) | $(DREW_SONAME) $(DREW_IMPL_SONAME)
-	$(CC) $(CFLAGS) $(LIBCFLAGS) $(SONAME) -o $(.TARGET) $(.ALLSRC) $|
+	$(CC) $(CFLAGS) $(LIBCFLAGS) $(SONAME) -o $@ $^ $|
 
 $(MD_SONAME): | $(MD_DIR)/$(MD_SONAME)
 	[ -L $@ ] || ln -sf $| $@

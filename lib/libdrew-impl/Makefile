@@ -7,7 +7,7 @@ $(DREW_IMPL_DIR)/stub.o: $(DREW_IMPL_DIR)/stub.c
 $(DREW_IMPL_DIR)/stub.o: $(DREW_IMPL_GEN)
 
 $(DREW_IMPL_DIR)/$(DREW_IMPL_SONAME): $(DREW_IMPL_DIR)/stub.o $(MODULES) $(EXTRA_OBJECTS-y)
-	$(CXX) $(CXXFLAGS) $(LIBCFLAGS) $(SONAME) -o $(.TARGET) $(.ALLSRC) $(LIBS)
+	$(CXX) $(CXXFLAGS) $(LIBCFLAGS) $(SONAME) -o $@ $^ $(LIBS)
 
 $(DREW_IMPL_SONAME): | $(DREW_IMPL_DIR)/$(DREW_IMPL_SONAME)
 	[ -L $@ ] || ln -sf $| $@
