@@ -548,18 +548,19 @@ static int recv_record(drew_tls_session_t sess, Record &rec)
 	int res = 0;
 	SerializedBuffer buf;
 
-	if ((res = recv_bytes(sess, buf, 1 + 2 + 2, 0)))
+	res = recv_bytes(sess, buf, 1 + 2 + 2, 0);
+	if (res < 0)
 		return res;
 
 	// Fill in the early fields, including the length.
 	buf.ResetPosition();
-	if ((res = rec.ReadFromBuffer(buf)))
-		return -DREW_ERR_BUG;
+	if ((res = rec.PrereadFromBuffer(buf)))
+		return res;
 
 	if (rec.length > ((1 << 14) + 2048))
 		return -DREW_TLS_ERR_RECORD_OVERFLOW;
 
-	if (!(res = recv_bytes(sess, buf, rec.length, 0)))
+	if ((res = recv_bytes(sess, buf, rec.length, 0)))
 		return res;
 
 	buf.ResetPosition();
