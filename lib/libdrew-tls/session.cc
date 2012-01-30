@@ -1618,7 +1618,7 @@ static int client_handle_handshake(drew_tls_session_t sess)
 		hm.length = len;
 		hm.data.Put(buf+4, len);
 
-		DEBUG("dispatching handshake\n");
+		DEBUG("dispatching handshake (type %02x)\n", type);
 		res = client_dispatch_handshake(sess, hm);
 
 		delete[] buf;
