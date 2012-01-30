@@ -302,6 +302,8 @@
 .p2align 5
 .globl _chacha_asm_keystream_bytes
 .globl chacha_asm_keystream_bytes
+.hidden _chacha_asm_keystream_bytes
+.hidden chacha_asm_keystream_bytes
 _chacha_asm_keystream_bytes:
 chacha_asm_keystream_bytes:
 mov %rsp,%r11
@@ -365,6 +367,8 @@ jmp ._start
 .p2align 5
 .globl _chacha_asm_decrypt_bytes
 .globl chacha_asm_decrypt_bytes
+.hidden _chacha_asm_decrypt_bytes
+.hidden chacha_asm_decrypt_bytes
 _chacha_asm_decrypt_bytes:
 chacha_asm_decrypt_bytes:
 mov %rsp,%r11
@@ -410,6 +414,8 @@ jmp ._start
 .p2align 5
 .globl _chacha_asm_encrypt_bytes
 .globl chacha_asm_encrypt_bytes
+.hidden _chacha_asm_encrypt_bytes
+.hidden chacha_asm_encrypt_bytes
 _chacha_asm_encrypt_bytes:
 chacha_asm_encrypt_bytes:
 mov %rsp,%r11
@@ -3661,6 +3667,8 @@ jmp ._bytesbetween1and255
 .p2align 5
 .globl _chacha_asm_init
 .globl chacha_asm_init
+.hidden _chacha_asm_init
+.hidden chacha_asm_init
 _chacha_asm_init:
 chacha_asm_init:
 mov %rsp,%r11
@@ -3679,6 +3687,8 @@ ret
 .p2align 5
 .globl _chacha_asm_keysetup
 .globl chacha_asm_keysetup
+.hidden _chacha_asm_keysetup
+.hidden chacha_asm_keysetup
 _chacha_asm_keysetup:
 chacha_asm_keysetup:
 mov %rsp,%r11
@@ -3934,6 +3944,8 @@ ret
 .p2align 5
 .globl _chacha_asm_ivsetup
 .globl chacha_asm_ivsetup
+.hidden _chacha_asm_ivsetup
+.hidden chacha_asm_ivsetup
 _chacha_asm_ivsetup:
 chacha_asm_ivsetup:
 mov %rsp,%r11
