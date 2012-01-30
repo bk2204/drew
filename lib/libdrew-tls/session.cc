@@ -1596,13 +1596,13 @@ static int client_handle_handshake(drew_tls_session_t sess)
 	do {
 		read = false;
 		if (hq.GetSize() < 4)
-			continue;
+			return -DREW_ERR_MORE_INFO;
 
 		uint8_t type = hq.Read<uint8_t>(0);
 		uint32_t len = hq.Read24(1);
 
 		if (hq.GetSize() < (4 + len))
-			continue;
+			return -DREW_ERR_MORE_INFO;
 
 		uint8_t *buf = new uint8_t[len + 4];
 
@@ -1716,6 +1716,10 @@ static int handshake_client(drew_tls_session_t sess)
 				res = client_handle_handshake(sess);
 				if (!res)
 					break;
+				if (res == -DREW_ERR_MORE_INFO) {
+					DEBUG("not enough data, going around again\n");
+					continue;
+				}
 				// Fallthru to send alert and return.
 			case TYPE_APPLICATION_DATA:
 				// Not allowed now.
