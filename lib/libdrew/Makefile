@@ -11,8 +11,8 @@ $(DREW_DIR)/drew.o: include/version.h
 
 $(DREW_SONAME): CPPFLAGS += $(DREW_CPPFLAGS)
 
-${DREW_DIR}/${DREW_SONAME}: $(DREW_OBJS)
-	${CC} ${CFLAGS} ${LIBCFLAGS} ${SONAME} -o ${.TARGET} ${.ALLSRC} ${LIBS}
+$(DREW_DIR)/$(DREW_SONAME): $(DREW_OBJS)
+	$(CC) $(CFLAGS) $(LIBCFLAGS) $(SONAME) -o $(.TARGET) $(.ALLSRC) $(LIBS)
 
-${DREW_SONAME}: | ${DREW_DIR}/${DREW_SONAME}
+$(DREW_SONAME): | $(DREW_DIR)/$(DREW_SONAME)
 	[ -L $@ ] || ln -sf $| $@

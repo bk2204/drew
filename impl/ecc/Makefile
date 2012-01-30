@@ -1,8 +1,8 @@
-PLUGINS_ECC-${CFG_ECCPRIME}		+= prime/prime
+PLUGINS_ECC-$(CFG_ECCPRIME)		+= prime/prime
 
 ECC_DIR			:= impl/ecc
-ECC_PLUGINS		:= $(patsubst %,${ECC_DIR}/%,$(PLUGINS_ECC-m))
-ECC_MODULES		:= $(patsubst %,${ECC_DIR}/%.o,$(PLUGINS_ECC-y))
+ECC_PLUGINS		:= $(patsubst %,$(ECC_DIR)/%,$(PLUGINS_ECC-m))
+ECC_MODULES		:= $(patsubst %,$(ECC_DIR)/%.o,$(PLUGINS_ECC-y))
 PLUGINS			+= $(ECC_PLUGINS)
 MODULES			+= $(ECC_MODULES)
 

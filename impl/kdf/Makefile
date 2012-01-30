@@ -1,9 +1,9 @@
-PLUGINS_KDF-${CFG_PBKDF2}		+= pbkdf/pbkdf2
-PLUGINS_KDF-${CFG_TLSPRF}		+= tls/tls-prf
+PLUGINS_KDF-$(CFG_PBKDF2)		+= pbkdf/pbkdf2
+PLUGINS_KDF-$(CFG_TLSPRF)		+= tls/tls-prf
 
 KDF_DIR			:= impl/kdf
-KDF_PLUGINS		:= $(patsubst %,${KDF_DIR}/%,$(PLUGINS_KDF-m))
-KDF_MODULES		:= $(patsubst %,${KDF_DIR}/%.o,$(PLUGINS_KDF-y))
+KDF_PLUGINS		:= $(patsubst %,$(KDF_DIR)/%,$(PLUGINS_KDF-m))
+KDF_MODULES		:= $(patsubst %,$(KDF_DIR)/%.o,$(PLUGINS_KDF-y))
 PLUGINS			+= $(KDF_PLUGINS)
 MODULES			+= $(KDF_MODULES)
 

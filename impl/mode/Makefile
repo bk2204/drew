@@ -1,17 +1,17 @@
-PLUGINS_MODE-${CFG_CFB}			+= cfb
-PLUGINS_MODE-${CFG_OFB}			+= ofb
-PLUGINS_MODE-${CFG_CBC}			+= cbc
-PLUGINS_MODE-${CFG_CTR}			+= ctr
-PLUGINS_MODE-${CFG_GCM}			+= gcm
-PLUGINS_MODE-${CFG_GCM_PCLMUL}	+= gcm-pclmulqdq
+PLUGINS_MODE-$(CFG_CFB)			+= cfb
+PLUGINS_MODE-$(CFG_OFB)			+= ofb
+PLUGINS_MODE-$(CFG_CBC)			+= cbc
+PLUGINS_MODE-$(CFG_CTR)			+= ctr
+PLUGINS_MODE-$(CFG_GCM)			+= gcm
+PLUGINS_MODE-$(CFG_GCM_PCLMUL)	+= gcm-pclmulqdq
 
 MODE_DIR		:= impl/mode
-MODE_PLUGINS	:= $(patsubst %,${MODE_DIR}/%,$(PLUGINS_MODE-m))
-MODE_MODULES	:= $(patsubst %,${MODE_DIR}/%.o,$(PLUGINS_MODE-y))
+MODE_PLUGINS	:= $(patsubst %,$(MODE_DIR)/%,$(PLUGINS_MODE-m))
+MODE_MODULES	:= $(patsubst %,$(MODE_DIR)/%.o,$(PLUGINS_MODE-y))
 PLUGINS			+= $(MODE_PLUGINS)
 MODULES			+= $(MODE_MODULES)
 
-${MODE_DIR}/gcm-pclmulqdq.o:	CXXFLAGS += $(call TEST_ARG,-mpclmul -msse4)
+$(MODE_DIR)/gcm-pclmulqdq.o:	CXXFLAGS += $(call TEST_ARG,-mpclmul -msse4)
 
 $(MODE_PLUGINS):		CPPFLAGS += -I$(MODE_DIR) -DDREW_AS_PLUGIN
 $(MODE_MODULES):		CPPFLAGS += -I$(MODE_DIR) -DDREW_AS_MODULE

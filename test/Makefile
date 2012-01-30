@@ -22,13 +22,13 @@ $(TEST_MISCBIN):		| $(DREW_SONAME) $(DREW_IMPL_SONAME)
 $(TEST_LIBMDBIN):		CPPFLAGS += -Iinclude/libmd
 
 test/plugin-main: test/plugin-main.o
-	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} $| ${LIBS}
+	$(CC) $(CFLAGS) -o $(.TARGET) $(.ALLSRC) $| $(LIBS)
 
 test/test-prng: LIBS += -lm
 test/test-mem: | $(DREW_SONAME)
 
 test/test-%: test/test-%.o
-	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} $| ${LIBS}
+	$(CC) $(CFLAGS) -o $(.TARGET) $(.ALLSRC) $| $(LIBS)
 
 test/libmd-testsuite:
-	${CC} ${CFLAGS} -o ${.TARGET} ${.ALLSRC} $| ${LIBS}
+	$(CC) $(CFLAGS) -o $(.TARGET) $(.ALLSRC) $| $(LIBS)

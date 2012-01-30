@@ -1,9 +1,9 @@
-PLUGINS_MAC-${CFG_HMAC}		+= hmac/hmac
-PLUGINS_MAC-${CFG_CMAC}		+= cmac/cmac
+PLUGINS_MAC-$(CFG_HMAC)		+= hmac/hmac
+PLUGINS_MAC-$(CFG_CMAC)		+= cmac/cmac
 
 MAC_DIR			:= impl/mac
-MAC_PLUGINS		:= $(patsubst %,${MAC_DIR}/%,$(PLUGINS_MAC-m))
-MAC_MODULES		:= $(patsubst %,${MAC_DIR}/%.o,$(PLUGINS_MAC-y))
+MAC_PLUGINS		:= $(patsubst %,$(MAC_DIR)/%,$(PLUGINS_MAC-m))
+MAC_MODULES		:= $(patsubst %,$(MAC_DIR)/%.o,$(PLUGINS_MAC-y))
 PLUGINS			+= $(MAC_PLUGINS)
 MODULES			+= $(MAC_MODULES)
 
