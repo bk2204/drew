@@ -44,6 +44,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -108,7 +109,8 @@ static inline void init_pool(void)
 #endif
 }
 
-static inline struct allocation *create_entry(void *p, size_t size, int secure)
+static inline struct allocation *create_entry(struct pool *pool, void *p,
+		size_t size, int secure)
 {
 	struct allocation *new;
 	if (!p)
@@ -116,7 +118,7 @@ static inline struct allocation *create_entry(void *p, size_t size, int secure)
 	new = malloc(sizeof(struct allocation));
 	if (!new)
 		return NULL;
-	new->next = mempool.alloc;
+	new->next = pool->alloc;
 	new->size = size;
 	new->block = 0;
 	new->mem = p;
@@ -125,8 +127,8 @@ static inline struct allocation *create_entry(void *p, size_t size, int secure)
 			new->block = size;
 		else {
 			/* Assumes mempool.pgsize is a power of two. */
-			uintptr_t mask = ~(mempool.pgsize - 1);
-			new->block = (size + (mempool.pgsize - 1)) & mask;
+			uintptr_t mask = ~(pool->pgsize - 1);
+			new->block = (size + (pool->pgsize - 1)) & mask;
 		}
 	}
 	return new;
@@ -137,7 +139,8 @@ static inline struct allocation *create_entry(void *p, size_t size, int secure)
  * Regardless of what the system malloc does, we always return NULL for a
  * zero-sized allocation.
  */
-static inline void *do_allocate(size_t size, int secure, int clear)
+static inline void *do_allocate(struct pool *pool, size_t size, int secure,
+		int clear)
 {
 	int res = 0;
 	void *p = NULL;
@@ -154,7 +157,7 @@ static inline void *do_allocate(size_t size, int secure, int clear)
 			goto err;
 		}
 	}
-	else if ((res = posix_memalign(&p, mempool.pgsize, size))) {
+	else if ((res = posix_memalign(&p, pool->pgsize, size))) {
 		errno = res;
 		goto err;
 	}
@@ -162,13 +165,13 @@ static inline void *do_allocate(size_t size, int secure, int clear)
 		memset(p, 0, size);
 	// p is guaranteed to be non-NULL here and zeroed if need be.
 	if (secure || ALWAYS_ZERO)
-		if (!(new = create_entry(p, size, secure)))
+		if (!(new = create_entry(pool, p, size, secure)))
 			goto err;
-	if (secure && !(mempool.flags & DREW_MEM_SECMEM_NO_LOCK) &&
-			mlock(p, new->block) && !(mempool.flags & DREW_MEM_SECMEM_FAIL_OK))
+	if (secure && !(pool->flags & DREW_MEM_SECMEM_NO_LOCK) &&
+			mlock(p, new->block) && !(pool->flags & DREW_MEM_SECMEM_FAIL_OK))
 		goto err;
 	if (new)
-		mempool.alloc = new;
+		pool->alloc = new;
 	return p;
 err:
 	free(p);
@@ -176,34 +179,61 @@ err:
 	return NULL;
 }
 
-static inline void *allocate(size_t size, int secure, int clear)
+static inline void *allocate(struct pool *pool, size_t size, int secure,
+		int clear)
 {
+	bool defpool = !pool;
 	void *p;
 	if (!size)
 		return NULL;
-	LOCK(&mempool);
-	init_pool();
-	p = do_allocate(size, secure, clear);
-	UNLOCK(&mempool);
+	if (defpool)
+		pool = &mempool;
+	LOCK(pool);
+	if (defpool)
+		init_pool();
+	p = do_allocate(pool, size, secure, clear);
+	UNLOCK(pool);
 	return p;
 }
 
-int drew_mem_pool_adjust(void *pool, int op, int flags, void *p)
+int drew_mem_pool_adjust(void *poolp, int op, int flags, void *p)
 {
-	if (pool)
+	bool defpool = !poolp;
+	struct pool *pool = poolp;
+
+	if (defpool)
+		pool = &mempool;
+	else
 		return -DREW_ERR_INVALID;
-	if (op != DREW_MEM_SECMEM)
+	if (op != DREW_MEM_SECMEM) {
+		if (op == DREW_MEM_ALLOC || op == DREW_MEM_POOL)
+			return -DREW_ERR_NOT_IMPL;
 		return -DREW_ERR_INVALID;
-	LOCK(&mempool);
-	init_pool();
-	mempool.flags = flags;
-	UNLOCK(&mempool);
+	}
+	LOCK(pool);
+	if (defpool)
+		init_pool();
+	pool->flags = flags;
+	UNLOCK(pool);
 	return 0;
+}
+
+void *drew_mem_pmemdup(void *poolp, const void *ptr, size_t size)
+{
+	void *p = allocate(poolp, size, 0, 0);
+	if (p)
+		memcpy(p, ptr, size);
+	return p;
 }
 
 void *drew_mem_memdup(const void *ptr, size_t size)
 {
-	void *p = allocate(size, 0, 0);
+	return drew_mem_pmemdup(NULL, ptr, size);
+}
+
+void *drew_mem_psmemdup(void *poolp, const void *ptr, size_t size)
+{
+	void *p = allocate(poolp, size, 1, 0);
 	if (p)
 		memcpy(p, ptr, size);
 	return p;
@@ -211,46 +241,66 @@ void *drew_mem_memdup(const void *ptr, size_t size)
 
 void *drew_mem_smemdup(const void *ptr, size_t size)
 {
-	void *p = allocate(size, 1, 0);
-	if (p)
-		memcpy(p, ptr, size);
-	return p;
+	return drew_mem_psmemdup(NULL, ptr, size);
+}
+
+void *drew_mem_pmalloc(void *poolp, size_t size)
+{
+	return allocate(poolp, size, 0, 0);
 }
 
 void *drew_mem_malloc(size_t size)
 {
-	return allocate(size, 0, 0);
+	return drew_mem_pmalloc(NULL, size);
+}
+
+void *drew_mem_psmalloc(void *poolp, size_t size)
+{
+	return allocate(poolp, size, 1, 0);
 }
 
 void *drew_mem_smalloc(size_t size)
 {
-	return allocate(size, 1, 0);
+	return drew_mem_psmalloc(NULL, size);
+}
+
+void *drew_mem_pcalloc(void *poolp, size_t nmemb, size_t size)
+{
+	return allocate(poolp, nmemb * size, 0, 1);
 }
 
 void *drew_mem_calloc(size_t nmemb, size_t size)
 {
-	return allocate(nmemb * size, 0, 1);
+	return drew_mem_pcalloc(NULL, nmemb, size);
+}
+
+void *drew_mem_pscalloc(void *poolp, size_t nmemb, size_t size)
+{
+	return allocate(poolp, nmemb * size, 1, 1);
 }
 
 void *drew_mem_scalloc(size_t nmemb, size_t size)
 {
-	return allocate(nmemb * size, 1, 1);
+	return drew_mem_pscalloc(NULL, nmemb, size);
 }
 
-void drew_mem_sfree(void *ptr)
+void drew_mem_psfree(void *poolp, void *ptr)
 {
+	bool defpool = !poolp;
+	struct pool *pool = poolp ? poolp : &mempool;
 	struct allocation *p, *prev;
 	if (!ptr)
 		return;
-	LOCK(&mempool);
-	init_pool();
-	for (prev = p = mempool.alloc; p; prev = p, p = p->next) {
+	LOCK(pool);
+	if (defpool)
+		init_pool();
+	for (prev = p = pool->alloc; p; prev = p, p = p->next) {
 		if (ptr == p->mem) {
 			memset(ptr, 0, p->size);
 			if (p->block)
 				munlock(p->mem, p->block);
-			if (mempool.alloc == p)
-				mempool.alloc = p->next;
+			if (pool->alloc == p)
+				pool->alloc = p->next;
 			else
 				prev->next = p->next;
 			free(p);
@@ -258,31 +308,44 @@ void drew_mem_sfree(void *ptr)
 		}
 	}
 	free(ptr);
-	UNLOCK(&mempool);
+	UNLOCK(pool);
 }
 
-void drew_mem_free(void *ptr)
+void drew_mem_sfree(void *ptr)
+{
+	return drew_mem_psfree(NULL, ptr);
+}
+
+void drew_mem_pfree(void *poolp, void *ptr)
 {
 	if (ALWAYS_ZERO)
-		drew_mem_sfree(ptr);
+		drew_mem_psfree(poolp, ptr);
 	else
 		free(ptr);
 }
 
-static inline void *do_realloc(void *ptr, void *new, size_t size, int secure)
+void drew_mem_free(void *ptr)
 {
+	return drew_mem_pfree(NULL, ptr);
+}
+
+static inline void *do_realloc(struct pool *pool, void *ptr, void *new,
+		size_t size, int secure)
+{
+	bool defpool = !pool;
 	struct allocation *p;
 	size_t oldsize = 0, min = 0;
 	if (secure || ALWAYS_ZERO) {
-		LOCK(&mempool);
-		init_pool();
-			for (p = mempool.alloc; p; p = p->next) {
-				if (ptr == p->mem) {
-					oldsize = p->size;
-					break;
-				}
+		LOCK(pool);
+		if (defpool)
+			init_pool();
+		for (p = pool->alloc; p; p = p->next) {
+			if (ptr == p->mem) {
+				oldsize = p->size;
+				break;
 			}
-		UNLOCK(&mempool);
+		}
+		UNLOCK(pool);
 		if (!oldsize) {
 			// Someone passed us a pointer we didn't allocate.
 			free(new);
@@ -299,34 +362,44 @@ static inline void *do_realloc(void *ptr, void *new, size_t size, int secure)
 	return realloc(ptr, size);
 }
 
-void *drew_mem_srealloc(void *ptr, size_t size)
+void *drew_mem_psrealloc(void *poolp, void *ptr, size_t size)
 {
 	void *new = NULL;
 	if (!ptr)
-		return drew_mem_smalloc(size);
+		return drew_mem_psmalloc(poolp, size);
 	if (!size) {
-		drew_mem_sfree(ptr);
+		drew_mem_psfree(poolp, ptr);
 		return NULL;
 	}
-	new = drew_mem_smalloc(size);
+	new = drew_mem_psmalloc(poolp, size);
 	if (!new)
 		return NULL;
-	return do_realloc(ptr, new, size, 1);
+	return do_realloc(poolp, ptr, new, size, 1);
+}
+
+void *drew_mem_srealloc(void *ptr, size_t size)
+{
+	return drew_mem_psrealloc(NULL, ptr, size);
+}
+
+void *drew_mem_prealloc(void *poolp, void *ptr, size_t size)
+{
+	void *new = NULL;
+	if (!ptr)
+		return drew_mem_pmalloc(poolp, size);
+	if (!size) {
+		drew_mem_pfree(poolp, ptr);
+		return NULL;
+	}
+	if (ALWAYS_ZERO) {
+		new = drew_mem_pmalloc(poolp, size);
+		if (!new)
+			return NULL;
+	}
+	return do_realloc(poolp, ptr, new, size, 0);
 }
 
 void *drew_mem_realloc(void *ptr, size_t size)
 {
-	void *new = NULL;
-	if (!ptr)
-		return drew_mem_malloc(size);
-	if (!size) {
-		drew_mem_free(ptr);
-		return NULL;
-	}
-	if (ALWAYS_ZERO) {
-		new = drew_mem_malloc(size);
-		if (!new)
-			return NULL;
-	}
-	return do_realloc(ptr, new, size, 0);
+	return drew_mem_prealloc(NULL, ptr, size);
 }
