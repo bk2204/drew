@@ -32,6 +32,8 @@ extern "C" {
 
 /* The op parameter to drew_mem_adjust. */
 #define DREW_MEM_SECMEM		1
+#define DREW_MEM_ALLOC		2
+#define DREW_MEM_POOL		3
 
 /* Flags for drew_mem_adjust with DREW_MEM_SECMEM.
  *
@@ -40,8 +42,29 @@ extern "C" {
  * NO_LOCK prevents the secure memory allocator from attempting to lock memory
  * in the first place.
  */
-#define DREW_MEM_SECMEM_FAIL_OK		1
-#define DREW_MEM_SECMEM_NO_LOCK		2
+#define DREW_MEM_SECMEM_FAIL_OK		(1 << 0)
+#define DREW_MEM_SECMEM_NO_LOCK		(1 << 1)
+
+/* Flags for drew_mem_adjust with DREW_MEM_ALLOC.
+ *
+ * PREBLOCK allocates 16 bytes more than requested and uses this pre-block area
+ * to keep track of the size and other data.  This avoids the overhead of
+ * maintaining a linked list of allocated chunks while still permitting that
+ * memory to be zeroed.  However, it means that memory allocated from the
+ * drew_mem functions cannot be used directly with the system allocation
+ * functions.
+ */
+#define DREW_MEM_ALLOC_PREBLOCK		(1 << 10)
+
+/* Flags for drew_mem_adjust with DREW_MEM_POOL.
+ *
+ * FREEABLE allows a particular pool to be freed all at once.  This necessitates
+ * keeping a linked list, and ALLOC_PREBLOCK is not useful (except for wasting
+ * memory).  This also requires that freeing memory allocated by this pool must
+ * be done with the drew_mem functions and not by free; otherwise, double
+ * freeing may occur.
+ */
+#define DREW_MEM_POOL_FREEABLE		(1 << 20)
 
 DREW_SYM_PUBLIC
 void *drew_mem_malloc(size_t size);
