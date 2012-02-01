@@ -89,6 +89,28 @@ DREW_SYM_PUBLIC
 void drew_mem_sfree(void *ptr);
 
 DREW_SYM_PUBLIC
+void *drew_mem_pmalloc(void *poolp, size_t size);
+DREW_SYM_PUBLIC
+void *drew_mem_pcalloc(void *poolp, size_t nmemb, size_t size);
+DREW_SYM_PUBLIC
+void *drew_mem_prealloc(void *poolp, void *ptr, size_t size);
+DREW_SYM_PUBLIC
+void *drew_mem_pmemdup(void *poolp, const void *ptr, size_t size);
+DREW_SYM_PUBLIC
+void drew_mem_pfree(void *poolp, void *ptr);
+
+DREW_SYM_PUBLIC
+void *drew_mem_psmalloc(void *poolp, size_t size);
+DREW_SYM_PUBLIC
+void *drew_mem_pscalloc(void *poolp, size_t nmemb, size_t size);
+DREW_SYM_PUBLIC
+void *drew_mem_psrealloc(void *poolp, void *ptr, size_t size);
+DREW_SYM_PUBLIC
+void *drew_mem_psmemdup(void *poolp, const void *ptr, size_t size);
+DREW_SYM_PUBLIC
+void drew_mem_psfree(void *poolp, void *ptr);
+
+DREW_SYM_PUBLIC
 int drew_mem_pool_adjust(void *pool, int op, int flags, void *p);
 
 #ifdef __cplusplus
