@@ -176,3 +176,9 @@ size_t SerializedBuffer::GetOffset() const
 {
 	return off;
 }
+
+void SerializedBuffer::SetOffset(size_t offset)
+{
+	Reserve(offset);
+	off = offset;
+}

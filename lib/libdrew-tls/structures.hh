@@ -158,6 +158,7 @@ class SerializedBuffer
 		void Get(SerializedBuffer &sbuf, size_t datalen);
 		size_t GetLength() const;
 		size_t GetOffset() const;
+		void SetOffset(size_t off);
 		ssize_t BytesRemaining() const;
 		const uint8_t *GetPointer() const;
 		const uint8_t *GetPointer(size_t offset) const;
