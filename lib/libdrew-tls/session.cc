@@ -65,8 +65,14 @@
 #define CONTENT_TYPE_HANDSHAKE 22
 
 #define HANDSHAKE_TYPE_CLIENT_HELLO 1
+#define HANDSHAKE_TYPE_SERVER_HELLO 2
+#define HANDSHAKE_TYPE_CERTIFICATE 11
+#define HANDSHAKE_TYPE_SERVER_KEYEX 12
+#define HANDSHAKE_TYPE_CERT_REQ 13
+#define HANDSHAKE_TYPE_SERVER_HELLO_DONE 14
+#define HANDSHAKE_TYPE_CERT_VERIFY 15
 #define HANDSHAKE_TYPE_CLIENT_KEYEX 16
-#define HANDSHAKE_TYPE_CLIENT_FINISHED 20
+#define HANDSHAKE_TYPE_FINISHED 20
 
 #define HASH_MD5 0
 #define HASH_SHA1 1
@@ -1334,7 +1340,7 @@ static int client_send_client_finished(drew_tls_session_t sess)
 
 	buf.Put(verify_data, sizeof(verify_data));
 
-	RETFAIL(send_handshake(sess, buf, HANDSHAKE_TYPE_CLIENT_FINISHED));
+	RETFAIL(send_handshake(sess, buf, HANDSHAKE_TYPE_FINISHED));
 
 	sess->handshake_state = CLIENT_HANDSHAKE_CLIENT_FINISHED;
 
@@ -1563,24 +1569,27 @@ static int client_dispatch_handshake(drew_tls_session_t sess,
 	switch (hm.type) {
 		case 0:
 			return 0;
-		case 2:
+		case HANDSHAKE_TYPE_SERVER_HELLO:
 			return client_parse_server_hello(sess, hm);
-		case 11:
+		case HANDSHAKE_TYPE_CERTIFICATE:
 			return client_parse_server_cert(sess, hm);
-		case 12:
+		case HANDSHAKE_TYPE_SERVER_KEYEX:
 			return client_parse_server_keyex(sess, hm);
-		case 13:
+		case HANDSHAKE_TYPE_CERT_REQ:
 			return client_parse_server_certreq(sess, hm);
-		case 14:
+		case HANDSHAKE_TYPE_SERVER_HELLO_DONE:
+			DEBUG("parsing server_hello_done\n");
 			res = client_parse_server_hello_done(sess, hm);
+			DEBUG("result was %d (%d)\n", res, (-res) & 0xffff);
 			if (res < 0)
 				return res;
+			DEBUG("sending client data\n");
 			return client_send_client_data(sess);
-		case 20:
+		case HANDSHAKE_TYPE_FINISHED:
 			return client_parse_server_finished(sess, hm);
-		case 15:
-		case 16:
-		case 1:
+		case HANDSHAKE_TYPE_CERT_VERIFY:
+		case HANDSHAKE_TYPE_CLIENT_KEYEX:
+		case HANDSHAKE_TYPE_CLIENT_HELLO:
 			// Only messages we should be sending, not the server.
 		default:
 			return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
