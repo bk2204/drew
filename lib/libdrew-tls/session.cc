@@ -768,6 +768,8 @@ static int client_parse_server_cert(drew_tls_session_t sess,
 	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_SERVER_CERT)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
 
+	buf.ResetPosition();
+
 	for (size_t i = 0; i < 3; i++) {
 		certlen <<= 8;
 		buf.Get(dummy);
@@ -780,12 +782,15 @@ static int client_parse_server_cert(drew_tls_session_t sess,
 	RETFAIL(drew_util_asn1_init(&asn));
 
 	for (ncerts = 0; certoff < certlen; ncerts++) {
+		buf.SetOffset(certoff);
+
 		uint32_t thiscertlen = 0;
 		for (size_t i = 0; i < 3; i++) {
 			thiscertlen <<= 8;
 			buf.Get(dummy);
 			thiscertlen |= dummy;
 		}
+		certoff += 3;
 		if (thiscertlen + certoff > msg.length)
 			return -DREW_TLS_ERR_ILLEGAL_PARAMETER;
 		certs = (drew_tls_encoded_cert_t *)realloc(certs,
