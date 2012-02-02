@@ -756,7 +756,7 @@ static int need_server_keyex(drew_tls_priority_t prio,
 static int client_parse_server_cert(drew_tls_session_t sess,
 	const HandshakeMessage &msg)
 {
-	int res = 0;
+	int res = 0, need_keyex = 0;
 	uint8_t dummy;
 	uint32_t certlen = 0, certoff = 3;
 	size_t ncerts = 0;
@@ -825,10 +825,17 @@ static int client_parse_server_cert(drew_tls_session_t sess,
 	free(dcerts);
 	free(certs);
 
-	if (!res && (res = need_server_keyex(sess->prio, sess->cs))) {
-		if (res < 0)
+	DEBUG("checking if server keyex required\n");
+	if (!res) {
+		need_keyex = need_server_keyex(sess->prio, sess->cs);
+		if (need_keyex < 0)
 			return res;
-		sess->handshake_state = res ? CLIENT_HANDSHAKE_NEED_SERVER_KEYEX :
+		if (need_keyex)
+			DEBUG("yes, server keyex required\n");
+		else
+			DEBUG("no, no server keyex required\n");
+		sess->handshake_state = need_keyex ?
+			CLIENT_HANDSHAKE_NEED_SERVER_KEYEX :
 			CLIENT_HANDSHAKE_CERT_REQ_OR_DONE;
 	}
 
