@@ -793,7 +793,7 @@ static int client_parse_server_cert(drew_tls_session_t sess,
 		dcerts = (drew_tls_cert_t *)realloc(dcerts,
 				(ncerts+1)*sizeof(*dcerts));
 		if (!certs || !dcerts)
-			return -DREW_TLS_ERR_INTERNAL_ERROR;
+			return -ENOMEM;
 		certs[ncerts].len = thiscertlen;
 		certs[ncerts].data = buf.GetPointer(certoff);
 		drew_util_x509_cert_t *dcert =
