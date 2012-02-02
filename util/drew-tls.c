@@ -51,6 +51,7 @@ int main(void)
 	derr(4, drew_tls_session_init(&sess, ldr));
 	derr(5, drew_tls_session_set_end(sess, 1));
 	derr(6, drew_tls_session_set_priority(sess, prio));
+	derr(6, drew_tls_session_set_cert_callback(sess, callback));
 
 	sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock < 0) {
