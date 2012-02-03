@@ -965,11 +965,11 @@ static int client_verify_rsa_sig(drew_tls_session_t sess,
 		return size;
 
 	if (size + 2 < pubkey->mpis[0].len)
-		return -DREW_ERR_INVALID;
+		return -DREW_ERR_FAILED;
 
 	// Make sure we have enough data to have valid padding.
 	if (size_t(size) < sizeof(buf) + 1 + 1 + 1)
-		return -DREW_ERR_INVALID;
+		return -DREW_ERR_FAILED;
 
 	if (!(data = (uint8_t *)drew_mem_malloc(size)))
 		return -ENOMEM;
@@ -982,19 +982,20 @@ static int client_verify_rsa_sig(drew_tls_session_t sess,
 	 * 0xff, and before that the value 1 (the block type).  Also, don't return
 	 * immediately if the data is corrupt to make timing attacks harder.
 	 */
-	if (memcmp(data+size-sizeof(buf), buf, sizeof(buf)))
-		res = -DREW_ERR_INVALID;
+	if (memcmp(data+size-sizeof(buf), buf, sizeof(buf))) {
+		res = -DREW_ERR_FAILED;
+	}
 	if (data[size-sizeof(buf)-1])
-		res = -DREW_ERR_INVALID;
+		res = -DREW_ERR_FAILED;
 	if (data[0] == 0 && data[1] == 1)
 		offset = 2;
 	else if (data[0] == 1)
 		offset = 1;
 	else
-		res = -DREW_ERR_INVALID;
+		res = -DREW_ERR_FAILED;
 	for (size_t i = offset; i < size-sizeof(buf)-1; i++)
 		if (data[i] != 0xff)
-			res = -DREW_ERR_INVALID;
+			res = -DREW_ERR_FAILED;
 
 	drew_mem_free(data);
 
