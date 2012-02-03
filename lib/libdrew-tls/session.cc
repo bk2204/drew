@@ -165,10 +165,18 @@ static int make_pksig(const drew_loader_t *ldr, const char *name,
 		drew_pksig_t *pksig)
 {
 	int res = 0;
+	drew_bignum_t bn;
+	drew_param_t param;
 
 	if ((res = make_primitive(ldr, name, pksig, DREW_TYPE_PKSIG)))
 		return res;
-	res = pksig->functbl->init(pksig, 0, ldr, NULL);
+	if ((res = make_bignum(ldr, &bn, NULL, 0)))
+		return res;
+	param.next = NULL;
+	param.name = "bignum";
+	param.param.value = &bn;
+	res = pksig->functbl->init(pksig, 0, ldr, &param);
+	bn.functbl->fini(&bn, 0);
 	return res;
 }
 
@@ -176,10 +184,18 @@ static int make_pkenc(const drew_loader_t *ldr, const char *name,
 		drew_pkenc_t *pkenc)
 {
 	int res = 0;
+	drew_bignum_t bn;
+	drew_param_t param;
 
 	if ((res = make_primitive(ldr, name, pkenc, DREW_TYPE_PKENC)))
 		return res;
-	res = pkenc->functbl->init(pkenc, 0, ldr, NULL);
+	if ((res = make_bignum(ldr, &bn, NULL, 0)))
+		return res;
+	param.next = NULL;
+	param.name = "bignum";
+	param.param.value = &bn;
+	res = pkenc->functbl->init(pkenc, 0, ldr, &param);
+	bn.functbl->fini(&bn, 0);
 	return res;
 }
 
