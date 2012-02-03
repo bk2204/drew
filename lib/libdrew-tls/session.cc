@@ -946,8 +946,8 @@ static int client_verify_rsa_sig(drew_tls_session_t sess,
 
 	drew_util_x509_pubkey_t *pubkey = &sess->serverp.cert->pubkey;
 
-	RETFAIL(make_bignum(sess->ldr, &c, msg.data.GetPointer(off),
-				msg.data.GetLength()-off));
+	RETFAIL(make_bignum(sess->ldr, &c, msg.data.GetPointer(off+2),
+				msg.data.GetLength()-(off+2)));
 	RETFAIL(make_bignum(sess->ldr, &p, NULL, 0));
 	RETFAIL(make_pksig(sess->ldr, "RSA", &rsa));
 
