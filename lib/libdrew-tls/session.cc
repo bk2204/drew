@@ -1538,7 +1538,6 @@ static int client_parse_server_hello(drew_tls_session_t sess,
 	int res = 0;
 	ProtocolVersion pv;
 	size_t minlength = 2 + 32 + 2 + 1 + 1;
-	uint8_t random[32];
 	drew_tls_cipher_suite_t cs;
 	SerializedBuffer buf(msg.data);
 
@@ -1563,7 +1562,7 @@ static int client_parse_server_hello(drew_tls_session_t sess,
 	sess->protover.major = pv.major;
 	sess->protover.minor = pv.minor;
 
-	buf.Get(random, sizeof(random));
+	buf.Get(sess->serverp.random, sizeof(sess->serverp.random));
 	buf.Get(sess->session_id.length);
 
 	// The entire message can be longer than this because of extensions.  At the
