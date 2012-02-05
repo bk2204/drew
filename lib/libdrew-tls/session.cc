@@ -867,6 +867,8 @@ static int client_parse_dh_params(drew_tls_session_t sess,
 	uint16_t plen, glen, yslen;
 	uint8_t *p = 0, *g = 0, *ys = 0;
 
+	b.ResetPosition();
+
 	if (b.GetLength() < 2)
 		return -DREW_TLS_ERR_HANDSHAKE_FAILURE;
 
@@ -879,7 +881,6 @@ static int client_parse_dh_params(drew_tls_session_t sess,
 		goto out;
 
 	b.Get(p, plen);
-	off += plen + sizeof(uint16_t);
 
 	b.Get(glen);
 
@@ -892,7 +893,6 @@ static int client_parse_dh_params(drew_tls_session_t sess,
 		goto out;
 
 	b.Get(g, glen);
-	off += glen + sizeof(uint16_t);
 
 	b.Get(yslen);
 
@@ -905,7 +905,7 @@ static int client_parse_dh_params(drew_tls_session_t sess,
 		goto out;
 
 	b.Get(ys, yslen);
-	off += yslen + sizeof(uint16_t);
+	off = b.GetOffset();
 
 	if ((res = make_bignum(sess->ldr, &sess->keyex.p, p, plen)))
 		goto out;
