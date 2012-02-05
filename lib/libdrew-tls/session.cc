@@ -1010,6 +1010,7 @@ static int client_parse_server_keyex(drew_tls_session_t sess,
 	const char *pkauth, *keyex;
 	drew_hash_t hashes[2];
 
+	DEBUG("server keyex checking state %d\n", sess->handshake_state);
 	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_SERVER_KEYEX)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
 
@@ -1018,6 +1019,7 @@ static int client_parse_server_keyex(drew_tls_session_t sess,
 	make_hash(sess->ldr, "MD5", &hashes[HASH_MD5]);
 	make_hash(sess->ldr, "SHA-1", &hashes[HASH_SHA1]);
 
+	DEBUG("server keyex evaluating keyex %s\n", keyex);
 	if (!strcmp("Diffie-Hellman", keyex))
 		RETFAIL(client_parse_dh_params(sess, msg, off));
 	else if (!strcmp("RSA", keyex))
@@ -1025,6 +1027,7 @@ static int client_parse_server_keyex(drew_tls_session_t sess,
 	else
 		return -DREW_ERR_NOT_IMPL;
 
+	DEBUG("server keyex updating hashes %zu bytes\n", off);
 	for (size_t i = 0; i < DIM(hashes); i++) {
 		hashes[i].functbl->update(hashes+i, sess->clientp.random,
 				sizeof(sess->clientp.random));
@@ -1033,6 +1036,7 @@ static int client_parse_server_keyex(drew_tls_session_t sess,
 		hashes[i].functbl->update(hashes+i, msg.data.GetPointer(0), off);
 	}
 
+	DEBUG("server keyex evaluating signature %s\n", pkauth);
 	if (!strcmp("DSA", pkauth))
 		RETFAIL(client_verify_dsa_sig(sess, msg, off, hashes));
 	else if (!strcmp("RSA", pkauth))
@@ -1040,6 +1044,7 @@ static int client_parse_server_keyex(drew_tls_session_t sess,
 	else
 		return -DREW_ERR_NOT_IMPL;
 
+	DEBUG("server keyex ok\n");
 	sess->handshake_state = CLIENT_HANDSHAKE_CERT_REQ_OR_DONE;
 
 	return res;
@@ -1498,18 +1503,23 @@ static int client_send_client_data(drew_tls_session_t sess)
 	while (sess->handshake_state != CLIENT_HANDSHAKE_CLIENT_FINISHED) {
 		switch (sess->handshake_state) {
 			case CLIENT_HANDSHAKE_NEED_CLIENT_CERT:
+				DEBUG("calling send_client_cert\n");
 				RETFAIL(client_send_client_cert(sess));
 				break;
 			case CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX:
+				DEBUG("calling send_client_keyex\n");
 				RETFAIL(client_send_client_keyex(sess));
 				break;
 			case CLIENT_HANDSHAKE_NEED_CLIENT_VERIFY:
+				DEBUG("calling send_client_verify\n");
 				RETFAIL(client_send_client_verify(sess));
 				break;
 			case CLIENT_HANDSHAKE_NEED_CLIENT_CIPHER_SPEC:
+				DEBUG("calling send_client_cipher_spec\n");
 				RETFAIL(client_send_client_cipher_spec(sess));
 				break;
 			case CLIENT_HANDSHAKE_NEED_CLIENT_FINISHED:
+				DEBUG("calling send_client_finished\n");
 				RETFAIL(client_send_client_finished(sess));
 				break;
 		}
