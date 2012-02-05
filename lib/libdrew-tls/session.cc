@@ -949,7 +949,7 @@ static int client_verify_rsa_sig(drew_tls_session_t sess,
 	RETFAIL(make_bignum(sess->ldr, &c, msg.data.GetPointer(off+2),
 				msg.data.GetLength()-(off+2)));
 	RETFAIL(make_bignum(sess->ldr, &p, NULL, 0));
-	RETFAIL(make_pksig(sess->ldr, "RSA", &rsa));
+	RETFAIL(make_pksig(sess->ldr, "RSASignature", &rsa));
 
 	rsa.functbl->setval(&rsa, "n", pubkey->mpis[0].data, pubkey->mpis[0].len);
 	rsa.functbl->setval(&rsa, "e", pubkey->mpis[1].data, pubkey->mpis[1].len);
