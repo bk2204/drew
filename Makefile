@@ -68,8 +68,10 @@ all: $(DREW_SONAME) standard
 
 depend: $(DEPFILES)
 
-standard: $(DREW_SONAME) $(MD_SONAME) plugins
+standard: $(DREW_SONAME) $(MD_SONAME) symlinks plugins
 standard: $(TEST_BINARIES) $(UTILITIES)
+
+symlinks: $(DREW_LSYMLINK) $(DREW_IMPL_LSYMLINK)
 
 .c.o:
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<

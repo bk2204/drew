@@ -1,6 +1,7 @@
 DREW_DIR		:= lib/libdrew
 DREW_SONAME		:= libdrew.so.1
 DREW_SYMLINK	:= $(basename $(DREW_SONAME))
+DREW_LSYMLINK	:= libdrew.so
 
 DREW_OBJS		:= $(DREW_DIR)/drew.o $(DREW_DIR)/mem.o
 OBJECTS			+= $(DREW_OBJS)
@@ -15,4 +16,7 @@ $(DREW_DIR)/$(DREW_SONAME): $(DREW_OBJS)
 	$(CC) $(CFLAGS) $(LIBCFLAGS) $(SONAME) -o $@ $^ $(LIBS)
 
 $(DREW_SONAME): | $(DREW_DIR)/$(DREW_SONAME)
+	[ -L $@ ] || ln -sf $| $@
+
+$(DREW_LSYMLINK): | $(DREW_DIR)/$(DREW_SONAME)
 	[ -L $@ ] || ln -sf $| $@
