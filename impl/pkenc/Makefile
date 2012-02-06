@@ -1,11 +1,11 @@
 PKENC_DIR						:= impl/pkenc
 
-PLUGINS_PKENC-${CFG_RSAENC}		+= rsa/rsa
-PLUGINS_PKENC-${CFG_RSAPGPENC}	+= rsa/rsa-openpgp
-PLUGINS_PKENC-${CFG_ELGAMAL}	+= elgamal/elgamal
+PLUGINS_PKENC-$(CFG_RSAENC)		+= rsa/rsa
+PLUGINS_PKENC-$(CFG_RSAPGPENC)	+= rsa/rsa-openpgp
+PLUGINS_PKENC-$(CFG_ELGAMAL)	+= elgamal/elgamal
 
-PKENC_PLUGINS	:= $(patsubst %,${PKENC_DIR}/%,$(PLUGINS_PKENC-m))
-PKENC_MODULES	:= $(patsubst %,${PKENC_DIR}/%.o,$(PLUGINS_PKENC-y))
+PKENC_PLUGINS	:= $(patsubst %,$(PKENC_DIR)/%,$(PLUGINS_PKENC-m))
+PKENC_MODULES	:= $(patsubst %,$(PKENC_DIR)/%.o,$(PLUGINS_PKENC-y))
 PLUGINS			+= $(PKENC_PLUGINS)
 MODULES			+= $(PKENC_MODULES)
 LIBS 			+= $(LIBS_PKENC-m) $(LIBS_PKENC-y)

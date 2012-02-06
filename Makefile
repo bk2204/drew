@@ -32,9 +32,9 @@ CLIKEFLAGS		+= -D_POSIX_SOURCE=200112L -D_XOPEN_SOURCE=600
 CLIKEFLAGS		+= -fextended-identifiers
 CLIKEFLAGS		+= -floop-interchange -floop-block
 CLIKEFLAGS		+= -fvisibility=hidden
-CLIKEFLAGS		+= ${CFLAGS-y}
-CXXFLAGS		:= ${CLIKEFLAGS}
-CFLAGS			:= ${CLIKEFLAGS}
+CLIKEFLAGS		+= $(CFLAGS-y)
+CXXFLAGS		:= $(CLIKEFLAGS)
+CFLAGS			:= $(CLIKEFLAGS)
 CXXFLAGS		+= -fno-rtti
 CFLAGS			+= -std=c99
 
@@ -42,11 +42,7 @@ LIBCFLAGS		+= -shared
 PLUGINCFLAGS	+= -I.
 
 LDFLAGS			+= -Wl,--as-needed
-LIBS			+= ${LDFLAGS} -lrt -ldl
-
-.TARGET			= $@
-.ALLSRC			= $^
-.IMPSRC			= $<
+LIBS			+= $(LDFLAGS) -lrt -ldl
 
 SONAME			= -Wl,-soname,$(@F)
 
@@ -68,18 +64,20 @@ IMPL_DIRS		:= $(sort $(foreach obj,$(IMPL_OBJS),$(dir $(obj))))
 
 DEPFILES		:= $(OBJECTS:.o=.d)
 
-all: ${DREW_SONAME} standard
+all: $(DREW_SONAME) standard
 
 depend: $(DEPFILES)
 
-standard: ${DREW_SONAME} ${MD_SONAME} plugins
+standard: $(DREW_SONAME) $(MD_SONAME) symlinks plugins
 standard: $(TEST_BINARIES) $(UTILITIES)
 
+symlinks: $(DREW_LSYMLINK) $(DREW_IMPL_LSYMLINK)
+
 .c.o:
-	${CC} ${CPPFLAGS} ${CFLAGS} -c -o ${.TARGET} ${.IMPSRC}
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
 .cc.o:
-	${CXX} ${CPPFLAGS} ${CXXFLAGS} -c -o ${.TARGET} ${.IMPSRC}
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 %.d: %.c
 	$(CC) $(CPPFLAGS) -DDEPEND -MM $< | sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
@@ -91,13 +89,13 @@ standard: $(TEST_BINARIES) $(UTILITIES)
 	(x="$@"; [ -n "$${x##impl/*}" ] || \
 		printf "$*.o: $(@D)/metadata.gen\n" >> $@)
 
-${PLUGINS:=.o}: CPPFLAGS += ${PLUGINCFLAGS}
+${PLUGINS:=.o}: CPPFLAGS += $(PLUGINCFLAGS)
 
-${PLUGINS}: %: %.so
+$(PLUGINS): %: %.so
 	@:
 
 $(PLUGINS:=.so): %.so: %.o
-	${CXX} ${LIBCFLAGS} ${CXXFLAGS} -o ${.TARGET} ${.ALLSRC} ${LIBS}
+	$(CXX) $(LIBCFLAGS) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 version:
 	printf '#define DREW_STRING_VERSION "$(VERSION)"\n' > $@
@@ -121,20 +119,20 @@ tags:
 	find -name '*.c' -o -name '*.cc' -o -name '*.h' -o -name '*.hh' | \
 		xargs ctags -a
 
-plugins: ${PLUGINS}
+plugins: $(PLUGINS)
 	[ -d plugins ] || mkdir plugins
-	for i in ${.ALLSRC}; do cp $$i.so plugins/`basename $$i .so`; done
+	for i in $^; do cp $$i.so plugins/`basename $$i .so`; done
 
 clean:
-	${RM} -f *.o test/*.o
-	${RM} -f ${MD_SONAME} ${MD_OBJS}
-	${RM} -f ${DREW_SONAME} ${DREW_SYMLINK}
-	${RM} -f ${TEST_BINARIES}
-	${RM} -f ${UTILITIES}
-	${RM} -f include/version.h
-	${RM} -fr ${PLUGINS} plugins/
-	${RM} -r install
-	${RM} -f tags
+	$(RM) -f *.o test/*.o
+	$(RM) -f $(MD_SONAME) $(MD_OBJS)
+	$(RM) -f $(DREW_SONAME) $(DREW_SYMLINK)
+	$(RM) -f $(TEST_BINARIES)
+	$(RM) -f $(UTILITIES)
+	$(RM) -f include/version.h
+	$(RM) -fr $(PLUGINS) plugins/
+	$(RM) -r install
+	$(RM) -f tags
 	find -name '*.gen' | xargs -r rm
 	find -name '*.o' | xargs -r rm
 	find -name '*.d' | xargs -r rm

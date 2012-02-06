@@ -116,6 +116,8 @@
 .p2align 5
 .globl _salsa_asm_keystream_bytes
 .globl salsa_asm_keystream_bytes
+.hidden _salsa_asm_keystream_bytes
+.hidden salsa_asm_keystream_bytes
 _salsa_asm_keystream_bytes:
 salsa_asm_keystream_bytes:
 mov %rsp,%r11
@@ -179,6 +181,8 @@ jmp ._start
 .p2align 5
 .globl _salsa_asm_decrypt_bytes
 .globl salsa_asm_decrypt_bytes
+.hidden _salsa_asm_decrypt_bytes
+.hidden salsa_asm_decrypt_bytes
 _salsa_asm_decrypt_bytes:
 salsa_asm_decrypt_bytes:
 mov %rsp,%r11
@@ -224,6 +228,8 @@ jmp ._start
 .p2align 5
 .globl _salsa_asm_encrypt_bytes
 .globl salsa_asm_encrypt_bytes
+.hidden _salsa_asm_encrypt_bytes
+.hidden salsa_asm_encrypt_bytes
 _salsa_asm_encrypt_bytes:
 salsa_asm_encrypt_bytes:
 mov %rsp,%r11
@@ -1497,6 +1503,8 @@ jmp ._bytesatleast1
 .p2align 5
 .globl _salsa_asm_init
 .globl salsa_asm_init
+.hidden _salsa_asm_init
+.hidden salsa_asm_init
 _salsa_asm_init:
 salsa_asm_init:
 mov %rsp,%r11
@@ -1515,6 +1523,8 @@ ret
 .p2align 5
 .globl _salsa_asm_keysetup
 .globl salsa_asm_keysetup
+.hidden _salsa_asm_keysetup
+.hidden salsa_asm_keysetup
 _salsa_asm_keysetup:
 salsa_asm_keysetup:
 mov %rsp,%r11
@@ -1770,6 +1780,8 @@ ret
 .p2align 5
 .globl _salsa_asm_ivsetup
 .globl salsa_asm_ivsetup
+.hidden _salsa_asm_ivsetup
+.hidden salsa_asm_ivsetup
 _salsa_asm_ivsetup:
 salsa_asm_ivsetup:
 mov %rsp,%r11
