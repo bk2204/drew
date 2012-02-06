@@ -37,8 +37,10 @@ XSLoader::load('Digest::Drew', $VERSION);
 sub new {
 	my ($class, $algoname) = @_;
 	$class = ref($class) if ref($class);
-	my $self = ctx_new($algoname) || return;
+	my $ctx = ctx_new($algoname) || return;
+	my $self = \$ctx;
 	bless($self, $class);
+	return $self;
 }
 
 sub DESTROY {
