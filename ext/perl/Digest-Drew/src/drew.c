@@ -29,7 +29,7 @@ drew_hash_t *ctx_new(const char *algoname)
 			break;
 	}
 
-	drew_loader_get_functbl(ldr, &functbl);
+	drew_loader_get_functbl(ldr, id, &functbl);
 	ctx->functbl = functbl;
 	
 	if (ctx->functbl->init(ctx, 0, NULL, NULL))
