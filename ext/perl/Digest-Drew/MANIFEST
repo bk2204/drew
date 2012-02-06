@@ -1,0 +1,8 @@
+Changes
+Drew.xs
+Makefile.PL
+MANIFEST
+ppport.h
+README
+t/Digest-Drew.t
+lib/Digest/Drew.pm
