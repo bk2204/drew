@@ -21,6 +21,8 @@ drew_hash_t *ctx_new(const char *algoname)
 	ctx->priv = ldr;
 
 	drew_loader_load_plugin(ldr, NULL, NULL);
+	drew_loader_load_plugin(ldr, DREW_BUILD_IMPL_SONAME,
+			getenv(DREW_BUILD_UUID));
 
 	for (;;) {
 		if ((id = drew_loader_lookup_by_name(ldr, algoname, id, -1)) < 0)
