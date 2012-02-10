@@ -102,6 +102,15 @@ version:
 	printf '#define DREW_VERSION %s\n' \
 		`echo $(VERSION) | perl -pe 's/v(\d+)(-.*)?/$$1/'` >> $@
 
+buildid:
+	echo $$(uuidgen || (dd if=/dev/urandom bs=15c count=1 | base64) 2>/dev/null)> $@
+
+include/buildid.h: buildid
+	printf '#if 0\n%s\n#else\n' $$(cat buildid) > $@
+	printf '#define DREW_BUILD_IMPL_SONAME "$(DREW_IMPL_SONAME)"\n' >> $@
+	printf '#define DREW_BUILD_UUID "DREW_%s"\n' $$(cat buildid) >> $@
+	printf '#endif\n' >> $@
+
 %/metadata.gen:
 ifeq ($(CFG_METADATA),y)
 	tools/generate-metadata -v $(dir $@)/metadata.rdf
@@ -129,7 +138,8 @@ clean:
 	$(RM) -f $(DREW_SONAME) $(DREW_SYMLINK)
 	$(RM) -f $(TEST_BINARIES)
 	$(RM) -f $(UTILITIES)
-	$(RM) -f include/version.h
+	$(RM) -f include/version.h include/buildid.h
+	$(RM) -f buildid
 	$(RM) -fr $(PLUGINS) plugins/
 	$(RM) -r install
 	$(RM) -f tags
