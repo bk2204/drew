@@ -16,6 +16,8 @@ util/*sum
 util/daniel
 util/version
 include/version.h
+include/buildid.h
+buildid
 *.d
 *.o
 *.gen
