@@ -103,7 +103,9 @@ version:
 		`echo $(VERSION) | perl -pe 's/v(\d+)(-.*)?/$$1/'` >> $@
 
 buildid:
-	echo $$(uuidgen || (dd if=/dev/urandom bs=15c count=1 | base64) 2>/dev/null)> $@
+	echo $$(uuidgen || \
+		(dd if=/dev/urandom bs=15c count=1 | base64) 2>/dev/null) | \
+		tr '+/-' '___' > $@
 
 include/buildid.h: buildid
 	printf '#if 0\n%s\n#else\n' $$(cat buildid) > $@
