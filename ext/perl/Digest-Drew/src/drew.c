@@ -2,6 +2,8 @@
 #include <drew/plugin.h>
 #include <drew/hash.h>
 
+#include "buildid.h"
+
 drew_hash_t *ctx_new(const char *algoname)
 {
 	int id = 0;
