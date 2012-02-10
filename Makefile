@@ -54,6 +54,7 @@ include $(patsubst %,impl/%/Makefile,$(CATEGORIES))
 include lib/libdrew-impl/Makefile
 include test/Makefile
 include util/Makefile
+include ext/Makefile
 include doc/manual/Makefile
 
 IMPL_OBJS		:= $(PLUGINS:=.o) $(MODULES)
