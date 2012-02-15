@@ -384,7 +384,7 @@ static int encrypt_block(drew_tls_session_t sess, Record &rec,
 	// We always pad to a multiple of 256 to foil traffic analysis.  Also, this
 	// guarantees that our data is a multiple of 16, so we can use the more
 	// efficient encryption routines.
-	uint16_t datalen = (inlen + sess->hash_size + 1);
+	uint16_t datalen = (inlen + conn->hash_size + 1);
 	uint16_t totallen = (datalen + 0xff) & ~0xff;
 	uint8_t padval = totallen - datalen;
 	SerializedBuffer content(totallen);
@@ -443,7 +443,7 @@ static int decrypt_block(drew_tls_session_t sess, Record &rec,
 
 	// This is really easy.  Return early here because it's trivial for the
 	// attacker not to mess this one up.
-	if (rec.length % sess->block_size)
+	if (rec.length % conn->block_size)
 		return -DREW_TLS_ERR_DECRYPTION_FAILED;
 
 	mode->functbl->decrypt(mode, decbuf, inbuf, inlen);
@@ -454,10 +454,10 @@ static int decrypt_block(drew_tls_session_t sess, Record &rec,
 		if (decbuf[i] != padbyte)
 			res = -DREW_TLS_ERR_DECRYPTION_FAILED;
 
-	if (declen < (sess->hash_size + 1))
+	if (declen < (conn->hash_size + 1))
 		res = -DREW_TLS_ERR_DECRYPTION_FAILED;
 	else
-		datalen = declen - sess->hash_size;
+		datalen = declen - conn->hash_size;
 
 	BigEndian::Copy(beseqnum, &conn->seqnum, sizeof(beseqnum));
 
@@ -469,7 +469,7 @@ static int decrypt_block(drew_tls_session_t sess, Record &rec,
 	mac->functbl->final(mac, macbuf.GetPointer(0), 0);
 	mac->functbl->fini(mac, 0);
 
-	if (memcmp(macbuf.GetPointer(0), decbuf+datalen, sess->hash_size))
+	if (memcmp(macbuf.GetPointer(0), decbuf+datalen, conn->hash_size))
 		res = -DREW_TLS_ERR_DECRYPTION_FAILED;
 
 	rec.length = datalen;
@@ -1414,6 +1414,7 @@ static int generate_key_material(drew_tls_session_t sess,
 		serverp->stream =
 			(drew_stream_t *)drew_mem_malloc(sizeof(*serverp->stream));
 		sess->enc_type = cipher_type_stream;
+		clientp->block_size = serverp->block_size = 1;
 
 		RETFAIL(make_stream(sess->ldr, csi.cipher, clientp->stream));
 		RETFAIL(make_stream(sess->ldr, csi.cipher, serverp->stream));
@@ -1434,6 +1435,9 @@ static int generate_key_material(drew_tls_session_t sess,
 		RETFAIL(make_block(sess->ldr, csi.cipher, serverp->block));
 		RETFAIL(make_mode(sess->ldr, "CBC", clientp->mode));
 		RETFAIL(make_mode(sess->ldr, "CBC", serverp->mode));
+		clientp->block_size = serverp->block_size =
+			clientp->block->functbl->info2(clientp->block,
+					DREW_BLOCK_BLKSIZE_CTX, NULL, NULL);
 	}
 
 	bytes_needed *= 2;

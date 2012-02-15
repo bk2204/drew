@@ -67,6 +67,7 @@ typedef struct {
 	uint8_t *keybytes;
 	uint8_t *ivbytes;
 	uint64_t seqnum;
+	size_t block_size;
 	size_t key_size;
 	size_t key_material_length;
 	size_t hash_size;
@@ -158,13 +159,12 @@ struct drew_tls_session_s {
 	const drew_loader_t *ldr;
 	drew_prng_t *prng;
 	drew_tls_session_queues_t queues;
-	uint8_t block_size;
-	uint8_t hash_size;
 	drew_tls_handshake_t handshake;
 	int handshake_state;
 	int state;
 	drew_tls_secparams_t serverp;
 	drew_tls_secparams_t clientp;
+	drew_tls_secparams_t tmpp;
 	drew_tls_dh_keyex_t keyex;
 	drew_tls_priority_t prio;
 	drew_tls_session_id_t session_id;
