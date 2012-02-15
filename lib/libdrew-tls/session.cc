@@ -1238,9 +1238,10 @@ static int client_generate_keyex_dh(drew_tls_session_t sess, uint8_t **p,
 
 	sess->prng->functbl->bytes(sess->prng, data, nbytes);
 
+	RETFAIL(make_bignum(sess->ldr, &x, data, nbytes));
+
 	drew_mem_free(data);
 
-	RETFAIL(make_bignum(sess->ldr, &x, data, nbytes));
 	RETFAIL(make_bignum(sess->ldr, &y, NULL, 0));
 	RETFAIL(make_bignum(sess->ldr, &z, NULL, 0));
 
