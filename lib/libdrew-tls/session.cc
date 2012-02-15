@@ -377,6 +377,7 @@ int drew_tls_session_get_transport(drew_tls_session_t sess,
 static int encrypt_block(drew_tls_session_t sess, Record &rec,
 		const uint8_t *inbuf, uint16_t inlen)
 {
+	static const uint8_t zero[256] = {0};
 	drew_mac_t macimpl, *mac = &macimpl;
 	drew_tls_secparams_t *conn = sess->client ? &sess->clientp : &sess->serverp;
 	drew_mode_t *mode = conn->mode;
@@ -391,6 +392,10 @@ static int encrypt_block(drew_tls_session_t sess, Record &rec,
 	SerializedBuffer encbuf(totallen);
 
 	content.Put(inbuf, inlen);
+	// Fill encbuf with dummy data to make it the proper length.
+	for (size_t i = 0; i < totallen; i += sizeof(zero))
+		encbuf.Put(zero, sizeof(zero));
+	encbuf.ResetPosition();
 
 	SerializedBuffer macdata(totallen);
 	macdata.Put(conn->seqnum);
