@@ -239,11 +239,11 @@ static int make_prf(const drew_loader_t *ldr, const char *name,
 	p2.param.value = &hmac;
 
 	RETFAIL(make_hash(ldr, name, &hash));
+	RETFAIL(make_primitive(ldr, "HMAC-KDF", &hmac, DREW_TYPE_KDF));
 
-	RETFAIL(make_primitive(ldr, name, &hmac, DREW_TYPE_KDF));
 	RETFAIL(hmac.functbl->init(&hmac, 0, ldr, &p));
 
-	if ((res = make_primitive(ldr, name, prf, DREW_TYPE_KDF)))
+	if ((res = make_primitive(ldr, "TLS-PRF", prf, DREW_TYPE_KDF)))
 		return res;
 	res = prf->functbl->init(prf, 0, ldr, &p2);
 	return res;
