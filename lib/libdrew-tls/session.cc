@@ -1195,6 +1195,9 @@ static int client_parse_server_finished(drew_tls_session_t sess,
 {
 	uint8_t verify_data[12];
 
+	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_SERVER_FINISHED)
+		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
+
 	if (msg.data.GetLength() != sizeof(verify_data))
 		return -DREW_TLS_ERR_HANDSHAKE_FAILURE;
 
@@ -1202,8 +1205,11 @@ static int client_parse_server_finished(drew_tls_session_t sess,
 				"server finished", sess->handshake.final,
 				sizeof(sess->handshake.final)));
 
-	return memcmp(verify_data, msg.data.GetPointer(0), sizeof(verify_data)) ?
-		0 : -DREW_TLS_ERR_HANDSHAKE_FAILURE;
+	if (memcmp(verify_data, msg.data.GetPointer(0), sizeof(verify_data)))
+		return -DREW_TLS_ERR_HANDSHAKE_FAILURE;
+
+	sess->handshake_state = CLIENT_HANDSHAKE_FINISHED;
+	return 0;
 }
 
 static int generate_master_secret(drew_tls_session_t sess, const uint8_t *pms,
@@ -1351,6 +1357,10 @@ static int client_send_client_verify(drew_tls_session_t sess)
 	return -DREW_ERR_NOT_IMPL;
 }
 
+
+static int generate_key_material(drew_tls_session_t sess,
+		drew_tls_secparams_t *clientp, drew_tls_secparams_t *serverp);
+
 static int client_send_client_cipher_spec(drew_tls_session_t sess)
 {
 	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_CIPHER_SPEC)
@@ -1358,7 +1368,9 @@ static int client_send_client_cipher_spec(drew_tls_session_t sess)
 
 	RETFAIL(send_change_cipher_spec(sess));
 
-	sess->handshake_state = CLIENT_HANDSHAKE_NEED_SERVER_CIPHER_SPEC;
+	RETFAIL(generate_key_material(sess, &sess->clientp, &sess->tmpp));
+
+	sess->handshake_state = CLIENT_HANDSHAKE_NEED_CLIENT_FINISHED;
 
 	return 0;
 }
@@ -1496,15 +1508,15 @@ static int generate_key_material(drew_tls_session_t sess,
 static int handle_server_change_cipher_spec(drew_tls_session_t sess,
 		const Record &rec)
 {
-	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_SERVER_CIPHER_SPEC)
+	if (sess->handshake_state != CLIENT_HANDSHAKE_CLIENT_FINISHED)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
 
 	if (*rec.data.GetPointer(0) != 1)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
 
-	generate_key_material(sess, &sess->clientp, &sess->serverp);
+	memcpy(&sess->serverp, &sess->tmpp, sizeof(sess->serverp));
 
-	sess->handshake_state = CLIENT_HANDSHAKE_NEED_CLIENT_FINISHED;
+	sess->handshake_state = CLIENT_HANDSHAKE_NEED_SERVER_FINISHED;
 
 	return 0;
 }
