@@ -1545,6 +1545,8 @@ static int client_send_client_data(drew_tls_session_t sess)
 				DEBUG("calling send_client_finished\n");
 				RETFAIL(client_send_client_finished(sess));
 				break;
+			default:
+				return -DREW_ERR_BUG;
 		}
 	}
 
