@@ -292,7 +292,7 @@ int drew_tls_session_init(drew_tls_session_t *sess, const drew_loader_t *ldr)
 	s->data_infunc = (drew_tls_data_in_func_t)recv;
 	s->data_outfunc = (drew_tls_data_out_func_t)send;
 	s->prng = new drew_prng_t;
-	s->enc_type = cipher_type_null;
+	s->clientp.enc_type = s->serverp.enc_type = cipher_type_null;
 	if ((res = make_prng(s->ldr, NULL, s->prng))) {
 		free(s);
 		return res;
@@ -495,6 +495,7 @@ static int send_record(drew_tls_session_t sess, const uint8_t *buf,
 		size_t len, uint8_t type)
 {
 	int res = 0;
+	drew_tls_secparams_t *conn = sess->client ? &sess->clientp : &sess->serverp;
 	Record rec;
 
 	DEBUG("in send record\n");
@@ -517,9 +518,9 @@ static int send_record(drew_tls_session_t sess, const uint8_t *buf,
 	rec.data.Reset();
 
 	DEBUG("built buffer\n");
-	DEBUG("enc type is %d\n", sess->enc_type);
+	DEBUG("enc type is %d\n", conn->enc_type);
 	
-	switch (sess->enc_type) {
+	switch (conn->enc_type) {
 		case cipher_type_null:
 			rec.length = len;
 			rec.data.Put(buf, len);
@@ -574,6 +575,7 @@ static int recv_bytes(drew_tls_session_t sess, SerializedBuffer &buf,
 static int recv_record(drew_tls_session_t sess, Record &rec)
 {
 	int res = 0;
+	drew_tls_secparams_t *conn = sess->client ? &sess->serverp : &sess->clientp;
 	SerializedBuffer buf;
 
 	res = recv_bytes(sess, buf, 1 + 2 + 2, 0);
@@ -597,7 +599,7 @@ static int recv_record(drew_tls_session_t sess, Record &rec)
 		return -DREW_ERR_BUG;
 	buf.ResetPosition();
 	
-	switch (sess->enc_type) {
+	switch (conn->enc_type) {
 		case cipher_type_stream:
 			return decrypt_stream(sess, rec, buf);
 		case cipher_type_block:
@@ -1432,7 +1434,7 @@ static int generate_key_material(drew_tls_session_t sess,
 			(drew_stream_t *)drew_mem_malloc(sizeof(*clientp->stream));
 		serverp->stream =
 			(drew_stream_t *)drew_mem_malloc(sizeof(*serverp->stream));
-		sess->enc_type = cipher_type_stream;
+		clientp->enc_type = serverp->enc_type = cipher_type_stream;
 		clientp->block_size = serverp->block_size = 1;
 
 		RETFAIL(make_stream(sess->ldr, csi.cipher, clientp->stream));
@@ -1445,7 +1447,7 @@ static int generate_key_material(drew_tls_session_t sess,
 			(drew_block_t *)drew_mem_malloc(sizeof(*serverp->block));
 		clientp->mode = (drew_mode_t *)drew_mem_malloc(sizeof(*clientp->mode));
 		serverp->mode = (drew_mode_t *)drew_mem_malloc(sizeof(*serverp->mode));
-		sess->enc_type = cipher_type_block;
+		clientp->enc_type = serverp->enc_type = cipher_type_block;
 
 		// For the IV.
 		bytes_needed += csi.cipher_key_len;
@@ -1472,7 +1474,7 @@ static int generate_key_material(drew_tls_session_t sess,
 	serverp->mac->functbl->setkey(serverp->mac, material+off,
 			serverp->hash_size);
 	off += serverp->hash_size;
-	if (sess->enc_type == cipher_type_stream) {
+	if (clientp->enc_type == cipher_type_stream) {
 		clientp->stream->functbl->setkey(clientp->stream,
 				material+off, csi.cipher_key_len, 0);
 		off += csi.cipher_key_len;

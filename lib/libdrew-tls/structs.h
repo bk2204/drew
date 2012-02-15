@@ -59,6 +59,7 @@ typedef enum {
 
 typedef struct {
 	int end;
+	int enc_type;
 	drew_block_t *block;
 	drew_stream_t *stream;
 	drew_mac_t *mac;
@@ -154,7 +155,6 @@ typedef struct {
 #define HELLO_RANDOM_SIZE 32
 struct drew_tls_session_s {
 	int client; // is this the client end or the server end?
-	int enc_type;
 	drew_tls_cipher_suite_t cs;
 	const drew_loader_t *ldr;
 	drew_prng_t *prng;
