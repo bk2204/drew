@@ -270,6 +270,7 @@ static int make_mac(const drew_loader_t *ldr, const char *name,
 		return res;
 	param.name = "digest";
 	param.param.value = hash;
+	param.next = NULL;
 	res = mac->functbl->init(mac, 0, ldr, hash ? &param : NULL);
 	return res;
 }
