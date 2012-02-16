@@ -1773,7 +1773,7 @@ static int handshake_client(drew_tls_session_t sess)
 	while (sess->handshake_state != CLIENT_HANDSHAKE_FINISHED) {
 		Record rec;
 
-		DEBUG("looping on handshake\n");
+		DEBUG("looping on handshake (state %d)\n", sess->handshake_state);
 
 		if (sess->state == STATE_DESTROYED)
 			return -DREW_TLS_ERR_HANDSHAKE_FAILURE;
