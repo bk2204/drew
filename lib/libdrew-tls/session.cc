@@ -312,8 +312,8 @@ int drew_tls_session_fini(drew_tls_session_t *sess)
 	drew_tls_session_t s = *sess;
 	// FIXME: free shit.
 	delete s->queues;
-	delete s->prng;
 	s->prng->functbl->fini(s->prng, 0);
+	delete s->prng;
 	free(*sess);
 	*sess = NULL;
 	return 0;
