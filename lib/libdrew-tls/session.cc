@@ -1449,9 +1449,6 @@ static int generate_key_material(drew_tls_session_t sess,
 		serverp->mode = (drew_mode_t *)drew_mem_malloc(sizeof(*serverp->mode));
 		clientp->enc_type = serverp->enc_type = cipher_type_block;
 
-		// For the IV.
-		bytes_needed += csi.cipher_key_len;
-
 		RETFAIL(make_block(sess->ldr, csi.cipher, clientp->block));
 		RETFAIL(make_block(sess->ldr, csi.cipher, serverp->block));
 		RETFAIL(make_mode(sess->ldr, "CBC", clientp->mode));
@@ -1459,6 +1456,9 @@ static int generate_key_material(drew_tls_session_t sess,
 		clientp->block_size = serverp->block_size =
 			clientp->block->functbl->info2(clientp->block,
 					DREW_BLOCK_BLKSIZE_CTX, NULL, NULL);
+
+		// For the IV.
+		bytes_needed += clientp->block_size;
 	}
 
 	bytes_needed *= 2;
