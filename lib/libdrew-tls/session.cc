@@ -1269,8 +1269,10 @@ static int client_generate_keyex_dh(drew_tls_session_t sess, uint8_t **p,
 static int client_generate_keyex_rsa(drew_tls_session_t sess, uint8_t **p,
 		size_t *len)
 {
-	uint8_t *data;
+	SerializedBuffer buf;
+	uint8_t *data, *ctbuf;
 	size_t dlen;
+	uint16_t rlen;
 	drew_bignum_t pt, ct;
 	drew_pkenc_t rsa;
 	drew_util_x509_pubkey_t *pubkey = &sess->serverp.cert->pubkey;
@@ -1312,11 +1314,23 @@ static int client_generate_keyex_rsa(drew_tls_session_t sess, uint8_t **p,
 	RETFAIL(make_bignum(sess->ldr, &ct, NULL, 0));
 
 	rsa.functbl->encrypt(&rsa, &ct, &pt);
+
+	rlen = ct.functbl->nbytes(&ct);
+	ctbuf = (uint8_t *)drew_mem_malloc(rlen);
+	ct.functbl->bytes(&ct, ctbuf, rlen);
+	buf.ResetPosition();
+	buf.Put(rlen);
+	buf.Put(ctbuf, rlen);
+
 	rsa.functbl->fini(&rsa, 0);
+	pt.functbl->fini(&pt, 0);
+	ct.functbl->fini(&ct, 0);
 
 	drew_mem_free(data);
+	drew_mem_free(ctbuf);
+	buf.ResetPosition();
 
-	return 0;
+	return send_handshake(sess, buf, HANDSHAKE_TYPE_CLIENT_KEYEX);
 }
 
 // Right now this only implements ephemeral DH and RSA.
