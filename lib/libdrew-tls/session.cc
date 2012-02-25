@@ -1163,9 +1163,9 @@ static int do_tls_prf(drew_tls_session_t sess, uint8_t *out, size_t outlen,
 	memcpy(buf+llen, in, inlen);
 
 	prf[HASH_MD5].functbl->generate(&prf[HASH_MD5], halves[0], outlen, buf,
-			sizeof(buf));
+			blen);
 	prf[HASH_SHA1].functbl->generate(&prf[HASH_SHA1], halves[1], outlen, buf,
-			sizeof(buf));
+			blen);
 	XorBuffers(out, halves[0], halves[1], outlen);
 
 	prf[HASH_MD5].functbl->fini(&prf[HASH_MD5], 0);
