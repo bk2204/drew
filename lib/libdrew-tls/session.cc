@@ -1433,6 +1433,7 @@ static int generate_key_material(drew_tls_session_t sess,
 	clientp->stream = serverp->stream = 0;
 	clientp->block = serverp->block = 0;
 	clientp->mode = serverp->mode = 0;
+	clientp->seqnum = serverp->seqnum = 0;
 
 	RETFAIL(make_hash(sess->ldr, csi.hash, &hash));
 	RETFAIL(make_mac(sess->ldr, "HMAC", clientp->mac, &hash));
