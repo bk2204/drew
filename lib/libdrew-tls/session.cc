@@ -1287,6 +1287,8 @@ static int client_generate_keyex_rsa(drew_tls_session_t sess, uint8_t **p,
 	(*p)[1] = sess->protover.minor;
 
 	dlen = pubkey->mpis[0].len;
+	if (!pubkey->mpis[0].data[0])
+		dlen--;
 	if (dlen < *len + 4)
 		return -DREW_TLS_ERR_BAD_CERTIFICATE;
 	data = (uint8_t *)drew_mem_malloc(dlen);
