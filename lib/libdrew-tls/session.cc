@@ -1291,7 +1291,7 @@ static int client_generate_keyex_rsa(drew_tls_session_t sess, uint8_t **p,
 
 	sess->prng->functbl->bytes(sess->prng, (*p)+2, *len-2);
 
-	RETFAIL(make_pkenc(sess->ldr, "RSA", &rsa));
+	RETFAIL(make_pkenc(sess->ldr, "RSAEncryption", &rsa));
 	rsa.functbl->setval(&rsa, "n", pubkey->mpis[0].data, pubkey->mpis[0].len);
 	rsa.functbl->setval(&rsa, "e", pubkey->mpis[1].data, pubkey->mpis[1].len);
 
