@@ -1525,11 +1525,11 @@ static int generate_key_material(drew_tls_session_t sess,
 				serverp->block);
 
 		clientp->mode->functbl->setiv(clientp->mode,
-				material+off, csi.cipher_key_len);
-		off += csi.cipher_key_len;
+				material+off, clientp->block_size);
+		off += clientp->block_size;
 		serverp->mode->functbl->setiv(serverp->mode,
-				material+off, csi.cipher_key_len);
-		off += csi.cipher_key_len;
+				material+off, serverp->block_size);
+		off += serverp->block_size;
 	}
 
 	drew_mem_sfree(material);
