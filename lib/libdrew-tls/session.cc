@@ -1480,9 +1480,21 @@ static int generate_key_material(drew_tls_session_t sess,
 
 	bytes_needed *= 2;
 
+
+	// This uses the random data in the opposite order from everything else, so
+	// we have to handle this specially.
+	const size_t randomslen = sizeof(clientp->random) + sizeof(serverp->random);
+	// Not using smalloc because these are public.
+	uint8_t randoms[randomslen];
+	memcpy(randoms, sess->serverp.random, sizeof(sess->serverp.random));
+	memcpy(randoms+sizeof(serverp->random), clientp->random,
+		sizeof(clientp->random));
+
 	uint8_t *material = (uint8_t *)drew_mem_smalloc(bytes_needed);
 	do_tls_prf(sess, material, bytes_needed, "key expansion",
-			clientp->master_secret, sizeof(clientp->master_secret));
+			clientp->master_secret, sizeof(clientp->master_secret),
+			randoms, randomslen);
+
 	size_t off = 0;
 
 	clientp->mac->functbl->setkey(clientp->mac, material+off,
