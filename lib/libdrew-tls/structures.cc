@@ -122,6 +122,12 @@ void SerializedBuffer::Get(SerializedBuffer &sbuf, size_t datalen)
 	delete[] data;
 }
 
+void SerializedBuffer::Extend(size_t space)
+{
+	Reserve(off + space);
+	len += space;
+}
+
 void SerializedBuffer::Reserve(size_t space)
 {
 	if (space > buflen) {

@@ -165,6 +165,7 @@ class SerializedBuffer
 		uint8_t *GetPointer();
 		uint8_t *GetPointer(size_t offset);
 		void Reserve(size_t);
+		void Extend(size_t);
 	protected:
 		void Reset(size_t);
 		void ExtendIfNecessary(size_t space);
