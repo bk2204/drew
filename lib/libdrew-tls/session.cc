@@ -628,10 +628,9 @@ static int send_handshake(drew_tls_session_t sess, SerializedBuffer &buf,
 	b2.Put(uint8_t(buf.GetLength()));
 	b2.Put(buf);
 
-	hs->msgs[HASH_MD5].functbl->update(hs->msgs+HASH_MD5, b2.GetPointer(0),
-			b2.GetLength());
-	hs->msgs[HASH_SHA1].functbl->update(hs->msgs+HASH_SHA1, b2.GetPointer(0),
-			b2.GetLength());
+	for (int i = 0; i < hs->nmsgs; i++)
+		hs->msgs[i].functbl->update(hs->msgs+i, b2.GetPointer(0),
+				b2.GetLength());
 
 	res = send_record(sess, b2, CONTENT_TYPE_HANDSHAKE);
 	return res;
@@ -1399,12 +1398,16 @@ static int client_send_client_finished(drew_tls_session_t sess)
 	uint8_t verify_data[12];
 	drew_tls_handshake_t *hs = &sess->handshake;
 	SerializedBuffer buf;
+	drew_hash_t hashes[DIM(hs->msgs)];
 
 	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_FINISHED)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
 
-	hs->msgs[HASH_MD5].functbl->final(hs->msgs+HASH_MD5, hs->final, 16, 0);
-	hs->msgs[HASH_SHA1].functbl->final(hs->msgs+HASH_SHA1, hs->final+16, 20, 0);
+	for (int i = 0; i < hs->nmsgs; i++)
+		hs->msgs[i].functbl->clone(hashes+i, hs->msgs+i, 0);
+
+	hashes[HASH_MD5].functbl->final(hashes+HASH_MD5, hs->final, 16, 0);
+	hashes[HASH_SHA1].functbl->final(hashes+HASH_SHA1, hs->final+16, 20, 0);
 
 	RETFAIL(do_tls_prf(sess, verify_data, sizeof(verify_data),
 				"client finished", sess->handshake.final,
@@ -1792,6 +1795,7 @@ static int handshake_client(drew_tls_session_t sess)
 				sess->handshake.msgs+HASH_MD5));
 	URETFAIL(sess, make_hash(sess->ldr, "SHA-1",
 				sess->handshake.msgs+HASH_SHA1));
+	sess->handshake.nmsgs = 2;
 
 	sess->handshake_state = CLIENT_HANDSHAKE_HELLO_REQUEST;
 	sess->state = 0;
