@@ -12,9 +12,8 @@ test/test-mem
 test/test-ecc
 test/plugin-main
 test/libmd-testsuite
-util/*sum
+util/drew-*
 util/daniel
-util/version
 include/version.h
 include/buildid.h
 buildid
