@@ -7,6 +7,8 @@ UTILITIES				+= $(SUMS_PROGS)
 
 $(SUMS_PROGS:=.o): util/sum.c
 
+util/drew-config: LIBS += -lpopt
+
 util/drew-%: util/%.o | $(DREW_SONAME) $(DREW_IMPL_SONAME)
 	$(CC) $(CFLAGS) -o $@ $^ $| $(LIBS)
 

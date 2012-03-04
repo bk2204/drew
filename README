@@ -37,12 +37,13 @@ that can be queried programmatically as triples.  If this is not useful for you
 or you do not want to install RDF::Trine, simply disable the CFG_METADATA option
 in the configuration file.
 
-The only module which has external dependencies is the tommath plugin, which
-depends on the public domain libtommath for its implementation.  Since this is
-currently the only bignum implementation, public key software will not work
-unless you enable it.  Also, both a C and C++ compiler are required.  If not
-using the GNU linker, you may need to instruct your linker specifically to not
-export symbols other than those starting with "drew_".
+The only cryptographic module which has external dependencies is the tommath
+plugin, which depends on the public domain libtommath for its implementation.
+Since this is currently the only bignum implementation, public key software will
+not work unless you enable it.  Some utilities also require libpopt.  Also, both
+a C and C++ compiler are required.  If not using the GNU linker, you may need to
+instruct your linker specifically to not export symbols other than those
+starting with "drew_".
 
 Once you have edited the config file, type "make" (with or without a -j option)
 to build the code.  Then type "make test" to run a full testsuite.  Please be
