@@ -208,6 +208,7 @@ install: all
 			$(INSTALL) -m 644 $$i $(INSTDIR)/include);\
 		done
 	$(INSTALL) -m 644 include/drew/* $(INSTDIR)/include/drew
+	$(INSTALL) -m 755 $(UTILITIES) $(INSTDIR)/bin
 
 uninstall:
 	$(RM) $(INSTDIR)/lib/libdrew*.so.*
@@ -219,6 +220,7 @@ uninstall:
 		done
 	$(RMDIR) $(INSTDIR)/lib/drew/plugins || true
 	$(RMDIR) $(INSTDIR)/lib/drew || true
+	for i in $(UTILITIES); do $(RM) $(INSTDIR)/bin/`basename $$i`; done
 
 ifneq "$(MAKECMDGOALS)" "clean"
 -include $(DEPFILES)
