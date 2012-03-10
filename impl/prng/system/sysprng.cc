@@ -36,7 +36,7 @@ inline static int prng_info(int op, void *p, int blksize)
 {
 	switch (op) {
 		case DREW_PRNG_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_PRNG_BLKSIZE:
 		case DREW_PRNG_BLKSIZE_CTX:
 			return blksize;

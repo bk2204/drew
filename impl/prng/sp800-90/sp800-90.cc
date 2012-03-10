@@ -67,7 +67,7 @@ static int sp_algo_info(int op, void *p)
 {
 	switch (op) {
 		case DREW_PRNG_VERSION:
-			return 2;
+			return CURRENT_ABI;
 		case DREW_PRNG_BLKSIZE:
 			return 256;
 		case DREW_PRNG_SEEDABLE:
