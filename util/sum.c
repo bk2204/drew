@@ -152,6 +152,13 @@ next:
 	return errors;
 }
 
+int usage(int ret)
+{
+	printf("Usage: %s [-tbc] [file]...\nPrint or check %s hashes.\n", program,
+			ALGO_NAME);
+	return ret;
+}
+
 int main(int argc, char **argv)
 {
 	int c, mode = MODE_TEXT, id;
@@ -171,6 +178,8 @@ int main(int argc, char **argv)
 				c = 'b';
 			else if (!strcmp(optarg, "check"))
 				c = 'c';
+			else if (!strcmp(optarg, "help"))
+				return usage(0);
 			else
 				c = '?';
 		}
@@ -184,6 +193,8 @@ int main(int argc, char **argv)
 			case 'c':
 				mode = MODE_CHECK;
 				break;
+			case '?':
+				return usage(2);
 		}
 	}
 
