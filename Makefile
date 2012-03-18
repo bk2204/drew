@@ -200,18 +200,18 @@ install: all
 	find plugins -type f | \
 		xargs -I%s $(INSTALL) -m 644 %s $(INSTDIR)/lib/drew/plugins
 	$(INSTALL) -m 644 libdrew*.so.* $(INSTDIR)/lib
+	[ "$(CFG_LIBMD)" != y ] ||  $(INSTALL) -m 644 $(MD_SONAME) $(INSTDIR)/lib
 	for i in libdrew*.so.*; do \
 		ln -sf $(INSTDIR)/lib/$$i $(INSTDIR)/lib/drew/plugins; done
 	for i in include/*; do \
-		[ -f $$i ] || \
-			($(INSTALL) -m 755 -d $(INSTDIR)/$$i; \
-			$(INSTALL) -m 644 $$i $(INSTDIR)/include);\
+		[ -f $$i ] || $(INSTALL) -m 755 -d $(INSTDIR)/$$i; \
+		[ -f $$i ] || $(INSTALL) -m 644 $$i/*.h $(INSTDIR)/$$i; \
 		done
-	$(INSTALL) -m 644 include/drew/* $(INSTDIR)/include/drew
 	$(INSTALL) -m 755 $(UTILITIES) $(INSTDIR)/bin
 
 uninstall:
 	$(RM) $(INSTDIR)/lib/libdrew*.so.*
+	$(RM) $(INSTDIR)/lib/$(MD_SONAME)
 	find plugins -type f | xargs -I%s $(RM) $(INSTDIR)/lib/drew/%s
 	for i in libdrew*.so.*; do $(RM) $(INSTDIR)/lib/drew/plugins/$$i; done
 	for i in include/*; do \
