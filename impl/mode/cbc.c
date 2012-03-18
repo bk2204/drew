@@ -338,7 +338,7 @@ static int cbc_test_generic(const drew_loader_t *ldr, const char *name,
 		cbc_init(&c, 0, ldr, NULL);
 		algo.functbl->init(&algo, 0, ldr, NULL);
 		algo.functbl->setkey(&algo, testdata[i].key, testdata[i].keysz,
-				DREW_BLOCK_MODE_ENCRYPT);
+				DREW_BLOCK_MODE_DECRYPT);
 		cbc_setblock(&c, &algo);
 		cbc_setiv(&c, testdata[i].iv, testdata[i].ivsz);
 		cbc_decrypt(&c, buf, testdata[i].output,
