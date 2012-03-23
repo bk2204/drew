@@ -30,6 +30,8 @@
 #include <drew/hash.h>
 #include <drew/plugin.h>
 
+#include "util.h"
+
 struct plugin_info {
 	const char *name;
 	const char *algo;
@@ -91,6 +93,35 @@ static void drew_impl_libmd_init(void)
 }
 
 #define CONCAT(prefix, suffix) prefix ## suffix
+
+#ifdef FEATURE_ALIAS
+#define ALIAS(prefix, realprefix, name) \
+DREW_SYM_PUBLIC \
+void prefix ## Init(drew_hash_t *ctx) ALIAS_FOR(realprefix ## Init); \
+DREW_SYM_PUBLIC \
+void prefix ## Update(drew_hash_t *ctx, const uint8_t *data, size_t len) \
+	 ALIAS_FOR(realprefix ## Update); \
+DREW_SYM_PUBLIC \
+void prefix ## Pad(drew_hash_t *ctx) ALIAS_FOR(realprefix ## Pad); \
+DREW_SYM_PUBLIC \
+void prefix ## Final(uint8_t *digest, drew_hash_t *ctx) \
+	 ALIAS_FOR(realprefix ## Final); \
+DREW_SYM_PUBLIC \
+char *prefix ## End(drew_hash_t *ctx, char *buf) \
+	 ALIAS_FOR(realprefix ## End); \
+DREW_SYM_PUBLIC \
+char *prefix ## Data(const uint8_t *data, size_t len, char *buf) \
+	 ALIAS_FOR(realprefix ## Data); \
+DREW_SYM_PUBLIC \
+char *prefix ## FileChunk(const char *filename, char *buf, off_t offset, \
+		off_t length) ALIAS_FOR(realprefix ## FileChunk); \
+DREW_SYM_PUBLIC \
+char *prefix ## File(const char *filename, char *buf) \
+	 ALIAS_FOR(realprefix ## File);
+#else
+#define ALIAS(prefix, realprefix, name) INTERFACE(prefix, name)
+#endif
+
 #define INTERFACE(prefix, name) \
 \
 DREW_SYM_PUBLIC \
@@ -211,7 +242,9 @@ char *prefix ## File(const char *filename, char *buf) \
 INTERFACE(MD4, MD4)
 INTERFACE(MD5, MD5)
 INTERFACE(RMD160, RMD160)
+ALIAS(RIPEMD160_, RMD160, RMD160)
 INTERFACE(SHA1, SHA1)
+ALIAS(SHA1_, SHA1, SHA1)
 INTERFACE(SHA256, SHA256)
 INTERFACE(SHA384, SHA384)
 INTERFACE(SHA512, SHA512)

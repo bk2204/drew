@@ -43,4 +43,24 @@ char *SHA1FileChunk(const char *filename, char *buf, off_t off, off_t len);
 DREW_SYM_PUBLIC
 char *SHA1Data(const uint8_t *data, size_t len, char *buf);
 
+DREW_SYM_PUBLIC
+void SHA1_Init(SHA1_CTX *ctx);
+DREW_SYM_PUBLIC
+void SHA1_Update(SHA1_CTX *ctx, const uint8_t *data, size_t len);
+DREW_SYM_PUBLIC
+void SHA1_Pad(SHA1_CTX *ctx);
+DREW_SYM_PUBLIC
+void SHA1_Final(uint8_t digest[SHA1__DIGEST_LENGTH], SHA1_CTX *ctx);
+DREW_SYM_PUBLIC
+void SHA1_Transform(uint32_t state[5], const uint8_t block[SHA1__BLOCK_LENGTH]);
+
+DREW_SYM_PUBLIC
+char *SHA1_End(SHA1_CTX *ctx, char *buf);
+DREW_SYM_PUBLIC
+char *SHA1_File(const char *filename, char *buf);
+DREW_SYM_PUBLIC
+char *SHA1_FileChunk(const char *filename, char *buf, off_t off, off_t len);
+DREW_SYM_PUBLIC
+char *SHA1_Data(const uint8_t *data, size_t len, char *buf);
+
 #endif
