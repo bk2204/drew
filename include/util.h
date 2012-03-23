@@ -135,6 +135,13 @@
 typedef __int128_t int128_t;
 typedef __uint128_t uint128_t; 
 #endif
+#define FEATURE_ALIAS
+#endif
+
+#ifdef FEATURE_ALIAS
+#define ALIAS_FOR(x) __attribute__((alias(#x)))
+#else
+#define ALIAS_FOR(x)
 #endif
 
 #ifdef DREW_COMPILER_GCCLIKE
