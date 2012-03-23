@@ -22,6 +22,7 @@
 #define SHA256_BLOCK_LENGTH 64
 
 DREW_LIBMD_HASH_STRUCT(SHA2_CTX, uint32_t, SHA256_DIGEST_LENGTH, SHA256_BLOCK_LENGTH);
+typedef SHA2_CTX SHA256_CTX;
 
 DREW_SYM_PUBLIC
 void SHA256Init(SHA2_CTX *ctx);
@@ -42,5 +43,26 @@ DREW_SYM_PUBLIC
 char *SHA256FileChunk(const char *filename, char *buf, off_t off, off_t len);
 DREW_SYM_PUBLIC
 char *SHA256Data(const uint8_t *data, size_t len, char *buf);
+
+DREW_SYM_PUBLIC
+void SHA256_Init(SHA256_CTX *ctx);
+DREW_SYM_PUBLIC
+void SHA256_Update(SHA256_CTX *ctx, const uint8_t *data, size_t len);
+DREW_SYM_PUBLIC
+void SHA256_Pad(SHA256_CTX *ctx);
+DREW_SYM_PUBLIC
+void SHA256_Final(uint8_t digest[SHA256_DIGEST_LENGTH], SHA256_CTX *ctx);
+DREW_SYM_PUBLIC
+void SHA256_Transform(uint32_t *state,
+		const uint8_t block[SHA256_BLOCK_LENGTH]);
+
+DREW_SYM_PUBLIC
+char *SHA256_End(SHA256_CTX *ctx, char *buf);
+DREW_SYM_PUBLIC
+char *SHA256_File(const char *filename, char *buf);
+DREW_SYM_PUBLIC
+char *SHA256_FileChunk(const char *filename, char *buf, off_t off, off_t len);
+DREW_SYM_PUBLIC
+char *SHA256_Data(const uint8_t *data, size_t len, char *buf);
 
 #endif

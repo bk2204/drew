@@ -21,6 +21,10 @@
 #define RMD160_DIGEST_STRING_LENGTH (RMD160_DIGEST_LENGTH*2+1)
 #define RMD160_BLOCK_LENGTH 64
 
+#define RIPEMD160_DIGEST_LENGTH RMD160_DIGEST_LENGTH
+#define RIPEMD160_DIGEST_STRING_LENGTH RMD160_DIGEST_LENGTH
+#define RIPEMD160_BLOCK_LENGTH RMD160_BLOCK_LENGTH
+
 DREW_LIBMD_HASH_STRUCT(RMD160_CTX, uint32_t, RMD160_DIGEST_LENGTH, RMD160_BLOCK_LENGTH);
 typedef RMD160_CTX RIPEMD160_CTX;
 
@@ -45,23 +49,25 @@ char *RMD160FileChunk(const char *filename, char *buf, off_t off, off_t len);
 DREW_SYM_PUBLIC
 char *RMD160Data(const uint8_t *data, size_t len, char *buf);
 
-void RIPEMD160_Init(RIPEMD160__CTX *ctx);
+void RIPEMD160_Init(RIPEMD160_CTX *ctx);
 DREW_SYM_PUBLIC
-void RIPEMD160_Update(RIPEMD160__CTX *ctx, const uint8_t *data, size_t len);
+void RIPEMD160_Update(RIPEMD160_CTX *ctx, const uint8_t *data, size_t len);
 DREW_SYM_PUBLIC
-void RIPEMD160_Pad(RIPEMD160__CTX *ctx);
+void RIPEMD160_Pad(RIPEMD160_CTX *ctx);
 DREW_SYM_PUBLIC
-void RIPEMD160_Final(uint8_t digest[RIPEMD160__DIGEST_LENGTH], RIPEMD160__CTX *ctx);
+void RIPEMD160_Final(uint8_t digest[RIPEMD160_DIGEST_LENGTH],
+		RIPEMD160_CTX *ctx);
 DREW_SYM_PUBLIC
 void RIPEMD160_Transform(uint32_t state[5],
-		const uint8_t block[RIPEMD160__BLOCK_LENGTH]);
+		const uint8_t block[RIPEMD160_BLOCK_LENGTH]);
 
 DREW_SYM_PUBLIC
-char *RIPEMD160_End(RIPEMD160__CTX *ctx, char *buf);
+char *RIPEMD160_End(RIPEMD160_CTX *ctx, char *buf);
 DREW_SYM_PUBLIC
 char *RIPEMD160_File(const char *filename, char *buf);
 DREW_SYM_PUBLIC
-char *RIPEMD160_FileChunk(const char *filename, char *buf, off_t off, off_t len);
+char *RIPEMD160_FileChunk(const char *filename, char *buf, off_t off,
+		off_t len);
 DREW_SYM_PUBLIC
 char *RIPEMD160_Data(const uint8_t *data, size_t len, char *buf);
 
