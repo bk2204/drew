@@ -1132,9 +1132,14 @@ int client_send_client_cert(drew_tls_session_t sess)
 	if (sess->handshake_state != CLIENT_HANDSHAKE_NEED_CLIENT_CERT)
 		return -DREW_TLS_ERR_UNEXPECTED_MESSAGE;
 
+	SerializedBuffer buf;
+	buf.Put(uint16_t(0));
+	buf.Put(uint8_t(0));
+	RETFAIL(send_handshake(sess, buf, HANDSHAKE_TYPE_CERTIFICATE));
+
 	sess->handshake_state = CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX_CERT;
 
-	return -DREW_ERR_NOT_IMPL;
+	return 0;
 }
 
 // This works for TLS 1.0 and 1.1, but will need to be adjusted for TLS 1.2,
