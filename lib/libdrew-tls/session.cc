@@ -1576,6 +1576,7 @@ static int client_send_client_data(drew_tls_session_t sess)
 				RETFAIL(client_send_client_cert(sess));
 				break;
 			case CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX:
+			case CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX_CERT:
 				DEBUG("calling send_client_keyex\n");
 				RETFAIL(client_send_client_keyex(sess));
 				break;
