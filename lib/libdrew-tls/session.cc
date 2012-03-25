@@ -74,6 +74,35 @@
 #define HANDSHAKE_TYPE_CLIENT_KEYEX 16
 #define HANDSHAKE_TYPE_FINISHED 20
 
+#define CLIENT_HANDSHAKE_HELLO_REQUEST				0
+#define CLIENT_HANDSHAKE_NEED_SERVER_HELLO			1
+#define CLIENT_HANDSHAKE_NEED_SERVER_CERT			2
+#define CLIENT_HANDSHAKE_CERT_REQ_OR_DONE			3
+#define CLIENT_HANDSHAKE_SERVER_DONE				4
+#define CLIENT_HANDSHAKE_DONE_NEED_CERT				5
+#define CLIENT_HANDSHAKE_NEED_CLIENT_CERT			6
+#define CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX			7
+#define CLIENT_HANDSHAKE_NEED_SERVER_KEYEX			8
+#define CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX_CERT		9
+#define CLIENT_HANDSHAKE_NEED_CLIENT_VERIFY			10
+#define CLIENT_HANDSHAKE_NEED_CLIENT_CIPHER_SPEC	11
+#define CLIENT_HANDSHAKE_NEED_SERVER_CIPHER_SPEC	12
+#define CLIENT_HANDSHAKE_NEED_CLIENT_FINISHED		13
+#define CLIENT_HANDSHAKE_CLIENT_FINISHED			14
+#define CLIENT_HANDSHAKE_NEED_SERVER_FINISHED		15
+#define CLIENT_HANDSHAKE_FINISHED					20
+
+#define ALERT_WARNING	1
+#define ALERT_FATAL		2
+
+#define STATE_DESTROYED	1
+
+#define TYPE_CHANGE_CIPHER_SPEC		20
+#define TYPE_ALERT					21
+#define TYPE_HANDSHAKE				22
+#define TYPE_APPLICATION_DATA		23
+
+
 #define HASH_MD5 0
 #define HASH_SHA1 1
 
@@ -628,9 +657,14 @@ static int send_handshake(drew_tls_session_t sess, SerializedBuffer &buf,
 	b2.Put(uint8_t(buf.GetLength()));
 	b2.Put(buf);
 
-	for (int i = 0; i < hs->nmsgs; i++)
+	for (int i = 0; i < hs->nmsgs; i++) {
+		DEBUG("hashing data: %d: ", (int)b2.GetLength());
+		for (size_t j = 0; j < b2.GetLength(); j++)
+			DEBUG("%02x ", *b2.GetPointer(j));
+		DEBUG("\n");
 		hs->msgs[i].functbl->update(hs->msgs+i, b2.GetPointer(0),
 				b2.GetLength());
+	}
 
 	res = send_record(sess, b2, CONTENT_TYPE_HANDSHAKE);
 	return res;
@@ -705,34 +739,6 @@ static int handshake_server(drew_tls_session_t sess)
 {
 	return -DREW_ERR_NOT_IMPL;
 }
-
-#define CLIENT_HANDSHAKE_HELLO_REQUEST				0
-#define CLIENT_HANDSHAKE_NEED_SERVER_HELLO			1
-#define CLIENT_HANDSHAKE_NEED_SERVER_CERT			2
-#define CLIENT_HANDSHAKE_CERT_REQ_OR_DONE			3
-#define CLIENT_HANDSHAKE_SERVER_DONE				4
-#define CLIENT_HANDSHAKE_DONE_NEED_CERT				5
-#define CLIENT_HANDSHAKE_NEED_CLIENT_CERT			6
-#define CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX			7
-#define CLIENT_HANDSHAKE_NEED_SERVER_KEYEX			8
-#define CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX_CERT		9
-#define CLIENT_HANDSHAKE_NEED_CLIENT_VERIFY			10
-#define CLIENT_HANDSHAKE_NEED_CLIENT_CIPHER_SPEC	11
-#define CLIENT_HANDSHAKE_NEED_SERVER_CIPHER_SPEC	12
-#define CLIENT_HANDSHAKE_NEED_CLIENT_FINISHED		13
-#define CLIENT_HANDSHAKE_CLIENT_FINISHED			14
-#define CLIENT_HANDSHAKE_NEED_SERVER_FINISHED		15
-#define CLIENT_HANDSHAKE_FINISHED					20
-
-#define ALERT_WARNING	1
-#define ALERT_FATAL		2
-
-#define STATE_DESTROYED	1
-
-#define TYPE_CHANGE_CIPHER_SPEC		20
-#define TYPE_ALERT					21
-#define TYPE_HANDSHAKE				22
-#define TYPE_APPLICATION_DATA		23
 
 static int destroy_session(drew_tls_session_t sess)
 {
@@ -1720,8 +1726,13 @@ static int client_handle_handshake(drew_tls_session_t sess)
 		hq.Read(buf, len + 4);
 		hq.Remove(len + 4);
 
-		for (int i = 0; i < hs->nmsgs; i++)
+		for (int i = 0; i < hs->nmsgs; i++) {
+			DEBUG("hashing data: %d: ", len + 4);
+			for (size_t j = 0; j < len + 4; j++)
+				DEBUG("%02x ", buf[j]);
+			DEBUG("\n");
 			hs->msgs[i].functbl->update(hs->msgs+i, buf, len + 4);
+		}
 
 		// process message.
 		HandshakeMessage hm;
