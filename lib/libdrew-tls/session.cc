@@ -1137,7 +1137,9 @@ int client_send_client_cert(drew_tls_session_t sess)
 	buf.Put(uint8_t(0));
 	RETFAIL(send_handshake(sess, buf, HANDSHAKE_TYPE_CERTIFICATE));
 
-	sess->handshake_state = CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX_CERT;
+	// If we actually send a certificate, then use CLIENT_KEYEX_CERT.
+	// Otherwise, simply use CLIENT_KEYEX.
+	sess->handshake_state = CLIENT_HANDSHAKE_NEED_CLIENT_KEYEX;
 
 	return 0;
 }
