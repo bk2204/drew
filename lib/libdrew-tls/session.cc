@@ -1216,7 +1216,8 @@ static int client_parse_server_finished(drew_tls_session_t sess,
 		return -DREW_TLS_ERR_HANDSHAKE_FAILURE;
 
 	RETFAIL(do_tls_prf(sess, verify_data, sizeof(verify_data),
-				"server finished", sess->handshake.final,
+				"server finished", sess->clientp.master_secret,
+				sizeof(sess->clientp.master_secret), sess->handshake.final,
 				sizeof(sess->handshake.final)));
 
 	if (memcmp(verify_data, msg.data.GetPointer(0), sizeof(verify_data)))
@@ -1423,12 +1424,16 @@ static int client_send_client_finished(drew_tls_session_t sess)
 	hashes[HASH_SHA1].functbl->final(hashes+HASH_SHA1, hs->final+16, 20, 0);
 
 	RETFAIL(do_tls_prf(sess, verify_data, sizeof(verify_data),
-				"client finished", sess->handshake.final,
+				"client finished", sess->clientp.master_secret,
+				sizeof(sess->clientp.master_secret), sess->handshake.final,
 				sizeof(sess->handshake.final)));
 
 	buf.Put(verify_data, sizeof(verify_data));
 
 	RETFAIL(send_handshake(sess, buf, HANDSHAKE_TYPE_FINISHED));
+
+	hs->msgs[HASH_MD5].functbl->final(hs->msgs+HASH_MD5, hs->final, 16, 0);
+	hs->msgs[HASH_SHA1].functbl->final(hs->msgs+HASH_SHA1, hs->final+16, 20, 0);
 
 	sess->handshake_state = CLIENT_HANDSHAKE_CLIENT_FINISHED;
 
