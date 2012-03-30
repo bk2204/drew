@@ -471,7 +471,6 @@ static int decrypt_block(drew_tls_session_t sess, Record &rec,
 	SerializedBuffer decbuffer(rec.length);
 	uint8_t *decbuf = decbuffer.GetPointer(0);
 	uint16_t declen, datalen = 0;
-	uint8_t beseqnum[sizeof(conn->seqnum)];
 	uint8_t padbyte;
 	SerializedBuffer macbuf(128);
 
@@ -493,12 +492,16 @@ static int decrypt_block(drew_tls_session_t sess, Record &rec,
 	else
 		datalen = declen - conn->hash_size;
 
-	BigEndian::Copy(beseqnum, &conn->seqnum, sizeof(beseqnum));
+	SerializedBuffer macdata;
+	macdata.Put(conn->seqnum);
+	macdata.Put(uint8_t(rec.type));
+	macdata.Put(uint8_t(rec.version.major));
+	macdata.Put(uint8_t(rec.version.minor));
+	macdata.Put(uint16_t(datalen));
 
 	conn->mac->functbl->clone(mac, conn->mac, 0);
 	mac->functbl->reset(mac);
-	mac->functbl->update(mac, beseqnum, sizeof(beseqnum));
-	mac->functbl->update(mac, sbuf.GetPointer(0), 5);
+	mac->functbl->update(mac, macdata.GetPointer(0), macdata.GetLength());
 	mac->functbl->update(mac, decbuf, datalen);
 	mac->functbl->final(mac, macbuf.GetPointer(0), 0);
 	mac->functbl->fini(mac, 0);
