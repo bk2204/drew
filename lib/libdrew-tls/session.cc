@@ -1900,9 +1900,5 @@ static int handshake_client(drew_tls_session_t sess)
 
 int drew_tls_session_handshake(drew_tls_session_t sess)
 {
-	LOCK(sess);
-	//URETFAIL(sess, make_hash(sess->ldr, "MD5", &sess->handshake.md5));
-	//URETFAIL(sess, make_hash(sess->ldr, "SHA-1", &sess->handshake.sha1));
-	UNLOCK(sess);
 	return sess->client ? handshake_client(sess) : handshake_server(sess);
 }
