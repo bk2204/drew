@@ -72,6 +72,9 @@ int drew_tls_session_set_cert_callback(drew_tls_session_t sess,
 DREW_SYM_PUBLIC
 int drew_tls_session_handshake(drew_tls_session_t sess);
 
+DREW_SYM_PUBLIC
+int drew_tls_session_close(drew_tls_session_t sess);
+
 #ifdef __cplusplus
 }
 #endif

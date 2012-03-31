@@ -71,6 +71,8 @@ int main(void)
 	if (res != 0)
 		printf("handshake failed: %d %d\n", -res, (-res) & 0xffff);
 
+	drew_tls_session_close(sess);
+
 	drew_tls_session_fini(&sess);
 	drew_tls_priority_fini(&prio);
 	drew_loader_free(&ldr);

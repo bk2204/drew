@@ -1902,3 +1902,11 @@ int drew_tls_session_handshake(drew_tls_session_t sess)
 {
 	return sess->client ? handshake_client(sess) : handshake_server(sess);
 }
+
+int drew_tls_session_close(drew_tls_session_t sess)
+{
+	LOCK(sess);
+	send_alert(sess, 0, ALERT_WARNING);
+	UNLOCK(sess);
+	return 0;
+}
