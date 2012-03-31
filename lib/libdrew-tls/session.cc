@@ -771,8 +771,8 @@ static int send_alert(drew_tls_session_t sess, int alert, int level)
 {
 	SerializedBuffer buf;
 
-	buf.Put((uint8_t)alert);
 	buf.Put((uint8_t)level);
+	buf.Put((uint8_t)alert);
 
 	// Don't care if this fails.
 	send_record(sess, buf, CONTENT_TYPE_ALERT);
