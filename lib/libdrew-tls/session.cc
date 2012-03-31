@@ -455,7 +455,39 @@ static int encrypt_block(drew_tls_session_t sess, Record &rec,
 static int encrypt_stream(drew_tls_session_t sess, Record &rec,
 		const uint8_t *inbuf, uint16_t inlen)
 {
-	return -DREW_ERR_NOT_IMPL;
+	drew_mac_t macimpl, *mac = &macimpl;
+	drew_tls_secparams_t *conn = sess->client ? &sess->clientp : &sess->serverp;
+	drew_stream_t *stream = conn->stream;
+
+	uint16_t datalen = (inlen + conn->hash_size);
+	SerializedBuffer content(datalen);
+	SerializedBuffer encbuf(datalen);
+
+	content.Put(inbuf, inlen);
+	encbuf.Extend(datalen);
+	encbuf.ResetPosition();
+
+	SerializedBuffer macdata(datalen);
+	macdata.Put(conn->seqnum);
+	macdata.Put(rec.type);
+	rec.version.WriteToBuffer(macdata);
+	macdata.Put(inlen);
+	macdata.Put(inbuf, inlen);
+
+	conn->mac->functbl->clone(mac, conn->mac, 0);
+	mac->functbl->reset(mac);
+	mac->functbl->update(mac, macdata.GetPointer(0), macdata.GetLength());
+	mac->functbl->final(mac, content.GetPointer(inlen), 0);
+	mac->functbl->fini(mac, 0);
+
+	stream->functbl->encrypt(stream, encbuf.GetPointer(0),
+			content.GetPointer(0), datalen);
+
+	rec.length = datalen;
+	rec.data = encbuf;
+	conn->seqnum++;
+
+	return 0;
 }
 
 // Note that this assumes the use of CBC.  It will have to be adjusted for GCM.
@@ -519,7 +551,47 @@ static int decrypt_block(drew_tls_session_t sess, Record &rec,
 static int decrypt_stream(drew_tls_session_t sess, Record &rec,
 		SerializedBuffer &sbuf)
 {
-	return -DREW_ERR_NOT_IMPL;
+	int res = 0;
+	drew_tls_secparams_t *conn = sess->client ? &sess->serverp : &sess->clientp;
+	drew_mac_t macimpl, *mac = &macimpl;
+	drew_stream_t *stream = conn->stream;
+	uint8_t *inbuf = rec.data.GetPointer(0);
+	uint16_t inlen = rec.length;
+	SerializedBuffer decbuffer(rec.length);
+	uint8_t *decbuf = decbuffer.GetPointer(0);
+	uint16_t datalen = 0;
+	SerializedBuffer macbuf(128);
+
+	stream->functbl->decrypt(stream, decbuf, inbuf, inlen);
+
+	// Not enough data.
+	if (inlen < (conn->hash_size + 1))
+		return -DREW_TLS_ERR_DECRYPTION_FAILED;
+
+	datalen = inlen - conn->hash_size;
+
+	SerializedBuffer macdata;
+	macdata.Put(conn->seqnum);
+	macdata.Put(uint8_t(rec.type));
+	macdata.Put(uint8_t(rec.version.major));
+	macdata.Put(uint8_t(rec.version.minor));
+	macdata.Put(uint16_t(datalen));
+
+	conn->mac->functbl->clone(mac, conn->mac, 0);
+	mac->functbl->reset(mac);
+	mac->functbl->update(mac, macdata.GetPointer(0), macdata.GetLength());
+	mac->functbl->update(mac, decbuf, datalen);
+	mac->functbl->final(mac, macbuf.GetPointer(0), 0);
+	mac->functbl->fini(mac, 0);
+
+	if (memcmp(macbuf.GetPointer(0), decbuf+datalen, conn->hash_size))
+		res = -DREW_TLS_ERR_DECRYPTION_FAILED;
+
+	rec.length = datalen;
+	rec.data = decbuffer;
+	conn->seqnum++;
+
+	return res;
 }
 
 // This function must be externally locked.
