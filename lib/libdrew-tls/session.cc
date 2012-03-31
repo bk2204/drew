@@ -756,60 +756,6 @@ static int send_change_cipher_spec(drew_tls_session_t sess)
 	return res;
 }
 
-#if 0
-static int handshake_send_client_hello(drew_tls_session_t sess)
-{
-	int res = 0;
-	drew_tls_client_hello_t ch;
-	drew_prng_t *prng;
-	uint8_t *buf, *obuf;
-	drew_tls_cipher_suite_t *suites;
-	size_t nsuites;
-
-	ch.random.gmt_unix_time = time(NULL);
-
-	LOCK(sess);
-	
-	prng = sess->prng;
-	URETFAIL(sess, prng->functbl->bytes(prng, ch.random.random_bytes,
-			sizeof(ch.random.random_bytes)));
-	URETFAIL(sess, drew_tls_priority_get_cipher_suites(sess->prio, &suites, 
-				&nsuites));
-
-	// 2 for null compression method, 2 for length of ciphersuites.
-	size_t nbytes = HANDSHAKE_OVERHEAD + sizeof(ch.version) +
-		sizeof(ch.random) + 2 + (nsuites * 2) + 2 +
-		sizeof(sess->session_id.length) + sess->session_id.length;
-
-	if (!(obuf = buf = (uint8_t *)malloc(nbytes)))
-		URETFAIL(sess, -ENOMEM);
-
-	uint8_t ncomps = 1, comp = 0;
-
-	buf += HANDSHAKE_OVERHEAD;
-	BWR_OBJ(buf, sess->protover);
-	BWR32(buf, ch.random.gmt_unix_time);
-	BWR_ARR(buf, ch.random.random_bytes);
-	BWR_BUF8(buf, sess->session_id.sessionid, sess->session_id.length);
-	BWR_BUF16(buf, suites, (uint16_t)(nsuites * 2));
-	BWR8(buf, ncomps);
-	BWR8(buf, comp);
-
-	URETFAIL(sess, send_handshake(sess, obuf, nbytes, 0x01));
-
-	UNLOCK(sess);
-	return res;
-}
-
-static int handshake_send_server_hello(drew_tls_session_t sess)
-{
-	LOCK(sess);
-	UNLOCK(sess);
-
-	return -DREW_ERR_NOT_IMPL;
-}
-#endif
-
 static int handshake_server(drew_tls_session_t sess)
 {
 	return -DREW_ERR_NOT_IMPL;
