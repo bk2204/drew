@@ -102,9 +102,12 @@
 #define TYPE_HANDSHAKE				22
 #define TYPE_APPLICATION_DATA		23
 
-
 #define HASH_MD5 0
 #define HASH_SHA1 1
+
+// We're only interested in the entire buffer; it's all or nothing.  Return
+// success if we read it all, or the error otherwise.
+#define IO_ALL 1
 
 struct generic {
 	void *ctx;
@@ -114,6 +117,7 @@ struct generic {
 
 struct drew_tls_session_queues_s {
 	ByteQueue cs;
+	ByteQueue data;
 	ByteQueue alert;
 	ByteQueue handshake;
 	ByteQueue appdata;
@@ -658,7 +662,7 @@ static int send_record(drew_tls_session_t sess, SerializedBuffer &data,
 	return send_record(sess, data.GetPointer(0), data.GetLength(), type);
 }
 
-static int recv_bytes(drew_tls_session_t sess, SerializedBuffer &buf,
+static ssize_t recv_bytes(drew_tls_session_t sess, ByteQueue &bq,
 		size_t len, int flags)
 {
 	ssize_t nrecvd = 0;
@@ -669,33 +673,64 @@ static int recv_bytes(drew_tls_session_t sess, SerializedBuffer &buf,
 				std::min(len-nrecvd, sizeof(buffer)));
 		if (nbytes < 0)
 			return -errno;
-		buf.Put(buffer, nbytes);
+		if (!nbytes)
+			return flags & IO_ALL ? -DREW_ERR_MORE_INFO : nrecvd;
+		bq.AddData(buffer, nbytes);
 		nrecvd += nbytes;
 	}
-	return 0;
+	return flags & IO_ALL ? 0 : nrecvd;
 }
 
 // This function must be externally locked.
-static int recv_record(drew_tls_session_t sess, Record &rec)
+static ssize_t recv_record(drew_tls_session_t sess, Record &rec)
 {
-	int res = 0;
+	ssize_t res = 0;
 	drew_tls_secparams_t *conn = sess->client ? &sess->serverp : &sess->clientp;
 	SerializedBuffer buf;
+	ByteQueue &dq = sess->queues->data;
+	bool read;
 
-	res = recv_bytes(sess, buf, 1 + 2 + 2, 0);
-	if (res < 0)
-		return res;
+	do {
+		read = false;
+		if (dq.GetSize() < 5) {
+			res = recv_bytes(sess, dq, 5, IO_ALL);
+			if (res && res != -DREW_ERR_MORE_INFO)
+				return res;
+			continue;
+		}
 
-	// Fill in the early fields, including the length.
-	buf.ResetPosition();
-	if ((res = rec.PrereadFromBuffer(buf)))
-		return res;
+		uint8_t bytes[5];
+		dq.Read(bytes, sizeof(bytes));
 
-	if (rec.length > ((1 << 14) + 2048))
-		return -DREW_TLS_ERR_RECORD_OVERFLOW;
+		// Fill in the early fields, including the length.
+		buf.ResetPosition();
+		buf.Put(bytes, sizeof(bytes));
+		buf.ResetPosition();
+		if ((res = rec.PrereadFromBuffer(buf)))
+			return res;
 
-	if ((res = recv_bytes(sess, buf, rec.length, 0)))
-		return res;
+		if (rec.length > ((1 << 14) + 2048))
+			return -DREW_TLS_ERR_RECORD_OVERFLOW;
+
+		if (dq.GetSize() < (5 + rec.length)) {
+			res = recv_bytes(sess, dq, rec.length, IO_ALL);
+			if (res && res != -DREW_ERR_MORE_INFO)
+				return res;
+			continue;
+		}
+
+		uint8_t *tbuf = new uint8_t[rec.length + 5];
+
+		dq.Read(tbuf, rec.length + 5);
+		dq.Remove(rec.length + 5);
+		buf.ResetPosition();
+		buf.Put(tbuf, rec.length + 5);
+
+		delete[] tbuf;
+		read = true;
+	} while (!read);
+
+	res = 0;
 
 	buf.ResetPosition();
 	// Now fill in all the fields.
@@ -714,6 +749,20 @@ static int recv_record(drew_tls_session_t sess, Record &rec)
 	}
 
 	return res;
+}
+
+static ssize_t recv_to_queue(drew_tls_session_t sess, ByteQueue &q, size_t len)
+{
+	while (q.GetSize() < len) {
+		ssize_t res;
+		Record rec;
+
+		if ((res = recv_record(sess, rec)))
+			return res;
+		rec.data.ResetPosition();
+		q.AddData(rec.data);
+	}
+	return ssize_t(len);
 }
 
 // This function must be externally locked.
@@ -1909,4 +1958,40 @@ int drew_tls_session_close(drew_tls_session_t sess)
 	send_alert(sess, 0, ALERT_WARNING);
 	UNLOCK(sess);
 	return 0;
+}
+
+ssize_t drew_tls_session_send(drew_tls_session_t sess, const void *buf,
+		size_t len)
+{
+	ssize_t res;
+	LOCK(sess);
+	res = send_record(sess, (const uint8_t *)buf, len, TYPE_APPLICATION_DATA);
+	UNLOCK(sess);
+	return res;
+}
+
+ssize_t drew_tls_session_recv(drew_tls_session_t sess, void *b, size_t count)
+{
+	ByteQueue &adq = sess->queues->appdata;
+	size_t nbytes = std::min(count, adq.GetSize());
+	uint8_t *buf = (uint8_t *)b;
+	ssize_t ret = 0;
+	Record rec;
+
+	do {
+		adq.Read((uint8_t *)buf, nbytes);
+		adq.Remove(nbytes);
+		buf += nbytes;
+
+		if (nbytes == count)
+			return ssize_t(nbytes);
+
+		LOCK(sess);
+		ret = recv_to_queue(sess, adq, count - nbytes);
+		UNLOCK(sess);
+		if (ret < 0)
+			break;
+	} while (nbytes != count);
+
+	return nbytes ? nbytes : ret;
 }

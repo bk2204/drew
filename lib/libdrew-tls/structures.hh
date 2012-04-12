@@ -51,6 +51,56 @@ class MutexLock
 		pthread_mutex_t *mutex;
 };
 
+class SerializedBuffer
+{
+	public:
+		SerializedBuffer();
+		SerializedBuffer(size_t sz);
+		SerializedBuffer(const SerializedBuffer &b);
+		~SerializedBuffer();
+		SerializedBuffer &operator=(const SerializedBuffer &b);
+		void ResetPosition();
+		void Reset();
+		void Put(uint8_t x);
+		void Put(const uint8_t *data, size_t datalen);
+		void Put(SerializedBuffer &sbuf);
+		template<class T>
+		void Put(T x)
+		{
+			uint8_t buf[sizeof(T)];
+			BigEndian::Copy(buf, &x, sizeof(T));
+			Put(buf, sizeof(T));
+		}
+		void Get(uint8_t &x);
+		template<class T>
+		void Get(T &x)
+		{
+			uint8_t buf[sizeof(T)];
+			Get(buf, sizeof(T));
+			BigEndian::Copy(&x, buf, sizeof(T));
+		}
+		void Get(uint8_t *data, size_t datalen);
+		void Get(SerializedBuffer &sbuf, size_t datalen);
+		size_t GetLength() const;
+		size_t GetOffset() const;
+		void SetOffset(size_t off);
+		ssize_t BytesRemaining() const;
+		const uint8_t *GetPointer() const;
+		const uint8_t *GetPointer(size_t offset) const;
+		uint8_t *GetPointer();
+		uint8_t *GetPointer(size_t offset);
+		void Reserve(size_t);
+		void Extend(size_t);
+	protected:
+		void Reset(size_t);
+		void ExtendIfNecessary(size_t space);
+	private:
+		uint8_t *buf;
+		size_t len;		// The length of the actual data.
+		size_t off;
+		size_t buflen;	// The length of buf.
+};
+
 // The idea for handling data this way came from Bouncy Castle.
 class ByteQueue
 {
@@ -64,6 +114,12 @@ class ByteQueue
 			LOCK(this);
 			for (size_t i = 0; i < len; i++)
 				m_queue.push_back(*data++);
+		}
+		void AddData(SerializedBuffer &buf)
+		{
+			LOCK(this);
+			for (size_t i = buf.GetOffset(); i < buf.GetLength(); i++)
+				m_queue.push_back(*buf.GetPointer(i));
 		}
 		size_t GetSize()
 		{
@@ -124,56 +180,6 @@ class ByteQueue
 	private:
 		std::deque<uint8_t> m_queue;
 		DREW_TLS_MUTEX_DECL();
-};
-
-class SerializedBuffer
-{
-	public:
-		SerializedBuffer();
-		SerializedBuffer(size_t sz);
-		SerializedBuffer(const SerializedBuffer &b);
-		~SerializedBuffer();
-		SerializedBuffer &operator=(const SerializedBuffer &b);
-		void ResetPosition();
-		void Reset();
-		void Put(uint8_t x);
-		void Put(const uint8_t *data, size_t datalen);
-		void Put(SerializedBuffer &sbuf);
-		template<class T>
-		void Put(T x)
-		{
-			uint8_t buf[sizeof(T)];
-			BigEndian::Copy(buf, &x, sizeof(T));
-			Put(buf, sizeof(T));
-		}
-		void Get(uint8_t &x);
-		template<class T>
-		void Get(T &x)
-		{
-			uint8_t buf[sizeof(T)];
-			Get(buf, sizeof(T));
-			BigEndian::Copy(&x, buf, sizeof(T));
-		}
-		void Get(uint8_t *data, size_t datalen);
-		void Get(SerializedBuffer &sbuf, size_t datalen);
-		size_t GetLength() const;
-		size_t GetOffset() const;
-		void SetOffset(size_t off);
-		ssize_t BytesRemaining() const;
-		const uint8_t *GetPointer() const;
-		const uint8_t *GetPointer(size_t offset) const;
-		uint8_t *GetPointer();
-		uint8_t *GetPointer(size_t offset);
-		void Reserve(size_t);
-		void Extend(size_t);
-	protected:
-		void Reset(size_t);
-		void ExtendIfNecessary(size_t space);
-	private:
-		uint8_t *buf;
-		size_t len;		// The length of the actual data.
-		size_t off;
-		size_t buflen;	// The length of buf.
 };
 
 struct ProtocolVersion
