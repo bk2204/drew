@@ -528,6 +528,8 @@ static int decrypt_block(drew_tls_session_t sess, Record &rec,
 	else
 		datalen = declen - conn->hash_size;
 
+	decbuffer.Extend(datalen);
+
 	SerializedBuffer macdata;
 	macdata.Put(conn->seqnum);
 	macdata.Put(uint8_t(rec.type));
@@ -694,7 +696,7 @@ static ssize_t recv_record(drew_tls_session_t sess, Record &rec)
 		read = false;
 		if (dq.GetSize() < 5) {
 			res = recv_bytes(sess, dq, 5, IO_ALL);
-			if (res && res != -DREW_ERR_MORE_INFO)
+			if (res)
 				return res;
 			continue;
 		}
@@ -714,7 +716,7 @@ static ssize_t recv_record(drew_tls_session_t sess, Record &rec)
 
 		if (dq.GetSize() < (5 + rec.length)) {
 			res = recv_bytes(sess, dq, rec.length, IO_ALL);
-			if (res && res != -DREW_ERR_MORE_INFO)
+			if (res)
 				return res;
 			continue;
 		}
@@ -737,7 +739,7 @@ static ssize_t recv_record(drew_tls_session_t sess, Record &rec)
 	if ((res = rec.ReadFromBuffer(buf)))
 		return -DREW_ERR_BUG;
 	buf.ResetPosition();
-	
+
 	switch (conn->enc_type) {
 		case cipher_type_stream:
 			return decrypt_stream(sess, rec, buf);
@@ -753,16 +755,19 @@ static ssize_t recv_record(drew_tls_session_t sess, Record &rec)
 
 static ssize_t recv_to_queue(drew_tls_session_t sess, ByteQueue &q, size_t len)
 {
+	ssize_t total = 0;
+	ssize_t res;
 	while (q.GetSize() < len) {
-		ssize_t res;
 		Record rec;
 
 		if ((res = recv_record(sess, rec)))
-			return res;
+			break;
 		rec.data.ResetPosition();
+		// Need to validate that data is of the appropriate type for this queue.
 		q.AddData(rec.data);
+		total += rec.length;
 	}
-	return ssize_t(len);
+	return total ? total : res;
 }
 
 // This function must be externally locked.
@@ -1974,24 +1979,27 @@ ssize_t drew_tls_session_recv(drew_tls_session_t sess, void *b, size_t count)
 {
 	ByteQueue &adq = sess->queues->appdata;
 	size_t nbytes = std::min(count, adq.GetSize());
+	size_t nread = 0;
 	uint8_t *buf = (uint8_t *)b;
 	ssize_t ret = 0;
 	Record rec;
 
 	do {
-		adq.Read((uint8_t *)buf, nbytes);
+		nbytes = std::min(count - nread, adq.GetSize());
+		adq.Read(buf, nbytes);
 		adq.Remove(nbytes);
 		buf += nbytes;
+		nread += nbytes;
 
-		if (nbytes == count)
-			return ssize_t(nbytes);
+		if (nread == count)
+			return ssize_t(nread);
 
 		LOCK(sess);
 		ret = recv_to_queue(sess, adq, count - nbytes);
 		UNLOCK(sess);
 		if (ret < 0)
 			break;
-	} while (nbytes != count);
+	} while (nread != count);
 
-	return nbytes ? nbytes : ret;
+	return nread ? nread : (ret == -DREW_ERR_MORE_INFO ? 0 : ret);
 }
