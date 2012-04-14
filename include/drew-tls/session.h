@@ -75,6 +75,13 @@ int drew_tls_session_handshake(drew_tls_session_t sess);
 DREW_SYM_PUBLIC
 int drew_tls_session_close(drew_tls_session_t sess);
 
+DREW_SYM_PUBLIC
+ssize_t drew_tls_session_send(drew_tls_session_t sess, const void *buf,
+		size_t len);
+
+DREW_SYM_PUBLIC
+ssize_t drew_tls_session_recv(drew_tls_session_t sess, void *b, size_t count);
+
 #ifdef __cplusplus
 }
 #endif
