@@ -523,7 +523,7 @@ static int decrypt_block(drew_tls_session_t sess, Record &rec,
 		if (decbuf[i] != padbyte)
 			res = -DREW_TLS_ERR_DECRYPTION_FAILED;
 
-	if (declen < (conn->hash_size + 1))
+	if (declen < conn->hash_size)
 		res = -DREW_TLS_ERR_DECRYPTION_FAILED;
 	else
 		datalen = declen - conn->hash_size;
