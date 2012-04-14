@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/select.h>
 #include <unistd.h>
 
 #include <drew/drew.h>
@@ -70,6 +71,37 @@ int main(void)
 	res = drew_tls_session_handshake(sess);
 	if (res != 0)
 		printf("handshake failed: %d %d\n", -res, (-res) & 0xffff);
+	else {
+		const char *data = "GET / HTTP/1.0\r\n\r\n";
+		ssize_t nbytes = 1;
+		uint8_t buf[512];
+		long flags;
+
+		printf("sending data\n");
+		drew_tls_session_send(sess, data, strlen(data));
+		flags = fcntl(sock, F_GETFL, 0);
+		fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+		printf("receiving data\n");
+		for (; nbytes;) {
+			fd_set set;
+			struct timeval tv;
+
+			tv.tv_sec = 0;
+			tv.tv_usec = 500 * 1000;
+
+			FD_ZERO(&set);
+			FD_SET(sock, &set);
+			if (select(sock+1, &set, NULL, NULL, &tv) <= 0)
+				break;
+			nbytes = drew_tls_session_recv(sess, buf, sizeof(buf));
+			if (nbytes < 0 && nbytes != -EAGAIN && nbytes != -EWOULDBLOCK)
+				break;
+			if (nbytes > 0) {
+				write(1, buf, nbytes);
+			}
+		}
+		printf("status was %zd (%zd)\n", nbytes, (-nbytes) & 0xffff);
+	}
 
 	drew_tls_session_close(sess);
 
