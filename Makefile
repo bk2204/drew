@@ -127,7 +127,7 @@ include/version.h: version
 
 tags:
 	$(RM) tags
-	find -name '*.c' -o -name '*.cc' -o -name '*.h' -o -name '*.hh' | \
+	find . -name '*.c' -o -name '*.cc' -o -name '*.h' -o -name '*.hh' | \
 		xargs ctags -a
 
 plugins: $(PLUGINS)
@@ -145,13 +145,13 @@ clean:
 	$(RM) -fr $(PLUGINS) plugins/
 	$(RM) -r install
 	$(RM) -f tags
-	find -name '*.gen' | xargs -r rm
-	find -name '*.o' | xargs -r rm
-	find -name '*.d' | xargs -r rm
-	find -name '*.so' | xargs -r rm
-	find -name '*.so.*' | xargs -r rm
-	find -name '*.pdf' | xargs -r rm
-	find -name '*.fo' | xargs -r rm
+	find . -name '*.gen' | xargs -r rm
+	find . -name '*.o' | xargs -r rm
+	find . -name '*.d' | xargs -r rm
+	find . -name '*.so' | xargs -r rm
+	find . -name '*.so.*' | xargs -r rm
+	find . -name '*.pdf' | xargs -r rm
+	find . -name '*.fo' | xargs -r rm
 
 test: .PHONY
 
