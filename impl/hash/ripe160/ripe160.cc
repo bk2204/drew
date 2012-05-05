@@ -12,7 +12,6 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <endian.h>
 
 #include "ripe160.hh"
 #include "testcase.hh"

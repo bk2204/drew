@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <endian.h>
 
 #include "fugue.hh"
 #include "testcase.hh"

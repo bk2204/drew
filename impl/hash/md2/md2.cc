@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <endian.h>
 
 #include "md2.hh"
 #include "testcase.hh"

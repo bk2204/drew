@@ -27,7 +27,6 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <endian.h>
 
 #include "grøstl.hh"
 #include "testcase.hh"

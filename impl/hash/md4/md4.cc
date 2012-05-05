@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <endian.h>
 
 #include "md4.hh"
 #include "testcase.hh"

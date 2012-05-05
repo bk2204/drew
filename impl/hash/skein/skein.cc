@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <endian.h>
 
 #include "internal.h"
 #include "threefish/threefish.hh"
