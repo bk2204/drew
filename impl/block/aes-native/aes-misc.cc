@@ -11,9 +11,9 @@ static const int aes128keysz[] = {16};
 static const int aes192keysz[] = {24};
 static const int aes256keysz[] = {32};
 
+#ifdef NATIVE_IMPLEMENTED
 static void str2bytes(uint8_t *bytes, const char *s, size_t len = 0);
 
-#ifdef NATIVE_IMPLEMENTED
 static bool test(const char *key, const char *plain, const char *cipher,
 		size_t keybytes = 0, size_t blocksz = 16)
 {
