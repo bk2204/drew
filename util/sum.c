@@ -234,7 +234,8 @@ int gnusum_main(int argc, char **argv, const drew_loader_t *ldr, int id)
 		do {
 			if (process(val, p, mode, hash))
 				retval = 1;
-			print(val, p, mode);
+			else
+				print(val, p, mode);
 		}
 		while (p && (p = argv[++optind]));
 	}
