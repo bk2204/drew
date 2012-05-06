@@ -129,6 +129,7 @@ int check(const char *filename, drew_hash_t *hash)
 	int errors = 0;
 	FILE *fp;
 	char buf[(MAX_DIGEST_BITS / 8 * 2) + 2 + PATH_MAX + 2];
+	char fnbuf[sizeof(buf)];
 
 	if (!filename) 
 		fp = stdin;
@@ -141,7 +142,6 @@ int check(const char *filename, drew_hash_t *hash)
 	while (fgets(buf, sizeof(buf), fp)) {
 		uint8_t val[MAX_DIGEST_BITS / 8], computed[MAX_DIGEST_BITS / 8];
 		size_t len = strlen(buf);
-		char *filename;
 		char dummy, type;
 		int mode, cmp;
 		if (buf[len-1] != '\n')
@@ -150,9 +150,10 @@ int check(const char *filename, drew_hash_t *hash)
 		for (int i = 0; i < thisalgo.digest_size; i++)
 			if (!sscanf(buf+(2*i), "%02hhx", val+i))
 				goto next;
-		if (sscanf(buf+(2*thisalgo.digest_size), "%c%c%ms", &dummy, &type,
-					&filename) != 3)
+		if (sscanf(buf+(2*thisalgo.digest_size), "%c%c%s", &dummy, &type,
+					fnbuf) != 3)
 			continue;
+		fnbuf[sizeof(fnbuf)-1] = '\0';
 		if (dummy != ' ')
 			continue;
 		switch (type) {
@@ -165,11 +166,11 @@ int check(const char *filename, drew_hash_t *hash)
 			default:
 				continue;
 		}
-		if (process(computed, filename, mode, hash) < 0)
+		if (process(computed, fnbuf, mode, hash) < 0)
 			continue;
 		if ((cmp = memcmp(computed, val, sizeof(val))))
 			errors++;
-		printf("%s: %s\n", filename, cmp ?  "FAILED" : "OK");
+		printf("%s: %s\n", fnbuf, cmp ?  "FAILED" : "OK");
 next:
 		;
 	}
