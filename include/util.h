@@ -62,8 +62,6 @@
 #define FEATURE_BYTESWAP_GNU
 #define FEATURE_BYTESWAP
 #elif defined(__FreeBSD__) || defined(__DragonFly__)
-#undef __BSD_VISIBLE
-#define __BSD_VISIBLE 1
 #include <sys/endian.h>
 #define FEATURE_ENDIAN3
 #define FEATURE_BYTESWAP_BSD
