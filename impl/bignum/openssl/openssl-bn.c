@@ -557,7 +557,7 @@ static int bn_clone(drew_bignum_t *newctx, const drew_bignum_t *oldctx,
 		int flags)
 {
 	if (flags & DREW_BIGNUM_COPY) {
-		BN_copy(MP(newctx), MPC(oldctx));
+		BN_copy(MP(newctx), MP(oldctx));
 		return 0;
 	}
 	if (!(flags & DREW_BIGNUM_FIXED))
