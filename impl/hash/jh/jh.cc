@@ -161,15 +161,15 @@ static int jhtest(void *, const drew_loader_t *)
 	typedef VariableSizedHashTestCase<JH, 384/8> TestCase384;
 	typedef VariableSizedHashTestCase<JH, 512/8> TestCase512;
 
-	//res |= !TestCase224("", 0).Test("2c99df889b019309051c60fecc2bd285a774940e43175b76b2626630");
-	//res <<= 1;
+	res |= !TestCase224("", 0).Test("2c99df889b019309051c60fecc2bd285a774940e43175b76b2626630");
+	res <<= 1;
 	res |= !TestCase224("\xcc", 1).Test("f79c791ac9b9d80ec934312d6b26748481198e3ca78ebb01b2c9ca51");
 	res <<= 1;
-	//res |= !TestCase256("", 0).Test("46e64619c18bb0a92a5e87185a47eef83ca747b8fcc8e1412921357e326df434");
-	//res <<= 1;
-	//res |= !TestCase384("", 0).Test("2fe5f71b1b3290d3c017fb3c1a4d02a5cbeb03a0476481e25082434a881994b0ff99e078d2c16b105ad069b569315328");
-	//res <<= 1;
-	//res |= !TestCase512("", 0).Test("90ecf2f76f9d2c8017d979ad5ab96b87d58fc8fc4b83060f3f900774faa2c8fabe69c5f4ff1ec2b61d6b316941cedee117fb04b1f4c5bc1b919ae841c50eec4f");
+	res |= !TestCase256("", 0).Test("46e64619c18bb0a92a5e87185a47eef83ca747b8fcc8e1412921357e326df434");
+	res <<= 1;
+	res |= !TestCase384("", 0).Test("2fe5f71b1b3290d3c017fb3c1a4d02a5cbeb03a0476481e25082434a881994b0ff99e078d2c16b105ad069b569315328");
+	res <<= 1;
+	res |= !TestCase512("", 0).Test("90ecf2f76f9d2c8017d979ad5ab96b87d58fc8fc4b83060f3f900774faa2c8fabe69c5f4ff1ec2b61d6b316941cedee117fb04b1f4c5bc1b919ae841c50eec4f");
 
 	return res;
 }
