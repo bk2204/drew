@@ -18,6 +18,7 @@ CFG_GRØSTL		= y
 CFG_BLAKE		= y
 CFG_FUGUE		= y
 CFG_SKEIN		= y
+CFG_JH			= y
 
 ## Block ciphers.
 # Note that the aes plugin implements Rijndael (the AES algorithm) with key

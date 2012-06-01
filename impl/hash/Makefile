@@ -12,6 +12,7 @@ PLUGINS_HASH-${CFG_GRØSTL}	+= grøstl/grøstl
 PLUGINS_HASH-$(CFG_BLAKE)	+= blake/blake
 PLUGINS_HASH-$(CFG_FUGUE)	+= fugue/fugue
 PLUGINS_HASH-$(CFG_SKEIN)	+= skein/skein
+PLUGINS_HASH-$(CFG_JH)		+= jh/jh
 
 HASH_DIR		:= impl/hash
 HASH_PLUGINS	:= $(patsubst %,$(HASH_DIR)/%,$(PLUGINS_HASH-m))
