@@ -93,7 +93,7 @@ inline uint8_t EndianBase::GetArrayByte(const uint64_t *arr, size_t n)
 	return p[n];
 }
 
-#if defined(DREW_COMPILER_GCCLIKE) && defined(__SSSE3__) && defined(VECTOR_T)
+#if defined(__GNUC__) && defined(__SSSE3__) && defined(VECTOR_T)
 typedef long long int drew__vector64_t __attribute__((vector_size(16)));
 
 template<>

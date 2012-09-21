@@ -99,7 +99,7 @@ class GenericRijndael : public Rijndael,
 		static const size_t m_nb;
 		static const size_t m_bc;
 		static const uint64_t m_bcmask;
-		static const size_t shiftoffset;
+		static const size_t shiftoffset = (BlockSize/32)-4;
 		inline uint64_t shift(uint64_t x, unsigned n) const
 		{
 			return ((x >> n) | (x << (m_bc - n))) & m_bcmask;

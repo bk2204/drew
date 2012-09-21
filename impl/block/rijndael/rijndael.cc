@@ -289,9 +289,6 @@ const uint64_t drew::GenericRijndael<N>::m_bcmask =
 	(((uint64_t(1) << (drew::GenericRijndael<N>::m_bc-1))-1)<<1)|1;
 
 template<unsigned N>
-const size_t drew::GenericRijndael<N>::shiftoffset = (drew::GenericRijndael<N>::m_nb-4);
-
-template<unsigned N>
 int drew::GenericRijndael<N>::SetKeyInternal(const uint8_t *key, size_t len)
 {
 	m_nk = (len / 4);

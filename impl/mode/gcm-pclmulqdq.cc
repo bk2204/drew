@@ -81,7 +81,14 @@ typedef int vector4i_t __attribute__((vector_size(16)));
 #endif
 #endif
 
+#ifdef FEATURE_PCLMULQDQ
 #include "gcm-impl.cc"
+#else
+struct plugin {
+	const char *name;
+	const drew_mode_functbl_t *functbl;
+};
+#endif
 
 HIDE()
 

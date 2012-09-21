@@ -59,8 +59,10 @@
 #include <endian.h>
 #include <byteswap.h>
 #define FEATURE_ENDIAN3
+#if defined(__GNUC__)
 #define FEATURE_BYTESWAP_GNU
 #define FEATURE_BYTESWAP
+#endif
 #elif defined(__FreeBSD__) || defined(__DragonFly__)
 #include <sys/endian.h>
 #define FEATURE_ENDIAN3

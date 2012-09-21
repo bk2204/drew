@@ -11,7 +11,7 @@ INSTALL_PROG	?= install
 INSTALL_OPTS	:= $(shell [ `id -u` -eq 0 ] && printf -- "-o root -g root\n" || printf "\n")
 INSTALL			:= $(INSTALL_PROG) $(INSTALL_OPTS)
 
-TEST_ARG		= $(shell $(CC) $(1) -x c -o /dev/null -c /dev/null 2>/dev/null && echo $(1))
+TEST_ARG		= $(shell $(CC) $(CFLAGS) $(1) -x c -o /dev/null -c /dev/null 2>/dev/null && echo $(1))
 
 ifdef PROF
 CLIKEFLAGS		+= -pg
