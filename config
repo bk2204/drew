@@ -108,7 +108,7 @@ CFG_LIBMD		= y
 # Use the DCT XSLT Stylesheets to build instead of the standard DocBook ones.
 CFG_DCT_XSLT	= n
 # Use RDF::Trine to generate and embed RDF metadata into plugins.
-CFG_METADATA	= y
+CFG_METADATA	= n
 
 ## Settings.
 CFG_SEARCH_PATH	= /lib/drew/plugins /usr/lib/drew/plugins /usr/local/lib/drew/plugins
