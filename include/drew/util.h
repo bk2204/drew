@@ -3,6 +3,13 @@
 
 #if (defined(__GNUC__) && __GNUC__ >= 4) || defined(__clang__)
 #define DREW_COMPILER_GCCLIKE
+/* eglibc defines this to nothing if the compiler isn't GCC, even though clang
+ * supports attributes.
+ */
+#ifdef __linux__
+#include <features.h>
+#undef __attribute__
+#endif
 #endif
 
 /* Not that this will work in Win32 without a decent amount of work, but hey...
