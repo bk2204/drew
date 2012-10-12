@@ -24,6 +24,8 @@
 #include <drew/mem.h>
 #include <drew/plugin.h>
 
+double cpuspeed = 0;
+
 bool is_forbidden_errno(int val)
 {
 	if (val >= 0)
@@ -133,7 +135,11 @@ void print_speed_info(int chunk, int nchunks, const struct timespec *cstart,
 	rate = chunk * ((double)nchunks) / diff;
 	rate /= 1048576;
 
-	printf("%d bytes in %0.3fs (%0.3f MiB/s)\n", (nchunks*chunk), diff, rate);
+	printf("%d bytes in %0.3fs (%0.3f MiB/s)", (nchunks*chunk), diff, rate);
+	if (cpuspeed) {
+		printf(" (%0.3f cycles/byte)", cpuspeed * diff / (nchunks*chunk));
+	}
+	putchar('\n');
 }
 
 // Some algorithms will need to handle the empty input.
@@ -174,6 +180,7 @@ int usage(const char *argv0, int retval)
 			"\t-c size\t: process data in chunks of size bytes\n"
 			"\t-n num\t: process num chunks\n"
 			"\t-o algo\t: only use algorithm algo\n"
+			"\t-u speed\t: specify cpu speed in GHz\n"
 			"\t-r file\t: use file for test vectors\n");
 	return retval;
 }
@@ -201,7 +208,7 @@ int main(int argc, char **argv)
 	drew_loader_new(&ldr);
 	drew_mem_pool_adjust(NULL, DREW_MEM_SECMEM, DREW_MEM_SECMEM_NO_LOCK, NULL);
 
-	while ((opt = getopt(argc, argv, "hstipfda:c:n:o:r:v")) != -1) {
+	while ((opt = getopt(argc, argv, "hstipfda:c:n:o:r:u:v")) != -1) {
 		switch (opt) {
 			case '?':
 			case ':':
@@ -243,6 +250,9 @@ int main(int argc, char **argv)
 				break;
 			case 'd':
 				flags = FLAG_DECRYPT;
+				break;
+			case 'u':
+				cpuspeed = atof(optarg) * 1000000000.0;
 				break;
 		}
 	}
