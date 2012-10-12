@@ -31,7 +31,7 @@ namespace drew {
 class Keccak
 {
 	public:
-		typedef uint64_t quantum_t[5];
+		typedef uint64_t quantum_t;
 		typedef LittleEndian endian_t;
 
 		Keccak(size_t);
@@ -86,10 +86,10 @@ class Keccak
 		{
 			return m_r;
 		}
-		static inline void Transform(uint64_t [5][5], const uint8_t *data);
+		static inline void Transform(uint64_t [25], const uint8_t *data);
 	protected:
 		Keccak() {}
-		static inline void Transform(uint64_t [5][5], const uint8_t *data,
+		static inline void Transform(uint64_t [25], const uint8_t *data,
 				size_t);
 		virtual void Transform(const uint8_t *data)
 		{
@@ -97,7 +97,7 @@ class Keccak
 		}
 		size_t m_c, m_r;
 		size_t m_len;
-		uint64_t m_hash[5][5];
+		uint64_t m_hash[25];
 		uint8_t m_buf[1152 / 8];
 	private:
 };
@@ -107,10 +107,10 @@ class KeccakWithLimitedNots : public Keccak
 	public:
 		KeccakWithLimitedNots(size_t);
 		virtual void Reset();
-		static inline void Transform(uint64_t [5][5], const uint8_t *data);
+		static inline void Transform(uint64_t [25], const uint8_t *data);
 		virtual void GetDigest(uint8_t *digest, size_t len, bool nopad);
 	protected:
-		static inline void Transform(uint64_t [5][5], const uint8_t *data,
+		static inline void Transform(uint64_t [25], const uint8_t *data,
 				size_t);
 		virtual void Transform(const uint8_t *data)
 		{

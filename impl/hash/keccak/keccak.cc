@@ -283,25 +283,32 @@ drew::KeccakWithLimitedNots::KeccakWithLimitedNots(size_t t_)
 	Reset();
 }
 
-inline static void dump(const char *s, uint64_t a[5][5])
+inline static void dump(const char *s, uint64_t a[25])
 {
 #if 0
 	for (size_t i = 0; i < 5; i++)
-		printf("%s%d: %016lx %016lx %016lx %016lx %016lx\n", s, i, a[0][i],
-				a[1][i], a[2][i], a[3][i], a[4][i]);
+		printf("%s%d: %016lx %016lx %016lx %016lx %016lx\n", s, i, a[i*5+0],
+				a[i*5+1], a[i*5+2], a[i*5+3], a[i*5+4]);
 #endif
 }
 
-inline static void theta(uint64_t a[5][5])
+inline static void theta(uint64_t a[25])
 {
 	uint64_t c[5], d;
+	uint64_t *w = a + 5, *x = a + 10, *y = a + 15, *z = a + 20;
 
-	for (size_t i = 0; i < 5; i++)
-		c[i] = a[i][0] ^ a[i][1] ^ a[i][2] ^ a[i][3] ^ a[i][4];
+	for (size_t i = 0; i < 5; i++) {
+		c[i] = a[i] ^ w[i] ^ x[i] ^ y[i] ^ z[i];
+	}
 	for (size_t i = 0; i < 5; i++) {
 		d = c[(i+4) % 5] ^ RotateLeft(c[(i+1) % 5], 1);
-		for (size_t j = 0; j < 5; j++)
-			a[i][j] ^= d;
+		a[i] ^= d;
+		w[i] ^= d;
+		x[i] ^= d;
+		y[i] ^= d;
+		z[i] ^= d;
+		//for (size_t j = 0; j < 5; j++)
+		//	a[i+5*j] ^= d;
 	}
 }
 
@@ -313,106 +320,109 @@ static const unsigned rr[5][5] = {
 	{27, 20, 39, 8, 14}
 };
 
-inline static void rhopi(uint64_t b[5][5], const uint64_t a[5][5])
+inline static void rhopi(uint64_t b[25], const uint64_t a[25])
 {
-	b[0][((2*0)+(3*0))%5] = a[0][0];
-	b[0][((2*1)+(3*0))%5] = RotateLeft(a[1][0],  1);
-	b[0][((2*2)+(3*0))%5] = RotateLeft(a[2][0], 62);
-	b[0][((2*3)+(3*0))%5] = RotateLeft(a[3][0], 28);
-	b[0][((2*4)+(3*0))%5] = RotateLeft(a[4][0], 27);
+	b[0+5*(((2*0)+(3*0))%5)] = a[0];
+	b[0+5*(((2*1)+(3*0))%5)] = RotateLeft(a[1+5*0],  1);
+	b[0+5*(((2*2)+(3*0))%5)] = RotateLeft(a[2+5*0], 62);
+	b[0+5*(((2*3)+(3*0))%5)] = RotateLeft(a[3+5*0], 28);
+	b[0+5*(((2*4)+(3*0))%5)] = RotateLeft(a[4+5*0], 27);
 
-	b[1][((2*0)+(3*1))%5] = RotateLeft(a[0][1], 36);
-	b[1][((2*1)+(3*1))%5] = RotateLeft(a[1][1], 44);
-	b[1][((2*2)+(3*1))%5] = RotateLeft(a[2][1],  6);
-	b[1][((2*3)+(3*1))%5] = RotateLeft(a[3][1], 55);
-	b[1][((2*4)+(3*1))%5] = RotateLeft(a[4][1], 20);
+	b[1+5*(((2*0)+(3*1))%5)] = RotateLeft(a[0+5*1], 36);
+	b[1+5*(((2*1)+(3*1))%5)] = RotateLeft(a[1+5*1], 44);
+	b[1+5*(((2*2)+(3*1))%5)] = RotateLeft(a[2+5*1],  6);
+	b[1+5*(((2*3)+(3*1))%5)] = RotateLeft(a[3+5*1], 55);
+	b[1+5*(((2*4)+(3*1))%5)] = RotateLeft(a[4+5*1], 20);
 
-	b[2][((2*0)+(3*2))%5] = RotateLeft(a[0][2],  3);
-	b[2][((2*1)+(3*2))%5] = RotateLeft(a[1][2], 10);
-	b[2][((2*2)+(3*2))%5] = RotateLeft(a[2][2], 43);
-	b[2][((2*3)+(3*2))%5] = RotateLeft(a[3][2], 25);
-	b[2][((2*4)+(3*2))%5] = RotateLeft(a[4][2], 39);
+	b[2+5*(((2*0)+(3*2))%5)] = RotateLeft(a[0+5*2],  3);
+	b[2+5*(((2*1)+(3*2))%5)] = RotateLeft(a[1+5*2], 10);
+	b[2+5*(((2*2)+(3*2))%5)] = RotateLeft(a[2+5*2], 43);
+	b[2+5*(((2*3)+(3*2))%5)] = RotateLeft(a[3+5*2], 25);
+	b[2+5*(((2*4)+(3*2))%5)] = RotateLeft(a[4+5*2], 39);
 
-	b[3][((2*0)+(3*3))%5] = RotateLeft(a[0][3], 41);
-	b[3][((2*1)+(3*3))%5] = RotateLeft(a[1][3], 45);
-	b[3][((2*2)+(3*3))%5] = RotateLeft(a[2][3], 15);
-	b[3][((2*3)+(3*3))%5] = RotateLeft(a[3][3], 21);
-	b[3][((2*4)+(3*3))%5] = RotateLeft(a[4][3],  8);
+	b[3+5*(((2*0)+(3*3))%5)] = RotateLeft(a[0+5*3], 41);
+	b[3+5*(((2*1)+(3*3))%5)] = RotateLeft(a[1+5*3], 45);
+	b[3+5*(((2*2)+(3*3))%5)] = RotateLeft(a[2+5*3], 15);
+	b[3+5*(((2*3)+(3*3))%5)] = RotateLeft(a[3+5*3], 21);
+	b[3+5*(((2*4)+(3*3))%5)] = RotateLeft(a[4+5*3],  8);
 
-	b[4][((2*0)+(3*4))%5] = RotateLeft(a[0][4], 18);
-	b[4][((2*1)+(3*4))%5] = RotateLeft(a[1][4],  2);
-	b[4][((2*2)+(3*4))%5] = RotateLeft(a[2][4], 61);
-	b[4][((2*3)+(3*4))%5] = RotateLeft(a[3][4], 56);
-	b[4][((2*4)+(3*4))%5] = RotateLeft(a[4][4], 14);
+	b[4+5*(((2*0)+(3*4))%5)] = RotateLeft(a[0+5*4], 18);
+	b[4+5*(((2*1)+(3*4))%5)] = RotateLeft(a[1+5*4],  2);
+	b[4+5*(((2*2)+(3*4))%5)] = RotateLeft(a[2+5*4], 61);
+	b[4+5*(((2*3)+(3*4))%5)] = RotateLeft(a[3+5*4], 56);
+	b[4+5*(((2*4)+(3*4))%5)] = RotateLeft(a[4+5*4], 14);
 }
 
 template<int T>
-inline static void chi(uint64_t a[5][5], const uint64_t b[5][5])
+inline static void chi(uint64_t *a, const uint64_t *b)
 {
-	for (size_t j = 0; j < 5; j++) {
+	uint64_t *p = a;
+	const uint64_t *q = b;
+	for (size_t j = 0; j < 5; j++, q += 5) {
 		// If the processor has an and-not instruction, such as SPARC or ARM,
 		// then the compiler will adjust this appropriately to use that
 		// instruction.  (We hope.)
-		a[0][j] = b[0][j] ^ ((~b[1][j]) & b[2][j]);
-		a[1][j] = b[1][j] ^ ((~b[2][j]) & b[3][j]);
-		a[2][j] = b[2][j] ^ ((~b[3][j]) & b[4][j]);
-		a[3][j] = b[3][j] ^ ((~b[4][j]) & b[0][j]);
-		a[4][j] = b[4][j] ^ ((~b[0][j]) & b[1][j]);
+		const uint64_t v = q[0], w = q[1], x = q[2], y = q[3], z = q[4];
+		*p++ = v ^ ((~w) & x);
+		*p++ = w ^ ((~x) & y);
+		*p++ = x ^ ((~y) & z);
+		*p++ = y ^ ((~z) & v);
+		*p++ = z ^ ((~v) & w);
 	}
 }
 
 template<>
-inline void chi<1>(uint64_t a[5][5], const uint64_t b[5][5])
+inline void chi<1>(uint64_t *a, const uint64_t *b)
 {
 	// This version is used when the processor does not have an and-not
 	// instruction; it reduces the number of nots used by using the lane
 	// complementation technique.
-	a[0][0] =  b[0][0] ^ ( b[1][0] |  b[2][0]);
-	a[0][1] =  b[0][1] ^ ( b[1][1] |  b[2][1]);
-	a[0][2] =  b[0][2] ^ ( b[1][2] |  b[2][2]);
-	a[0][3] =  b[0][3] ^ ( b[1][3] &  b[2][3]);
-	a[0][4] =  b[0][4] ^ (~b[1][4] &  b[2][4]);
+	a[0+5*0] =  b[0+5*0] ^ ( b[1+5*0] |  b[2+5*0]);
+	a[0+5*1] =  b[0+5*1] ^ ( b[1+5*1] |  b[2+5*1]);
+	a[0+5*2] =  b[0+5*2] ^ ( b[1+5*2] |  b[2+5*2]);
+	a[0+5*3] =  b[0+5*3] ^ ( b[1+5*3] &  b[2+5*3]);
+	a[0+5*4] =  b[0+5*4] ^ (~b[1+5*4] &  b[2+5*4]);
 	
-	a[1][0] =  b[1][0] ^ (~b[2][0] |  b[3][0]);
-	a[1][1] =  b[1][1] ^ ( b[2][1] &  b[3][1]);
-	a[1][2] =  b[1][2] ^ ( b[2][2] &  b[3][2]);
-	a[1][3] =  b[1][3] ^ ( b[2][3] |  b[3][3]);
-	a[1][4] = ~b[1][4] ^ ( b[2][4] |  b[3][4]);
+	a[1+5*0] =  b[1+5*0] ^ (~b[2+5*0] |  b[3+5*0]);
+	a[1+5*1] =  b[1+5*1] ^ ( b[2+5*1] &  b[3+5*1]);
+	a[1+5*2] =  b[1+5*2] ^ ( b[2+5*2] &  b[3+5*2]);
+	a[1+5*3] =  b[1+5*3] ^ ( b[2+5*3] |  b[3+5*3]);
+	a[1+5*4] = ~b[1+5*4] ^ ( b[2+5*4] |  b[3+5*4]);
 
-	a[2][0] =  b[2][0] ^ ( b[3][0] &  b[4][0]);
-	a[2][1] =  b[2][1] ^ ( b[3][1] | ~b[4][1]);
-	a[2][2] =  b[2][2] ^ (~b[3][2] &  b[4][2]);
-	a[2][3] =  b[2][3] ^ (~b[3][3] |  b[4][3]);
-	a[2][4] =  b[2][4] ^ ( b[3][4] &  b[4][4]);
+	a[2+5*0] =  b[2+5*0] ^ ( b[3+5*0] &  b[4+5*0]);
+	a[2+5*1] =  b[2+5*1] ^ ( b[3+5*1] | ~b[4+5*1]);
+	a[2+5*2] =  b[2+5*2] ^ (~b[3+5*2] &  b[4+5*2]);
+	a[2+5*3] =  b[2+5*3] ^ (~b[3+5*3] |  b[4+5*3]);
+	a[2+5*4] =  b[2+5*4] ^ ( b[3+5*4] &  b[4+5*4]);
 
-	a[3][0] =  b[3][0] ^ ( b[4][0] |  b[0][0]);
-	a[3][1] =  b[3][1] ^ ( b[4][1] |  b[0][1]);
-	a[3][2] = ~b[3][2] ^ ( b[4][2] |  b[0][2]);
-	a[3][3] = ~b[3][3] ^ ( b[4][3] &  b[0][3]);
-	a[3][4] =  b[3][4] ^ ( b[4][4] |  b[0][4]);
+	a[3+5*0] =  b[3+5*0] ^ ( b[4+5*0] |  b[0+5*0]);
+	a[3+5*1] =  b[3+5*1] ^ ( b[4+5*1] |  b[0+5*1]);
+	a[3+5*2] = ~b[3+5*2] ^ ( b[4+5*2] |  b[0+5*2]);
+	a[3+5*3] = ~b[3+5*3] ^ ( b[4+5*3] &  b[0+5*3]);
+	a[3+5*4] =  b[3+5*4] ^ ( b[4+5*4] |  b[0+5*4]);
 
-	a[4][0] =  b[4][0] ^ ( b[0][0] &  b[1][0]);
-	a[4][1] =  b[4][1] ^ ( b[0][1] &  b[1][1]);
-	a[4][2] =  b[4][2] ^ ( b[0][2] &  b[1][2]);
-	a[4][3] =  b[4][3] ^ ( b[0][3] |  b[1][3]);
-	a[4][4] =  b[4][4] ^ ( b[0][4] &  b[1][4]);
+	a[4+5*0] =  b[4+5*0] ^ ( b[0+5*0] &  b[1+5*0]);
+	a[4+5*1] =  b[4+5*1] ^ ( b[0+5*1] &  b[1+5*1]);
+	a[4+5*2] =  b[4+5*2] ^ ( b[0+5*2] &  b[1+5*2]);
+	a[4+5*3] =  b[4+5*3] ^ ( b[0+5*3] |  b[1+5*3]);
+	a[4+5*4] =  b[4+5*4] ^ ( b[0+5*4] &  b[1+5*4]);
 }
 
 template<int T>
-inline static void chirhopi(uint64_t a[5][5])
+inline static void chirhopi(uint64_t a[25])
 {
-	uint64_t b[5][5];
+	uint64_t b[25];
 	rhopi(b, a);
 	chi<T>(a, b);
 }
 
-inline static void iota(uint64_t a[5][5], uint64_t k)
+inline static void iota(uint64_t a[25], uint64_t k)
 {
-	a[0][0] ^= k;
+	a[0] ^= k;
 }
 
 template<int T>
-inline static void round(uint64_t a[5][5], uint64_t k)
+inline static void round(uint64_t a[25], uint64_t k)
 {
 	theta(a);
 	chirhopi<T>(a);
@@ -435,7 +445,7 @@ static const uint64_t rc[] = {
 };
 
 template<int T>
-static void keccak_f(uint64_t state[5][5])
+static void keccak_f(uint64_t state[25])
 {
 	dump("s", state);
 	for (size_t i = 0; i < 24; i += 6) {
@@ -450,18 +460,18 @@ static void keccak_f(uint64_t state[5][5])
 }
 
 // This is not very useful, but is required for the API.
-void drew::Keccak::Transform(uint64_t state[5][5], const uint8_t *block)
+void drew::Keccak::Transform(uint64_t state[25], const uint8_t *block)
 {
 	return Transform(state, block, (1600 - 576) / 8);
 }
 
-void drew::KeccakWithLimitedNots::Transform(uint64_t state[5][5],
+void drew::KeccakWithLimitedNots::Transform(uint64_t state[25],
 		const uint8_t *block)
 {
 	return Transform(state, block, (1600 - 576) / 8);
 }
 
-void drew::Keccak::Transform(uint64_t state[5][5], const uint8_t *block,
+void drew::Keccak::Transform(uint64_t state[25], const uint8_t *block,
 		size_t r)
 {
 	uint64_t blk[1152/64];
@@ -470,7 +480,7 @@ void drew::Keccak::Transform(uint64_t state[5][5], const uint8_t *block,
 	b = E::CopyIfNeeded(blk, block, r);
 	for (size_t y = 0; y < DivideAndRoundUp(nwords, 5); y++)
 		for (size_t x = 0; x < 5 && (x+(5*y)) < nwords; x++)
-			state[x][y] ^= b[x + (5*y)];
+			state[x+5*y] ^= b[x + (5*y)];
 	keccak_f<0>(state);
 }
 
@@ -486,15 +496,15 @@ void drew::KeccakWithLimitedNots::Reset()
 	m_len = 0;
 	memset(m_buf, 0, sizeof(m_buf));
 	memset(m_hash, 0, sizeof(m_hash));
-	m_hash[1][0] = ~0;
-	m_hash[2][0] = ~0;
-	m_hash[3][1] = ~0;
-	m_hash[2][2] = ~0;
-	m_hash[2][3] = ~0;
-	m_hash[0][4] = ~0;
+	m_hash[1+5*0] = ~0;
+	m_hash[2+5*0] = ~0;
+	m_hash[3+5*1] = ~0;
+	m_hash[2+5*2] = ~0;
+	m_hash[2+5*3] = ~0;
+	m_hash[0+5*4] = ~0;
 }
 
-void drew::KeccakWithLimitedNots::Transform(uint64_t state[5][5],
+void drew::KeccakWithLimitedNots::Transform(uint64_t state[25],
 		const uint8_t *block, size_t r)
 {
 	uint64_t blk[1152/64];
@@ -503,7 +513,7 @@ void drew::KeccakWithLimitedNots::Transform(uint64_t state[5][5],
 	b = E::CopyIfNeeded(blk, block, r);
 	for (size_t y = 0; y < DivideAndRoundUp(nwords, 5); y++)
 		for (size_t x = 0; x < 5 && (x+(5*y)) < nwords; x++)
-			state[x][y] ^= b[x + (5*y)];
+			state[x+5*y] ^= b[x + (5*y)];
 	keccak_f<1>(state);
 }
 
@@ -518,7 +528,7 @@ void drew::Keccak::GetDigest(uint8_t *digest, size_t len, bool nopad)
 		uint64_t b[1152/64];
 		for (size_t y = 0; y < DivideAndRoundUp(nwords, 5); y++)
 			for (size_t x = 0; x < 5 && (x+(5*y)) < nwords; x++)
-				b[x + (5*y)] = m_hash[x][y];
+				b[x + (5*y)] = m_hash[x+5*y];
 		E::CopyCarefully(d, b, std::min(m_r, len - i));
 	}
 }
@@ -529,19 +539,19 @@ void drew::KeccakWithLimitedNots::GetDigest(uint8_t *digest, size_t len,
 	if (!nopad)
 		Pad();
 
-	m_hash[1][0] = ~m_hash[1][0];
-	m_hash[2][0] = ~m_hash[2][0];
-	m_hash[3][1] = ~m_hash[3][1];
-	m_hash[2][2] = ~m_hash[2][2];
-	m_hash[2][3] = ~m_hash[2][3];
-	m_hash[0][4] = ~m_hash[0][4];
+	m_hash[1+5*0] = ~m_hash[1+5*0];
+	m_hash[2+5*0] = ~m_hash[2+5*0];
+	m_hash[3+5*1] = ~m_hash[3+5*1];
+	m_hash[2+5*2] = ~m_hash[2+5*2];
+	m_hash[2+5*3] = ~m_hash[2+5*3];
+	m_hash[0+5*4] = ~m_hash[0+5*4];
 	const size_t nwords = m_r / sizeof(uint64_t);
 	uint8_t *d = digest;
 	for (size_t i = 0; i < len; i += m_r, d += m_r) {
 		uint64_t b[1152/64];
 		for (size_t y = 0; y < DivideAndRoundUp(nwords, 5); y++)
 			for (size_t x = 0; x < 5 && (x+(5*y)) < nwords; x++)
-				b[x + (5*y)] = m_hash[x][y];
+				b[x + (5*y)] = m_hash[x+5*y];
 		E::CopyCarefully(d, b, std::min(m_r, len - i));
 	}
 }
