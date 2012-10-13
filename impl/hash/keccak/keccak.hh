@@ -119,6 +119,20 @@ class KeccakWithLimitedNots : public Keccak
 	private:
 };
 
+class KeccakCompact : public Keccak
+{
+	public:
+		KeccakCompact(size_t);
+		static inline void Transform(uint64_t [25], const uint8_t *data);
+	protected:
+		static inline void Transform(uint64_t [25], const uint8_t *data,
+				size_t);
+		virtual void Transform(const uint8_t *data)
+		{
+			return Transform(m_hash, data, m_r);
+		}
+	private:
+};
 }
 UNHIDE()
 
