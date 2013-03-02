@@ -102,6 +102,18 @@
 #define DREW_BYTE_ORDER		DREW_LITTLE_ENDIAN
 #endif
 
+#if defined(__GNUC__)
+#define DREW_GCC_VERSION (__GNUC__ << 16 | __GNUC_MINOR__ << 8 | __GNUC__PATCHLEVEL__)
+#else
+#define DREW_GCC_VERSION 0
+#endif
+
+#if DREW_GCC_VERSION >= 0x040700
+#define DREW_ASSUME_ALIGNED(x, bytes) __builtin_assume_aligned(x, bytes)
+#else
+#define DREW_ASSUME_ALIGNED(x, bytes) x
+#endif
+
 #if !defined(DREW_BYTE_ORDER)
 #error "DREW_BYTE_ORDER macros must be defined!"
 #endif
@@ -177,9 +189,12 @@ inline void xor_aligned(uint8_t *outp, const uint8_t *inp, const uint8_t *xorp, 
 
 	len /= 16;
 
-	struct aligned_data *out = (struct aligned_data *)outp;
-	const struct aligned_data *in = (struct aligned_data *)inp;
-	const struct aligned_data *x = (struct aligned_data *)xorp;
+	struct aligned_data *out = (struct aligned_data *)
+		DREW_ASSUME_ALIGNED(outp, 16);
+	const struct aligned_data *in = (struct aligned_data *)
+		DREW_ASSUME_ALIGNED(inp, 16);
+	const struct aligned_data *x = (struct aligned_data *)
+		DREW_ASSUME_ALIGNED(xorp, 16);
 	for (size_t i = 0; i < len; i++, out++, in++, x++) {
 #ifdef VECTOR_T
 		typedef int vector_t __attribute__ ((vector_size (16)));
@@ -204,8 +219,10 @@ inline void xor_aligned2(uint8_t *outp, const uint8_t *xorp, size_t len)
 
 	len /= 16;
 
-	struct aligned_data *out = (struct aligned_data *)outp;
-	const struct aligned_data *x = (struct aligned_data *)xorp;
+	struct aligned_data *out = (struct aligned_data *)
+		DREW_ASSUME_ALIGNED(outp, 16);
+	const struct aligned_data *x = (struct aligned_data *)
+		DREW_ASSUME_ALIGNED(xorp, 16);
 	for (size_t i = 0; i < len; i++, out++, x++) {
 #ifdef VECTOR_T
 		typedef int vector_t __attribute__ ((vector_size (16)));
