@@ -185,6 +185,7 @@ test-api: $(TEST_BINARIES) plugins
 
 speed-scripts: $(TEST_BINARIES) plugins
 	for i in $(CATEGORIES); do \
+		[ $$i != "kdf" ] || continue; \
 		find plugins -type f | sed -e 's,.*/,,g' | \
 		sort | grep -vE '.rdf$$' | \
 		xargs env LD_LIBRARY_PATH=. test/test-$$i -s; \
