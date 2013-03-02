@@ -49,9 +49,9 @@ static int skeintest(void *, const drew_loader_t *)
 
 	using namespace drew;
 
-	typedef VariableSizedHashTestCase<Skein, 224/8> TestCase224;
-	typedef VariableSizedHashTestCase<Skein, 256/8> TestCase256;
-	typedef VariableSizedHashTestCase<Skein, 384/8> TestCase384;
+	//typedef VariableSizedHashTestCase<Skein, 224/8> TestCase224;
+	//typedef VariableSizedHashTestCase<Skein, 256/8> TestCase256;
+	//typedef VariableSizedHashTestCase<Skein, 384/8> TestCase384;
 	typedef VariableSizedHashTestCase<Skein, 512/8> TestCase512;
 
 	res |= !TestCase512("", 0).Test("bc5b4c50925519c290cc634277ae3d6257212395cba733bbad37a4af0fa06af41fca7903d06564fea7a2d3730dbdb80c1f85562dfcc070334ea4d1d9e72cba7a");
