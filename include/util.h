@@ -109,7 +109,7 @@
 #endif
 
 #if DREW_GCC_VERSION >= 0x040700
-#define DREW_ASSUME_ALIGNED(x, bytes) __builtin_assume_aligned(x, bytes)
+#define DREW_ASSUME_ALIGNED(x, bytes) (__typeof__(x))__builtin_assume_aligned(x, bytes)
 #else
 #define DREW_ASSUME_ALIGNED(x, bytes) x
 #endif
