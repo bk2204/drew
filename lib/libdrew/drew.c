@@ -103,6 +103,11 @@ static int load_library(drew_loader_t *ldr, const char *library,
 	p = realloc(ldr->lib, sizeof(*p) * (ldr->nlibs + 1));
 	if (!p)
 		return -ENOMEM;
+	if (p != ldr->lib) {
+		// Fix up the lib pointers in the plugins.
+		for (int i = 0; i < ldr->nplugins; i++)
+			ldr->plugin[i].lib = p + (ldr->plugin[i].lib - ldr->lib);
+	}
 	ldr->lib = p;
 	lib = &ldr->lib[ldr->nlibs];
 	memset(lib, 0, sizeof(*lib));
