@@ -31,6 +31,10 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include <glib-2.0/gmodule.h>
+#include <glib-2.0/glib.h>
+#include <glib-2.0/glib/gprintf.h>
+
 // Set if the plugin has been properly loaded.
 #define FLAG_PLUGIN_OK		1
 // Set if the plugin contains no implementations.
@@ -39,7 +43,7 @@
 typedef int (*plugin_api_t)(void *, int, int, void *);
 
 typedef void *functbl_t;
-typedef void *handle_t;
+typedef GModule *handle_t;
 
 // There is one of these per drew_plugin_info interface.
 typedef struct {
@@ -74,22 +78,19 @@ struct drew_loader_s {
 
 static handle_t open_library(const char *pathname)
 {
-#if defined(__GNUC__) && __GNUC__ >= 4 && __GNUC_MINOR__ >= 5
-	// FIXME: discover why Debian bug #631531 occurs and remove this.
-	return dlopen(pathname, RTLD_NOW|RTLD_LOCAL);
-#else
-	return dlopen(pathname, RTLD_LAZY|RTLD_LOCAL);
-#endif
+	return g_module_open(pathname, G_MODULE_BIND_LAZY | G_MODULE_BIND_LOCAL);
 }
 
 static void close_library(handle_t handle)
 {
-	dlclose(handle);
+	g_module_close(handle);
 }
 
 static plugin_api_t get_api(handle_t handle)
 {
-	return dlsym(handle, "drew_plugin_info");
+	plugin_api_t p = NULL;
+	return g_module_symbol(handle, "drew_plugin_info", (gpointer *)&p) ?
+		p : NULL;
 }
 
 /* Allocate a library table entry and load the library information from it.  If
@@ -100,7 +101,7 @@ static int load_library(drew_loader_t *ldr, const char *library,
 {
 	int err = 0;
 	library_t *p, *lib;
-	p = realloc(ldr->lib, sizeof(*p) * (ldr->nlibs + 1));
+	p = g_realloc(ldr->lib, sizeof(*p) * (ldr->nlibs + 1));
 	if (!p)
 		return -ENOMEM;
 	if (p != ldr->lib) {
@@ -117,19 +118,15 @@ static int load_library(drew_loader_t *ldr, const char *library,
 		err = -DREW_ERR_RESOLUTION;
 		if (!(lib->handle = open_library(NULL)))
 			goto out;
-		lib->name = strdup("<internal>");
+		lib->name = g_strdup("<internal>");
 		lib->path = NULL;
 	}
 	else {
-		size_t sz = strlen(library) + 1 + strlen(path) + 1;
 		err = -ENOMEM;
-		if (!(lib->path = malloc(sz)))
-			goto out;
-		err = -DREW_ERR_BUG;
-		if (snprintf(lib->path, sz, "%s/%s", path, library) >= sz)
+		if (!(lib->path = g_strdup_printf("%s/%s", path, library)))
 			goto out;
 		// TODO: query this from the library.
-		lib->name = strdup(library);
+		lib->name = g_strdup(library);
 		err = -DREW_ERR_RESOLUTION;
 		if (!(lib->handle = open_library(lib->path)))
 			goto out;
@@ -144,8 +141,9 @@ out:
 	if (err) {
 		if (lib->handle)
 			close_library(lib->handle);
-		free(lib->name);
-		free(lib->path);
+		g_free(lib->name);
+		g_free(lib->path);
+		lib->path = NULL;
 		ldr->nlibs--;
 	}
 	return err;
@@ -169,7 +167,7 @@ static int load_library_info(drew_loader_t *ldr, library_t *lib)
 		extra = 1;
 
 	err = -ENOMEM;
-	p = realloc(ldr->plugin, sizeof(*p) * (ldr->nplugins + lib->nplugins + 1));
+	p = g_realloc(ldr->plugin, sizeof(*p) * (ldr->nplugins + lib->nplugins + 1));
 	if (!p)
 		goto out;
 	memset(p+ldr->nplugins, 0, sizeof(*p) * (lib->nplugins + 1));
@@ -205,17 +203,17 @@ static int load_library_info(drew_loader_t *ldr, library_t *lib)
 			mdsize = 0;
 
 		err = -ENOMEM;
-		p->functbl = malloc(p->functblsize);
+		p->functbl = g_malloc(p->functblsize);
 		if (!p->functbl)
 			goto out;
 
 		if (mdsize) {
-			p->metadata = malloc(mdsize);
+			p->metadata = g_malloc(mdsize);
 			if (!p->metadata)
 				goto out;
 		}
 
-		p->name = malloc(namesize);
+		p->name = g_malloc(namesize);
 		if (!p->name)
 			goto out;
 
@@ -240,9 +238,9 @@ static int load_library_info(drew_loader_t *ldr, library_t *lib)
 	err = 0;
 out:
 	if (err && p) {
-		free(p->functbl);
-		free(p->name);
-		free(p->metadata);
+		g_free(p->functbl);
+		g_free(p->name);
+		g_free(p->metadata);
 	}
 	return err ? err : offset;
 }
@@ -254,7 +252,7 @@ int drew_loader_new(drew_loader_t **ldrp)
 	if (!ldrp)
 		return -DREW_ERR_INVALID;
 
-	if (!(ldr = malloc(sizeof(*ldr))))
+	if (!(ldr = g_malloc(sizeof(*ldr))))
 		return -ENOMEM;
 
 	memset(ldr, 0, sizeof(*ldr));
@@ -274,21 +272,21 @@ int drew_loader_free(drew_loader_t **ldrp)
 	ldr = *ldrp;
 
 	for (int i = 0; i < ldr->nlibs; i++) {
-		free(ldr->lib[i].name);
-		free(ldr->lib[i].path);
+		g_free(ldr->lib[i].name);
+		g_free(ldr->lib[i].path);
 		close_library(ldr->lib[i].handle);
 	}
-	free(ldr->lib);
+	g_free(ldr->lib);
 
 	for (int i = 0; i < ldr->nplugins; i++) {
 		if (!(ldr->plugin[i].flags & FLAG_PLUGIN_OK))
 			continue;
-		free(ldr->plugin[i].name);
-		free(ldr->plugin[i].functbl);
-		free(ldr->plugin[i].metadata);
+		g_free(ldr->plugin[i].name);
+		g_free(ldr->plugin[i].functbl);
+		g_free(ldr->plugin[i].metadata);
 	}
-	free(ldr->plugin);
-	free(ldr);
+	g_free(ldr->plugin);
+	g_free(ldr);
 
 	*ldrp = NULL;
 	return 0;
@@ -453,17 +451,9 @@ static int special_metadata(const drew_loader_t *ldr, int id,
 	if (!path)
 		return -DREW_ERR_NONEXISTENT;
 	const char *prefix = "file://";
-	const size_t prefixlen = strlen(prefix);
 	struct stat st;
 	const char *suffix = ".rdf";
-	const size_t suffixlen = strlen(suffix);
-	size_t pathlen = strlen(path);
-	char *rdfpath = malloc(pathlen + suffixlen + 1);
-
-	strncpy(rdfpath, ldr->plugin[id].lib->path, pathlen);
-	strncpy(rdfpath+pathlen, suffix, suffixlen + 1);
-
-	size_t sz = strlen(rdfpath);
+	char *rdfpath = g_strjoin("", path, suffix, NULL);
 
 	if (!stat(rdfpath, &st)) {
 		if (meta) {
@@ -471,17 +461,15 @@ static int special_metadata(const drew_loader_t *ldr, int id,
 			meta->version = 1;
 			meta->subject = NULL;
 			meta->predicate =
-				strdup("http://www.w3.org/2000/01/rdf-schema#seeAlso");
+				g_strdup("http://www.w3.org/2000/01/rdf-schema#seeAlso");
 			meta->type = DREW_LOADER_MD_URI;
-			obj = malloc(strlen(prefix) + strlen(rdfpath) + 1);
-			strncpy(obj, prefix, prefixlen);
-			strncpy(obj+prefixlen, rdfpath, sz+1);
+			obj = g_strjoin("", prefix, rdfpath, NULL);
 			meta->object = obj;
 		}
-		free(rdfpath);
+		g_free(rdfpath);
 		return 0;
 	}
-	free(rdfpath);
+	g_free(rdfpath);
 	return -DREW_ERR_NONEXISTENT;
 }
 
@@ -509,8 +497,8 @@ int drew_loader_get_metadata(const drew_loader_t *ldr, int id, int item,
 	
 	if (item < ldr->plugin[id].nmetadata) {
 		memcpy(meta, ldr->plugin[id].metadata + item, sizeof(*meta));
-		meta->predicate = strdup(meta->predicate);
-		meta->object = strdup(meta->object);
+		meta->predicate = g_strdup(meta->predicate);
+		meta->object = g_strdup(meta->object);
 		return 0;
 	}
 	else {
@@ -518,8 +506,8 @@ int drew_loader_get_metadata(const drew_loader_t *ldr, int id, int item,
 		retval = special_metadata(ldr, id,
 				(item - ldr->plugin[id].nmetadata), &md);
 		if (retval < 0) {
-			free((void *)md.predicate);
-			free((void *)md.object);
+			g_free((void *)md.predicate);
+			g_free((void *)md.object);
 			return -DREW_ERR_NONEXISTENT;
 		}
 		memcpy(meta, &md, sizeof(*meta));
