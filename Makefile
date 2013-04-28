@@ -32,6 +32,7 @@ CLIKEFLAGS		+= -D_POSIX_SOURCE=200112L -D_XOPEN_SOURCE=600
 CLIKEFLAGS		+= -fextended-identifiers
 CLIKEFLAGS		+= -floop-interchange -floop-block
 CLIKEFLAGS		+= -fvisibility=hidden
+CLIKEFLAGS		+= `pkg-config --cflags glib-2.0 gmodule-2.0 gobject-2.0`
 CLIKEFLAGS		+= $(CFLAGS-y)
 CXXFLAGS		:= $(CLIKEFLAGS)
 CFLAGS			:= $(CLIKEFLAGS)
@@ -43,6 +44,7 @@ PLUGINCFLAGS	+= -I.
 
 LDFLAGS			+= -Wl,--as-needed
 LIBS			+= $(LDFLAGS) -lrt -ldl
+LIBS			+= `pkg-config --libs glib-2.0 gmodule-2.0 gobject-2.0`
 
 SONAME			= -Wl,-soname,$(@F)
 
