@@ -24,7 +24,7 @@ extern "C" {
 struct gcm;
 
 struct gcm {
-	const drew_loader_t *ldr;
+	DrewLoader *ldr;
 	drew_block_t *algo;
 	uint8_t y0[16] ALIGNED_T;
 	uint8_t y[16] ALIGNED_T;
@@ -62,7 +62,7 @@ static int gcm_decrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 static int gcm_decryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
 static int gcm_fini(drew_mode_t *ctx, int flags);
-static int gcm_test(void *p, const drew_loader_t *ldr);
+static int gcm_test(void *p, DrewLoader *ldr);
 static int gcm_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags);
 static int gcm_setdata(drew_mode_t *, const uint8_t *, size_t);
 static int gcm_encryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
@@ -464,7 +464,7 @@ static int gcm_decryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 		-DREW_ERR_VERIFY_FAILED : outlen;
 }
 
-static int gcm_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
+static int gcm_init(drew_mode_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param);
 
 struct test {
@@ -480,7 +480,7 @@ struct test {
 	size_t outsz;
 };
 
-static int gcm_test_generic(const drew_loader_t *ldr, const char *name,
+static int gcm_test_generic(DrewLoader *ldr, const char *name,
 		const struct test *testdata, size_t ntests)
 {
 	int id, result = 0;
@@ -539,7 +539,7 @@ static int gcm_test_generic(const drew_loader_t *ldr, const char *name,
 	return result;
 }
 
-static int gcm_test_aes128(const drew_loader_t *ldr, size_t *ntests)
+static int gcm_test_aes128(DrewLoader *ldr, size_t *ntests)
 {
 	const uint8_t *key = (const uint8_t *)"\xfe\xff\xe9\x92\x86\x65\x73\x1c"
 		"\x6d\x6a\x8f\x94\x67\x30\x83\x08";
@@ -615,7 +615,7 @@ static int gcm_test_aes128(const drew_loader_t *ldr, size_t *ntests)
 	return gcm_test_generic(ldr, "AES128", testdata, DIM(testdata));
 }
 
-static int gcm_test(void *p, const drew_loader_t *ldr)
+static int gcm_test(void *p, DrewLoader *ldr)
 {
 	int result = 0, tres;
 	size_t ntests = 0;

@@ -49,7 +49,7 @@ static int ecdsa_info(int op, void *p);
 static int ecdsa_info2(const drew_pksig_t *, int, drew_param_t *,
 		const drew_param_t *);
 static int ecdsa_init(drew_pksig_t *, int,
-		const drew_loader_t *, const drew_param_t *);
+		DrewLoader *, const drew_param_t *);
 static int ecdsa_clone(drew_pksig_t *, const drew_pksig_t *, int);
 static int ecdsa_fini(drew_pksig_t *, int);
 static int ecdsa_generate(drew_pksig_t *, const drew_param_t *);
@@ -61,7 +61,7 @@ static int ecdsa_sign(const drew_pksig_t *, drew_bignum_t *,
 		const drew_bignum_t *);
 static int ecdsa_verify(const drew_pksig_t *, drew_bignum_t *,
 		const drew_bignum_t *);
-static int ecdsa_test(void *, const drew_loader_t *);
+static int ecdsa_test(void *, DrewLoader *);
 
 
 static const drew_pksig_functbl_t ecdsa_functbl = {
@@ -173,7 +173,7 @@ static int ecdsa_info2(const drew_pksig_t *ctx, int op, drew_param_t *out,
 	}
 }
 
-static int ecdsa_test(void *p, const drew_loader_t *ldr)
+static int ecdsa_test(void *p, DrewLoader *ldr)
 {
 	const uint8_t hbytes[] = {
 		0xdd, 0xaf, 0x35, 0xa1, 0x93, 0x61, 0x7a, 0xba,
@@ -312,7 +312,7 @@ static int ecdsa_test(void *p, const drew_loader_t *ldr)
 	return res;
 }
 
-static int ecdsa_init(drew_pksig_t *ctx, int flags, const drew_loader_t *ldr,
+static int ecdsa_init(drew_pksig_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param)
 {
 	struct ecdsa *newctx = ctx->ctx;

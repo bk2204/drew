@@ -62,10 +62,10 @@ void print_plugin(drew_loader_t *ldr, const char *name)
 
 int main(int argc, char **argv)
 {
-	drew_loader_t *ldr = NULL;
+	DrewLoader *ldr = NULL;
 	int retval = 0;
 
-	if ((retval = drew_loader_new(&ldr)))
+	if (!(ldr = drew_loader_new()))
 		errprint(retval, 3);
 
 	if (argc < 2)
@@ -74,8 +74,7 @@ int main(int argc, char **argv)
 	for (int j = 1; j < argc; j++) {
 		print_plugin(ldr, argv[j]);
 	}
-	if (drew_loader_free(&ldr))
-		return 125;
+	drew_loader_unref(ldr);
 
 	return 0;
 }

@@ -67,13 +67,21 @@ typedef struct {
 	drew_metadata_t *metadata;
 } plugin_t;
 
-struct drew_loader_s {
+// We use a GRWLock here because after setup, the lock will be essentially
+// uncontended assuming nobody tries to load more plugins.
+struct _DrewLoader {
 	int version;
 	int flags;
 	int nlibs;
 	library_t *lib;
 	int nplugins;
 	plugin_t *plugin;
+	gint ref_count;
+	GRWLock lock;
+};
+
+struct _DrewLoaderClass {
+	GObjectClass parent_class;
 };
 
 static handle_t open_library(const char *pathname)
@@ -96,7 +104,7 @@ static plugin_api_t get_api(handle_t handle)
 /* Allocate a library table entry and load the library information from it.  If
  * library is NULL, try to load the current executable instead.
  */
-static int load_library(drew_loader_t *ldr, const char *library,
+static int load_library(DrewLoader *ldr, const char *library,
 		const char *path, library_t **libp)
 {
 	int err = 0;
@@ -152,7 +160,7 @@ out:
 /* Load all the info from the library, including all plugin-specific
  * information.
  */
-static int load_library_info(drew_loader_t *ldr, library_t *lib)
+static int load_library_info(DrewLoader *ldr, library_t *lib)
 {
 	int err = -DREW_ERR_ENUMERATION;
 	int offset = ldr->nplugins;
@@ -245,79 +253,96 @@ out:
 	return err ? err : offset;
 }
 
-int drew_loader_new(drew_loader_t **ldrp)
+DrewLoader *drew_loader_new(void)
 {
-	drew_loader_t *ldr;
+	DrewLoader *ldr;
 
-	if (!ldrp)
-		return -DREW_ERR_INVALID;
-
-	if (!(ldr = g_malloc(sizeof(*ldr))))
-		return -ENOMEM;
+	if (!(ldr = g_slice_new(DrewLoader)))
+		return NULL;
 
 	memset(ldr, 0, sizeof(*ldr));
 
-	*ldrp = ldr;
+	ldr->ref_count = 1;
 
-	return 0;
+	// This protects everything except the reference count, which is atomic.
+	g_rw_lock_init(&ldr->lock);
+
+	return ldr;
 }
 
-int drew_loader_free(drew_loader_t **ldrp)
+DrewLoader *drew_loader_ref(DrewLoader *ldr)
 {
-	drew_loader_t *ldr;
+	g_return_val_if_fail(ldr, NULL);
+	
+	g_atomic_int_inc(&ldr->ref_count);
 
-	if (!ldrp)
-		return -DREW_ERR_INVALID;
-
-	ldr = *ldrp;
-
-	for (int i = 0; i < ldr->nlibs; i++) {
-		g_free(ldr->lib[i].name);
-		g_free(ldr->lib[i].path);
-		close_library(ldr->lib[i].handle);
-	}
-	g_free(ldr->lib);
-
-	for (int i = 0; i < ldr->nplugins; i++) {
-		if (!(ldr->plugin[i].flags & FLAG_PLUGIN_OK))
-			continue;
-		g_free(ldr->plugin[i].name);
-		g_free(ldr->plugin[i].functbl);
-		g_free(ldr->plugin[i].metadata);
-	}
-	g_free(ldr->plugin);
-	g_free(ldr);
-
-	*ldrp = NULL;
-	return 0;
+	return ldr;
 }
 
-int drew_loader_load_plugin(drew_loader_t *ldr, const char *plugin,
+void drew_loader_unref(DrewLoader *ldr)
+{
+	g_return_if_fail(ldr);
+	
+	if (g_atomic_int_dec_and_test(&ldr->ref_count)) {
+		g_rw_lock_clear(&ldr->lock);
+		for (int i = 0; i < ldr->nlibs; i++) {
+			g_free(ldr->lib[i].name);
+			g_free(ldr->lib[i].path);
+			close_library(ldr->lib[i].handle);
+		}
+		g_free(ldr->lib);
+	
+		for (int i = 0; i < ldr->nplugins; i++) {
+			if (!(ldr->plugin[i].flags & FLAG_PLUGIN_OK))
+				continue;
+			g_free(ldr->plugin[i].name);
+			g_free(ldr->plugin[i].functbl);
+			g_free(ldr->plugin[i].metadata);
+		}
+		g_free(ldr->plugin);
+		g_free(ldr);
+	}
+
+	return;
+}
+
+int drew_loader_load_plugin(DrewLoader *ldr, const char *plugin,
 		const char *path)
 {
-	int err = 0;
+	int retval = 0, err = 0;
 	library_t *lib;
+
+	g_rw_lock_writer_lock(&ldr->lock);
 
 	if (plugin && !path) {
 		int npaths = drew_loader_get_search_path(ldr, 0, NULL), i;
 
-		if (npaths < 0)
-			return npaths;
+		if (npaths < 0) {
+			retval = npaths;
+			goto out;
+		}
 
 		for (i = 0; i < npaths; i++) {
 			drew_loader_get_search_path(ldr, i, &path);
 			if (!load_library(ldr, plugin, path, &lib))
 				break;
 		}
-		if (i == npaths)
-			return -DREW_ERR_RESOLUTION;
+		if (i == npaths) {
+			retval = -DREW_ERR_RESOLUTION;
+			goto out;
+		}
 	}
-	else if ((err = load_library(ldr, plugin, path, &lib)))
-		return err;
-	return load_library_info(ldr, lib);
+	else if ((err = load_library(ldr, plugin, path, &lib))) {
+		retval = err;
+		goto out;
+	}
+	retval = load_library_info(ldr, lib);
+out:
+	g_rw_lock_writer_unlock(&ldr->lock);
+	return retval;
 }
 
-static inline bool is_valid_id(const drew_loader_t *ldr, int id, int dummyok)
+static inline bool is_valid_id(DrewLoader *ldr, int id, int dummyok)
 {
 	int mask = FLAG_PLUGIN_OK | (dummyok ? FLAG_PLUGIN_DUMMY : 0);
 	if (!ldr)
@@ -335,93 +360,141 @@ static inline bool is_valid_id(const drew_loader_t *ldr, int id, int dummyok)
  * plugin with ID id.  As a special case, if id is -1, return the total number
  * of plugins loaded.
  */
-int drew_loader_get_nplugins(const drew_loader_t *ldr, int id)
+int drew_loader_get_nplugins(DrewLoader *ldr, int id)
 {
+	int retval = 0;
+
 	if (!ldr)
 		return -DREW_ERR_INVALID;
-	if (id == -1)
-		return ldr->nplugins;
+
+	g_rw_lock_reader_lock(&ldr->lock);
+
+	if (id == -1) {
+		retval = ldr->nplugins;
+		goto out;
+	}
 	if (!is_valid_id(ldr, id, 0)) {
-		if (is_valid_id(ldr, id, 1))
-			return 0;
-		else
-			return -DREW_ERR_INVALID;
+		retval = is_valid_id(ldr, id, 1) ? 0 : -DREW_ERR_INVALID;
+		goto out;
 	}
 
-	return ldr->plugin[id].lib->nplugins;
+	retval = ldr->plugin[id].lib->nplugins;
+out:
+	g_rw_lock_reader_unlock(&ldr->lock);
+	return retval;
 }
 
-int drew_loader_get_type(const drew_loader_t *ldr, int id)
+int drew_loader_get_type(DrewLoader *ldr, int id)
 {
 	if (!ldr)
 		return -DREW_ERR_INVALID;
-	if (!is_valid_id(ldr, id, 0))
-		return -DREW_ERR_INVALID;
 
-	return ldr->plugin[id].type;
+	g_rw_lock_reader_lock(&ldr->lock);
+
+	int retval = is_valid_id(ldr, id, 0) ? ldr->plugin[id].type :
+		-DREW_ERR_INVALID;
+
+	g_rw_lock_reader_unlock(&ldr->lock);
+
+	return retval;
 }
 
-int drew_loader_get_functbl(const drew_loader_t *ldr, int id, const void **tbl)
+int drew_loader_get_functbl(DrewLoader *ldr, int id, const void **tbl)
 {
 	if (!ldr)
 		return -DREW_ERR_INVALID;
-	if (!is_valid_id(ldr, id, 0))
-		return -DREW_ERR_INVALID;
+
+	g_rw_lock_reader_lock(&ldr->lock);
+
+	int retval;
+
+	if (!is_valid_id(ldr, id, 0)) {
+		retval = -DREW_ERR_INVALID;
+		goto out;
+	}
 
 	if (tbl)
 		*tbl = ldr->plugin[id].functbl;
-	return ldr->plugin[id].functblsize;
+
+	retval = ldr->plugin[id].functblsize;
+
+out:
+	g_rw_lock_reader_unlock(&ldr->lock);
+	return retval;
 }
 
-int drew_loader_get_algo_name(const drew_loader_t *ldr, int id,
+int drew_loader_get_algo_name(DrewLoader *ldr, int id,
 		const char **namep)
 {
 	if (!ldr)
 		return -DREW_ERR_INVALID;
-	if (!is_valid_id(ldr, id, 0))
-		return -DREW_ERR_INVALID;
 
-	*namep = ldr->plugin[id].name;
-	return 0;
+	g_rw_lock_reader_lock(&ldr->lock);
+
+	int retval = 0;
+
+	if (!is_valid_id(ldr, id, 0))
+		retval = -DREW_ERR_INVALID;
+	else
+		*namep = ldr->plugin[id].name;
+
+	g_rw_lock_reader_unlock(&ldr->lock);
+
+	return retval;
 }
 
-int drew_loader_lookup_by_name(const drew_loader_t *ldr, const char *name,
+int drew_loader_lookup_by_name(DrewLoader *ldr, const char *name,
 		int start, int end)
 {
 	if (!ldr)
 		return -DREW_ERR_INVALID;
+
+	g_rw_lock_reader_lock(&ldr->lock);
+
 	if (end == -1)
 		end = ldr->nplugins;
 
 	for (int i = start; i < end; i++) {
 		if (!is_valid_id(ldr, i, 0))
 			continue;
-		if (!strcmp(ldr->plugin[i].name, name))
+		if (!strcmp(ldr->plugin[i].name, name)) {
+			g_rw_lock_reader_unlock(&ldr->lock);
 			return i;
+		}
 	}
+
+	g_rw_lock_reader_unlock(&ldr->lock);
 
 	return -DREW_ERR_NONEXISTENT;
 }
 
-int drew_loader_lookup_by_type(const drew_loader_t *ldr, int type, int start,
+int drew_loader_lookup_by_type(DrewLoader *ldr, int type, int start,
 		int end)
 {
 	if (!ldr)
 		return -DREW_ERR_INVALID;
+
+	g_rw_lock_reader_lock(&ldr->lock);
+
 	if (end == -1)
 		end = ldr->nplugins;
 
 	for (int i = start; i < end; i++) {
 		if (!is_valid_id(ldr, i, 0))
 			continue;
-		if (ldr->plugin[i].type == type)
+		if (ldr->plugin[i].type == type) {
+			g_rw_lock_reader_unlock(&ldr->lock);
 			return i;
+		}
 	}
+
+	g_rw_lock_reader_unlock(&ldr->lock);
 
 	return -DREW_ERR_NONEXISTENT;
 }
 
-int drew_loader_get_search_path(const drew_loader_t *ldr, int num,
+/* This does not need to take the lock because it doesn't access ldr. */
+int drew_loader_get_search_path(DrewLoader *ldr, int num,
 		const char **p)
 {
 	const char *paths[] = {
@@ -441,7 +514,7 @@ int drew_loader_get_search_path(const drew_loader_t *ldr, int num,
  * basename as the plugin, and potentially provide some metadata that may
  * already be available, such as algorithm information and so forth.
  */
-static int special_metadata(const drew_loader_t *ldr, int id,
+static int special_metadata(DrewLoader *ldr, int id,
 		int item, drew_metadata_t *meta)
 {
 	if (item > 0)
@@ -473,7 +546,7 @@ static int special_metadata(const drew_loader_t *ldr, int id,
 	return -DREW_ERR_NONEXISTENT;
 }
 
-int drew_loader_get_metadata(const drew_loader_t *ldr, int id, int item,
+int drew_loader_get_metadata(DrewLoader *ldr, int id, int item,
 		drew_metadata_t *meta)
 {
 	drew_metadata_t md;
@@ -482,13 +555,18 @@ int drew_loader_get_metadata(const drew_loader_t *ldr, int id, int item,
 	if (!ldr)
 		return -DREW_ERR_INVALID;
 
-	if (!is_valid_id(ldr, id, 0))
+	g_rw_lock_reader_lock(&ldr->lock);
+
+	if (!is_valid_id(ldr, id, 0)) {
+		g_rw_lock_reader_unlock(&ldr->lock);
 		return -DREW_ERR_NONEXISTENT;
+	}
 
 	if (item == -1) {
 		retval = special_metadata(ldr, id,
 				(item - ldr->plugin[id].nmetadata), NULL);
 		
+		g_rw_lock_reader_unlock(&ldr->lock);
 		return ldr->plugin[id].nmetadata + (retval == 0);
 	}
 
@@ -499,6 +577,7 @@ int drew_loader_get_metadata(const drew_loader_t *ldr, int id, int item,
 		memcpy(meta, ldr->plugin[id].metadata + item, sizeof(*meta));
 		meta->predicate = g_strdup(meta->predicate);
 		meta->object = g_strdup(meta->object);
+		g_rw_lock_reader_unlock(&ldr->lock);
 		return 0;
 	}
 	else {
@@ -508,11 +587,15 @@ int drew_loader_get_metadata(const drew_loader_t *ldr, int id, int item,
 		if (retval < 0) {
 			g_free((void *)md.predicate);
 			g_free((void *)md.object);
+			g_rw_lock_reader_unlock(&ldr->lock);
 			return -DREW_ERR_NONEXISTENT;
 		}
 		memcpy(meta, &md, sizeof(*meta));
+		g_rw_lock_reader_unlock(&ldr->lock);
 		return 0;
 	}
+
+	g_rw_lock_reader_unlock(&ldr->lock);
 
 	return -DREW_ERR_NONEXISTENT;
 }
@@ -528,3 +611,5 @@ int drew_get_version(int op, const char **sp, void *p)
 	*sp = DREW_STRING_VERSION;
 	return DREW_VERSION;
 }
+
+

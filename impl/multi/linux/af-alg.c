@@ -25,6 +25,7 @@
 #ifdef __linux__
 #include "internal.h"
 
+#include <glib-2.0/glib.h>
 #include <errno.h>
 #include <unistd.h>
 #include <linux/if_alg.h>

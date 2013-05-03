@@ -92,7 +92,7 @@ static int cmac_info2(const drew_mac_t *ctx, int op, drew_param_t *out,
 	}
 }
 
-static int cmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
+static int cmac_init(drew_mac_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param)
 {
 	drew_block_t *algo = NULL;
@@ -285,7 +285,7 @@ struct test {
 	const uint8_t *output;
 };
 
-static int cmac_test_generic(const drew_loader_t *ldr, const char *name,
+static int cmac_test_generic(DrewLoader *ldr, const char *name,
 		const struct test *testdata, size_t ntests, size_t outputsz)
 {
 	int result = 0;
@@ -366,7 +366,7 @@ static const struct test testdata_aes128[] = {
 	}
 };
 
-static int cmac_test_aes128(const drew_loader_t *ldr, size_t *ntests)
+static int cmac_test_aes128(DrewLoader *ldr, size_t *ntests)
 {
 	*ntests = DIM(testdata_aes128);
 
@@ -374,7 +374,7 @@ static int cmac_test_aes128(const drew_loader_t *ldr, size_t *ntests)
 			DIM(testdata_aes128), 16);
 }
 
-static int cmac_test(void *p, const drew_loader_t *ldr)
+static int cmac_test(void *p, DrewLoader *ldr)
 {
 	int result = 0, tres;
 	size_t ntests = 0;
@@ -415,7 +415,7 @@ int cmack_info(int op, void *p)
 	return -DREW_ERR_INVALID;
 }
 
-int cmack_init(drew_kdf_t *ctx, int flags, const drew_loader_t *ldr,
+int cmack_init(drew_kdf_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param)
 {
 	return cmac_init(MAC(ctx), flags, ldr, param);
@@ -472,7 +472,7 @@ int cmack_generate(drew_kdf_t *ctx, uint8_t *out, size_t outlen,
 	return 0;
 }
 
-static int cmack_test_generic(const drew_loader_t *ldr, const char *name,
+static int cmack_test_generic(DrewLoader *ldr, const char *name,
 		const struct test *testdata, size_t ntests, size_t outputsz)
 {
 	int result = 0;
@@ -516,14 +516,14 @@ static int cmack_test_generic(const drew_loader_t *ldr, const char *name,
 	return result;
 }
 
-static int cmack_test_md5(const drew_loader_t *ldr, size_t *ntests)
+static int cmack_test_md5(DrewLoader *ldr, size_t *ntests)
 {
 	*ntests = DIM(testdata_md5);
 
 	return cmack_test_generic(ldr, "MD5", testdata_md5, DIM(testdata_md5), 16);
 }
 
-static int cmack_test(void *p, const drew_loader_t *ldr)
+static int cmack_test(void *p, DrewLoader *ldr)
 {
 	int result = 0, tres;
 	size_t ntests = 0;

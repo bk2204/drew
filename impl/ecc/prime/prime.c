@@ -59,7 +59,7 @@ struct curve {
 static int ecp_info(int op, void *p);
 static int ecp_info2(const drew_ecc_t *ctx, int op, drew_param_t *out,
 		const drew_param_t *in);
-static int ecp_init(drew_ecc_t *ctx, int flags, const drew_loader_t *ldr,
+static int ecp_init(drew_ecc_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param);
 static int ecp_clone(drew_ecc_t *new, const drew_ecc_t *old, int flags);
 static int ecp_fini(drew_ecc_t *ctx, int flags);
@@ -79,13 +79,13 @@ static int ecp_setvalpoint(drew_ecc_t *ctx, const char *name,
 static int ecp_valpoint(const drew_ecc_t *ctx, const char *name,
 		drew_ecc_point_t *pt);
 static int ecp_point(const drew_ecc_t *ctx, drew_ecc_point_t *pt);
-static int ecp_test(void *, const drew_loader_t *);
+static int ecp_test(void *, DrewLoader *);
 
 static int ecpt_info(int op, void *p);
 static int ecpt_info2(const drew_ecc_point_t *ctx, int op, drew_param_t *out,
 		const drew_param_t *in);
 static int ecpt_init(drew_ecc_point_t *ctx, int flags,
-		const drew_loader_t *ldr, const drew_param_t *param);
+		DrewLoader *ldr, const drew_param_t *param);
 static int ecpt_clone(drew_ecc_point_t *new, const drew_ecc_point_t *old,
 		int flags);
 static int ecpt_fini(drew_ecc_point_t *ctx, int flags);
@@ -110,7 +110,7 @@ static int ecpt_mul2(drew_ecc_point_t *r, const drew_ecc_point_t *ptp,
 		const drew_bignum_t *b);
 static int ecpt_mul(drew_ecc_point_t *ptr, const drew_ecc_point_t *pta,
 		const drew_bignum_t *b);
-static int ecpt_test(void *p, const drew_loader_t *ldr);
+static int ecpt_test(void *p, DrewLoader *ldr);
 
 static drew_ecc_functbl_t ecp_functbl = {
 	ecp_info, ecp_info2, ecp_init, ecp_clone, ecp_fini, ecp_setcurvename,
@@ -145,7 +145,7 @@ static int ecp_info2(const drew_ecc_t *ctx, int op, drew_param_t *out,
 	return ecp_info(op, NULL);
 }
 
-static int ecp_init(drew_ecc_t *ctx, int flags, const drew_loader_t *ldr,
+static int ecp_init(drew_ecc_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param)
 {
 	drew_bignum_t *bn = 0;
@@ -611,7 +611,7 @@ static int ecp_valpoint(const drew_ecc_t *ctx, const char *name,
 }
 
 static int ecpt_init(drew_ecc_point_t *ctx, int flags,
-		const drew_loader_t *ldr, const drew_param_t *param);
+		DrewLoader *ldr, const drew_param_t *param);
 
 static int ecp_point(const drew_ecc_t *ctx, drew_ecc_point_t *pt)
 {
@@ -750,7 +750,7 @@ static struct ecp_testcase p521_testcases[] = {
 	}
 };
 
-static int ecp_test(void *p, const drew_loader_t *ldr)
+static int ecp_test(void *p, DrewLoader *ldr)
 {
 	drew_ecc_t curve;
 	drew_ecc_point_t p1, pres, pcur;
@@ -817,7 +817,7 @@ static int ecpt_info2(const drew_ecc_point_t *ctx, int op, drew_param_t *out,
 }
 
 static int ecpt_init(drew_ecc_point_t *ctx, int flags,
-		const drew_loader_t *ldr, const drew_param_t *param)
+		DrewLoader *ldr, const drew_param_t *param)
 {
 	const drew_ecc_t *curvectx = NULL;
 	struct point *pt;
@@ -1143,7 +1143,7 @@ static int ecpt_mul(drew_ecc_point_t *ptr, const drew_ecc_point_t *pta,
 	return ecpt_mul2(ptr, pta, b, NULL, NULL);
 }
 
-static int ecpt_test(void *p, const drew_loader_t *ldr)
+static int ecpt_test(void *p, DrewLoader *ldr)
 {
 	return -DREW_ERR_NOT_IMPL;
 }

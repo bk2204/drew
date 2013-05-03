@@ -39,7 +39,7 @@
 
 HIDE()
 struct pbkdf {
-	const drew_loader_t *ldr;
+	DrewLoader *ldr;
 	drew_kdf_t prf;
 	uint8_t *salt;
 	uint8_t saltsz;
@@ -91,7 +91,7 @@ static int pbkdf_info2(const drew_kdf_t *kdf, int op, drew_param_t *out,
 	return -DREW_ERR_INVALID;
 }
 
-static int pbkdf_init(drew_kdf_t *ctx, int flags, const drew_loader_t *ldr,
+static int pbkdf_init(drew_kdf_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param)
 {
 	int res = 0;
@@ -247,7 +247,7 @@ struct test {
 	const uint8_t *output;
 };
 
-static int pbkdf_test_generic(const drew_loader_t *ldr, const char *name,
+static int pbkdf_test_generic(DrewLoader *ldr, const char *name,
 		const struct test *testdata, size_t ntests, size_t outputsz)
 {
 	int result = 0;
@@ -378,7 +378,7 @@ static const struct test testdata_md5[] = {
 	}
 };
 
-static int pbkdf_test_md5(const drew_loader_t *ldr, size_t *ntests)
+static int pbkdf_test_md5(DrewLoader *ldr, size_t *ntests)
 {
 	*ntests = DIM(testdata_md5);
 
@@ -386,7 +386,7 @@ static int pbkdf_test_md5(const drew_loader_t *ldr, size_t *ntests)
 }
 #endif
 
-static int pbkdf_test(void *p, const drew_loader_t *ldr)
+static int pbkdf_test(void *p, DrewLoader *ldr)
 {
 #if 0
 	int result = 0, tres;

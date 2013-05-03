@@ -106,19 +106,19 @@ static int prng_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
 		size_t entropy);
 static int prng_bytes(drew_prng_t *ctx, uint8_t *out, size_t len);
 static int prng_entropy(const drew_prng_t *ctx);
-static int prng_test(void *, const drew_loader_t *);
+static int prng_test(void *, DrewLoader *);
 
 static int dur_info(int op, void *p);
 static int dur_info2(const drew_prng_t *, int op, drew_param_t *,
 		const drew_param_t *);
-static int dur_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
+static int dur_init(drew_prng_t *ctx, int flags, DrewLoader *,
 		const drew_param_t *);
 static int dur_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags);
 static int dur_fini(drew_prng_t *ctx, int flags);
 
 #ifdef __RDRND__
 static int rdrand_info(int op, void *p);
-static int rdrand_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
+static int rdrand_init(drew_prng_t *ctx, int flags, DrewLoader *,
 		const drew_param_t *);
 static int rdrand_clone(drew_prng_t *newctx, const drew_prng_t *oldctx,
 		int flags);
@@ -149,7 +149,7 @@ static int prng_entropy(const drew_prng_t *ctx)
 	return p->GetEntropyAvailable();
 }
 
-static int prng_test(void *, const drew_loader_t *)
+static int prng_test(void *, DrewLoader *)
 {
 	return -DREW_ERR_NOT_IMPL;
 }
@@ -165,7 +165,7 @@ static int dur_info2(const drew_prng_t *, int op, drew_param_t *,
 	return prng_info<drew::DevURandom>(op, NULL, 1);
 }
 
-static int dur_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
+static int dur_init(drew_prng_t *ctx, int flags, DrewLoader *,
 		const drew_param_t *)
 {
 	return prng_init<drew::DevURandom>(ctx, flags, &durfunctbl);
@@ -193,7 +193,7 @@ static int rdrand_info2(const drew_prng_t *, int op, drew_param_t *,
 	return prng_info<drew::RDRAND>(op, NULL, 4);
 }
 
-static int rdrand_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
+static int rdrand_init(drew_prng_t *ctx, int flags, DrewLoader *,
 		const drew_param_t *)
 {
 	return prng_init<drew::RDRAND>(ctx, flags, &rdrandfunctbl);

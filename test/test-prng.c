@@ -37,7 +37,7 @@ int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 
 inline int test_speed_loop(drew_prng_t *ctx, uint8_t *buf,
 		uint8_t *blk, int blksz, int chunk, int nchunks,
-		const drew_loader_t *ldr)
+		DrewLoader *ldr)
 {
 	int i;
 
@@ -100,7 +100,7 @@ static bool prng_test_runs(const uint8_t *buf, size_t len)
 }
 
 #define NBYTES (12 * 1024 * 1024)
-int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
+int test_external(DrewLoader *ldr, const char *name, const void *tbl,
 		const char *filename, struct test_external *tes)
 {
 	int ret = 0;
@@ -135,7 +135,7 @@ out:
 	return print_test_results(ret, NULL);
 }
 
-int test_external_parse(const drew_loader_t *ldr, const char *filename,
+int test_external_parse(DrewLoader *ldr, const char *filename,
 		struct test_external *tes)
 {
 	return 0;

@@ -57,7 +57,7 @@ static int execute_test_external(int ret, struct test_external *tep, size_t i)
 }
 
 #define NDATA_CHUNK	512
-int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
+int test_external(DrewLoader *ldr, const char *name, const void *tbl,
 		const char *filename, struct test_external *tes)
 {
 	int ret = 0;
@@ -104,7 +104,7 @@ int test_external_cleanup(struct test_external *tes)
 	return 0;
 }
 
-int test_external_parse(const drew_loader_t *ldr, const char *filename,
+int test_external_parse(DrewLoader *ldr, const char *filename,
 		struct test_external *tes)
 {
 	char *buf = NULL;

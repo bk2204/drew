@@ -205,7 +205,7 @@ int main(int argc, char **argv)
 	drew_loader_t *ldr = NULL;
 	struct test_external tes;
 
-	drew_loader_new(&ldr);
+	ldr = drew_loader_new();
 	drew_mem_pool_adjust(NULL, DREW_MEM_SECMEM, DREW_MEM_SECMEM_NO_LOCK, NULL);
 
 	while ((opt = getopt(argc, argv, "hstipfda:c:n:o:r:u:v")) != -1) {
@@ -365,7 +365,7 @@ int main(int argc, char **argv)
 	}
 	if (mode == MODE_TEST)
 		test_external_cleanup(&tes);
-	drew_loader_free(&ldr);
+	drew_loader_unref(ldr);
 
 	if (error && !(error & 0xff))
 		error++;

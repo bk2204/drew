@@ -49,7 +49,7 @@ int main(int argc, const char **argv)
 	while ((c = poptGetNextOpt(ctx)) >= 0)
 		type |= c;
 
-	drew_loader_new(&ldr);
+	ldr = drew_loader_new();
 	drew_loader_load_plugin(ldr, NULL, NULL);
 	while ((arg = poptGetArg(ctx)))
 		drew_loader_load_plugin(ldr, arg, NULL);
@@ -87,6 +87,6 @@ int main(int argc, const char **argv)
 					ft->info(DREW_HASH_VERSION, NULL));
 		}
 	}
-	drew_loader_free(&ldr);
+	drew_loader_unref(ldr);
 	return 0;
 }

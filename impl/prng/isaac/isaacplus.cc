@@ -44,7 +44,7 @@ extern "C" {
 static int isaacplus_info(int op, void *p);
 static int isaacplus_info2(const drew_prng_t *, int op, drew_param_t *,
 		const drew_param_t *);
-static int isaacplus_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
+static int isaacplus_init(drew_prng_t *ctx, int flags, DrewLoader *,
 		const drew_param_t *);
 static int isaacplus_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags);
 static int isaacplus_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
@@ -52,7 +52,7 @@ static int isaacplus_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
 static int isaacplus_bytes(drew_prng_t *ctx, uint8_t *out, size_t len);
 static int isaacplus_entropy(const drew_prng_t *ctx);
 static int isaacplus_fini(drew_prng_t *ctx, int flags);
-static int isaacplus_test(void *, const drew_loader_t *);
+static int isaacplus_test(void *, DrewLoader *);
 
 PLUGIN_FUNCTBL(isaacplus, isaacplus_info, isaacplus_info2, isaacplus_init, isaacplus_clone, isaacplus_fini, isaacplus_seed, isaacplus_bytes, isaacplus_entropy, isaacplus_test);
 
@@ -97,7 +97,7 @@ static int isaacplus_info2(const drew_prng_t *, int op, drew_param_t *,
 	}
 }
 
-static int isaacplus_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
+static int isaacplus_init(drew_prng_t *ctx, int flags, DrewLoader *,
 		const drew_param_t *)
 {
 	drew::IsaacPlus *p;
@@ -158,7 +158,7 @@ static int isaacplus_fini(drew_prng_t *ctx, int flags)
 	return 0;
 }
 
-static int isaacplus_test(void *, const drew_loader_t *)
+static int isaacplus_test(void *, DrewLoader *)
 {
 	using namespace drew;
 

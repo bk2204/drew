@@ -46,7 +46,7 @@ int test_process_testcase(void *data, int type, const char *item,
 
 #ifdef STUBS_API
 
-int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
+int test_api(DrewLoader *ldr, const char *name, const char *algo,
 		const void *tbl)
 {
 	return -DREW_ERR_NOT_IMPL;

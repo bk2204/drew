@@ -37,7 +37,7 @@
 #define DIM(x) (sizeof(x)/sizeof((x)[0]))
 
 struct ctr {
-	const drew_loader_t *ldr;
+	DrewLoader *ldr;
 	drew_block_t *algo;
 	uint8_t ctr[32] ALIGNED_T;
 	uint8_t buf[32] ALIGNED_T;
@@ -50,7 +50,7 @@ extern "C" {
 static int ctr_info(int op, void *p);
 static int ctr_info2(const drew_mode_t *, int op, drew_param_t *,
 		const drew_param_t *);
-static int ctr_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
+static int ctr_init(drew_mode_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param);
 static int ctr_reset(drew_mode_t *ctx);
 static int ctr_resync(drew_mode_t *ctx);
@@ -61,7 +61,7 @@ static int ctr_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 static int ctr_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
 static int ctr_fini(drew_mode_t *ctx, int flags);
-static int ctr_test(void *p, const drew_loader_t *ldr);
+static int ctr_test(void *p, DrewLoader *ldr);
 static int ctr_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags);
 static int ctr_setdata(drew_mode_t *, const uint8_t *, size_t);
 static int ctr_encryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
@@ -137,7 +137,7 @@ static int ctr_resync(drew_mode_t *ctx)
 	return -DREW_ERR_NOT_IMPL;
 }
 
-static int ctr_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
+static int ctr_init(drew_mode_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param)
 {
 	struct ctr *newctx = (struct ctr *)ctx->ctx;
@@ -193,8 +193,6 @@ static int ctr_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len)
 		memcpy(c->iv, iv, len);
 	return 0;
 }
-
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 static void increment_counter(uint8_t *ctr, size_t len)
 {
@@ -320,7 +318,7 @@ struct test {
 	size_t feedback;
 };
 
-static int ctr_test_generic(const drew_loader_t *ldr, const char *name,
+static int ctr_test_generic(DrewLoader *ldr, const char *name,
 		const struct test *testdata, size_t ntests)
 {
 	int id, result = 0;
@@ -382,7 +380,7 @@ static int ctr_test_generic(const drew_loader_t *ldr, const char *name,
 	return result;
 }
 
-static int ctr_test_aes128(const drew_loader_t *ldr, size_t *ntests)
+static int ctr_test_aes128(DrewLoader *ldr, size_t *ntests)
 {
 	const uint8_t *key = (const uint8_t *)"\x2b\x7e\x15\x16\x28\xae\xd2\xa6"
 				"\xab\xf7\x15\x88\x09\xcf\x4f\x3c";
@@ -418,7 +416,7 @@ static int ctr_test_aes128(const drew_loader_t *ldr, size_t *ntests)
 	return ctr_test_generic(ldr, "AES128", testdata, DIM(testdata));
 }
 
-static int ctr_test(void *p, const drew_loader_t *ldr)
+static int ctr_test(void *p, DrewLoader *ldr)
 {
 	int result = 0, tres;
 	size_t ntests = 0;

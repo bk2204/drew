@@ -48,9 +48,9 @@ extern "C" {
 
 struct gcm;
 
-static int gcm_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
+static int gcm_init(drew_mode_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param);
-static int gcmfl_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
+static int gcmfl_init(drew_mode_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param);
 
 /* The slow implementation. */
@@ -72,7 +72,7 @@ static inline void mul(struct gcm *ctx, uint8_t *buf);
 static inline void mul_fl(struct gcm *ctx, uint8_t *buf);
 static void gen_table_fl(struct gcm *ctx);
 
-static int gcm_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
+static int gcm_init(drew_mode_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param)
 {
 	struct gcm *newctx = (struct gcm *)ctx->ctx;
@@ -96,7 +96,7 @@ static int gcm_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
 	return 0;
 }
 
-static int gcmfl_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
+static int gcmfl_init(drew_mode_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param)
 {
 	struct gcm *newctx = (struct gcm *)ctx->ctx;

@@ -22,7 +22,7 @@
 
 #define FILENAME "test/vectors-mac"
 
-static int make_new_ctx(const drew_loader_t *ldr, const char *name, void *ctx,
+static int make_new_ctx(DrewLoader *ldr, const char *name, void *ctx,
 		int type);
 
 int test_get_type(void)
@@ -236,7 +236,7 @@ struct generic {
 	void *priv;
 };
 
-static int make_new_ctx(const drew_loader_t *ldr, const char *name, void *ctx,
+static int make_new_ctx(DrewLoader *ldr, const char *name, void *ctx,
 		int type)
 {
 	int id = -1, res = 0;

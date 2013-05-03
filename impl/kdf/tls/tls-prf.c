@@ -41,7 +41,7 @@
 
 HIDE()
 struct tls {
-	const drew_loader_t *ldr;
+	DrewLoader *ldr;
 	drew_kdf_t prf;
 	size_t prfsz;
 };
@@ -49,7 +49,7 @@ struct tls {
 static int tls_info(int op, void *p);
 static int tls_info2(const drew_kdf_t *kdf, int op, drew_param_t *out,
 		const drew_param_t *in);
-static int tls_init(drew_kdf_t *ctx, int flags, const drew_loader_t *ldr,
+static int tls_init(drew_kdf_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param);
 static int tls_clone(drew_kdf_t *new, const drew_kdf_t *old, int flags);
 static int tls_reset(drew_kdf_t *ctx);
@@ -59,7 +59,7 @@ static int tls_setsalt(drew_kdf_t *ctx, const uint8_t *salt, size_t len);
 static int tls_setcount(drew_kdf_t *ctx, size_t count);
 static int tls_generate(drew_kdf_t *ctx, uint8_t *out, size_t outlen,
 		const uint8_t *in, size_t inlen);
-static int tls_test(void *p, const drew_loader_t *ldr);
+static int tls_test(void *p, DrewLoader *ldr);
 
 static drew_kdf_functbl_t tls_functbl = {
 	tls_info, tls_info2, tls_init, tls_clone, tls_reset, tls_fini,
@@ -109,7 +109,7 @@ int tls_info2(const drew_kdf_t *kdf, int op, drew_param_t *out,
 	return -DREW_ERR_INVALID;
 }
 
-int tls_init(drew_kdf_t *ctx, int flags, const drew_loader_t *ldr,
+int tls_init(drew_kdf_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param)
 {
 	drew_kdf_t *prf = NULL;
@@ -249,7 +249,7 @@ int tls_generate(drew_kdf_t *ctx, uint8_t *out, size_t outlen,
 	return 0;
 }
 
-static int tls_test(void *p, const drew_loader_t *ldr)
+static int tls_test(void *p, DrewLoader *ldr)
 {
 #if 0
 	int result = 0, tres;

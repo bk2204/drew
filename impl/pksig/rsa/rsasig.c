@@ -47,7 +47,7 @@ static int rsa_info(int op, void *p);
 static int rsa_info2(const drew_pksig_t *, int, drew_param_t *,
 		const drew_param_t *);
 static int rsa_init(drew_pksig_t *, int,
-		const drew_loader_t *, const drew_param_t *);
+		DrewLoader *, const drew_param_t *);
 static int rsa_clone(drew_pksig_t *, const drew_pksig_t *, int);
 static int rsa_fini(drew_pksig_t *, int);
 static int rsa_generate(drew_pksig_t *, const drew_param_t *);
@@ -59,7 +59,7 @@ static int rsa_sign(const drew_pksig_t *, drew_bignum_t *,
 		const drew_bignum_t *);
 static int rsa_verify(const drew_pksig_t *, drew_bignum_t *,
 		const drew_bignum_t *);
-static int rsa_test(void *, const drew_loader_t *);
+static int rsa_test(void *, DrewLoader *);
 
 
 static const drew_pksig_functbl_t rsa_functbl = {
@@ -130,7 +130,7 @@ static int rsa_info2(const drew_pksig_t *ctx, int op, drew_param_t *out,
 	}
 }
 
-static int rsa_test(void *ptr, const drew_loader_t *ldr)
+static int rsa_test(void *ptr, DrewLoader *ldr)
 {
 	uint8_t p[] = {0x3d}, q[] = {0x35}, n[] = {0x0c, 0xa1}, e[] = {0x11},
 			d[] = {0x0a, 0xc1}, m[] = {0x41}, c[] = {0x0a, 0xe6};
@@ -182,7 +182,7 @@ static int rsa_test(void *ptr, const drew_loader_t *ldr)
 	return res;
 }
 
-static int rsa_init(drew_pksig_t *ctx, int flags, const drew_loader_t *ldr,
+static int rsa_init(drew_pksig_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param)
 {
 	struct rsa *newctx = ctx->ctx;

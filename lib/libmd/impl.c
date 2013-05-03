@@ -60,7 +60,6 @@ static pthread_mutex_t drew_impl_libmd__mutex = PTHREAD_MUTEX_INITIALIZER;
 static drew_loader_t *ldr = NULL;
 
 #define DIM(x) (sizeof(x)/sizeof(x[0]))
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 /* This function takes care of loading the plugins and other data necessary for
  * runtime.  It is protected by a mutex.  When the mutex is unlocked, the data
@@ -75,7 +74,7 @@ static void drew_impl_libmd_init(void)
 	if (!ldr) {
 		size_t i;
 
-		drew_loader_new(&ldr);
+		ldr = drew_loader_new();
 		drew_loader_load_plugin(ldr, NULL, NULL);
 
 		for (i = 0; i < DIM(plugins); i++) {

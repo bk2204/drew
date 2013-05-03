@@ -72,9 +72,6 @@
 
 #define STATIC_ASSERT(e) ((void)sizeof(char[1 - 2*!(e)]))
 
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
-
 typedef int (*drew_plugin_api_t)(void *, int, int, void *);
 
 #endif

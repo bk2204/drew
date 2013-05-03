@@ -71,7 +71,7 @@ struct data {
 	int length;
 };
 
-int initialize_ctx(void *c, const drew_loader_t *ldr, const char *name)
+int initialize_ctx(void *c, DrewLoader *ldr, const char *name)
 {
 	struct generic *ctx = c;
 	int res = 0, id = 0;
@@ -100,7 +100,7 @@ int set_up_crypto(struct crypto *c)
 	drew_block_t *block = drew_mem_malloc(sizeof(*block));
 	drew_param_t param;
 
-	drew_loader_new(&ldr);
+	ldr = drew_loader_new();
 	drew_loader_load_plugin(ldr, NULL, NULL);
 	drew_loader_load_plugin(ldr, "sha256", NULL);
 	drew_loader_load_plugin(ldr, "aesni", NULL);
@@ -173,7 +173,7 @@ void free_crypto(struct crypto *c)
 	drew_mem_free(c->mode);
 	drew_mem_free(c->block);
 	drew_mem_free(c->hash);
-	drew_loader_free(&c->ldr);
+	drew_loader_unref(c->ldr);
 }
 
 inline void store_uint32(uint8_t *p, uint32_t x)

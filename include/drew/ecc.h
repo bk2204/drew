@@ -86,6 +86,27 @@ typedef struct {
 
 typedef struct {
 	int (*info)(int op, void *p);
+	int (*info2)(const drew_ecc_t *, int, drew_param_t *,
+			const drew_param_t *);
+	int (*init)(drew_ecc_t *, int, DrewLoader *,
+			const drew_param_t *);
+	int (*clone)(drew_ecc_t *, const drew_ecc_t *, int);
+	int (*fini)(drew_ecc_t *, int);
+	int (*setcurvename)(drew_ecc_t *, const char *);
+	int (*curvename)(drew_ecc_t *, const char **);
+	int (*setval)(drew_ecc_t *, const char *, const uint8_t *, size_t, int);
+	int (*val)(const drew_ecc_t *, const char *, uint8_t *, size_t, int);
+	int (*valsize)(const drew_ecc_t *, const char *, int);
+	int (*setvalbignum)(drew_ecc_t *, const char *, const drew_bignum_t *, int);
+	int (*valbignum)(const drew_ecc_t *, const char *, drew_bignum_t *, int);
+	int (*setvalpoint)(drew_ecc_t *, const char *, const drew_ecc_point_t *);
+	int (*valpoint)(const drew_ecc_t *, const char *, drew_ecc_point_t *);
+	int (*point)(const drew_ecc_t *, drew_ecc_point_t *);
+	int (*test)(void *, DrewLoader *);
+} drew_ecc_functbl4_t;
+
+typedef struct {
+	int (*info)(int op, void *p);
 	int (*info2)(const drew_ecc_point_t *, int, drew_param_t *,
 			const drew_param_t *);
 	int (*init)(drew_ecc_point_t *, int, const drew_loader_t *,
@@ -112,9 +133,37 @@ typedef struct {
 	int (*test)(void *, const drew_loader_t *);
 } drew_ecc_point_functbl3_t;
 
-typedef drew_ecc_functbl3_t drew_ecc_functbl_t;
+typedef struct {
+	int (*info)(int op, void *p);
+	int (*info2)(const drew_ecc_point_t *, int, drew_param_t *,
+			const drew_param_t *);
+	int (*init)(drew_ecc_point_t *, int, DrewLoader *,
+			const drew_param_t *);
+	int (*clone)(drew_ecc_point_t *, const drew_ecc_point_t *, int);
+	int (*fini)(drew_ecc_point_t *, int);
+	int (*setinf)(drew_ecc_point_t *, bool);
+	int (*isinf)(const drew_ecc_point_t *);
+	int (*compare)(const drew_ecc_point_t *, const drew_ecc_point_t *);
+	int (*setcoordbytes)(drew_ecc_point_t *, const uint8_t *, size_t, int);
+	int (*coordbytes)(const drew_ecc_point_t *, uint8_t *, size_t, int);
+	int (*ncoordbytes)(const drew_ecc_point_t *, int);
+	int (*setcoordbignum)(drew_ecc_point_t *, const drew_bignum_t *, int);
+	int (*coordbignum)(const drew_ecc_point_t *, drew_bignum_t *, int);
+	int (*inv)(drew_ecc_point_t *, const drew_ecc_point_t *);
+	int (*add)(drew_ecc_point_t *, const drew_ecc_point_t *,
+			const drew_ecc_point_t *);
+	int (*mul)(drew_ecc_point_t *, const drew_ecc_point_t *,
+			const drew_bignum_t *);
+	int (*mul2)(drew_ecc_point_t *, const drew_ecc_point_t *,
+			const drew_bignum_t *, const drew_ecc_point_t *,
+			const drew_bignum_t *);
+	int (*dbl)(drew_ecc_point_t *, const drew_ecc_point_t *);
+	int (*test)(void *, DrewLoader *);
+} drew_ecc_point_functbl4_t;
 
-typedef drew_ecc_point_functbl3_t drew_ecc_point_functbl_t;
+typedef drew_ecc_functbl4_t drew_ecc_functbl_t;
+
+typedef drew_ecc_point_functbl4_t drew_ecc_point_functbl_t;
 
 struct drew_ecc_s {
 	void *ctx;

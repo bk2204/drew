@@ -47,7 +47,7 @@ static int dsa_info(int op, void *p);
 static int dsa_info2(const drew_pksig_t *, int, drew_param_t *,
 		const drew_param_t *);
 static int dsa_init(drew_pksig_t *, int,
-		const drew_loader_t *, const drew_param_t *);
+		DrewLoader *, const drew_param_t *);
 static int dsa_clone(drew_pksig_t *, const drew_pksig_t *, int);
 static int dsa_fini(drew_pksig_t *, int);
 static int dsa_generate(drew_pksig_t *, const drew_param_t *);
@@ -59,7 +59,7 @@ static int dsa_sign(const drew_pksig_t *, drew_bignum_t *,
 		const drew_bignum_t *);
 static int dsa_verify(const drew_pksig_t *, drew_bignum_t *,
 		const drew_bignum_t *);
-static int dsa_test(void *, const drew_loader_t *);
+static int dsa_test(void *, DrewLoader *);
 
 
 static const drew_pksig_functbl_t dsa_functbl = {
@@ -174,7 +174,7 @@ static int dsa_info2(const drew_pksig_t *ctx, int op, drew_param_t *out,
 /* Tests from sigver.rsp from NIST's 186-2dsatestvectors.zip.  k values are
  * computed using a perl script.
  */
-static int dsa_test(void *ptr, const drew_loader_t *ldr)
+static int dsa_test(void *ptr, DrewLoader *ldr)
 {
 	uint8_t p[] = {
 		0xaa, 0x9a, 0x0d, 0x61, 0x16, 0x80, 0x7c, 0xf7,
@@ -376,7 +376,7 @@ static int dsa_test(void *ptr, const drew_loader_t *ldr)
 	return res;
 }
 
-static drew_bignum_t *init_bignum(const drew_loader_t *ldr,
+static drew_bignum_t *init_bignum(DrewLoader *ldr,
 		const drew_param_t *param, const void *functbl)
 {
 	drew_bignum_t *ctx = drew_mem_malloc(sizeof(*ctx));
@@ -426,7 +426,7 @@ static inline drew_bignum_t **get_named_mpi(struct dsa *c, const char *name)
 	}
 }
 
-static int dsa_init(drew_pksig_t *ctx, int flags, const drew_loader_t *ldr,
+static int dsa_init(drew_pksig_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param)
 {
 	struct dsa *newctx = ctx->ctx;

@@ -47,7 +47,7 @@
 
 HIDE()
 struct hmac {
-	const drew_loader_t *ldr;
+	DrewLoader *ldr;
 	drew_hash_t outside;
 	drew_hash_t inside;
 	uint8_t keybuf[BUFFER_SIZE];
@@ -93,7 +93,7 @@ static int hmac_info2(const drew_mac_t *ctx, int op, drew_param_t *out,
 	}
 }
 
-static int hmac_init(drew_mac_t *ctx, int flags, const drew_loader_t *ldr,
+static int hmac_init(drew_mac_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param)
 {
 	drew_hash_t *algo = NULL;
@@ -257,7 +257,7 @@ struct test {
 	const uint8_t *output;
 };
 
-static int hmac_test_generic(const drew_loader_t *ldr, const char *name,
+static int hmac_test_generic(DrewLoader *ldr, const char *name,
 		const struct test *testdata, size_t ntests, size_t outputsz)
 {
 	int result = 0;
@@ -388,14 +388,14 @@ static const struct test testdata_md5[] = {
 	}
 };
 
-static int hmac_test_md5(const drew_loader_t *ldr, size_t *ntests)
+static int hmac_test_md5(DrewLoader *ldr, size_t *ntests)
 {
 	*ntests = DIM(testdata_md5);
 
 	return hmac_test_generic(ldr, "MD5", testdata_md5, DIM(testdata_md5), 16);
 }
 
-static int hmac_test(void *p, const drew_loader_t *ldr)
+static int hmac_test(void *p, DrewLoader *ldr)
 {
 	int result = 0, tres;
 	size_t ntests = 0;
@@ -458,7 +458,7 @@ int hmack_info2(const drew_kdf_t *kdf, int op, drew_param_t *out,
 	return -DREW_ERR_INVALID;
 }
 
-int hmack_init(drew_kdf_t *ctx, int flags, const drew_loader_t *ldr,
+int hmack_init(drew_kdf_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param)
 {
 	return hmac_init(MAC(ctx), flags, ldr, param);
@@ -515,7 +515,7 @@ int hmack_generate(drew_kdf_t *ctx, uint8_t *out, size_t outlen,
 	return 0;
 }
 
-static int hmack_test_generic(const drew_loader_t *ldr, const char *name,
+static int hmack_test_generic(DrewLoader *ldr, const char *name,
 		const struct test *testdata, size_t ntests, size_t outputsz)
 {
 	int result = 0;
@@ -559,14 +559,14 @@ static int hmack_test_generic(const drew_loader_t *ldr, const char *name,
 	return result;
 }
 
-static int hmack_test_md5(const drew_loader_t *ldr, size_t *ntests)
+static int hmack_test_md5(DrewLoader *ldr, size_t *ntests)
 {
 	*ntests = DIM(testdata_md5);
 
 	return hmack_test_generic(ldr, "MD5", testdata_md5, DIM(testdata_md5), 16);
 }
 
-static int hmack_test(void *p, const drew_loader_t *ldr)
+static int hmack_test(void *p, DrewLoader *ldr)
 {
 	int result = 0, tres;
 	size_t ntests = 0;

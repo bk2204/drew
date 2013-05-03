@@ -43,7 +43,7 @@ struct algomap {
 
 static struct algomap thisalgo;
 
-int initialize_hash(const drew_loader_t *ldr, int id)
+int initialize_hash(DrewLoader *ldr, int id)
 {
 	const void *functbl;
 	int res = 0;
@@ -186,7 +186,7 @@ int usage(int ret)
 	return ret;
 }
 
-int gnusum_main(int argc, char **argv, const drew_loader_t *ldr, int id)
+int gnusum_main(int argc, char **argv, DrewLoader *ldr, int id)
 {
 	int c, mode = MODE_TEXT;
 	int retval = 0;
@@ -352,7 +352,7 @@ int main(int argc, char **argv)
 
 	program = argv[0];
 
-	drew_loader_new(&ldr);
+	ldr = drew_loader_new();
 	drew_loader_load_plugin(ldr, NULL, NULL);
 
 	if (!strcmp("sum", program+strlen(program)-3) &&
@@ -367,7 +367,7 @@ int main(int argc, char **argv)
 		ret = 2;
 	}
 
-	drew_loader_free(&ldr);
+	drew_loader_unref(ldr);
 
 	return ret;
 }

@@ -85,9 +85,23 @@ typedef struct {
 	int (*test)(void *, const drew_loader_t *);
 } drew_kdf_functbl3_t;
 
+typedef struct {
+	int (*info)(int op, void *p);
+	int (*info2)(const drew_kdf_t *, int, drew_param_t *, const drew_param_t *);
+	int (*init)(drew_kdf_t *, int, DrewLoader *, const drew_param_t *);
+	int (*clone)(drew_kdf_t *, const drew_kdf_t *, int);
+	int (*reset)(drew_kdf_t *);
+	int (*fini)(drew_kdf_t *, int);
+	int (*setkey)(drew_kdf_t *, const uint8_t *, size_t);
+	int (*setsalt)(drew_kdf_t *, const uint8_t *, size_t);
+	int (*setcount)(drew_kdf_t *, size_t);
+	int (*generate)(drew_kdf_t *, uint8_t *, size_t, const uint8_t *, size_t);
+	int (*test)(void *, DrewLoader *);
+} drew_kdf_functbl4_t;
+
 typedef drew_kdf_functbl2_t drew_kdf_functbl0_t;
 typedef drew_kdf_functbl2_t drew_kdf_functbl1_t;
-typedef drew_kdf_functbl3_t drew_kdf_functbl_t;
+typedef drew_kdf_functbl4_t drew_kdf_functbl_t;
 
 struct drew_kdf_s {
 	void *ctx;

@@ -34,7 +34,7 @@
 #define DIM(x) (sizeof(x)/sizeof((x)[0]))
 
 struct ofb {
-	const drew_loader_t *ldr;
+	DrewLoader *ldr;
 	const drew_block_t *algo;
 	uint8_t buf[32] ALIGNED_T;
 	uint8_t iv[32];
@@ -44,7 +44,7 @@ struct ofb {
 };
 
 static int ofb_info(int op, void *p);
-static int ofb_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
+static int ofb_init(drew_mode_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param);
 static int ofb_info2(const drew_mode_t *ctx, int op, drew_param_t *out,
 		const drew_param_t *in);
@@ -57,7 +57,7 @@ static int ofb_encrypt(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 static int ofb_encryptfast(drew_mode_t *ctx, uint8_t *out, const uint8_t *in,
 		size_t len);
 static int ofb_fini(drew_mode_t *ctx, int flags);
-static int ofb_test(void *p, const drew_loader_t *ldr);
+static int ofb_test(void *p, DrewLoader *ldr);
 static int ofb_clone(drew_mode_t *newctx, const drew_mode_t *oldctx, int flags);
 static int ofb_setdata(drew_mode_t *, const uint8_t *, size_t);
 static int ofb_final(drew_mode_t *ctx, uint8_t *out, size_t outlen,
@@ -127,7 +127,7 @@ static int ofb_reset(drew_mode_t *ctx)
 	return 0;
 }
 
-static int ofb_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
+static int ofb_init(drew_mode_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param)
 {
 	struct ofb *newctx = ctx->ctx;
@@ -177,8 +177,6 @@ static int ofb_setiv(drew_mode_t *ctx, const uint8_t *iv, size_t len)
 		memcpy(c->iv, iv, len);
 	return 0;
 }
-
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 /* There is no decrypt function because encryption and decryption are exactly
  * the same.
@@ -260,7 +258,7 @@ struct test {
 	size_t datasz;
 };
 
-static int ofb_test_generic(const drew_loader_t *ldr, const char *name,
+static int ofb_test_generic(DrewLoader *ldr, const char *name,
 		const struct test *testdata, size_t ntests)
 {
 	int id, result = 0;
@@ -316,7 +314,7 @@ static int ofb_test_generic(const drew_loader_t *ldr, const char *name,
 	return result;
 }
 
-static int ofb_test_cast5(const drew_loader_t *ldr, size_t *ntests)
+static int ofb_test_cast5(DrewLoader *ldr, size_t *ntests)
 {
 	uint8_t buf[8];
 	struct test testdata[] = {
@@ -349,7 +347,7 @@ static int ofb_test_cast5(const drew_loader_t *ldr, size_t *ntests)
 	return ofb_test_generic(ldr, "CAST-128", testdata, DIM(testdata));
 }
 
-static int ofb_test_blowfish(const drew_loader_t *ldr, size_t *ntests)
+static int ofb_test_blowfish(DrewLoader *ldr, size_t *ntests)
 {
 	struct test testdata[] = {
 		{
@@ -372,7 +370,7 @@ static int ofb_test_blowfish(const drew_loader_t *ldr, size_t *ntests)
 	return ofb_test_generic(ldr, "Blowfish", testdata, DIM(testdata));
 }
 
-static int ofb_test(void *p, const drew_loader_t *ldr)
+static int ofb_test(void *p, DrewLoader *ldr)
 {
 	int result = 0, tres;
 	size_t ntests = 0;

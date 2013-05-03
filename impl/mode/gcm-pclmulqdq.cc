@@ -99,7 +99,7 @@ extern "C" {
 #ifdef FEATURE_PCLMULQDQ
 struct gcm;
 
-static int gcm_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
+static int gcm_init(drew_mode_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param);
 
 /* The PCLMULQDQ implementation. */
@@ -112,7 +112,7 @@ static const drew_mode_functbl_t gcm_functbl = {
 
 static inline void mul(struct gcm *ctx, uint8_t *buf);
 
-static int gcm_init(drew_mode_t *ctx, int flags, const drew_loader_t *ldr,
+static int gcm_init(drew_mode_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param)
 {
 	struct gcm *newctx = (struct gcm *)ctx->ctx;

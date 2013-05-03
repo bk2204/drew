@@ -72,7 +72,7 @@ struct test_external {
 	size_t lineno;
 	const char *name;
 	const void *tbl;
-	const drew_loader_t *ldr;
+	DrewLoader *ldr;
 };
 
 
@@ -99,11 +99,11 @@ int process_bytes(ssize_t len, uint8_t **buf, const char *data);
 int test_process_testcase(void *data, int type, const char *item,
 		struct test_external *tep);
 bool is_forbidden_errno(int val);
-int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
+int test_api(DrewLoader *ldr, const char *name, const char *algo,
 		const void *tbl);
-int test_external(const drew_loader_t *ldr, const char *name, const void *tbl,
+int test_external(DrewLoader *ldr, const char *name, const void *tbl,
 		const char *filename, struct test_external *tes);
-int test_external_parse(const drew_loader_t *ldr, const char *filename,
+int test_external_parse(DrewLoader *ldr, const char *filename,
 		struct test_external *tes);
 int test_external_cleanup(struct test_external *tes);
 

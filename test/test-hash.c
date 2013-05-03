@@ -217,7 +217,7 @@ int test_process_testcase(void *data, int type, const char *item,
 #define HASH_BAD_FINI		(1 << 17)
 #define HASH_BAD_ERROR		(1 << 18)
 
-int test_api_context(drew_hash_t *ctx, const drew_loader_t *ldr,
+int test_api_context(drew_hash_t *ctx, DrewLoader *ldr,
 		const drew_param_t *paramp, size_t intsize, size_t hashsize,
 		size_t quantum)
 {
@@ -313,7 +313,7 @@ int test_api_context(drew_hash_t *ctx, const drew_loader_t *ldr,
 	return retval;
 }
 
-int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
+int test_api(DrewLoader *ldr, const char *name, const char *algo,
 		const void *tbl)
 {
 	int res = 0, retval = 0, quantum = 1;

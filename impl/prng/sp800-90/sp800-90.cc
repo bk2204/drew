@@ -35,7 +35,7 @@
 
 HIDE()
 template<class T>
-static int make_new(T *ctx, const drew_loader_t *ldr, const drew_param_t *param,
+static int make_new(T *ctx, DrewLoader *ldr, const drew_param_t *param,
 		const char *paramname, int type, const char *algonames[], size_t nalgos)
 {
 	for (const drew_param_t *p = param; p && paramname; p = p->next) {
@@ -144,7 +144,7 @@ static int sp_algo_entropy(const drew_prng_t *ctx)
 }
 
 template<class T>
-static int sp_algo_test(void *, const drew_loader_t *)
+static int sp_algo_test(void *, DrewLoader *)
 {
 	using namespace drew;
 
@@ -156,7 +156,7 @@ extern "C" {
 static int sp_hash_info(int op, void *p);
 static int sp_hash_info2(const drew_prng_t *, int op, drew_param_t *,
 		const drew_param_t *);
-static int sp_hash_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
+static int sp_hash_init(drew_prng_t *ctx, int flags, DrewLoader *,
 		const drew_param_t *);
 static int sp_hash_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags);
 static int sp_hash_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
@@ -164,12 +164,12 @@ static int sp_hash_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
 static int sp_hash_bytes(drew_prng_t *ctx, uint8_t *out, size_t len);
 static int sp_hash_entropy(const drew_prng_t *ctx);
 static int sp_hash_fini(drew_prng_t *ctx, int flags);
-static int sp_hash_test(void *, const drew_loader_t *);
+static int sp_hash_test(void *, DrewLoader *);
 
 static int sp_ctr_info(int op, void *p);
 static int sp_ctr_info2(const drew_prng_t *, int op, drew_param_t *,
 		const drew_param_t *);
-static int sp_ctr_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
+static int sp_ctr_init(drew_prng_t *ctx, int flags, DrewLoader *,
 		const drew_param_t *);
 static int sp_ctr_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags);
 static int sp_ctr_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
@@ -177,12 +177,12 @@ static int sp_ctr_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
 static int sp_ctr_bytes(drew_prng_t *ctx, uint8_t *out, size_t len);
 static int sp_ctr_entropy(const drew_prng_t *ctx);
 static int sp_ctr_fini(drew_prng_t *ctx, int flags);
-static int sp_ctr_test(void *, const drew_loader_t *);
+static int sp_ctr_test(void *, DrewLoader *);
 
 static int sp_hmac_info(int op, void *p);
 static int sp_hmac_info2(const drew_prng_t *, int op, drew_param_t *,
 		const drew_param_t *);
-static int sp_hmac_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
+static int sp_hmac_init(drew_prng_t *ctx, int flags, DrewLoader *,
 		const drew_param_t *);
 static int sp_hmac_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags);
 static int sp_hmac_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
@@ -190,7 +190,7 @@ static int sp_hmac_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
 static int sp_hmac_bytes(drew_prng_t *ctx, uint8_t *out, size_t len);
 static int sp_hmac_entropy(const drew_prng_t *ctx);
 static int sp_hmac_fini(drew_prng_t *ctx, int flags);
-static int sp_hmac_test(void *, const drew_loader_t *);
+static int sp_hmac_test(void *, DrewLoader *);
 
 PLUGIN_FUNCTBL(sphash, sp_hash_info, sp_hash_info2, sp_hash_init, sp_hash_clone, sp_hash_fini, sp_hash_seed, sp_hash_bytes, sp_hash_entropy, sp_hash_test);
 
@@ -209,7 +209,7 @@ static int sp_hash_info2(const drew_prng_t *ctx, int op, drew_param_t *out,
 	return sp_algo_info2<drew::CounterDRBG>(ctx, op, out, in);
 }
 
-static int sp_hash_init(drew_prng_t *ctx, int flags, const drew_loader_t *ldr,
+static int sp_hash_init(drew_prng_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param)
 {
 	drew::HashDRBG *p;
@@ -262,7 +262,7 @@ static int sp_hash_fini(drew_prng_t *ctx, int flags)
 	return 0;
 }
 
-static int sp_hash_test(void *p, const drew_loader_t *ldr)
+static int sp_hash_test(void *p, DrewLoader *ldr)
 {
 	return sp_algo_test<drew::HashDRBG>(p, ldr);
 }
@@ -281,7 +281,7 @@ static int sp_ctr_info2(const drew_prng_t *ctx, int op, drew_param_t *out,
 
 // This has to be at least as large as the key size plus the block size.
 #define CTR_BUFFER_SIZE	512
-static int sp_ctr_init(drew_prng_t *ctx, int flags, const drew_loader_t *ldr,
+static int sp_ctr_init(drew_prng_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param)
 {
 	drew::CounterDRBG *p;
@@ -348,7 +348,7 @@ static int sp_ctr_fini(drew_prng_t *ctx, int flags)
 	return 0;
 }
 
-static int sp_ctr_test(void *p, const drew_loader_t *ldr)
+static int sp_ctr_test(void *p, DrewLoader *ldr)
 {
 	return sp_algo_test<drew::CounterDRBG>(p, ldr);
 }
@@ -366,7 +366,7 @@ static int sp_hmac_info2(const drew_prng_t *ctx, int op, drew_param_t *out,
 
 // This has to be at least as large as the digest size.
 #define HMAC_BUFFER_SIZE	512
-static int sp_hmac_init(drew_prng_t *ctx, int flags, const drew_loader_t *ldr,
+static int sp_hmac_init(drew_prng_t *ctx, int flags, DrewLoader *ldr,
 		const drew_param_t *param)
 {
 	drew::HMACDRBG *p;
@@ -432,7 +432,7 @@ static int sp_hmac_fini(drew_prng_t *ctx, int flags)
 	return 0;
 }
 
-static int sp_hmac_test(void *p, const drew_loader_t *ldr)
+static int sp_hmac_test(void *p, DrewLoader *ldr)
 {
 	return sp_algo_test<drew::HMACDRBG>(p, ldr);
 }

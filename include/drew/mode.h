@@ -127,7 +127,31 @@ typedef struct {
 	int (*test)(void *, const drew_loader_t *);
 } drew_mode_functbl3_t;
 
-typedef drew_mode_functbl3_t drew_mode_functbl_t;
+typedef struct {
+	int (*info)(int op, void *p);
+	int (*info2)(const drew_mode_t *, int op, drew_param_t *,
+			const drew_param_t *);
+	int (*init)(drew_mode_t *, int, DrewLoader *,
+			const drew_param_t *);
+	int (*clone)(drew_mode_t *, const drew_mode_t *, int);
+	int (*reset)(drew_mode_t *);
+	int (*fini)(drew_mode_t *, int);
+	int (*setblock)(drew_mode_t *, const drew_block_t *);
+	int (*setiv)(drew_mode_t *, const uint8_t *, size_t);
+	int (*encrypt)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
+	int (*decrypt)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
+	int (*encryptfast)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
+	int (*decryptfast)(drew_mode_t *, uint8_t *, const uint8_t *, size_t);
+	int (*setdata)(drew_mode_t *, const uint8_t *, size_t);
+	int (*encryptfinal)(drew_mode_t *, uint8_t *, size_t, const uint8_t *,
+			size_t);
+	int (*decryptfinal)(drew_mode_t *, uint8_t *, size_t, const uint8_t *,
+			size_t);
+	int (*resync)(drew_mode_t *);
+	int (*test)(void *, DrewLoader *);
+} drew_mode_functbl4_t;
+
+typedef drew_mode_functbl4_t drew_mode_functbl_t;
 
 struct drew_mode_s {
 	void *ctx;

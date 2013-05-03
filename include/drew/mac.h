@@ -94,7 +94,21 @@ typedef struct {
 	int (*test)(void *, const drew_loader_t *);
 } drew_mac_functbl3_t;
 
-typedef drew_mac_functbl3_t drew_mac_functbl_t;
+typedef struct {
+	int (*info)(int op, void *p);
+	int (*info2)(const drew_mac_t *, int, drew_param_t *, const drew_param_t *);
+	int (*init)(drew_mac_t *, int, DrewLoader *, const drew_param_t *);
+	int (*clone)(drew_mac_t *, const drew_mac_t *, int);
+	int (*reset)(drew_mac_t *);
+	int (*fini)(drew_mac_t *, int);
+	int (*setkey)(drew_mac_t *, const uint8_t *, size_t);
+	int (*update)(drew_mac_t *, const uint8_t *, size_t);
+	int (*updatefast)(drew_mac_t *, const uint8_t *, size_t);
+	int (*final)(drew_mac_t *, uint8_t *, int);
+	int (*test)(void *, DrewLoader *);
+} drew_mac_functbl4_t;
+
+typedef drew_mac_functbl4_t drew_mac_functbl_t;
 
 struct drew_mac_s {
 	void *ctx;

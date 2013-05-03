@@ -391,7 +391,7 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 #define MODE_BAD_FINI		(1 << 17)
 #define MODE_BAD_ERROR		(1 << 18)
 
-int test_api_context(drew_mode_t *ctx, const drew_loader_t *ldr,
+int test_api_context(drew_mode_t *ctx, DrewLoader *ldr,
 		const drew_param_t *paramp, size_t intsize, size_t modesize,
 		size_t quantum)
 {
@@ -418,7 +418,7 @@ int test_api_context(drew_mode_t *ctx, const drew_loader_t *ldr,
 	return retval;
 }
 
-int test_api(const drew_loader_t *ldr, const char *name, const char *algo,
+int test_api(DrewLoader *ldr, const char *name, const char *algo,
 		const void *tbl)
 {
 	int res = 0, retval = 0, quantum = 1;

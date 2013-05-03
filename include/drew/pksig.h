@@ -111,9 +111,27 @@ typedef struct {
 	int (*test)(void *, const drew_loader_t *);
 } drew_pksig_functbl3_t;
 
+typedef struct {
+	int (*info)(int op, void *p);
+	int (*info2)(const drew_pksig_t *, int, drew_param_t *,
+			const drew_param_t *);
+	int (*init)(drew_pksig_t *, int,
+			DrewLoader *, const drew_param_t *);
+	int (*clone)(drew_pksig_t *, const drew_pksig_t *, int);
+	int (*fini)(drew_pksig_t *, int);
+	int (*generate)(drew_pksig_t *, const drew_param_t *);
+	int (*setmode)(drew_pksig_t *, int);
+	int (*setval)(drew_pksig_t *, const char *, const uint8_t *, size_t);
+	int (*val)(const drew_pksig_t *, const char *, uint8_t *, size_t);
+	int (*valsize)(const drew_pksig_t *, const char *);
+	int (*sign)(const drew_pksig_t *, drew_bignum_t *, const drew_bignum_t *);
+	int (*verify)(const drew_pksig_t *, drew_bignum_t *, const drew_bignum_t *);
+	int (*test)(void *, DrewLoader *);
+} drew_pksig_functbl4_t;
+
 typedef drew_pksig_functbl2_t drew_pksig_functbl0_t;
 typedef drew_pksig_functbl2_t drew_pksig_functbl1_t;
-typedef drew_pksig_functbl3_t drew_pksig_functbl_t;
+typedef drew_pksig_functbl4_t drew_pksig_functbl_t;
 
 struct drew_pksig_s {
 	void *ctx;

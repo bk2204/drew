@@ -71,7 +71,7 @@ extern "C" {
 static int a4s_info(int op, void *p);
 static int a4s_info2(const drew_prng_t *, int op, drew_param_t *,
 		const drew_param_t *);
-static int a4s_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
+static int a4s_init(drew_prng_t *ctx, int flags, DrewLoader *,
 		const drew_param_t *);
 static int a4s_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags);
 static int a4s_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
@@ -79,7 +79,7 @@ static int a4s_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
 static int a4s_bytes(drew_prng_t *ctx, uint8_t *out, size_t len);
 static int a4s_entropy(const drew_prng_t *ctx);
 static int a4s_fini(drew_prng_t *ctx, int flags);
-static int a4s_test(void *, const drew_loader_t *);
+static int a4s_test(void *, DrewLoader *);
 
 PLUGIN_FUNCTBL(arc4stir, a4s_info, a4s_info2, a4s_init, a4s_clone, a4s_fini, a4s_seed, a4s_bytes, a4s_entropy, a4s_test);
 
@@ -124,7 +124,7 @@ static int a4s_info2(const drew_prng_t *, int op, drew_param_t *,
 	}
 }
 
-static int a4s_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
+static int a4s_init(drew_prng_t *ctx, int flags, DrewLoader *,
 		const drew_param_t *)
 {
 	drew::ARC4Stir *p;
@@ -185,7 +185,7 @@ static int a4s_fini(drew_prng_t *ctx, int flags)
 	return 0;
 }
 
-static int a4s_test(void *, const drew_loader_t *)
+static int a4s_test(void *, DrewLoader *)
 {
 	using namespace drew;
 

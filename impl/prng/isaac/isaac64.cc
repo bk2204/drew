@@ -44,7 +44,7 @@ extern "C" {
 static int isaac64_info(int op, void *p);
 static int isaac64_info2(const drew_prng_t *, int op, drew_param_t *,
 		const drew_param_t *);
-static int isaac64_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
+static int isaac64_init(drew_prng_t *ctx, int flags, DrewLoader *,
 		const drew_param_t *);
 static int isaac64_clone(drew_prng_t *newctx, const drew_prng_t *oldctx, int flags);
 static int isaac64_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
@@ -52,7 +52,7 @@ static int isaac64_seed(drew_prng_t *ctx, const uint8_t *key, size_t len,
 static int isaac64_bytes(drew_prng_t *ctx, uint8_t *out, size_t len);
 static int isaac64_entropy(const drew_prng_t *ctx);
 static int isaac64_fini(drew_prng_t *ctx, int flags);
-static int isaac64_test(void *, const drew_loader_t *);
+static int isaac64_test(void *, DrewLoader *);
 
 PLUGIN_FUNCTBL(isaac64, isaac64_info, isaac64_info2, isaac64_init, isaac64_clone, isaac64_fini, isaac64_seed, isaac64_bytes, isaac64_entropy, isaac64_test);
 
@@ -97,7 +97,7 @@ static int isaac64_info2(const drew_prng_t *, int op, drew_param_t *,
 	}
 }
 
-static int isaac64_init(drew_prng_t *ctx, int flags, const drew_loader_t *,
+static int isaac64_init(drew_prng_t *ctx, int flags, DrewLoader *,
 		const drew_param_t *)
 {
 	drew::Isaac64 *p;
@@ -158,7 +158,7 @@ static int isaac64_fini(drew_prng_t *ctx, int flags)
 	return 0;
 }
 
-static int isaac64_test(void *, const drew_loader_t *)
+static int isaac64_test(void *, DrewLoader *)
 {
 	using namespace drew;
 
