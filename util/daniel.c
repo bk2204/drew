@@ -17,12 +17,15 @@
  * If a modified version is not distributed under both licenses, the copyright
  * and permission notices should be updated accordingly.
  */
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <termios.h>
 #include <unistd.h>
+
+#include <glib.h>
 
 #include <drew/block.h>
 #include <drew/drew.h>
@@ -36,6 +39,9 @@ typedef uint8_t buffer_t[32];
 
 static const char *program = NULL;
 static const char *prefix = "DrewPassChart: Version 0x00000000: ";
+
+#define FLAG_TEXT(x) #x, FLAG_##x
+#define PRINT_FLAG(x) printf("\tFLAG_%s: %04x\n", #x, FLAG_##x)
 
 #define FLAG_NO_NUMBERS			0x01
 #define FLAG_NO_SPACES			0x02
@@ -456,6 +462,50 @@ void help(void)
 	printf("\t\t%-22s: %d\n", FLAG_VALUE(FLAG_NO_LETTERS));
 }
 
+void set_value(int *val, const char *option, const char *cmd)
+{
+	const char *p = cmd + strlen(option) + 1;
+	char *q;
+	guint64 v = g_ascii_strtoull(p, &q, 0);
+	if (*q || v > INT_MAX) {
+		fprintf(stderr, "not a valid version\n");
+		return;
+	}
+	*val = v;
+}
+
+void handle_command(struct data *d, const char *scmd)
+{
+	const char *cmd = scmd + 1;
+
+	if (!strcmp(cmd, "help")) {
+		printf("available commands:\nhelp\nversion=\nlength=\nflags=\ndump\n");
+	}
+	else if (!strncmp(cmd, "version=", 8)) {
+		set_value(&d->version, "version", cmd);
+	}
+	else if (!strncmp(cmd, "length=", 7)) {
+		set_value(&d->length, "length", cmd);
+	}
+	else if (!strncmp(cmd, "flags=", 7)) {
+		set_value(&d->flags, "flags", cmd);
+	}
+	else if (!strcmp(cmd, "dump")) {
+		printf("current values:\nversion %d\nlength %d\nflags %d\n", d->version,
+				d->length, d->flags);
+		printf("valid flags are:\n");
+		PRINT_FLAG(NO_NUMBERS);
+		PRINT_FLAG(NO_SPACES);
+		PRINT_FLAG(NO_SYMBOLS_TOP);
+		PRINT_FLAG(NO_SYMBOLS_OTHER);
+		PRINT_FLAG(NO_LETTERS);
+		PRINT_FLAG(DEFAULT);
+	}
+	else {
+		fprintf(stderr, "bad command.  try 'help'");
+	}
+}
+
 int main(int argc, char **argv)
 {
 	int retval = 0, ch;
@@ -504,8 +554,12 @@ int main(int argc, char **argv)
 	}
 	else {
 		char buf[BUFFER_SIZE];
-		while (!get_code(buf, sizeof(buf)))
-			generate_password(&c, d, buf, d->flags, d->version, d->length, 1);
+		while (!get_code(buf, sizeof(buf))) {
+			if (buf[0] == '!')
+				handle_command(d, buf);
+			else
+				generate_password(&c, d, buf, d->flags, d->version, d->length, 1);
+		}
 	}
 
 out:
