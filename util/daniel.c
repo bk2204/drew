@@ -487,7 +487,7 @@ void handle_command(struct data *d, const char *scmd)
 	else if (!strncmp(cmd, "length=", 7)) {
 		set_value(&d->length, "length", cmd);
 	}
-	else if (!strncmp(cmd, "flags=", 7)) {
+	else if (!strncmp(cmd, "flags=", 6)) {
 		set_value(&d->flags, "flags", cmd);
 	}
 	else if (!strcmp(cmd, "dump")) {
