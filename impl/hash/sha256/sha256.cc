@@ -95,14 +95,6 @@ static int sha224test(void *, const drew_loader_t *)
 }
 }
 
-static inline uint32_t Ch(uint32_t x, uint32_t y, uint32_t z)
-{
-	return (z^(x&(y^z)));
-}
-static inline uint32_t Maj(uint32_t x, uint32_t y, uint32_t z)
-{
-	return (x&y)|(z&(x^y));
-}
 static inline uint32_t S0(uint32_t x)
 {
 	return RotateRight(x, 2) ^ RotateRight(x, 13) ^ RotateRight(x, 22);
@@ -140,9 +132,9 @@ static const uint32_t k[]={
 };
 
 #define ROUND(a, b, c, d, e, f, g, h, k, blk) \
-	h+=S1(e)+Ch(e, f, g)+k+blk; \
+	h+=S1(e)+TernarySelection(e, f, g)+k+blk; \
 	d+=h; \
-	h+=S0(a)+Maj(a, b, c)
+	h+=S0(a)+TernaryMajority(a, b, c)
 
 #define ROUND2(a, b, c, d, e, f, g, h, k, i) \
 	blk[i] = s1(blk[i-2]) + blk[i-7] + s0(blk[i-15]) + blk[i-16]; \
@@ -237,9 +229,9 @@ void drew::SHA256Transform::ForwardTransform(uint32_t *state,
 }
 
 #define INVROUND(a, b, c, d, e, f, g, h, k, blk) \
-	h-=S0(a)+Maj(a, b, c); \
+	h-=S0(a)+TernaryMajority(a, b, c); \
 	d-=h; \
-	h-=S1(e)+Ch(e, f, g)+k+blk;
+	h-=S1(e)+TernarySelection(e, f, g)+k+blk;
 
 void drew::SHA256Transform::InverseTransform(uint32_t *state,
 		const uint32_t *blk)
