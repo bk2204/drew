@@ -276,14 +276,6 @@ static int sha384test(void *, const drew_loader_t *)
 }
 }
 
-static inline uint64_t Ch(uint64_t x, uint64_t y, uint64_t z)
-{
-	return (z^(x&(y^z)));
-}
-static inline uint64_t Maj(uint64_t x, uint64_t y, uint64_t z)
-{
-	return (x&y)^(x&z)^(y&z);
-}
 static inline uint64_t S0(uint64_t x)
 {
 	return RotateRight(x, 28) ^ RotateRight(x, 34) ^ RotateRight(x, 39);
@@ -406,9 +398,9 @@ void drew::SHA384::Reset()
 }
 
 #define ROUND(a, b, c, d, e, f, g, h, k, blk) \
-	h+=S1(e)+Ch(e, f, g)+k+blk; \
+	h+=S1(e)+TernarySelection(e, f, g)+k+blk; \
 	d+=h; \
-	h+=S0(a)+Maj(a, b, c)
+	h+=S0(a)+TernaryMajority(a, b, c)
 
 #define ROUND2(a, b, c, d, e, f, g, h, k, i) \
 	blk[i] += s1(blk[(i-2)&15]) + blk[(i-7)&15] + s0(blk[(i-15)&15]); \
