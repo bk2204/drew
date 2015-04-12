@@ -217,10 +217,18 @@ extern "C" {
 PLUGIN_STRUCTURE2(keccak, Keccak)
 PLUGIN_STRUCTURE2(keccakwln, KeccakWithLimitedNots)
 PLUGIN_STRUCTURE2(keccakcompact, KeccakCompact)
+PLUGIN_STRUCTURE(sha3512, SHA3512)
+PLUGIN_STRUCTURE(sha3384, SHA3384)
+PLUGIN_STRUCTURE(sha3256, SHA3256)
+PLUGIN_STRUCTURE(sha3224, SHA3224)
 PLUGIN_DATA_START()
 PLUGIN_DATA(keccak, "Keccak")
 PLUGIN_DATA(keccakwln, "Keccak")
 PLUGIN_DATA(keccakcompact, "Keccak")
+PLUGIN_DATA(sha3512, "SHA-3-512")
+PLUGIN_DATA(sha3384, "SHA-3-384")
+PLUGIN_DATA(sha3256, "SHA-3-256")
+PLUGIN_DATA(sha3224, "SHA-3-224")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE(keccak)
 
@@ -292,11 +300,81 @@ static int keccakcompacttest(void *p, const drew_loader_t *ldr)
 	return keccak_test<drew::KeccakCompact>(p, ldr);
 }
 
+// Test vectors from http://www.di-mgt.com.au/sha_testvectors.html.
+static int sha3224test(void *p, const drew_loader_t *ldr)
+{
+	int res = 0;
+
+	using namespace drew;
+
+	res |= !HashTestCase<SHA3224>("", 0).Test("6b4e03423667dbb73b6e15454f0eb1abd4597f9a1b078e3f5b5a6bc7");
+	res <<= 1;
+	res |= !HashTestCase<SHA3224>("abc", 1).Test("e642824c3f8cf24ad09234ee7d3c766fc9a3a5168d0c94ad73b46fdf");
+	res <<= 1;
+	res |= !HashTestCase<SHA3224>("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 1).Test("8a24108b154ada21c9fd5574494479ba5c7e7ab76ef264ead0fcce33");
+	res <<= 1;
+	res |= !HashTestCase<SHA3224>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 15625).Test("d69335b93325192e516a912e6d19a15cb51c6ed5c15243e7a7fd653c");
+
+	return res;
+}
+
+static int sha3256test(void *p, const drew_loader_t *ldr)
+{
+	int res = 0;
+
+	using namespace drew;
+
+	res |= !HashTestCase<SHA3256>("", 0).Test("a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a");
+	res <<= 1;
+	res |= !HashTestCase<SHA3256>("abc", 1).Test("3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532");
+	res <<= 1;
+	res |= !HashTestCase<SHA3256>("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 1).Test("41c0dba2a9d6240849100376a8235e2c82e1b9998a999e21db32dd97496d3376");
+	res <<= 1;
+	res |= !HashTestCase<SHA3256>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 15625).Test("5c8875ae474a3634ba4fd55ec85bffd661f32aca75c6d699d0cdcb6c115891c1");
+
+	return res;
+}
+
+
+static int sha3384test(void *p, const drew_loader_t *ldr)
+{
+	int res = 0;
+
+	using namespace drew;
+
+	res |= !HashTestCase<SHA3384>("", 0).Test("0c63a75b845e4f7d01107d852e4c2485c51a50aaaa94fc61995e71bbee983a2ac3713831264adb47fb6bd1e058d5f004");
+	res <<= 1;
+	res |= !HashTestCase<SHA3384>("abc", 1).Test("ec01498288516fc926459f58e2c6ad8df9b473cb0fc08c2596da7cf0e49be4b298d88cea927ac7f539f1edf228376d25");
+	res <<= 1;
+	res |= !HashTestCase<SHA3384>("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 1).Test("991c665755eb3a4b6bbdfb75c78a492e8c56a22c5c4d7e429bfdbc32b9d4ad5aa04a1f076e62fea19eef51acd0657c22");
+	res <<= 1;
+	res |= !HashTestCase<SHA3384>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 15625).Test("eee9e24d78c1855337983451df97c8ad9eedf256c6334f8e948d252d5e0e76847aa0774ddb90a842190d2c558b4b8340");
+
+	return res;
+}
+
+static int sha3512test(void *p, const drew_loader_t *ldr)
+{
+	int res = 0;
+
+	using namespace drew;
+
+	res |= !HashTestCase<SHA3512>("", 0).Test("a69f73cca23a9ac5c8b567dc185a756e97c982164fe25859e0d1dcc1475c80a615b2123af1f5f94c11e3e9402c3ac558f500199d95b6d3e301758586281dcd26");
+	res <<= 1;
+	res |= !HashTestCase<SHA3512>("abc", 1).Test("b751850b1a57168a5693cd924b6b096e08f621827444f70d884f5d0240d2712e10e116e9192af3c91a7ec57647e3934057340b4cf408d5a56592f8274eec53f0");
+	res <<= 1;
+	res |= !HashTestCase<SHA3512>("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", 1).Test("04a371e84ecfb5b8b77cb48610fca8182dd457ce6f326a0fd3d7ec2f1e91636dee691fbe0c985302ba1b0d8dc78c086346b533b49c030d99a27daf1139d6e75e");
+	res <<= 1;
+	res |= !HashTestCase<SHA3512>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 15625).Test("3c3a876da14034ab60627c077bb98f7e120a2a5370212dffb3385a18d4f38859ed311d0a9d5141ce9cc5c66ee689b266a8aa18ace8282a0e0db596c90b0a7b87");
+
+	return res;
+}
+
 }
 
 typedef drew::Keccak::endian_t E;
 
-drew::Keccak::Keccak(size_t t_) : m_c(t_*2), m_r(200-m_c)
+drew::Keccak::Keccak(size_t t_) : m_pad(0x01), m_c(t_*2), m_r(200-m_c)
 {
 	Reset();
 }

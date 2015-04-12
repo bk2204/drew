@@ -24,6 +24,10 @@
 #include "util.hh"
 #include <stdint.h>
 
+// The current fastest implementation.
+#ifndef DREW_KECCAK_IMPL
+#define DREW_KECCAK_IMPL drew::KeccakWithLimitedNots
+#endif
 
 HIDE()
 namespace drew {
@@ -72,7 +76,7 @@ class Keccak
 			const size_t noff = m_len % m_r;
 
 			memset(m_buf+noff, 0, m_r-noff);
-			m_buf[noff] = 0x01;
+			m_buf[noff] = m_pad;
 			m_buf[m_r-1] |= 0x80;
 
 			Transform(m_buf);
@@ -95,6 +99,7 @@ class Keccak
 		{
 			return Transform(m_hash, data, m_r);
 		}
+		uint8_t m_pad, m_pad2;
 		size_t m_c, m_r;
 		size_t m_len;
 		uint64_t m_hash[25];
@@ -132,6 +137,35 @@ class KeccakCompact : public Keccak
 			return Transform(m_hash, data, m_r);
 		}
 	private:
+};
+
+template<size_t HashSize>
+class SHA3 : public DREW_KECCAK_IMPL
+{
+	public:
+		SHA3() : DREW_KECCAK_IMPL(HashSize)
+		{
+			m_pad = 0x06;
+		}
+		static const size_t digest_size = HashSize;
+		static const size_t block_size = 1600 / 8;
+		static const size_t buffer_size = (1600 / 8) - HashSize;
+};
+
+class SHA3224 : public SHA3<224 / 8>
+{
+};
+
+class SHA3256 : public SHA3<256 / 8>
+{
+};
+
+class SHA3384 : public SHA3<384 / 8>
+{
+};
+
+class SHA3512 : public SHA3<512 / 8>
+{
 };
 }
 UNHIDE()
