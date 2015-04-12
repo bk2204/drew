@@ -177,13 +177,13 @@ static int keccak_info2(const drew_hash_t *ctxt, int op, drew_param_t *outp,
 			if (ctxt && ctxt->ctx) {
 				const T *ctx = (const T *)ctxt->ctx;
 				return ctx->GetBlockSize();
-			}	
+			}
 			return -DREW_ERR_MORE_INFO;
 		case DREW_HASH_BLKSIZE_CTX:
 			if (ctxt && ctxt->ctx) {
 				const T *ctx = (const T *)ctxt->ctx;
 				return ctx->GetBlockSize();
-			}	
+			}
 			return -DREW_ERR_MORE_INFO;
 		case DREW_HASH_BUFSIZE_CTX:
 			return 1600/8;
@@ -415,7 +415,7 @@ inline void chi<1>(uint64_t *a, const uint64_t *b)
 	a[0+5*2] =  b[0+5*2] ^ ( b[1+5*2] |  b[2+5*2]);
 	a[0+5*3] =  b[0+5*3] ^ ( b[1+5*3] &  b[2+5*3]);
 	a[0+5*4] =  b[0+5*4] ^ (~b[1+5*4] &  b[2+5*4]);
-	
+
 	a[1+5*0] =  b[1+5*0] ^ (~b[2+5*0] |  b[3+5*0]);
 	a[1+5*1] =  b[1+5*1] ^ ( b[2+5*1] &  b[3+5*1]);
 	a[1+5*2] =  b[1+5*2] ^ ( b[2+5*2] &  b[3+5*2]);

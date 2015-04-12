@@ -47,18 +47,18 @@ class Keccak
 			uint8_t *buf = m_buf;
 
 			m_len += len;
-		
+
 			if (off) {
 				const size_t i = std::min<size_t>(m_r-off, len);
 				memcpy(buf+off, data, i);
-		
+
 				if ((i+off) == m_r)
 					Transform(buf);
-		
+
 				len -= i;
 				data += i;
 			}
-		
+
 			for (; len >= m_r; len -= m_r, data += m_r)
 				Transform(data);
 			memcpy(buf, data, len);
@@ -74,7 +74,7 @@ class Keccak
 			memset(m_buf+noff, 0, m_r-noff);
 			m_buf[noff] = 0x01;
 			m_buf[m_r-1] |= 0x80;
-		
+
 			Transform(m_buf);
 		}
 		virtual void GetDigest(uint8_t *digest, size_t len, bool nopad);
