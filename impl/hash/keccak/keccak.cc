@@ -383,6 +383,7 @@ drew::KeccakWithLimitedNots::KeccakWithLimitedNots(size_t t_)
 {
 	m_c = t_ * 2;
 	m_r = 200 - m_c;
+	m_pad = 0x01;
 	Reset();
 }
 
@@ -390,6 +391,7 @@ drew::KeccakCompact::KeccakCompact(size_t t_)
 {
 	m_c = t_ * 2;
 	m_r = 200 - m_c;
+	m_pad = 0x01;
 	Reset();
 }
 
