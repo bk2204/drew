@@ -1,0 +1,31 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+my $cnt = 0;
+my $plain;
+my $rep;
+
+while (<>) {
+	chomp;
+	if (/^p/) {
+		$plain = $_;
+	}
+	elsif (/^r(.*)/) {
+		$rep = $1;
+	}
+	else {
+		chomp;
+
+		my ($algo, $value) = split /\s+/, $_, 2;
+		$value =~ s/\s+//g;
+		my $algolen = length($value) / 2;
+		printf "T%04x a%s C%s\n", $cnt, $algo, $algolen;
+		printf "T%04x %s r%s\n", $cnt, $plain, $rep || 1 if $plain;
+		printf "T%04x c%s\n", $cnt, $value;
+		$plain = undef;
+		$rep = undef;
+		$cnt++;
+	}
+}
