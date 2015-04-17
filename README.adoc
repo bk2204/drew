@@ -68,6 +68,14 @@ Please report bugs and wishlist requests on the github issue tracker.  Until a
 mailing list is set up, please send email to brian m. carlson at
 <sandals@crustytoothpaste.net>.
 
+Test Vectors
+------------
+
+Part of the goal of this project is to serve as the most comprehensive source
+for cryptographic test vectors on the Internet.  It aggregates vectors from all
+reliable sources in a single set of easy-to-parse formats.  More information is
+available in the TEST-VECTORS.adoc file.
+
 Contributing
 ------------
 

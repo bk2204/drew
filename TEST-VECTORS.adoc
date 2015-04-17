@@ -1,0 +1,168 @@
+= Test Vectors
+
+Part of the goal of this project is to serve as the most comprehensive source
+for cryptographic test vectors on the Internet.  It aggregates vectors from all
+reliable sources in a single set of easy-to-parse formats.  These vectors are
+found in test/vectors-* files.
+
+== General Format
+
+The general format of the vectors file is a series of lines starting with a tag
+field and optionally one or more other fields.  Each tag indicates a complete
+vector.  When the tag changes, the vector ends.
+
+If a vector does not specify a value, it inherits the value from the last vector
+that defined it.  It is invalid to specify a value more than once per vector.
+
+Each field starts with a single (or occasionally two) type character, followed
+immediately by the value of the field.  Fields are delimited by spaces or
+newlines.  A line beginning with a hash sign indicates a comment, which is
+ignored.
+
+As an example, consider the following example MD5 test vectors:
+
+....
+TMD5-00 aMD5 r1 C16
+TMD5-00 p
+TMD5-00 cd41d8cd98f00b204e9800998ecf8427e
+TMD5-01 p61
+TMD5-01 c0cc175b9c0f1b6a831c399e269772661
+TMD5-02 p616263
+TMD5-02 c900150983cd24fb0d6963f7d28e17f72
+....
+
+This block contains three test vectors, `MD5-00`, `MD5-01`, and `MD5-02`.  It
+specifies that the algorithm (a) is MD5, that the input is to processed only
+once (r1; that is, not repeated), and that the output is expected to be 16 bytes
+in size (C16).
+
+The first vector specifies an empty input (p) and its corresponding output (c).
+`MD5-01`, since it has not specified the algorithm, repeat count, or output
+length, inherits these vectors from `MD5-00`.  It specifies an input consisting
+of the single letter ``a'' (0x61).  Similarly, the last vector processes the
+string consisting of the text ``abc''.
+
+=== Common Fields
+
+There are some fields that are common to all vector types.
+
+|===
+| Field | Meaning
+
+| a
+| Algorithm (should be SCAN name if available)
+
+| r
+| Repetition count (1 means no repeat, 2 means repeat once, etc.)
+
+|===
+
+=== Hash Vectors
+
+|===
+| Field | Meaning
+
+| p
+| Hash input, repeated according to the repeat count
+
+| c
+| Hash output
+
+| C
+| Length of expected hash output in bytes
+
+|===
+
+=== Block Cipher Vectors
+
+|===
+| Field | Meaning
+
+| p
+| Plaintext block
+
+| c
+| Ciphertext block
+
+| k
+| Key
+
+| K
+| Key length in bytes
+
+| r
+| Repetition count; indicates the number of times the block is encrypted
+
+|===
+
+=== Block Cipher Mode Vectors
+
+|===
+| Field | Meaning
+
+| a
+| Block cipher algorithm name (SCAN, if available)
+
+| m
+| Block cipher mode algorithm name (SCAN, if available)
+
+| p
+| Plaintext block
+
+| c
+| Ciphertext block
+
+| k
+| Key
+
+| K
+| Key length in bytes
+
+| n
+| Nonce or IV
+
+| N
+| Nonce or IV length in bytes
+
+| F
+| Feedback size in bits, if relevant (otherwise, block size)
+
+|===
+
+=== Stream Cipher Vectors
+
+|===
+| Field | Meaning
+
+| a
+| Stream cipher algorithm name (SCAN, if available)
+
+| m
+| Block cipher mode algorithm name (SCAN, if available)
+
+| p
+| Plaintext
+
+| c
+| Ciphertext
+
+| k
+| Key
+
+| K
+| Key length in bytes
+
+| n
+| Nonce or IV
+
+| N
+| Nonce or IV length in bytes
+
+| S
+| Start position in bytes (0 is beginning of stream)
+
+| E
+| End position in bytes
+
+|===
+
