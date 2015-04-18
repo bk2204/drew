@@ -166,3 +166,37 @@ There are some fields that are common to all vector types.
 
 |===
 
+=== MAC Vectors
+
+|===
+| Field | Meaning
+
+| a
+| Hash (or other primitive) algorithm name (SCAN, if available)
+
+| m
+| MAC algorithm name (SCAN, if available)
+
+| p
+| Data to be MAC'd
+
+| c
+| MAC output
+
+| k
+| Key
+
+| K
+| Key length in bytes
+
+| S
+| Start position in bytes (0 is beginning of stream)
+
+| E
+| End position in bytes
+
+| r
+| Repetition count
+
+|===
+
