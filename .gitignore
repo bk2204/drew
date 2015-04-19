@@ -17,6 +17,7 @@ util/daniel
 include/version.h
 include/buildid.h
 buildid
+build/
 *.d
 *.o
 *.gen

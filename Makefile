@@ -3,6 +3,7 @@ include config
 VERSION			:= $(shell test -d .git && git describe)
 
 CATEGORIES		:= hash block mode mac stream prng bignum pkenc pksig kdf ecc
+VECTORS			:= hash block mode mac stream pksig kdf
 
 RM				?= rm
 RMDIR			?= rmdir
@@ -65,6 +66,8 @@ OBJECTS			+= $(EXTRA_OBJECTS-y) $(EXTRA_OBJECTS-m)
 IMPL_DIRS		:= $(sort $(foreach obj,$(IMPL_OBJS),$(dir $(obj))))
 
 DEPFILES		:= $(OBJECTS:.o=.d)
+
+VECTOR_OBJS		:= $(patsubst %,build/vectors-%,$(VECTORS))
 
 all: $(DREW_SONAME) standard
 
@@ -145,6 +148,7 @@ clean:
 	$(RM) -f include/version.h include/buildid.h
 	$(RM) -f buildid
 	$(RM) -fr $(PLUGINS) plugins/
+	$(RM) -fr build
 	$(RM) -r install
 	$(RM) -f tags
 	find . -name '*.gen' | xargs -r rm
@@ -155,10 +159,20 @@ clean:
 	find . -name '*.pdf' | xargs -r rm
 	find . -name '*.fo' | xargs -r rm
 
+vectors: .PHONY
+
+vectors: $(VECTOR_OBJS)
+
+build/vectors-%: test/vectors-% tools/canonicalize-vectors
+	tools/canonicalize-vectors -t $(patsubst build/vectors-%,%,$@) $< >$@
+
 test: .PHONY
 
 test check: test-scripts testx-scripts test-libmd
 speed speed-test: speed-scripts
+
+build:
+	[ -d build ] || mkdir build
 
 test-libmd: $(TEST_BINARIES) plugins
 	env LD_LIBRARY_PATH=. test/libmd-testsuite -x | \
@@ -176,6 +190,14 @@ testx-scripts: $(TEST_BINARIES) plugins
 		find plugins -type f | sed -e 's,.*/,,g' | \
 		sort | grep -vE '.rdf$$' | \
 		xargs env LD_LIBRARY_PATH=. test/test-$$i -t; \
+		done
+
+testc-scripts: $(TEST_BINARIES) plugins vectors
+	set -e; for i in $(CATEGORIES); do \
+		[ -e "test/vectors-$$i" ] || continue; \
+		find plugins -type f | sed -e 's,.*/,,g' | \
+		sort | grep -vE '.rdf$$' | \
+		xargs env LD_LIBRARY_PATH=. test/test-$$i -t -r build/vectors-$$i; \
 		done
 
 test-api: $(TEST_BINARIES) plugins
