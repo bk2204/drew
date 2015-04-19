@@ -12,7 +12,9 @@ field and optionally one or more other fields.  Each tag indicates a complete
 vector.  When the tag changes, the vector ends.
 
 If a vector does not specify a value, it inherits the value from the last vector
-that defined it.  It is invalid to specify a value more than once per vector.
+that defined it, unless the value is a parameter (s) or a named p, k, or c
+entry, which cannot be inherited.  It is invalid to specify a value more than
+once per vector.
 
 Each field starts with a single (or occasionally two) type character, followed
 immediately by the value of the field.  Fields are delimited by spaces or
