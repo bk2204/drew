@@ -62,6 +62,8 @@ int test_external(DrewLoader *ldr, const char *name, const void *tbl,
 {
 	int ret = 0;
 
+	if (tes->results == -DREW_ERR_NOT_IMPL)
+		tes->results = 0;
 	if (tes->results < 0)
 		goto out;
 
