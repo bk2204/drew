@@ -1,0 +1,139 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Getopt::Long;
+use IO::Handle;
+
+exit script(@ARGV) unless caller;
+
+sub script {
+	my (@argv) = @_;
+
+	my $args = {};
+
+	Getopt::Long::GetOptionsFromArray(\@argv, $args, 'help', 'type|t=s');
+
+	return usage(0) if $args->{help};
+
+	my $infh = \*STDIN;
+	open($infh, '<', $argv[0]) or die "Can't open $argv[0]: $!" if @argv;
+
+	my $flags = {
+		plength => $args->{type} && $args->{type} =~ /^pk/ ? 2 : 1,
+		silentk => $args->{type} && $args->{type} eq 'kdf',
+	};
+
+	process($infh, \*STDOUT, $flags);
+	close($infh);
+	return 0;
+}
+
+sub emit_line {
+	my ($block, $outfh, @types) = @_;
+
+	my @chunks;
+	foreach my $type (@types) {
+		my $value = $block->{$type};
+		next unless defined $value;
+		if (ref $value eq 'HASH') {
+			push @chunks, map { $type . $_ . $value->{$_} } sort keys %$value;
+		}
+		else {
+			push @chunks, $type . $value;
+		}
+	}
+	return unless @chunks;
+
+	unshift @chunks, "T$block->{T}";
+	$outfh->print(join(' ', @chunks), "\n");
+	return;
+}
+
+sub emit_block {
+	my ($block, $outfh) = @_;
+
+	# Algorithm description and parameters; repetition and iteration counts.
+	emit_line($block, $outfh, qw/a m g r R C F/);
+	# Key.
+	emit_line($block, $outfh, qw/K k/);
+	# Nonce.
+	emit_line($block, $outfh, qw/N n/);
+	# Start and end byte counts.
+	emit_line($block, $outfh, qw/S E/);
+	# Plaintext.
+	emit_line($block, $outfh, qw/p/);
+	# Additional data (for AEAD modes) or salt.
+	emit_line($block, $outfh, qw/d/);
+	# Ciphertext.
+	emit_line($block, $outfh, qw/c/);
+	return;
+}
+
+sub process {
+	my ($infh, $outfh, $flags) = @_;
+
+	my $curtag = '';
+	my $block = {};
+	my $lineno = 0;
+	my $comment = '';
+	while (defined(my $line = <$infh>)) {
+		$lineno++;
+		if ($line =~ /^#/) {
+			$comment .= $line;
+			next;
+		}
+		elsif ($line =~ /^T(\S+)/) {
+			my $tag = $1;
+			if ($curtag ne $tag) {
+				emit_block($block, $outfh) if $curtag;
+				my @reject = map { /^s/ || ref $block->{$_} } keys %$block;
+				delete $block->{@reject};
+				$outfh->print($comment);
+				$comment = '';
+				$curtag = $tag;
+			}
+			my @data = split /\s+/, $line;
+			foreach my $chunk (@data) {
+				if ($flags->{plength} == 2 && $chunk =~ /^[kpc]/) {
+					my ($tag, $attr, $value) = $chunk =~ /^(.)(.)(.*)$/;
+					$block->{$tag}{$attr} = $value;
+				}
+				else {
+					my ($tag, $value) = $chunk =~ /^(.)(.*)$/;
+					$block->{$tag} = $value;
+					delete $block->{k} if $tag eq 'K' && $flags->{silentk};
+				}
+			}
+		}
+		else {
+			die "Invalid line $lineno (no tag or comment)\n";
+		}
+	}
+	emit_block($block, $outfh) if $curtag;
+
+	return;
+}
+
+sub usage {
+	my ($ret) = @_;
+
+	print <<EOM;
+canonicalize-vectors [--type ALGOTYPE] [FILE]
+
+Take vectors which may be missing parameters and fill them in using the last set
+value for that parameter.
+
+ALGOTYPE is the type of vector (e.g. block, stream) to canonicalize.  If not
+specified, it defaults to a mode that works on all algorithm types except public
+key types.
+
+If FILE is not specified, defaults to stdin.
+
+The code preserves comments, and outputs parameters in as sane an order as
+possible.
+EOM
+
+	return $ret;
+}
