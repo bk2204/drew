@@ -51,6 +51,7 @@ struct testcase {
 	size_t offend;
 	uint8_t *pt;
 	uint8_t *ct;
+	drew_param_t *param;
 };
 
 const char *test_get_filename()
@@ -64,6 +65,7 @@ void test_reset_data(void *p, int flags)
 	if (flags & TEST_RESET_PARTIAL) {
 		free(tc->id);
 		tc->id = NULL;
+		tc->param = NULL;
 	}
 	if (flags & TEST_RESET_FREE) {
 		free(tc->id);
@@ -72,6 +74,7 @@ void test_reset_data(void *p, int flags)
 		free(tc->nonce);
 		free(tc->pt);
 		free(tc->ct);
+		test_external_free_params(&tc->param);
 		memset(p, 0, sizeof(struct testcase));
 	}
 	if (flags & TEST_RESET_ZERO)
@@ -96,6 +99,7 @@ void *test_clone_data(void *tc, int flags)
 	q->ct = malloc(q->offend - q->offstart);
 	memcpy(q->pt, p->pt, q->offend - q->offstart);
 	memcpy(q->ct, p->ct, q->offend - q->offstart);
+	q->param = NULL;
 	
 	return q;
 }
@@ -133,7 +137,7 @@ int test_execute(void *data, const char *name, const void *tbl,
 
 	drew_stream_t ctx;
 	ctx.functbl = tbl;
-	ctx.functbl->init(&ctx, 0, tep->ldr, NULL);
+	ctx.functbl->init(&ctx, 0, tep->ldr, tc->param);
 	ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0);
 	ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
 	for (size_t i = 0; i < tc->offstart/len; i++) {
@@ -152,7 +156,7 @@ int test_execute(void *data, const char *name, const void *tbl,
 		goto out;
 	}
 
-	ctx.functbl->init(&ctx, 0, tep->ldr, NULL);
+	ctx.functbl->init(&ctx, 0, tep->ldr, tc->param);
 	ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0);
 	ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
 	for (size_t i = 0; i < tc->offstart/len; i++) {
@@ -227,6 +231,8 @@ int test_process_testcase(void *data, int type, const char *item,
 			if (process_bytes(tc->offend - tc->offstart, &tc->ct, item))
 				return TEST_CORRUPT;
 			break;
+		case 's':
+			return test_external_parse_param(&tc->param, item);
 	}
 
 	return TEST_OK;

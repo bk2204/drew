@@ -20,6 +20,7 @@
 
 #include <drew/drew.h>
 #include <drew/mem.h>
+#include <drew/param.h>
 
 static void add_id(struct test_external *tep, char *p)
 {
@@ -54,6 +55,59 @@ static int execute_test_external(int ret, struct test_external *tep, size_t i)
 			break;
 	}
 	return ret;
+}
+
+// Parse a parameter.  Currently only handles integer parameters.
+int test_external_parse_param(drew_param_t **param, const char *item)
+{
+	char *clone = strdup(item);
+	char *equals = strchr(clone, '=');
+	drew_param_t *nparam = drew_mem_calloc(1, sizeof(*nparam));
+
+	if (!nparam)
+		goto error;
+	if (!equals)
+		goto error;
+
+	*equals = 0;
+
+	char *value = equals + 1;
+	unsigned long n;
+	char *endptr;
+	if ((*value == 'd' || *value == 'x') && value[1]) {
+		n = strtol(value + 1, &endptr, *value == 'd' ? 10 : 16);
+		if (*endptr)
+			goto error;
+	}
+	else
+		goto error;
+
+	nparam->name = clone;
+	nparam->param.number = n;
+
+	for (drew_param_t *p = *param; p; p = p->next)
+		if (!p->next)
+			p->next = nparam;
+
+	if (!*param)
+		*param = nparam;
+	return 0;
+error:
+	free(clone);
+	free(nparam);
+	return TEST_CORRUPT;
+}
+
+// This currently only handles integer parameters.
+int test_external_free_params(drew_param_t **param)
+{
+	for (drew_param_t *p = *param, *q; p; p = q) {
+		q = p->next;
+		free((char *)p->name);
+		free(p);
+	}
+	*param = NULL;
+	return 0;
 }
 
 #define NDATA_CHUNK	512

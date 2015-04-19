@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+#include <drew/param.h>
 #include <drew/plugin.h>
 
 #define DIM(x) (sizeof(x)/sizeof((x)[0]))
@@ -106,5 +107,7 @@ int test_external(DrewLoader *ldr, const char *name, const void *tbl,
 int test_external_parse(DrewLoader *ldr, const char *filename,
 		struct test_external *tes);
 int test_external_cleanup(struct test_external *tes);
+int test_external_parse_param(drew_param_t **param, const char *item);
+int test_external_free_params(drew_param_t **param);
 
 #endif
