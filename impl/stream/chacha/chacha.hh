@@ -49,8 +49,13 @@ class ChaChaGenericKeystream
 		{
 			return keysz;
 		}
+		size_t GetNonceSize() const
+		{
+			return noncesz;
+		}
 	protected:
 		size_t keysz;
+		size_t noncesz;
 		size_t nrounds;
 };
 
@@ -130,6 +135,10 @@ class ChaCha
 		size_t GetKeySize() const
 		{
 			return m_ks->GetKeySize();
+		}
+		size_t GetNonceSize() const
+		{
+			return m_ks->GetNonceSize();
 		}
 	protected:
 	private:

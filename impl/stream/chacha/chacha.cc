@@ -45,6 +45,7 @@ void chacha_asm_ivsetup(chacha_ctx_t *, const uint8_t *key);
 static int chacha_asm_test(void *, const drew_loader_t *);
 static int chacha_asm_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *);
+static int chacha_asm_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len);
 #endif
 
 static int chacha_test(void *, const drew_loader_t *);
@@ -68,7 +69,7 @@ static int chacha_fini(drew_stream_t *ctx, int flags);
 PLUGIN_FUNCTBL(chacha, chacha_info, chacha_info2, chacha_init, chacha_setiv, chacha_setkey, chacha_encrypt, chacha_encrypt, chacha_encryptfast, chacha_encryptfast, chacha_test, chacha_fini, chacha_clone, chacha_reset);
 
 #ifdef CHACHA_HAVE_ASM
-PLUGIN_FUNCTBL(chacha_asm, chacha_info, chacha_info2, chacha_asm_init, chacha_setiv, chacha_setkey, chacha_encrypt, chacha_encrypt, chacha_encryptfast, chacha_encryptfast, chacha_asm_test, chacha_fini, chacha_clone, chacha_reset);
+PLUGIN_FUNCTBL(chacha_asm, chacha_info, chacha_info2, chacha_asm_init, chacha_asm_setiv, chacha_setkey, chacha_encrypt, chacha_encrypt, chacha_encryptfast, chacha_encryptfast, chacha_asm_test, chacha_fini, chacha_clone, chacha_reset);
 #endif
 
 static int chacha_maintenance_test(void)
@@ -106,7 +107,8 @@ static int chacha_test(void *, const drew_loader_t *)
 }
 
 static const int chacha_keysz[] = {16, 32};
-static const int chacha_ivsz[] = {8};
+static const int chacha_ivsz[] = {8, 12};
+static const int chacha_asm_ivsz[] = {8};
 
 static int chacha_info(int op, void *p)
 {
@@ -156,7 +158,11 @@ static int chacha_info2(const drew_stream_t *ctx, int op, drew_param_t *out,
 				}
 			return 0;
 		case DREW_STREAM_IVSIZE_CTX:
-			return 8;
+			if (ctx && ctx->ctx) {
+				const drew::ChaCha *algo = (const drew::ChaCha *)ctx->ctx;
+				return algo->GetNonceSize();
+			}
+			return -DREW_ERR_MORE_INFO;
 		case DREW_STREAM_INTSIZE:
 			return sizeof(drew::ChaCha);
 		case DREW_STREAM_BLKSIZE:
@@ -251,6 +257,24 @@ static int chacha_fini(drew_stream_t *ctx, int flags)
 }
 
 #ifdef CHACHA_HAVE_ASM
+static int chacha_asm_info2(const drew_stream_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	switch (op) {
+		case DREW_STREAM_IVSIZE_LIST:
+			for (drew_param_t *p = out; p; p = p->next)
+				if (!strcmp(p->name, "ivSize")) {
+					p->param.array.ptr = (void *)chacha_asm_ivsz;
+					p->param.array.len = DIM(chacha_asm_ivsz);
+				}
+			return 0;
+		case DREW_STREAM_IVSIZE_CTX:
+			return 8;
+		default:
+			return chacha_asm_info2(ctx, op, out, in);
+	}
+}
+
 static int chacha_asm_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
 		const drew_param_t *param)
 {
@@ -272,6 +296,13 @@ static int chacha_asm_init(drew_stream_t *ctx, int flags, const drew_loader_t *,
 	ctx->ctx = p;
 	ctx->functbl = &chacha_asmfunctbl;
 	return 0;
+}
+
+static int chacha_asm_setiv(drew_stream_t *ctx, const uint8_t *key, size_t len)
+{
+	if (len != 8)
+		return -DREW_ERR_INVALID;
+	return chacha_setiv(ctx, key, len);
 }
 
 static int chacha_asm_test(void *, const drew_loader_t *)
@@ -366,7 +397,8 @@ void drew::ChaChaKeystream::SetKey(const uint8_t *key, size_t sz)
 
 void drew::ChaChaKeystream::SetNonce(const uint8_t *iv, size_t sz)
 {
-	E::Copy(state.buf+14, iv, sz);
+	const size_t offset = sz == 12 ? 13 : 14;
+	E::Copy(state.buf+offset, iv, sz);
 
 	state.buf[0] = 0x61707865;
 	state.buf[1] = (keysz == 16) ? 0x3120646e : 0x3320646e;
@@ -425,7 +457,8 @@ void drew::ChaChaKeystream::FillBuffer(uint8_t buf[64])
 	AlignedData cur;
 
 	state.buf[12] = uint32_t(ctr);
-	state.buf[13] = ctr >> 32;
+	if (GetNonceSize() == 8)
+		state.buf[13] = ctr >> 32;
 
 	DoHash(cur);
 	ctr++;
@@ -441,7 +474,8 @@ void drew::ChaChaKeystream::FillBufferAligned(uint8_t bufp[64])
 	};
 
 	state.buf[12] = uint32_t(ctr);
-	state.buf[13] = ctr >> 32;
+	if (GetNonceSize() == 8)
+		state.buf[13] = ctr >> 32;
 
 	if (E::GetEndianness() == NativeEndian::GetEndianness()) {
 		AlignedData *buf = reinterpret_cast<AlignedData *>(bufp);

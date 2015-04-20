@@ -137,9 +137,12 @@ int test_execute(void *data, const char *name, const void *tbl,
 
 	drew_stream_t ctx;
 	ctx.functbl = tbl;
-	ctx.functbl->init(&ctx, 0, tep->ldr, tc->param);
-	ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0);
-	ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen);
+	if (ctx.functbl->init(&ctx, 0, tep->ldr, tc->param) == -DREW_ERR_INVALID)
+		return TEST_NOT_FOR_US;
+	if (ctx.functbl->setkey(&ctx, tc->key, tc->klen, 0) == -DREW_ERR_INVALID)
+		return TEST_NOT_FOR_US;
+	if (ctx.functbl->setiv(&ctx, tc->nonce, tc->nlen) == -DREW_ERR_INVALID)
+		return TEST_NOT_FOR_US;
 	for (size_t i = 0; i < tc->offstart/len; i++) {
 		// Encrypt throwaway data to get to the proper offset.
 		ctx.functbl->encrypt(&ctx, buf, buf, len);
