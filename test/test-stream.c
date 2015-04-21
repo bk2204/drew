@@ -36,7 +36,7 @@ const char *test_get_default_algo(drew_loader_t *ldr, const char *name)
 int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 {
 	const drew_stream_functbl_t *functbl = tbl;
-	
+
 	return print_test_results(functbl->test(NULL, ldr), NULL);
 }
 
@@ -100,7 +100,7 @@ void *test_clone_data(void *tc, int flags)
 	memcpy(q->pt, p->pt, q->offend - q->offstart);
 	memcpy(q->ct, p->ct, q->offend - q->offstart);
 	q->param = NULL;
-	
+
 	return q;
 }
 
@@ -249,7 +249,7 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	uint8_t *buf, *buf2, *key;
 	int (*encfunc)(drew_stream_t *, uint8_t *, const uint8_t *, size_t);
 	struct timespec cstart, cend;
-	
+
 	ctx.functbl = tbl;
 
 	keysz = ctx.functbl->info(DREW_STREAM_KEYSIZE, &keysz);
@@ -278,6 +278,6 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	free(buf);
 
 	print_speed_info(chunk, nchunks, &cstart, &cend);
-	
+
 	return 0;
 }
