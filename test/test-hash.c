@@ -33,12 +33,12 @@ const char *test_get_default_algo(drew_loader_t *ldr, const char *name)
 int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 {
 	const drew_hash_functbl_t *functbl = tbl;
-	
+
 	return print_test_results(functbl->test(NULL, ldr), NULL);
 }
 
 inline int test_speed_loop(drew_hash_t *ctx, uint8_t *buf,
-		int chunk, int nchunks, int hashsize, 
+		int chunk, int nchunks, int hashsize,
 		int (*update)(drew_hash_t *, const uint8_t *, size_t))
 {
 	int i;
@@ -456,7 +456,7 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		return res;
 
 	hashsize = ctx.functbl->info2(&ctx, DREW_HASH_SIZE_CTX, NULL, NULL);
-	update = (!(chunk % blksize) && !(chunk % DREW_HASH_ALIGNMENT)) ? 
+	update = (!(chunk % blksize) && !(chunk % DREW_HASH_ALIGNMENT)) ?
 		ctx.functbl->updatefast : ctx.functbl->update;
 	clock_gettime(USED_CLOCK, &cstart);
 	i = test_speed_loop(&ctx, buf, chunk, nchunks, hashsize, update);
@@ -467,6 +467,6 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	free(buf);
 
 	print_speed_info(chunk, i, &cstart, &cend);
-	
+
 	return 0;
 }
