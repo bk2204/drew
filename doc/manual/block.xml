@@ -231,7 +231,7 @@
 		than <constant>UNINITIALIZED</constant> and upon successful completion
 		leaves the context in the <constant>READY</constant> (if flags is zero),
 		<constant>READY-ENCRYPT</constant>, or
-		<constant>READY-DECRYPT</constant> state. 
+		<constant>READY-DECRYPT</constant> state.
 	</para>
 	<para xml:id="block-setkey-flags">
 		Normally, the

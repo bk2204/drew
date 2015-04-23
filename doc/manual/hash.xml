@@ -261,7 +261,7 @@
 		general, this function is never needed; the <function>final</function>
 		function will automatically pad the data correctly unless specifically
 		instructed otherwise.
-		Nevertheless, it is provided for compatibility reasons.  
+		Nevertheless, it is provided for compatibility reasons.
 		Double-padding will produce incorrect results.
 	</para>
 	<para>

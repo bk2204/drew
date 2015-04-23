@@ -9,7 +9,7 @@
 	version="5.0">
 	<!-- {{{ Bookinfo -->
 	<title>The drew Cryptography Suite</title>
-	<info> 
+	<info>
 		<author><personname><firstname>brian</firstname><othername>m.</othername><surname>carlson</surname></personname></author>
 		<!--{{{ RDF Metadata-->
 		<rdf:RDF>
