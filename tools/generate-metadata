@@ -48,7 +48,7 @@ sub process_file($$) {
 	$parser->parse_file_into_model("http://example.org/", $file, $model);
 
 	my $nonempty = 0;
-	
+
 	for my $subj ($model->subjects) {
 		my $pat = qr,^(http://ns\.crustytoothpaste\.net/drew/plugins/),;
 		next unless $subj->is_resource;
@@ -58,10 +58,10 @@ sub process_file($$) {
 		print STDERR "Generating metadata for plugin $plugin\n" if ($verbose);
 
 		$nonempty = 1;
-	
+
 		my @items = ($subj);
 		my ($count, $oldcount) = (1, 0);
-	
+
 		while ($count != $oldcount) {
 			my @t = @items;
 			for my $item (@t) {
@@ -71,7 +71,7 @@ sub process_file($$) {
 			$oldcount = $count;
 			$count = scalar @items;
 		}
-	
+
 		print $output
 			"static const drew_metadata_t ${plugin}_metadata[] = {\n";
 		my $same_as =
