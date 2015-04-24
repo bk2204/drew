@@ -43,7 +43,7 @@ const char *test_get_default_block_algo(drew_loader_t *ldr, const char *name)
 int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 {
 	const drew_mac_functbl_t *functbl = tbl;
-	
+
 	return print_test_results(functbl->test(NULL, ldr), NULL);
 }
 
@@ -320,6 +320,6 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	block.functbl->fini(&block, 0);
 
 	print_speed_info(chunk, nchunks, &cstart, &cend);
-	
+
 	return 0;
 }

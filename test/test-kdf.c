@@ -49,7 +49,7 @@ const char *test_get_default_kdf_algo(void)
 int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 {
 	const drew_kdf_functbl_t *functbl = tbl;
-	
+
 	return print_test_results(functbl->test(NULL, ldr), NULL);
 }
 
@@ -382,6 +382,6 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	drew_mem_free(result);
 
 	print_speed_info(chunk, nchunks, &cstart, &cend);
-	
+
 	return 0;
 }

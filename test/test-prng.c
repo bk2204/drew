@@ -31,7 +31,7 @@ const char *test_get_default_algo(drew_loader_t *ldr, const char *name)
 int test_internal(drew_loader_t *ldr, const char *name, const void *tbl)
 {
 	const drew_prng_functbl_t *functbl = tbl;
-	
+
 	return print_test_results(functbl->test(NULL, ldr), NULL);
 }
 
@@ -67,7 +67,7 @@ static bool prng_test_monobit(const uint8_t *buf, size_t len)
 
 	for (size_t i = 0; i < len; i++)
 		nset += popcount[buf[i]];
-	
+
 	sn = nset - (total - nset);
 	sobs = fabs(sn) / sqrt(total);
 	return erfc(sobs / sqrt(2)) >= 0.01;
@@ -106,7 +106,7 @@ int test_external(DrewLoader *ldr, const char *name, const void *tbl,
 	int ret = 0;
 	drew_prng_t prng;
 	uint8_t *p;
-	
+
 	if (!(p = malloc(NBYTES))) {
 		ret = -ENOMEM;
 		goto out;
@@ -184,6 +184,6 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 		return print_test_results(i, NULL);
 
 	print_speed_info(chunk, i, &cstart, &cend);
-	
+
 	return 0;
 }

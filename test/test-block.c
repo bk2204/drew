@@ -307,7 +307,7 @@ int test_api_context(drew_block_t *ctx, DrewLoader *ldr,
 		if (ctx->functbl->encrypt(ctx, buf+2048+off, buf+2048+off))
 			retval |= BLOCK_BAD_ENCRYPT;
 	}
-	
+
 	// Buffer: EE.
 	// Decrypt the beginning of the buffer.
 	for (size_t i = 0; i < niters; i++) {
@@ -498,6 +498,6 @@ int test_speed(drew_loader_t *ldr, const char *name, const char *algo,
 	free(buf);
 
 	print_speed_info(i, 1, &cstart, &cend);
-	
+
 	return 0;
 }
