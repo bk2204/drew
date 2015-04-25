@@ -37,7 +37,7 @@ static int rmd160test(void *, const drew_loader_t *)
 	int res = 0;
 
 	using namespace drew;
-	
+
 	res |= !HashTestCase<RIPEMD160>("", 0).Test("9c1185a5c5e9fc54612808977ee8f548b2258d31");
 	res <<= 1;
 	res |= !HashTestCase<RIPEMD160>("a", 1).Test("0bdc9d2d256b3ee9daae347be6f4dc835a467ffe");

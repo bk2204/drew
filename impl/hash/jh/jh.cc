@@ -1,16 +1,16 @@
 /*-
  * Copyright © 2012 brian m. carlson
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -188,7 +188,7 @@ void drew::JH::Reset()
 {
 	static const uint8_t zero[64] = {0};
 	uint16_t size = m_size << 3;
-	
+
 	size = RotateLeft(size, 8);
 
 	memset(m_hash, 0, sizeof(m_hash));
@@ -437,7 +437,7 @@ void drew::JH::Pad()
 	/* Convert bytes to bits. */
 	len[!is_big] = (m_len[1]<<3)|(m_len[0]>>((sizeof(m_len[0])*8)-3));
 	len[is_big] = m_len[0]<<3;
-	
+
 	/* There is always at least one byte free. */
 	buf[noff] = 0x80;
 	while (totalpad) {
@@ -462,7 +462,7 @@ void drew::JH::GetDigest(uint8_t *digest, size_t len, bool nopad)
 
 	if (!nopad)
 		Pad();
-	
+
 	E::Copy(buf, m_hash, sizeof(buf));
 	memcpy(digest, buf+offset, std::min(m_size, len));
 	memset(buf, 0, sizeof(buf));

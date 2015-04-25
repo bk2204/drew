@@ -41,7 +41,7 @@ static int sha256test(void *, const drew_loader_t *)
 	int res = 0;
 
 	using namespace drew;
-	
+
 	res |= !HashTestCase<SHA256>("", 0).Test("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
 	res <<= 1;
 	res |= !HashTestCase<SHA256>("a", 1).Test("ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb");
@@ -70,7 +70,7 @@ static int sha224test(void *, const drew_loader_t *)
 	int res = 0;
 
 	using namespace drew;
-	
+
 	res |= !HashTestCase<SHA224>("", 0).Test("d14a028c2a3a2bc9476102bb288234c415a2b01f828ea62ac5b3e42f");
 	res <<= 1;
 	res |= !HashTestCase<SHA224>("a", 1).Test("abd37534c7d9a2efb9465de931cd7055ffdb8879563ae98078d6d6d5");
@@ -138,7 +138,7 @@ static const uint32_t k[]={
 
 #define ROUND2(a, b, c, d, e, f, g, h, k, i) \
 	blk[i] = s1(blk[i-2]) + blk[i-7] + s0(blk[i-15]) + blk[i-16]; \
-	ROUND(a, b, c, d, e, f, g, h, k, blk[i]); 
+	ROUND(a, b, c, d, e, f, g, h, k, blk[i]);
 
 drew::SHA256::SHA256()
 {

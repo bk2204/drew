@@ -44,7 +44,7 @@ static int wptest(void *, const drew_loader_t *)
 	int res = 0;
 
 	using namespace drew;
-	
+
 	res |= !HashTestCase<Whirlpool>("", 0).Test("19fa61d75522a4669b44e39c1d2e1726c530232130d407f89afee0964997f7a73e83be698b288febcf88e3e03c4f0757ea8964e59b63d93708b138cc42a66eb3");
 	res <<= 1;
 	res |= !HashTestCase<Whirlpool>("a", 1).Test("8aca2602792aec6f11a67206531fb7d7f0dff59413145e6973c45001d0087b42d11bc645413aeff63a42391a39145a591a92200d560195e53b478584fdae231a");
@@ -630,7 +630,7 @@ inline void drew::Whirlpool::Round(uint64_t res[8], const uint64_t in[8])
 		C4[E::GetArrayByte(in, 043)] ^
 		C5[E::GetArrayByte(in, 032)] ^
 		C6[E::GetArrayByte(in, 021)] ^
-		C7[E::GetArrayByte(in, 010)]; 
+		C7[E::GetArrayByte(in, 010)];
 	res[1] =
 		C0[E::GetArrayByte(in, 017)] ^
 		C1[E::GetArrayByte(in, 006)] ^

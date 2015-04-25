@@ -61,21 +61,21 @@ class Hash
 			const T t = m_len[0];
 			const T off = t % BlkSize;
 			uint8_t *buf = m_buf;
-		
+
 			if (unlikely((m_len[0] += len) < t))
 				m_len[1]++;
 
 			if (off) {
 				const size_t i = std::min<size_t>(BlkSize-off, len);
 				memcpy(buf+off, data, i);
-		
+
 				if ((i+off) == BlkSize)
 					Transform(buf);
-		
+
 				len-=i;
 				data+=i;
 			}
-		
+
 			for (; len >= BlkSize; len -= BlkSize, data += BlkSize)
 				Transform(data);
 			memcpy(buf, data, len);
@@ -106,7 +106,7 @@ class Hash
 			/* Convert bytes to bits. */
 			len[!is_big] = (m_len[1]<<3)|(m_len[0]>>((sizeof(m_len[0])*8)-3));
 			len[is_big] = m_len[0]<<3;
-		
+
 			/* There is always at least one byte free. */
 			buf[noff] = 0x80;
 			if (noff >= trip) {

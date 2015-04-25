@@ -71,19 +71,19 @@ class BLAKETransform
 		{
 			const T t = lenctr[0];
 			const T off = t % BlkSize;
-		
+
 			if (off) {
 				const size_t i = std::min<size_t>(BlkSize-off, len);
 				memcpy(buf+off, data, i);
 				UpdateCounter(lenctr, i);
-		
+
 				if ((i+off) == BlkSize)
 					Transform(state, buf, lenctr);
-		
+
 				len -= i;
 				data += i;
 			}
-		
+
 			for (; len >= BlkSize; len -= BlkSize, data += BlkSize) {
 				UpdateCounter(lenctr, BlkSize);
 				Transform(state, data, lenctr);
@@ -105,7 +105,7 @@ class BLAKETransform
 			/* Convert bytes to bits. */
 			len[!is_big] = (lenctr[1]<<3)|(lenctr[0]>>((sizeof(lenctr[0])*8)-3));
 			len[is_big] = lenctr[0]<<3;
-		
+
 			/* There is always at least one byte free. */
 			buf[noff] = 0x80;
 			if (noff >= trip) {

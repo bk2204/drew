@@ -49,20 +49,20 @@ class Gr\u00f8stlImplementation
 			const size_t BlkSize = GetBlockSize();
 			const uint64_t off = m_off & (BlkSize-1);
 			uint8_t *buf = m_buf;
-	
+
 			m_off += len;
 
 			if (off) {
 				const size_t i = std::min<size_t>(BlkSize-off, len);
 				memcpy(buf+off, data, i);
-		
+
 				if ((i+off) == BlkSize)
 					Transform(buf);
-		
+
 				len-=i;
 				data+=i;
 			}
-		
+
 			for (; len >= BlkSize; len -= BlkSize, data += BlkSize)
 				Transform(data);
 			memcpy(buf, data, len);
@@ -74,7 +74,7 @@ class Gr\u00f8stlImplementation
 			const size_t noff = m_off & (BlkSize-1);
 			size_t off = noff + 1;
 			uint8_t *buf = m_buf;
-		
+
 			/* There is always at least one byte free. */
 			buf[noff] = 0x80;
 			if (noff >= trip) {

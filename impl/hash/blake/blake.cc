@@ -47,7 +47,7 @@ static int blake256test(void *, const drew_loader_t *)
 	int res = 0;
 
 	using namespace drew;
-	
+
 	res |= !HashTestCase<BLAKE256>("", 0).Test("716f6e863f744b9ac22c97ec7b76ea5f5908bc5b2f67c61510bfc4751384ea7a");
 	res <<= 1;
 	res |= !HashTestCase<BLAKE256>("\xcc", 1).Test("e104256a2bc501f459d03fac96b9014f593e22d30f4de525fa680c3aa189eb4f");
@@ -63,7 +63,7 @@ static int blake224test(void *, const drew_loader_t *)
 	int res = 0;
 
 	using namespace drew;
-	
+
 	res |= !HashTestCase<BLAKE224>("", 0).Test("7dc5313b1c04512a174bd6503b89607aecbee0903d40a8a569c94eed");
 	res <<= 1;
 	res |= !HashTestCase<BLAKE224>("\xcc", 1).Test("5e21c1e375c7bc822046fad96910c95031bd4262ada71b4c91052fea");
@@ -79,7 +79,7 @@ static int blake512test(void *, const drew_loader_t *)
 	int res = 0;
 
 	using namespace drew;
-	
+
 	res |= !HashTestCase<BLAKE512>("", 0).Test("a8cfbbd73726062df0c6864dda65defe58ef0cc52a5625090fa17601e1eecd1b628e94f396ae402a00acc9eab77b4d4c2e852aaaa25a636d80af3fc7913ef5b8");
 	res <<= 1;
 	res |= !HashTestCase<BLAKE512>("\xcc", 1).Test("4f0ef594f20172d23504873f596984c64c1583c7b2abb8d8786aa2aeeae1c46c744b61893d661b0733b76d1fe19257dd68e0ef05422ca25d058dfe6c33d68709");

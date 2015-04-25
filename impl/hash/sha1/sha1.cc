@@ -32,7 +32,7 @@ static int sha1test(void *, const drew_loader_t *)
 	int res = 0;
 
 	using namespace drew;
-	
+
 	res |= !HashTestCase<SHA1>("", 0).Test("da39a3ee5e6b4b0d3255bfef95601890afd80709");
 	res <<= 1;
 	res |= !HashTestCase<SHA1>("a", 1).Test("86f7e437faa5a7fce15d1ddcb9eaeaea377667b8");
@@ -61,7 +61,7 @@ static int sha0test(void *, const drew_loader_t *)
 	int res = 0;
 
 	using namespace drew;
-	
+
 	//res |= !HashTestCase<SHA0>("", 0).Test("da39a3ee5e6b4b0d3255bfef95601890afd80709");
 	//res <<= 1;
 	//res |= !HashTestCase<SHA0>("a", 1).Test("86f7e437faa5a7fce15d1ddcb9eaeaea377667b8");
@@ -120,7 +120,7 @@ void drew::SHA<Rotate>::Reset()
 	(Rotate ? \
 	(blk[(i)&15]=RotateLeft(blk[((i)+13)&15]^blk[((i)+8)&15]^blk[((i)+2)&15]^blk[(i)&15],Rotate)) : \
 	(blk[(i)&15]^=blk[((i)+13)&15]^blk[((i)+8)&15]^blk[((i)+2)&15]))
-	
+
 
 /* This implementation uses a circular buffer to create the expansions of blk.
  * While it appears that this would be slower, it instead is significantly

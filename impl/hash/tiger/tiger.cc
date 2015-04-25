@@ -39,7 +39,7 @@ static int tigertest(void *, const drew_loader_t *)
 	int res = 0;
 
 	using namespace drew;
-	
+
 	res |= !HashTestCase<Tiger>("", 0).Test("3293ac630c13f0245f92bbb1766e16167a4e58492dde73f3");
 	res <<= 1;
 	res |= !HashTestCase<Tiger>("a", 1).Test("77befbef2e7ef8ab2ec8f93bf587a7fc613e247f5f247809");
@@ -160,7 +160,7 @@ void drew::Tiger::Pad()
 	/* Convert bytes to bits. */
 	len[!is_big] = (m_len[1]<<3)|(m_len[0]>>((sizeof(m_len[0])*8)-3));
 	len[is_big] = m_len[0]<<3;
-	
+
 	/* There is always at least one byte free. */
 	buf[noff] = 0x01;
 	if (noff >= trip) {

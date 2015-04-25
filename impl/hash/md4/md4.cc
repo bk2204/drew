@@ -29,7 +29,7 @@ static int md4test(void *, const drew_loader_t *)
 	int res = 0;
 
 	using namespace drew;
-	
+
 	res |= !HashTestCase<MD4>("", 0).Test("31d6cfe0d16ae931b73c59d7e0c089c0");
 	res <<= 1;
 	res |= !HashTestCase<MD4>("a", 1).Test("bde52cb31de33e46245e05fbdbd6fb24");

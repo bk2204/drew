@@ -15,7 +15,7 @@ HIDE()
 namespace drew {
 
 template<int Rotate>
-class SHA : public Hash<uint32_t, 20, 20, 64, BigEndian> 
+class SHA : public Hash<uint32_t, 20, 20, 64, BigEndian>
 {
 	public:
 		SHA();

@@ -39,7 +39,7 @@ static int md5test(void *, const drew_loader_t *)
 	int res = 0;
 
 	using namespace drew;
-	
+
 	res |= !HashTestCase<MD5>("", 0).Test("d41d8cd98f00b204e9800998ecf8427e");
 	res <<= 1;
 	res |= !HashTestCase<MD5>("a", 1).Test("0cc175b9c0f1b6a831c399e269772661");

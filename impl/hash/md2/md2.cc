@@ -41,7 +41,7 @@ static int md2test(void *, const drew_loader_t *)
 	int res = 0;
 
 	using namespace drew;
-	
+
 	res |= !HashTestCase<MD2>("", 0).Test("8350e5a3e24c153df2275c9f80692773");
 	res <<= 1;
 	res |= !HashTestCase<MD2>("a", 1).Test("32ec01ec4a6dac72c0ab96fb34c0b5d1");
