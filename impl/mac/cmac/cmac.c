@@ -313,7 +313,7 @@ static int cmac_test_generic(DrewLoader *ldr, const char *name,
 		result <<= 1;
 
 		if ((retval = cmac_init(&c, 0, ldr, &param)))
-			return retval;			
+			return retval;
 		cmac_setkey(&c, t->key, t->keysz);
 		for (size_t j = 0; j < t->datarep; j++)
 			for (size_t k = 0; k < t->datasz; k += 9)
@@ -324,7 +324,7 @@ static int cmac_test_generic(DrewLoader *ldr, const char *name,
 		cmac_fini(&c, 0);
 	}
 	block.functbl->fini(&block, 0);
-	
+
 	return result;
 }
 
@@ -504,7 +504,7 @@ static int cmack_test_generic(DrewLoader *ldr, const char *name,
 
 		hash.functbl->reset(&hash);
 		if ((retval = cmack_init(&c, 0, ldr, &param)))
-			return retval;			
+			return retval;
 		cmack_setkey(&c, t->key, t->keysz);
 		cmack_generate(&c, buf, outputsz, t->data, t->datasz);
 
@@ -512,7 +512,7 @@ static int cmack_test_generic(DrewLoader *ldr, const char *name,
 		cmack_fini(&c, 0);
 	}
 	hash.functbl->fini(&hash, 0);
-	
+
 	return result;
 }
 

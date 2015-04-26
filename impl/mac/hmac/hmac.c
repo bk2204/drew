@@ -286,7 +286,7 @@ static int hmac_test_generic(DrewLoader *ldr, const char *name,
 
 		hash.functbl->reset(&hash);
 		if ((retval = hmac_init(&c, 0, ldr, &param)))
-			return retval;			
+			return retval;
 		hmac_setkey(&c, t->key, t->keysz);
 		for (size_t j = 0; j < t->datarep; j++)
 			hmac_update(&c, t->data, t->datasz);
@@ -296,7 +296,7 @@ static int hmac_test_generic(DrewLoader *ldr, const char *name,
 		hmac_fini(&c, 0);
 	}
 	hash.functbl->fini(&hash, 0);
-	
+
 	return result;
 }
 
@@ -547,7 +547,7 @@ static int hmack_test_generic(DrewLoader *ldr, const char *name,
 
 		hash.functbl->reset(&hash);
 		if ((retval = hmack_init(&c, 0, ldr, &param)))
-			return retval;			
+			return retval;
 		hmack_setkey(&c, t->key, t->keysz);
 		hmack_generate(&c, buf, outputsz, t->data, t->datasz);
 
@@ -555,7 +555,7 @@ static int hmack_test_generic(DrewLoader *ldr, const char *name,
 		hmack_fini(&c, 0);
 	}
 	hash.functbl->fini(&hash, 0);
-	
+
 	return result;
 }
 
