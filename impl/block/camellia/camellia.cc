@@ -126,7 +126,7 @@ drew::Camellia::Camellia()
 int drew::Camellia::SetKeyInternal(const uint8_t *key, size_t sz)
 {
 	uint64_t ko[4];
-	
+
 	E::Copy(ko, key, sz);
 	if (sz == 16)
 		SetKey128(ko);

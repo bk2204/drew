@@ -49,7 +49,7 @@ class ARIA : public BlockCipher<16, BigEndian>
 		{
 			AlignedData t;
 			XorAligned(t.data, in.data, x.data, 16);
-		
+
 			out.data[ 0] = sb1[t.data[ 0]];
 			out.data[ 1] = sb1[t.data[ 1]];
 			out.data[ 2] = sb1[t.data[ 2]];
@@ -104,13 +104,13 @@ class ARIA : public BlockCipher<16, BigEndian>
 			out.data[ 5] = p349e ^ p1a ^ in.data[15];
 			out.data[ 0] = p349e ^ p6d ^ in.data[2];
 			out.data[14] = p349e ^ p7c ^ in.data[8];
-		
+
 			const uint8_t p258f = in.data[8] ^ in.data[5] ^ in.data[2] ^ in.data[15];
 			out.data[ 1] = p258f ^ p0b ^ in.data[11];
 			out.data[15] = p258f ^ p1a ^ in.data[1];
 			out.data[10] = p258f ^ p6d ^ in.data[12];
 			out.data[ 4] = p258f ^ p7c ^ in.data[6];
-		
+
 			const uint8_t p16bc = in.data[4] ^ in.data[9] ^ in.data[14] ^ in.data[3];
 			const uint8_t p29 = in.data[8] ^ in.data[6];
 			const uint8_t p38 = in.data[12] ^ in.data[2];
@@ -120,7 +120,7 @@ class ARIA : public BlockCipher<16, BigEndian>
 			out.data[13] = p16bc ^ p38 ^ in.data[7];
 			out.data[ 8] = p16bc ^ p4f ^ in.data[10];
 			out.data[ 6] = p16bc ^ p5e ^ in.data[0];
-		
+
 			const uint8_t p07ad = in.data[0] ^ in.data[13] ^ in.data[10] ^ in.data[7];
 			out.data[ 9] = p07ad ^ p29 ^ in.data[3];
 			out.data[ 7] = p07ad ^ p38 ^ in.data[9];

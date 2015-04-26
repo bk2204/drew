@@ -57,8 +57,8 @@ namespace drew {
 #include "aes-misc.cc"
 extern "C" {
 EXPORT()
-int DREW_PLUGIN_NAME(aesni)(void *ldr, int op, int id, void *p) 
-{ 
+int DREW_PLUGIN_NAME(aesni)(void *ldr, int op, int id, void *p)
+{
 	int nplugins = HasAESNI() ? sizeof(plugin_data)/sizeof(plugin_data[0]) : 0;
 	if (id < 0 || id >= nplugins) {
 		if (!id && !nplugins && op == DREW_LOADER_GET_NPLUGINS)
@@ -66,26 +66,26 @@ int DREW_PLUGIN_NAME(aesni)(void *ldr, int op, int id, void *p)
 		else
 			return -DREW_ERR_INVALID;
 	}
-	switch (op) { 
-		case DREW_LOADER_LOOKUP_NAME: 
-			return 0; 
-		case DREW_LOADER_GET_NPLUGINS: 
-			return nplugins; 
-		case DREW_LOADER_GET_TYPE: 
-			return DREW_TYPE_BLOCK; 
-		case DREW_LOADER_GET_FUNCTBL_SIZE: 
-			return sizeof(drew_block_functbl_t); 
-		case DREW_LOADER_GET_FUNCTBL: 
-			memcpy(p, plugin_data[id].functbl, sizeof(drew_block_functbl_t)); 
-			return 0; 
-		case DREW_LOADER_GET_NAME_SIZE: 
-			return strlen(plugin_data[id].name) + 1; 
-		case DREW_LOADER_GET_NAME: 
-			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1); 
-			return 0; 
-		default: 
-			return -DREW_ERR_INVALID; 
-	} 
+	switch (op) {
+		case DREW_LOADER_LOOKUP_NAME:
+			return 0;
+		case DREW_LOADER_GET_NPLUGINS:
+			return nplugins;
+		case DREW_LOADER_GET_TYPE:
+			return DREW_TYPE_BLOCK;
+		case DREW_LOADER_GET_FUNCTBL_SIZE:
+			return sizeof(drew_block_functbl_t);
+		case DREW_LOADER_GET_FUNCTBL:
+			memcpy(p, plugin_data[id].functbl, sizeof(drew_block_functbl_t));
+			return 0;
+		case DREW_LOADER_GET_NAME_SIZE:
+			return strlen(plugin_data[id].name) + 1;
+		case DREW_LOADER_GET_NAME:
+			memcpy(p, plugin_data[id].name, strlen(plugin_data[id].name)+1);
+			return 0;
+		default:
+			return -DREW_ERR_INVALID;
+	}
 }
 UNEXPORT()
 }

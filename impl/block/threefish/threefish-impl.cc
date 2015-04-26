@@ -1,16 +1,16 @@
 /*-
  * Copyright © 2011 brian m. carlson
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -125,7 +125,7 @@ inline void drew::Threefish::InjectKey(uint64_t *x, const size_t r) const
 int drew::Threefish::Encrypt(uint64_t *out, const uint64_t *in) const
 {
 	uint64_t x[8] ALIGNED_T;
-	
+
 	memcpy(x, in, sizeof(x));
 
 	for (size_t i = 0, r = 0; i < (ROUNDS/8); i++, r += 2) {
@@ -136,17 +136,17 @@ int drew::Threefish::Encrypt(uint64_t *out, const uint64_t *in) const
 		x[2] += x[3]; x[3] = RotateLeft(x[3], R_512_0_1); x[3] ^= x[2];
 		x[4] += x[5]; x[5] = RotateLeft(x[5], R_512_0_2); x[5] ^= x[4];
 		x[6] += x[7]; x[7] = RotateLeft(x[7], R_512_0_3); x[7] ^= x[6];
-		
+
 		x[2] += x[1]; x[1] = RotateLeft(x[1], R_512_1_0); x[1] ^= x[2];
 		x[4] += x[7]; x[7] = RotateLeft(x[7], R_512_1_1); x[7] ^= x[4];
 		x[6] += x[5]; x[5] = RotateLeft(x[5], R_512_1_2); x[5] ^= x[6];
 		x[0] += x[3]; x[3] = RotateLeft(x[3], R_512_1_3); x[3] ^= x[0];
-		
+
 		x[4] += x[1]; x[1] = RotateLeft(x[1], R_512_2_0); x[1] ^= x[4];
 		x[6] += x[3]; x[3] = RotateLeft(x[3], R_512_2_1); x[3] ^= x[6];
 		x[0] += x[5]; x[5] = RotateLeft(x[5], R_512_2_2); x[5] ^= x[0];
 		x[2] += x[7]; x[7] = RotateLeft(x[7], R_512_2_3); x[7] ^= x[2];
-		
+
 		x[6] += x[1]; x[1] = RotateLeft(x[1], R_512_3_0); x[1] ^= x[6];
 		x[0] += x[7]; x[7] = RotateLeft(x[7], R_512_3_1); x[7] ^= x[0];
 		x[2] += x[5]; x[5] = RotateLeft(x[5], R_512_3_2); x[5] ^= x[2];
@@ -154,22 +154,22 @@ int drew::Threefish::Encrypt(uint64_t *out, const uint64_t *in) const
 
 		for (size_t j = 0; j < 8; j++)
 			x[j] += m_k[r+1][j];
-		
+
 		x[0] += x[1]; x[1] = RotateLeft(x[1], R_512_4_0); x[1] ^= x[0];
 		x[2] += x[3]; x[3] = RotateLeft(x[3], R_512_4_1); x[3] ^= x[2];
 		x[4] += x[5]; x[5] = RotateLeft(x[5], R_512_4_2); x[5] ^= x[4];
 		x[6] += x[7]; x[7] = RotateLeft(x[7], R_512_4_3); x[7] ^= x[6];
-		
+
 		x[2] += x[1]; x[1] = RotateLeft(x[1], R_512_5_0); x[1] ^= x[2];
 		x[4] += x[7]; x[7] = RotateLeft(x[7], R_512_5_1); x[7] ^= x[4];
 		x[6] += x[5]; x[5] = RotateLeft(x[5], R_512_5_2); x[5] ^= x[6];
 		x[0] += x[3]; x[3] = RotateLeft(x[3], R_512_5_3); x[3] ^= x[0];
-		
+
 		x[4] += x[1]; x[1] = RotateLeft(x[1], R_512_6_0); x[1] ^= x[4];
 		x[6] += x[3]; x[3] = RotateLeft(x[3], R_512_6_1); x[3] ^= x[6];
 		x[0] += x[5]; x[5] = RotateLeft(x[5], R_512_6_2); x[5] ^= x[0];
 		x[2] += x[7]; x[7] = RotateLeft(x[7], R_512_6_3); x[7] ^= x[2];
-		
+
 		x[6] += x[1]; x[1] = RotateLeft(x[1], R_512_7_0); x[1] ^= x[6];
 		x[0] += x[7]; x[7] = RotateLeft(x[7], R_512_7_1); x[7] ^= x[0];
 		x[2] += x[5]; x[5] = RotateLeft(x[5], R_512_7_2); x[5] ^= x[2];
@@ -198,7 +198,7 @@ int drew::Threefish::Encrypt(uint8_t *out, const uint8_t *in) const
 int drew::Threefish::Decrypt(uint64_t *out, const uint64_t *in) const
 {
 	uint64_t x[8] ALIGNED_T, y[8] ALIGNED_T;
-	
+
 	memcpy(x, in, sizeof(x));
 
 	for (int i = (ROUNDS / 4)-1, d = 4; i >= 0; i--, d ^= 4) {

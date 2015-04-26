@@ -138,7 +138,7 @@ int drew::CAST6::SetKeyInternal(const uint8_t *key, size_t sz)
 	const uint8_t mr = 17;
 
 	memset(keys, 0, sizeof(keys));
-	
+
 	E::Copy(keys, key, sz);
 
 	for (size_t i = 0; i < 24; i++)
@@ -149,7 +149,7 @@ int drew::CAST6::SetKeyInternal(const uint8_t *key, size_t sz)
 			cr += mr;
 			cr &= 0x1f;
 		}
-	
+
 	for (size_t i = 0; i < 12; i++) {
 		W(keys, tr, tm, (2*i)+0);
 		W(keys, tr, tm, (2*i)+1);
@@ -225,7 +225,7 @@ int drew::CAST6::Decrypt(uint8_t *out, const uint8_t *in) const
 	Qbari(data,  0);
 
 	E::Copy(out, data, sizeof(data));
-	
+
 	return 0;
 }
 UNHIDE()

@@ -637,7 +637,7 @@ int drew::TripleDES::Encrypt(uint8_t *out, const uint8_t *in) const
 	FPERM(x[0], x[1]);
 	std::swap(x[0], x[1]);
 	E::Copy(out, x, sizeof(x));
-	
+
 	return 0;
 }
 

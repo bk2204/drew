@@ -44,7 +44,7 @@ void drew::ARIABytewise::RotateRightAndXor(AlignedData &out,
 	const size_t nbits = offset % 8;
 
 	for (size_t i = 0; i < 16; i++)
-		out.data[i] = (in.data[(i-nbytes) & 15] >> nbits) | 
+		out.data[i] = (in.data[(i-nbytes) & 15] >> nbits) |
 			(in.data[(i-nbytes-1) & 15] << (8-nbits));
 	XorAligned(out.data, out.data, x.data, 16);
 }

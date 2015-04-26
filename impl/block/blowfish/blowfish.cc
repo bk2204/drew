@@ -64,7 +64,7 @@ static bool bftest(const char *key, const char *plain, const char *cipher,
 	Blowfish ctx;
 	ctx.SetKey(kb, keybytes);
 	ctx.Encrypt(buf, pb);
-	
+
 	if (memcmp(buf, cb, sizeof(buf)))
 		return false;
 
