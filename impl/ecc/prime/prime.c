@@ -2,17 +2,17 @@
  * Copyright © 2000-2008 The Legion Of The Bouncy Castle
  * (http://www.bouncycastle.org)
  * Copyright © 2011 brian m. carlson
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -1005,9 +1005,9 @@ static int ecpt_dbl(drew_ecc_point_t *ptr, const drew_ecc_point_t *pta)
 		drew_bignum_t lambda, t1, three, two, x, y;
 		const drew_bignum_t *p = &r->curve->p;
 		ft->clone(&three, &r->x, 0);
-		ft->setsmall(&three, 3); 
+		ft->setsmall(&three, 3);
 		ft->clone(&two, &three, 0);
-		ft->setsmall(&two, 2); 
+		ft->setsmall(&two, 2);
 		ft->clone(&x, &two, 0);
 		ft->clone(&y, &two, 0);
 		// lambda = (3(x1^2) + a) / 2(y1)
