@@ -43,6 +43,9 @@ struct algomap {
 
 static struct algomap thisalgo;
 
+int convert_name_to_algo(const char *name, const char *suffix,
+		drew_loader_t *ldr, bool parse_name);
+
 int initialize_hash(DrewLoader *ldr, int id)
 {
 	const void *functbl;
@@ -184,24 +187,27 @@ next:
 
 int usage(int ret)
 {
-	printf("Usage: %s [-tbc] [file]...\n"
+	printf("Usage: %s [-tbc] [-a ALGORITHM] [file]...\n"
 			"Print or check %s hashes.\n"
 			"\n"
 			"-t, --text: read file in text mode (default)\n"
 			"-b, --binary: read file in binary mode\n"
 			"-c, --check: read hashes from the file and check them\n",
+			"-a: use ALGORITHM instead of the default\n",
 			program,
 			thisalgo.algo);
 	return ret;
 }
 
-int gnusum_main(int argc, char **argv, DrewLoader *ldr, int id)
+int gnusum_main(int argc, char **argv, DrewLoader *ldr)
 {
 	int c, mode = MODE_TEXT;
 	int retval = 0;
+	int id = -1;
 	drew_hash_t *hash = &thisalgo.hash;
+	const char *program = argv[0];
 
-	while ((c = getopt(argc, argv, "bct-:")) != -1) {
+	while ((c = getopt(argc, argv, "bcta:-:")) != -1) {
 		if (c == '-') {
 			if (!strcmp(optarg, "text"))
 				c = 't';
@@ -215,6 +221,14 @@ int gnusum_main(int argc, char **argv, DrewLoader *ldr, int id)
 				c = '?';
 		}
 		switch (c) {
+			case 'a':
+				id = convert_name_to_algo(optarg, NULL, ldr, false);
+				if (id < 0) {
+					fprintf(stderr, "%s: invalid algorithm '%s'\n", program,
+							optarg);
+					return 2;
+				}
+				break;
 			case 'b':
 				mode = MODE_BINARY;
 				break;
@@ -226,6 +240,22 @@ int gnusum_main(int argc, char **argv, DrewLoader *ldr, int id)
 				break;
 			case '?':
 				return usage(2);
+		}
+	}
+
+	if (id < 0) {
+
+		if (!strcmp("sum", program+strlen(program)-3) &&
+				(id = convert_name_to_algo(program, "sum", ldr, true) >= 0))
+			;
+		else if (!strcmp("drew-sum", program+strlen(program)-8) &&
+				(id = convert_name_to_algo("drew-sha512sum", "sum", ldr, true)
+				 >= 0))
+			;
+		else {
+			fprintf(stderr, "%s: I don't understand what you want me to do\n",
+					program);
+			return 2;
 		}
 	}
 
@@ -258,7 +288,7 @@ int gnusum_main(int argc, char **argv, DrewLoader *ldr, int id)
 // Returns an id for the loader and fills in thisalgo on success; returns -1 on
 // failure.
 int convert_name_to_algo(const char *name, const char *suffix,
-		drew_loader_t *ldr)
+		drew_loader_t *ldr, bool parse_name)
 {
 	int id = -1;
 	char *s, *p, *variant, *oldv = NULL;
@@ -266,18 +296,21 @@ int convert_name_to_algo(const char *name, const char *suffix,
 
 	s = strdup(name);
 	len = strlen(name);
-	slen = suffix ? strlen(suffix) : 0;
 
-	// Strip a suffix.
-	if (!strcmp(suffix, s+len-slen)) {
-		s[len-slen] = '\0';
+	if (parse_name) {
+		slen = suffix ? strlen(suffix) : 0;
+
+		// Strip a suffix.
+		if (!strcmp(suffix, s+len-slen)) {
+			s[len-slen] = '\0';
+		}
+		// Strip a pathname.
+		if ((p = strrchr(s, '/')))
+			s = p + 1;
+		// Strip a prefix.
+		if (!strncmp(s, "drew-", 5))
+			s += 5;
 	}
-	// Strip a pathname.
-	if ((p = strrchr(s, '/')))
-		s = p + 1;
-	// Strip a prefix.
-	if (!strncmp(s, "drew-", 5))
-		s += 5;
 
 	thisalgo.command = s;
 
@@ -355,24 +388,14 @@ out:
 int main(int argc, char **argv)
 {
 	drew_loader_t *ldr;
-	int ret = 2, id = -1;
+	int ret;
 
 	program = argv[0];
 
 	ldr = drew_loader_new();
 	drew_loader_load_plugin(ldr, NULL, NULL);
 
-	if (!strcmp("sum", program+strlen(program)-3) &&
-			(id = convert_name_to_algo(program, "sum", ldr) >= 0))
-		ret = gnusum_main(argc, argv, ldr, id);
-	else if (!strcmp("drew-sum", program+strlen(program)-8) &&
-			(id = convert_name_to_algo("drew-sha512sum", "sum", ldr) >= 0))
-		ret = gnusum_main(argc, argv, ldr, id);
-	else {
-		fprintf(stderr, "%s: I don't understand what you want me to do\n",
-				program);
-		ret = 2;
-	}
+	ret = gnusum_main(argc, argv, ldr);
 
 	drew_loader_unref(ldr);
 
