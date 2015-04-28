@@ -181,7 +181,13 @@ next:
 
 int usage(int ret)
 {
-	printf("Usage: %s [-tbc] [file]...\nPrint or check %s hashes.\n", program,
+	printf("Usage: %s [-tbc] [file]...\n"
+			"Print or check %s hashes.\n"
+			"\n"
+			"-t, --text: read file in text mode (default)\n"
+			"-b, --binary: read file in binary mode\n"
+			"-c, --check: read hashes from the file and check them\n",
+			program,
 			thisalgo.algo);
 	return ret;
 }
