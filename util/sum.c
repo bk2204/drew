@@ -85,7 +85,10 @@ int initialize_hash(DrewLoader *ldr, int id)
 int process(uint8_t *val, const char *name, int mode, drew_hash_t *hash)
 {
 	FILE *fp = NULL;
-	const char *modestr[] = {"r", "rb"};
+	const char *modestr[] = {
+		[MODE_TEXT] = "r",
+		[MODE_BINARY] = "rb"
+	};
 	uint8_t buf[CHUNK_SIZE];
 	size_t nread = 0;
 
