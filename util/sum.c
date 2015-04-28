@@ -131,7 +131,7 @@ int check(const char *filename, drew_hash_t *hash)
 	char buf[(MAX_DIGEST_BITS / 8 * 2) + 2 + PATH_MAX + 2];
 	char fnbuf[sizeof(buf)];
 
-	if (!filename) 
+	if (!filename)
 		fp = stdin;
 	else if (!(fp = fopen(filename, "r"))) {
 		fprintf(stderr, "%s: error opening file %s with mode %s: %s\n", program,
