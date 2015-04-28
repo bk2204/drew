@@ -252,10 +252,10 @@ int convert_name_to_algo(const char *name, const char *suffix,
 		drew_loader_t *ldr)
 {
 	int id = -1;
-	char *s, *olds, *p, *variant, *oldv = NULL;
+	char *s, *p, *variant, *oldv = NULL;
 	size_t len, slen;
 
-	olds = s = strdup(name);
+	s = strdup(name);
 	len = strlen(name);
 	slen = suffix ? strlen(suffix) : 0;
 
@@ -340,8 +340,6 @@ out:
 		if (ret < 0)
 			id = ret;
 	}
-	free(olds);
-	free(oldv);
 	return id;
 }
 
