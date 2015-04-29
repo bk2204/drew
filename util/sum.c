@@ -192,7 +192,7 @@ int usage(int ret)
 			"\n"
 			"-t, --text: read file in text mode (default)\n"
 			"-b, --binary: read file in binary mode\n"
-			"-c, --check: read hashes from the file and check them\n",
+			"-c, --check: read hashes from the file and check them\n"
 			"-a: use ALGORITHM instead of the default\n",
 			program,
 			thisalgo.algo);
