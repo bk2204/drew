@@ -435,7 +435,7 @@ static int gcm_encryptfinal(drew_mode_t *ctx, uint8_t *out, size_t outlen,
 	c->algo->functbl->encrypt(c->algo, c->buf, c->y0);
 	XorAligned(c->x, c->buf, c->blksize);
 	memcpy(out+inlen, c->x, c->taglen);
-	
+
 	return outlen;
 }
 
@@ -535,7 +535,7 @@ static int gcm_test_generic(DrewLoader *ldr, const char *name,
 		gcm_fini(&c, 0);
 		algo.functbl->fini(&algo, 0);
 	}
-	
+
 	return result;
 }
 

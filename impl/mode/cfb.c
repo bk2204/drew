@@ -147,7 +147,7 @@ static int cfb_init(drew_mode_t *ctx, int flags, DrewLoader *ldr,
 	newctx->feedback = 0;
 	newctx->algo = NULL;
 	newctx->boff = 0;
-	
+
 	for (; param; param = param->next)
 		if (!strcmp(param->name, "feedbackBits")) {
 			newctx->feedback = param->param.number / 8;
@@ -418,7 +418,7 @@ static int cfb_test_generic(DrewLoader *ldr, const char *name,
 		cfb_fini(&c, 0);
 		algo.functbl->fini(&algo, 0);
 	}
-	
+
 	return result;
 }
 

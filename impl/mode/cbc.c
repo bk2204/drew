@@ -154,7 +154,7 @@ static int cbc_init(drew_mode_t *ctx, int flags, DrewLoader *ldr,
 	memset(newctx, 0, sizeof(*newctx));
 	newctx->ldr = ldr;
 	newctx->algo = NULL;
-	
+
 	ctx->ctx = newctx;
 	ctx->functbl = &cbc_functbl;
 
@@ -346,7 +346,7 @@ static int cbc_test_generic(DrewLoader *ldr, const char *name,
 		cbc_fini(&c, 0);
 		algo.functbl->fini(&algo, 0);
 	}
-	
+
 	return result;
 }
 

@@ -72,7 +72,7 @@ static const drew_mode_functbl_t ofb_functbl = {
 static const drew_mode_functbl_t ofb_functblfast = {
 	ofb_info, ofb_info2, ofb_init, ofb_clone, ofb_reset, ofb_fini,
 	ofb_setblock, ofb_setiv, ofb_encrypt, ofb_encrypt, ofb_encryptfast,
-	ofb_encryptfast, ofb_setdata, ofb_final, ofb_final, 
+	ofb_encryptfast, ofb_setdata, ofb_final, ofb_final,
 	ofb_resync, ofb_test
 };
 
@@ -137,7 +137,7 @@ static int ofb_init(drew_mode_t *ctx, int flags, DrewLoader *ldr,
 	newctx->ldr = ldr;
 	newctx->algo = NULL;
 	newctx->boff = 0;
-	
+
 	ctx->ctx = newctx;
 	ctx->functbl = &ofb_functbl;
 
@@ -310,7 +310,7 @@ static int ofb_test_generic(DrewLoader *ldr, const char *name,
 		ofb_fini(&c, 0);
 		algo.functbl->fini(&algo, 0);
 	}
-	
+
 	return result;
 }
 

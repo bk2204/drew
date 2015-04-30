@@ -376,7 +376,7 @@ static int ctr_test_generic(DrewLoader *ldr, const char *name,
 		ctr_fini(&c, 0);
 		algo.functbl->fini(&algo, 0);
 	}
-	
+
 	return result;
 }
 
