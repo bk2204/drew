@@ -581,7 +581,7 @@ void drew::HashDRBG::HashDF(const drew_hash_t *h, const uint8_t *in,
 	uint8_t *temp = new uint8_t[len*digestlen];
 	uint8_t counter = 1;
 	uint32_t outbits = outlen * 8;
-	
+
 	for (size_t i = 0, off = 0; i < len; i++, off += digestlen, counter++) {
 		hh.AddData(&counter, sizeof(counter));
 		hh.AddData(reinterpret_cast<const uint8_t *>(&outbits),
@@ -761,7 +761,7 @@ int drew::CounterDRBG::Initialize(const uint8_t *data, size_t len)
 	uint8_t buf[CTR_BUFFER_SIZE];
 	uint8_t zero[CTR_BUFFER_SIZE];
 	const size_t half = seedlen / 2;
-	const size_t noncelen = std::min(len, sizeof(buf) - 
+	const size_t noncelen = std::min(len, sizeof(buf) -
 			(half + sizeof(Personalization)));
 	size_t dulen = sizeof(buf) - noncelen - sizeof(Personalization);
 	size_t nbytes = sizeof(Personalization);

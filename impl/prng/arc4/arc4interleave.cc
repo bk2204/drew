@@ -205,7 +205,7 @@ int drew::ARC4Interleave::AddRandomData(const uint8_t *buf, size_t len, size_t e
 {
 	uint8_t tmp[1024];
 	const uint8_t *data = buf;
-	
+
 	while (len) {
 		const size_t nbytes = std::min(len, sizeof(tmp));
 		for (size_t i = 0; i < sizeof(tmp); i++)

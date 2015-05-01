@@ -221,7 +221,7 @@ int drew::ARC4Stir::AddRandomData(const uint8_t *buf, size_t len, size_t entropy
 {
 	uint8_t tmp[256];
 	const uint8_t *data = buf;
-	
+
 	while (len) {
 		const size_t nbytes = std::min(len, sizeof(tmp));
 		for (size_t i = 0; i < sizeof(tmp); i++)
