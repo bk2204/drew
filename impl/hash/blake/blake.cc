@@ -28,15 +28,28 @@
 #include "hash-plugin.hh"
 
 extern "C" {
+static const int blake2bhash_sizes[] = {
+	0x40, 0x3f, 0x3e, 0x3d, 0x3c, 0x3b, 0x3a, 0x39,
+	0x38, 0x37, 0x36, 0x35, 0x34, 0x33, 0x32, 0x31,
+	0x30, 0x2f, 0x2e, 0x2d, 0x2c, 0x2b, 0x2a, 0x29,
+	0x28, 0x27, 0x26, 0x25, 0x24, 0x23, 0x22, 0x21,
+	0x20, 0x1f, 0x1e, 0x1d, 0x1c, 0x1b, 0x1a, 0x19,
+	0x18, 0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11,
+	0x10, 0x0f, 0x0e, 0x0d, 0x0c, 0x0b, 0x0a, 0x09,
+	0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01
+};
+
 PLUGIN_STRUCTURE(blake512, BLAKE512)
 PLUGIN_STRUCTURE(blake384, BLAKE384)
 PLUGIN_STRUCTURE(blake256, BLAKE256)
 PLUGIN_STRUCTURE(blake224, BLAKE224)
+PLUGIN_STRUCTURE_VARIABLE(blake2b, BLAKE2b)
 PLUGIN_DATA_START()
 PLUGIN_DATA(blake512, "BLAKE-512")
 PLUGIN_DATA(blake384, "BLAKE-384")
 PLUGIN_DATA(blake256, "BLAKE-256")
 PLUGIN_DATA(blake224, "BLAKE-224")
+PLUGIN_DATA(blake2b, "BLAKE2b")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE(blake)
 
@@ -104,6 +117,23 @@ static int blake384test(void *, const drew_loader_t *)
 
 	return res;
 }
+
+static int blake2btest(void *, const drew_loader_t *)
+{
+	int res = 0;
+
+	using namespace drew;
+	typedef VariableSizedHashTestCase<BLAKE2b, 512/8> TestCase512;
+
+	res |= !TestCase512("", 0).Test("786a02f742015903c6c6fd852552d272912f4740e15847618a86e217f71f5419d25e1031afee585313896444934eb04b903a685b1448b755d56f701afe9be2ce");
+	res <<= 1;
+	res |= !TestCase512("abc", 1).Test("ba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d17d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923");
+	res <<= 1;
+	res |= !TestCase512("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu", 1).Test("ce741ac5930fe346811175c5227bb7bfcd47f42612fae46c0809514f9e0e3a11ee1773287147cdeaeedff50709aa716341fe65240f4ad6777d6bfaf9726e5e52");
+
+	return res;
+}
+
 UNHIDE()
 }
 
@@ -129,6 +159,7 @@ static const int sigma[10][16] = {
 };
 
 typedef BigEndian E;
+typedef LittleEndian E2;
 
 drew::BLAKE256::BLAKE256()
 {
@@ -247,6 +278,13 @@ static const uint64_t k512[]={
 	0x0801f2e2858efc16, 0x636920d871574e69
 };
 
+static const uint64_t iv512[] = {
+	0x6a09e667f3bcc908, 0xbb67ae8584caa73b,
+	0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,
+	0x510e527fade682d1, 0x9b05688c2b3e6c1f,
+	0x1f83d9abfb41bd6b, 0x5be0cd19137e2179,
+};
+
 drew::BLAKE512::BLAKE512()
 {
 	Reset();
@@ -354,5 +392,76 @@ void drew::BLAKE512Transform::Transform(uint64_t *state, const uint8_t *block,
 	XorAligned(v, v+8, sizeof(*v)*8);
 	XorAligned(state, v, sizeof(*v)*8);
 }
+
+void drew::BLAKE2b::Reset()
+{
+	memcpy(m_hash, iv512, sizeof(m_hash));
+	m_hash[0] ^= 0x01010000 ^ m_digestlen;
+	Initialize();
+}
+
+void drew::BLAKE2b::Transform(uint64_t *state, const uint8_t *block,
+		const uint64_t *len, bool is_final)
+{
+	uint64_t v[16] ALIGNED_T;
+	uint64_t m[16];
+
+	endian_t::Copy(m, block, sizeof(m));
+
+	memcpy(v, state, sizeof(*v) * 8);
+	memcpy(v + 8, iv512, sizeof(*v) * 8);
+
+	v[12] ^= len[0];
+	v[13] ^= len[1];
+
+	if (is_final)
+		v[14] = ~v[14];
+
+	Round(v, sigma[0], m);
+	Round(v, sigma[1], m);
+	Round(v, sigma[2], m);
+	Round(v, sigma[3], m);
+	Round(v, sigma[4], m);
+	Round(v, sigma[5], m);
+	Round(v, sigma[6], m);
+	Round(v, sigma[7], m);
+	Round(v, sigma[8], m);
+	Round(v, sigma[9], m);
+	Round(v, sigma[0], m);
+	Round(v, sigma[1], m);
+
+	XorAligned(v, v+8, sizeof(*v)*8);
+	XorAligned(state, v, sizeof(*v)*8);
+}
+
+inline void drew::BLAKE2b::Round(uint64_t *v, const int *r,
+		const uint64_t *m)
+{
+	G(v[ 0], v[ 4], v[ 8], v[12], r+ 0, m);
+	G(v[ 1], v[ 5], v[ 9], v[13], r+ 2, m);
+	G(v[ 2], v[ 6], v[10], v[14], r+ 4, m);
+	G(v[ 3], v[ 7], v[11], v[15], r+ 6, m);
+
+	G(v[ 0], v[ 5], v[10], v[15], r+ 8, m);
+	G(v[ 1], v[ 6], v[11], v[12], r+10, m);
+	G(v[ 2], v[ 7], v[ 8], v[13], r+12, m);
+	G(v[ 3], v[ 4], v[ 9], v[14], r+14, m);
+}
+
+inline void drew::BLAKE2b::G(uint64_t &a, uint64_t &b, uint64_t &c,
+		uint64_t &d, const int *r, const uint64_t *m)
+{
+	const int ri0 = r[0];
+	const int ri1 = r[1];
+	a += b + m[ri0];
+	d = RotateRight(d ^ a, 32);
+	c += d;
+	b = RotateRight(b ^ c, 24);
+	a += b + m[ri1];
+	d = RotateRight(d ^ a, 16);
+	c += d;
+	b = RotateRight(b ^ c, 63);
+}
+
 
 UNHIDE()

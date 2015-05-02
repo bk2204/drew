@@ -51,6 +51,82 @@ class BLAKE512Transform
 		inline static void Round(uint64_t *v, const int *r, const uint64_t *m);
 };
 
+class BLAKE2b : public Hash<uint64_t, 64, 64, 128, LittleEndian>
+{
+	public:
+		BLAKE2b(size_t digestlen) : m_digestlen(digestlen)
+		{
+			Reset();
+		}
+		void Reset();
+		static void Transform(uint64_t *state, const uint8_t *data,
+				const uint64_t *len, bool is_final = false);
+		size_t GetDigestSize() const
+		{
+			return m_digestlen;
+		}
+		inline void UpdateFast(const uint8_t *data, size_t len)
+		{
+			Update(data, len);
+		}
+		inline void Update(const uint8_t *data, size_t len)
+		{
+			Update(m_hash, m_buf, data, len, m_len);
+		}
+		inline static void UpdateCounter(uint64_t *lenctr, size_t len)
+		{
+			const uint64_t t = lenctr[0];
+			if (unlikely((lenctr[0] += len) < t))
+				lenctr[1]++;
+		}
+		static void Update(uint64_t *state, uint8_t *buf, const uint8_t *data,
+				size_t len, uint64_t *lenctr)
+		{
+			const uint64_t t = lenctr[0];
+			const uint64_t off = t % block_size;
+
+			if (off) {
+				const size_t i = std::min<size_t>(block_size-off, len);
+				memcpy(buf+off, data, i);
+				UpdateCounter(lenctr, i);
+
+				if ((i+off) == block_size)
+					Transform(state, buf, lenctr);
+
+				len -= i;
+				data += i;
+			}
+
+			for (; len > block_size; len -= block_size, data += block_size) {
+				UpdateCounter(lenctr, block_size);
+				Transform(state, data, lenctr);
+			}
+			memcpy(buf, data, len);
+			UpdateCounter(lenctr, len);
+		}
+		static void Pad(uint8_t *buf, uint64_t *state, const uint64_t *lenctr)
+		{
+			const size_t lenoff = lenctr[0];
+			const size_t off = lenoff % block_size;
+
+			memset(buf+off, 0, block_size - off);
+			Transform(state, buf, lenctr, true);
+		}
+		inline void Pad()
+		{
+			Pad(m_buf, m_hash, m_len);
+		}
+	protected:
+		void Transform(const uint8_t *data)
+		{
+			Transform(m_hash, m_buf, m_len);
+		}
+		inline static void G(uint64_t &a, uint64_t &b, uint64_t &c, uint64_t &d,
+				const int *r, const uint64_t *m);
+		inline static void Round(uint64_t *v, const int *r, const uint64_t *m);
+		size_t m_digestlen;
+};
+
 template<class T, int Size, int BlkSize, class U>
 class BLAKETransform
 {
