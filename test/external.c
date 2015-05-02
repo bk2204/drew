@@ -116,10 +116,8 @@ int test_external(DrewLoader *ldr, const char *name, const void *tbl,
 {
 	int ret = 0;
 
-	if (tes->results == -DREW_ERR_NOT_IMPL)
-		tes->results = 0;
-	if (tes->results < 0)
-		goto out;
+	tes->results = 0;
+	tes->ntests = 0;
 
 	for (size_t i = 0; i < tes->ndata; i++) {
 		if (!tes->data[i])
@@ -132,7 +130,6 @@ int test_external(DrewLoader *ldr, const char *name, const void *tbl,
 	}
 	if (!tes->ntests)
 		tes->results = -DREW_ERR_NOT_IMPL;
-out:
 	if (TEST_CODE(ret) == TEST_CORRUPT || tes->results == -DREW_ERR_INVALID) {
 		printf("corrupt test (type %#02x) at line %zu\n", ret & 0xff, tes->lineno);
 		tes->results = -DREW_ERR_INVALID;
