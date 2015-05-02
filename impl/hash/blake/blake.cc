@@ -404,15 +404,14 @@ void drew::BLAKE2b::Transform(uint64_t *state, const uint8_t *block,
 		const uint64_t *len, bool is_final)
 {
 	uint64_t v[16] ALIGNED_T;
-	uint64_t m[16];
+	uint64_t m[16] ALIGNED_T;
 
 	endian_t::Copy(m, block, sizeof(m));
 
 	memcpy(v, state, sizeof(*v) * 8);
 	memcpy(v + 8, iv512, sizeof(*v) * 8);
 
-	v[12] ^= len[0];
-	v[13] ^= len[1];
+	XorBuffers(v + 12, len, sizeof(*len) * 2);
 
 	if (is_final)
 		v[14] = ~v[14];
@@ -460,7 +459,7 @@ inline void drew::BLAKE2b::G(uint64_t &a, uint64_t &b, uint64_t &c,
 	a += b + m[ri1];
 	d = RotateRight(d ^ a, 16);
 	c += d;
-	b = RotateRight(b ^ c, 63);
+	b = RotateLeft(b ^ c, 1);
 }
 
 
