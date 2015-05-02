@@ -1,0 +1,65 @@
+#!/usr/bin/perl -w
+# This generates test vectors based on a modified version of the BLAKE2 b2sum
+# program.  The modified program takes the digest length as a parameter with the
+# -l option.
+#
+# This program takes a single argument, the path to the modified b2sum program.
+
+use strict;
+use warnings;
+
+use IPC::Open3;
+use IO::Handle;
+
+my $cnt = -1;
+
+my @algos = qw/BLAKE2b BLAKE2s BLAKE2bp BLAKE2sp/;
+my $maxsize = {
+	BLAKE2b => 64,
+	BLAKE2s => 32,
+	BLAKE2bp => 64,
+	BLAKE2sp => 32,
+};
+
+my @plaintexts = (
+	{ input => 'abc' },
+	{ input => '' },
+	{ input => 'abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq' },
+	{ input => 'abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu' },
+	# This is more efficient than looping 1e6 times.
+	{ input => 'a' x 32, repeat => 31250 },
+	# Adding this test will make the testsuite take about 19 minutes per
+	# algorithm.
+#	{ input => 'abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno', repeat => 16777216, block => 64 },
+
+);
+
+foreach my $algo (@algos) {
+	foreach my $outlen (1..$maxsize->{$algo}) {
+		foreach my $text (@plaintexts) {
+			$cnt++;
+			my $iterations = $text->{repeat} || 1;
+			my $blocks = $text->{block} || 1;
+
+			printf "T%04x a%s r%d C%d\n", $cnt, $algo, $iterations, $outlen;
+			printf "T%04x p%s\n", $cnt, unpack("H*", $text->{input});
+
+			my $input = $text->{input} x $blocks;
+			die "Invalid block value" if $iterations % $blocks;
+			$iterations /= $blocks;
+
+			my $pid = open3(my $to_child, my $from_child, undef,
+				$ARGV[0], '-a', lc $algo, '-l', $outlen, '/dev/stdin');
+			foreach (1..$iterations) {
+				$to_child->print($input);
+			}
+			$to_child->flush;
+			close($to_child);
+			my ($output) = split /\s+/, $from_child->getline;
+
+			printf "T%04x c%s\n", $cnt, $output;
+			close($from_child);
+			waitpid($pid, 0);
+		}
+	}
+}
