@@ -399,6 +399,7 @@ void drew::ChaChaKeystream::SetNonce(const uint8_t *iv, size_t sz)
 {
 	const size_t offset = sz == 12 ? 13 : 14;
 	E::Copy(state.buf+offset, iv, sz);
+	noncesz = sz;
 
 	state.buf[0] = 0x61707865;
 	state.buf[1] = (keysz == 16) ? 0x3120646e : 0x3320646e;
