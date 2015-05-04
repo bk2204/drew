@@ -1,16 +1,16 @@
 /*-
  * Copyright © 2010–2011 brian m. carlson
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -336,7 +336,7 @@ class Endian : public EndianBase
 		inline static const T *CopyIfNeeded(T *buf, const uint8_t *p,
 				size_t len)
 		{
-			if (GetEndianness() == GetSystemEndianness() && 
+			if (GetEndianness() == GetSystemEndianness() &&
 					IsSufficientlyAligned<T>(p))
 				return reinterpret_cast<const T *>(p);
 			else
@@ -401,7 +401,7 @@ class Endian : public EndianBase
 template<>
 inline void EndianBase::ByteSwap(uint16_t &x)
 {
-	x = 
+	x =
 #if defined(FEATURE_BYTESWAP_GNU)
 		bswap_16(x);
 #elif defined(FEATURE_BYTESWAP_BSD)
@@ -414,7 +414,7 @@ inline void EndianBase::ByteSwap(uint16_t &x)
 template<>
 inline void EndianBase::ByteSwap(uint32_t &x)
 {
-	x = 
+	x =
 #if defined(FEATURE_BYTESWAP_GNU)
 		bswap_32(x);
 #elif defined(FEATURE_BYTESWAP_BSD)
@@ -427,7 +427,7 @@ inline void EndianBase::ByteSwap(uint32_t &x)
 template<>
 inline void EndianBase::ByteSwap(uint64_t &x)
 {
-	x = 
+	x =
 #if defined(FEATURE_BYTESWAP_GNU)
 		bswap_64(x);
 #elif defined(FEATURE_BYTESWAP_BSD)
