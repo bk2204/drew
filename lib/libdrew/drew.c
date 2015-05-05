@@ -1,16 +1,16 @@
 /*-
  * Copyright © 2010-2011 brian m. carlson
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -273,7 +273,7 @@ DrewLoader *drew_loader_new(void)
 DrewLoader *drew_loader_ref(DrewLoader *ldr)
 {
 	g_return_val_if_fail(ldr, NULL);
-	
+
 	g_atomic_int_inc(&ldr->ref_count);
 
 	return ldr;
@@ -282,7 +282,7 @@ DrewLoader *drew_loader_ref(DrewLoader *ldr)
 void drew_loader_unref(DrewLoader *ldr)
 {
 	g_return_if_fail(ldr);
-	
+
 	if (g_atomic_int_dec_and_test(&ldr->ref_count)) {
 		g_rw_lock_clear(&ldr->lock);
 		for (int i = 0; i < ldr->nlibs; i++) {
@@ -291,7 +291,7 @@ void drew_loader_unref(DrewLoader *ldr)
 			close_library(ldr->lib[i].handle);
 		}
 		g_free(ldr->lib);
-	
+
 		for (int i = 0; i < ldr->nplugins; i++) {
 			if (!(ldr->plugin[i].flags & FLAG_PLUGIN_OK))
 				continue;
@@ -565,14 +565,14 @@ int drew_loader_get_metadata(DrewLoader *ldr, int id, int item,
 	if (item == -1) {
 		retval = special_metadata(ldr, id,
 				(item - ldr->plugin[id].nmetadata), NULL);
-		
+
 		g_rw_lock_reader_unlock(&ldr->lock);
 		return ldr->plugin[id].nmetadata + (retval == 0);
 	}
 
 	if (item < 0)
 		return -DREW_ERR_INVALID;
-	
+
 	if (item < ldr->plugin[id].nmetadata) {
 		memcpy(meta, ldr->plugin[id].metadata + item, sizeof(*meta));
 		meta->predicate = g_strdup(meta->predicate);
