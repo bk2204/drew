@@ -163,7 +163,7 @@ static int pbkdf_fini(drew_kdf_t *ctx, int flags)
 static int pbkdf_reset(drew_kdf_t *ctx)
 {
 	struct pbkdf *c = ctx->ctx;
-	return c->prf.functbl->reset(&c->prf); 
+	return c->prf.functbl->reset(&c->prf);
 }
 
 int pbkdf_setkey(drew_kdf_t *ctx, const uint8_t *key, size_t len)
@@ -276,7 +276,7 @@ static int pbkdf_test_generic(DrewLoader *ldr, const char *name,
 
 		hash.functbl->reset(&hash);
 		if ((retval = pbkdf_init(&c, 0, ldr, &param)))
-			return retval;			
+			return retval;
 		pbkdf_setkey(&c, t->key, t->keysz);
 		for (size_t j = 0; j < t->datarep; j++)
 			pbkdf_update(&c, t->data, t->datasz);
@@ -286,7 +286,7 @@ static int pbkdf_test_generic(DrewLoader *ldr, const char *name,
 		pbkdf_fini(&c, 0);
 	}
 	hash.functbl->fini(&hash, 0);
-	
+
 	return result;
 }
 

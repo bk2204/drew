@@ -157,7 +157,7 @@ int tls_init(drew_kdf_t *ctx, int flags, DrewLoader *ldr,
 	c->prfsz = res;
 	ctx->ctx = c;
 	ctx->functbl = &tls_functbl;
-	
+
 	return 0;
 }
 
@@ -192,7 +192,7 @@ int tls_fini(drew_kdf_t *ctx, int flags)
 	c->prf.functbl->fini(&c->prf, 0);
 	if (!(flags & DREW_KDF_FIXED))
 		free(c);
-	
+
 	return 0;
 }
 
@@ -228,7 +228,7 @@ int tls_generate(drew_kdf_t *ctx, uint8_t *out, size_t outlen,
 
 	// Generate A(1).
 	aprf.functbl->generate(&aprf, ai, c->prfsz, in, inlen);
-	
+
 	for (size_t i = 0; i < (outlen + c->prfsz - 1) / c->prfsz;
 			i++, off += c->prfsz) {
 		aprf.functbl->reset(&aprf);
