@@ -255,7 +255,7 @@ static int hc256_fini(drew_stream_t *ctx, int flags)
 	drew::HC256 *p = reinterpret_cast<drew::HC256 *>(ctx->ctx);
 	if (flags & DREW_STREAM_FIXED)
 		p->~HC256();
-	else 
+	else
 		delete p;
 	return 0;
 }

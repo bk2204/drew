@@ -251,7 +251,7 @@ static int chacha_fini(drew_stream_t *ctx, int flags)
 	drew::ChaCha *p = reinterpret_cast<drew::ChaCha *>(ctx->ctx);
 	if (flags & DREW_STREAM_FIXED)
 		p->~ChaCha();
-	else 
+	else
 		delete p;
 	return 0;
 }

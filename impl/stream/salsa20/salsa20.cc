@@ -242,7 +242,7 @@ static int salsa20_fini(drew_stream_t *ctx, int flags)
 	drew::Salsa20 *p = reinterpret_cast<drew::Salsa20 *>(ctx->ctx);
 	if (flags & DREW_STREAM_FIXED)
 		p->~Salsa20();
-	else 
+	else
 		delete p;
 	return 0;
 }

@@ -250,7 +250,7 @@ static int hc128_fini(drew_stream_t *ctx, int flags)
 	drew::HC128 *p = reinterpret_cast<drew::HC128 *>(ctx->ctx);
 	if (flags & DREW_STREAM_FIXED)
 		p->~HC128();
-	else 
+	else
 		delete p;
 	return 0;
 }
