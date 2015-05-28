@@ -425,14 +425,6 @@ inline static void theta(uint64_t a[25])
 	}
 }
 
-static const unsigned rr[5][5] = {
-	{0, 36, 3, 41, 18},
-	{1, 44, 10, 45, 2},
-	{62, 6, 43, 15, 61},
-	{28, 55, 25, 21, 56},
-	{27, 20, 39, 8, 14}
-};
-
 inline static void rhopi(uint64_t b[25], const uint64_t a[25])
 {
 	b[0+5*(((2*0)+(3*0))%5)] = a[0];
