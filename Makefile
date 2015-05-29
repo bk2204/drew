@@ -85,12 +85,14 @@ symlinks: $(DREW_LSYMLINK) $(DREW_IMPL_LSYMLINK)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 %.d: %.c
-	$(CC) $(CPPFLAGS) -DDEPEND -MM $< | sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DDEPEND -MM $< | \
+		sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
 	(x="$@"; [ -n "$${x##impl/*}" ] || \
 		printf "$*.o: $(@D)/metadata.gen\n" >> $@)
 
 %.d: %.cc
-	$(CC) $(CPPFLAGS) -DDEPEND -MM $< | sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
+	$(CC) $(CPPFLAGS) $(CXXFLAGS) -DDEPEND -MM $< | \
+		sed -e 's,$(*F)\.o:,$*.o $@:,g' > $@
 	(x="$@"; [ -n "$${x##impl/*}" ] || \
 		printf "$*.o: $(@D)/metadata.gen\n" >> $@)
 
