@@ -69,7 +69,7 @@ static bool prng_test_monobit(const uint8_t *buf, size_t len)
 		nset += popcount[buf[i]];
 
 	sn = nset - (total - nset);
-	sobs = fabs(sn) / sqrt(total);
+	sobs = labs(sn) / sqrt(total);
 	return erfc(sobs / sqrt(2)) >= 0.01;
 }
 
