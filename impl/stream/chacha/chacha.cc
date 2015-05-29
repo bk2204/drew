@@ -36,6 +36,8 @@ extern "C" {
 #ifdef CHACHA_HAVE_ASM
 typedef drew::ChaChaAssemblerKeystream::AlignedData chacha_ctx_t;
 
+static int chacha_asm_info2(const drew_stream_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in);
 void chacha_asm_encrypt_bytes(chacha_ctx_t *, const uint8_t *pt, uint8_t *ct,
 		uint32_t msglen);
 void chacha_asm_keysetup(chacha_ctx_t *, const uint8_t *key, uint32_t keysz,
@@ -69,7 +71,7 @@ static int chacha_fini(drew_stream_t *ctx, int flags);
 PLUGIN_FUNCTBL(chacha, chacha_info, chacha_info2, chacha_init, chacha_setiv, chacha_setkey, chacha_encrypt, chacha_encrypt, chacha_encryptfast, chacha_encryptfast, chacha_test, chacha_fini, chacha_clone, chacha_reset);
 
 #ifdef CHACHA_HAVE_ASM
-PLUGIN_FUNCTBL(chacha_asm, chacha_info, chacha_info2, chacha_asm_init, chacha_asm_setiv, chacha_setkey, chacha_encrypt, chacha_encrypt, chacha_encryptfast, chacha_encryptfast, chacha_asm_test, chacha_fini, chacha_clone, chacha_reset);
+PLUGIN_FUNCTBL(chacha_asm, chacha_info, chacha_asm_info2, chacha_asm_init, chacha_asm_setiv, chacha_setkey, chacha_encrypt, chacha_encrypt, chacha_encryptfast, chacha_encryptfast, chacha_asm_test, chacha_fini, chacha_clone, chacha_reset);
 #endif
 
 static int chacha_maintenance_test(void)
@@ -271,7 +273,7 @@ static int chacha_asm_info2(const drew_stream_t *ctx, int op, drew_param_t *out,
 		case DREW_STREAM_IVSIZE_CTX:
 			return 8;
 		default:
-			return chacha_asm_info2(ctx, op, out, in);
+			return chacha_info2(ctx, op, out, in);
 	}
 }
 
