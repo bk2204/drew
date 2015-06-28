@@ -18,6 +18,7 @@ include/version.h
 include/buildid.h
 buildid
 build/
+config
 *.d
 *.o
 *.gen
