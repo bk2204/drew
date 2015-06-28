@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 			MAP_FAILED)
 		return 4;
 
-	drew_loader_new(&ldr);
+	ldr = drew_loader_new();
 	drew_loader_load_plugin(ldr, NULL, NULL);
 
 	printf("Parsing certificate from %s.\n", argv[1]);
@@ -240,5 +240,5 @@ int main(int argc, char **argv)
 	printf("Bye.\n");
 	FAILCODE(9, drew_util_asn1_fini(&parser));
 	FAILCODE(9, drew_util_codec_fini(&codec));
-	drew_loader_free(&ldr);
+	drew_loader_unref(ldr);
 }
