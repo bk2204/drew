@@ -29,22 +29,6 @@ struct oids {
 	const char *name;
 	size_t nvals;
 	size_t vals[9];
-} oids[] = {
-	{"md2WithRSAEncryption", 7, {1, 2, 840, 113549, 1, 1, 2}},
-	{"md4WithRSAEncryption", 7, {1, 2, 840, 113549, 1, 1, 3}},
-	{"md5WithRSAEncryption", 7, {1, 2, 840, 113549, 1, 1, 4}},
-	{"sha1WithRSAEncryption", 7, {1, 2, 840, 113549, 1, 1, 5}},
-	{"sha224WithRSAEncryption", 7, {1, 2, 840, 113549, 1, 1, 14}},
-	{"sha256WithRSAEncryption", 7, {1, 2, 840, 113549, 1, 1, 11}},
-	{"sha384WithRSAEncryption", 7, {1, 2, 840, 113549, 1, 1, 12}},
-	{"sha512WithRSAEncryption", 7, {1, 2, 840, 113549, 1, 1, 13}},
-	{"id-dsa-with-sha1", 6, {1, 2, 840, 10040, 4, 3}},
-	{"id-dsa-with-sha224", 9, {2, 16, 840, 1, 101, 3, 4, 3, 1}},
-	{"id-dsa-with-sha256", 9, {2, 16, 840, 1, 101, 3, 4, 3, 2}},
-	{"ecdsa-with-SHA224", 7, {1, 2, 840, 10045, 4, 3, 1}},
-	{"ecdsa-with-SHA256", 7, {1, 2, 840, 10045, 4, 3, 2}},
-	{"ecdsa-with-SHA384", 7, {1, 2, 840, 10045, 4, 3, 3}},
-	{"ecdsa-with-SHA512", 7, {1, 2, 840, 10045, 4, 3, 4}},
 };
 
 struct oids attr_types[] = {
@@ -78,7 +62,12 @@ const char *get_oidname(const struct oids *oidp, size_t noids,
 
 const char *get_signame(const drew_util_asn1_oid_t *oid)
 {
-	return get_oidname(oids, DIM(oids), oid);
+	const char *name;
+	int res = drew_util_asn1_oid_lookup_pksig_algo(oid, &name, NULL, NULL, NULL,
+			NULL);
+	if (res)
+		return "unknown";
+	return name;
 }
 
 const char *get_attrname(const drew_util_asn1_oid_t *oid)

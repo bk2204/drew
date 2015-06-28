@@ -171,14 +171,8 @@ static void fill_in_sig_fields(drew_util_x509_cert_sig_t *certsig)
 	certsig->mdalgo = NULL;
 	certsig->pkalgo = NULL;
 
-	for (size_t i = 0; i < DIM(oids); i++) {
-		if (p->length != oids[i].nvals)
-			continue;
-		if (!memcmp(oids[i].vals, p->values, p->length * sizeof(size_t))) {
-			certsig->mdalgo = oids[i].mdalgo;
-			certsig->pkalgo = oids[i].pkalgo;
-		}
-	}
+	drew_util_asn1_oid_lookup_pksig_algo(p, NULL, &certsig->pkalgo,
+			&certsig->mdalgo, NULL, NULL);
 }
 
 int parse_signature(drew_util_asn1_t asn,

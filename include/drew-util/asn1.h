@@ -130,4 +130,9 @@ DREW_SYM_PUBLIC
 int drew_util_asn1_parse(drew_util_asn1_t asn, const uint8_t *data,
 		size_t len, drew_util_asn1_value_t *enc);
 
+DREW_SYM_PUBLIC
+int drew_util_asn1_oid_lookup_pksig_algo(const drew_util_asn1_oid_t *oid,
+		const char **name, const char **pkalgo, const char **hash,
+		const char **transform, void **params);
+
 #endif
