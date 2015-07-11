@@ -7,6 +7,11 @@ fastest) implementations of these primitives, while still preserving
 portability.  An extremely thorough testsuite ensures that the code correctly
 implements every algorithm.
 
+At this point, while it can be used, there are known security problems, such as
+the lack of blinding in RSA.  If you're doing any sort of online processing, or
+if you're paranoid (as you should be), you'll probably want to wait awhile
+before using this.
+
 The license for drew is spelled out in the document LICENSE, but roughly it is
 all available under the terms of your choice of the Apache License, version 2.0,
 or the GNU General Public License, version 2.0 (possibly with some rare
