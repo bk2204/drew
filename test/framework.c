@@ -24,7 +24,79 @@
 #include <drew/mem.h>
 #include <drew/plugin.h>
 
+int print_test_results_impl(int result, char **ids, const char *text);
+
 double cpuspeed = 0;
+
+void fmt_def_prealgo(void *p, const char *algo)
+{
+	printf("%-32s: ", algo);
+	fflush(stdout);
+}
+
+void fmt_def_test(void *p, const char *algo, const char *name, int status)
+{
+	// do nothing.
+}
+
+void fmt_def_postalgo(void *p, const char *algo, int status)
+{
+	struct test_data *t = p;
+	print_test_results_impl(status, t->ids, "self-test");
+}
+
+void fmt_def_post(void *p)
+{
+	// do nothing.
+}
+
+void fmt_tap_prealgo(void *p, const char *algo)
+{
+	printf("\t# Subtest: %s\n", algo);
+}
+
+void fmt_tap_testlike(const char *algo, const char *name, int status,
+		size_t num, const char *indent)
+{
+	const char *sep = name ? ": " : "";
+
+	if (!name)
+		name = "";
+
+	if (status == TEST_OK)
+		printf("%sok %zu - %s%s%s\n", indent, num, algo, sep, name);
+	else if (status == TEST_FAILED)
+		printf("%snot ok %zu - %s%s%s\n", indent, num, algo, sep, name);
+	else if (status == TEST_NOT_FOR_US)
+		printf("%sok %zu - %s%s%s # SKIP not for us\n", indent, num, algo, sep,
+				name);
+	else if (status == TEST_CORRUPT)
+		printf("%snot ok %zu - corrupt test\n", indent, num);
+	else
+		printf("Bail out! unknown state %d\n", status);
+}
+
+void fmt_tap_test(void *p, const char *algo, const char *name, int status)
+{
+	struct test_data *t = p;
+	fmt_tap_testlike(algo, name, status, t->cur_testno, "\t");
+}
+
+void fmt_tap_postalgo(void *p, const char *algo, int status)
+{
+	struct test_data *t = p;
+	printf("\t1..%zu\n", t->cur_testno);
+	t->cur_testno = 0;
+	fmt_tap_testlike(algo, NULL, status, t->nimpls_tested, "");
+	fflush(stdout);
+}
+
+void fmt_tap_post(void *p)
+{
+	struct test_data *t = p;
+	printf("1..%zu\n", t->nimpls_tested);
+}
+
 
 bool is_forbidden_errno(int val)
 {
@@ -176,6 +248,7 @@ int usage(const char *argv0, int retval)
 			"\t-i\t: perform a test using code in the plugin\n\n");
 	fprintf(fp,
 			"\t-f\t: treat unimplemented tests as errors\n"
+			"\t-F format\t: use the specified output format\n"
 			"\t-a algo\t: specify a secondary algorithm\n"
 			"\t-c size\t: process data in chunks of size bytes\n"
 			"\t-n num\t: process num chunks\n"
@@ -183,6 +256,24 @@ int usage(const char *argv0, int retval)
 			"\t-u speed\t: specify cpu speed in GHz\n"
 			"\t-r file\t: use file for test vectors\n");
 	return retval;
+}
+
+struct test_formatter *get_formatter(const char *name)
+{
+	static struct test_formatter formatters[] = {
+		{"default", NULL, fmt_def_prealgo, fmt_def_test, fmt_def_postalgo,
+			fmt_def_post},
+		{"tap", NULL, fmt_tap_prealgo, fmt_tap_test, fmt_tap_postalgo,
+			fmt_tap_post},
+	};
+
+	if (!name)
+		name = "default";
+
+	for (size_t i = 0; i < sizeof(formatters)/sizeof(formatters[0]); i++)
+		if (!strcmp(name, formatters[i].format))
+			return formatters + i;
+	return NULL;
 }
 
 int main(int argc, char **argv)
@@ -204,11 +295,13 @@ int main(int argc, char **argv)
 	const char *resource = NULL; // A filename of testcases.
 	drew_loader_t *ldr = NULL;
 	struct test_external tes;
+	struct test_formatter *fmt = get_formatter(NULL);
+	struct test_data td = {0};
 
 	ldr = drew_loader_new();
 	drew_mem_pool_adjust(NULL, DREW_MEM_SECMEM, DREW_MEM_SECMEM_NO_LOCK, NULL);
 
-	while ((opt = getopt(argc, argv, "hstipfda:c:n:o:r:u:v")) != -1) {
+	while ((opt = getopt(argc, argv, "hstipfda:c:n:o:r:u:F:v")) != -1) {
 		switch (opt) {
 			case '?':
 			case ':':
@@ -254,6 +347,13 @@ int main(int argc, char **argv)
 			case 'u':
 				cpuspeed = atof(optarg) * 1000000000.0;
 				break;
+			case 'F':
+				fmt = get_formatter(optarg);
+				if (!fmt) {
+					fprintf(stderr, "Invalid output format %s\n", optarg);
+					return 2;
+				}
+				break;
 		}
 	}
 
@@ -287,6 +387,7 @@ int main(int argc, char **argv)
 
 	nplugins = drew_loader_get_nplugins(ldr, -1);
 	type = test_get_type();
+	fmt->data = &td;
 
 	if (mode == MODE_TEST)
 		test_external_parse(ldr, resource, &tes);
@@ -331,11 +432,14 @@ int main(int argc, char **argv)
 			size_t off = strlen(buf);
 			snprintf(buf+off, sizeof(buf)-off, " (%s) ", pluginname);
 		}
-		printf("%-32s: ", buf);
-		fflush(stdout);
+
+		td.nimpls_tested++;
+		td.algodesc = buf;
 
 		switch (mode) {
 			case MODE_SPEED:
+				printf("%-32s: ", buf);
+				fflush(stdout);
 				result = test_speed(ldr, name, algo, functbl, chunk, nchunks,
 						flags);
 				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
@@ -344,16 +448,21 @@ int main(int argc, char **argv)
 					print_test_results_impl(result, NULL, "speed test");
 				break;
 			case MODE_TEST:
-				result = test_external(ldr, name, functbl, resource, &tes);
+				fmt->prealgo(fmt->data, buf);
+				result = test_external(ldr, name, functbl, resource, &tes, fmt);
 				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
 					error++;
 				break;
 			case MODE_TEST_INTERNAL:
+				printf("%-32s: ", buf);
+				fflush(stdout);
 				result = test_internal(ldr, name, functbl);
 				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
 					error++;
 				break;
 			case MODE_TEST_API:
+				printf("%-32s: ", buf);
+				fflush(stdout);
 				result = test_api(ldr, name, algo, functbl);
 				if (result && ((result != -DREW_ERR_NOT_IMPL) || success_only))
 					error++;
@@ -363,8 +472,10 @@ int main(int argc, char **argv)
 				break;
 		}
 	}
-	if (mode == MODE_TEST)
+	if (mode == MODE_TEST) {
+		fmt->post(fmt->data);
 		test_external_cleanup(&tes);
+	}
 	drew_loader_unref(ldr);
 
 	if (error && !(error & 0xff))

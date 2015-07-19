@@ -101,11 +101,13 @@ static bool prng_test_runs(const uint8_t *buf, size_t len)
 
 #define NBYTES (12 * 1024 * 1024)
 int test_external(DrewLoader *ldr, const char *name, const void *tbl,
-		const char *filename, struct test_external *tes)
+		const char *filename, struct test_external *tes,
+		struct test_formatter *fmt)
 {
 	int ret = 0;
 	drew_prng_t prng;
 	uint8_t *p;
+	struct test_data *td = fmt->data;
 
 	if (!(p = malloc(NBYTES))) {
 		ret = -ENOMEM;
@@ -128,11 +130,15 @@ int test_external(DrewLoader *ldr, const char *name, const void *tbl,
 	prng.functbl->fini(&prng, 0);
 
 	ret |= !prng_test_monobit(p, NBYTES);
+	td->cur_testno++;
+	fmt->test(td, name, "monobit", ret & 1);
 	ret <<= 1;
 	ret |= !prng_test_runs(p, NBYTES);
+	td->cur_testno++;
+	fmt->test(td, name, "runs", ret & 1);
 out:
 	free(p);
-	return print_test_results(ret, NULL);
+	return ret;
 }
 
 int test_external_parse(DrewLoader *ldr, const char *filename,

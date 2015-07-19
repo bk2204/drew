@@ -63,6 +63,22 @@
 #define NCHUNKS 40960
 #define NSECONDS 5
 
+struct test_data {
+	char **ids;
+	const char *algodesc;
+	size_t nimpls_tested;
+	size_t cur_testno;
+};
+
+struct test_formatter {
+	const char *format;
+	void *data;
+	void (*prealgo)(void *p, const char *algo);
+	void (*test)(void *p, const char *algo, const char *name, int status);
+	void (*postalgo)(void *p, const char *algo, int status);
+	void (*post)(void *p);
+};
+
 struct test_external {
 	char **ids;
 	size_t nids;
@@ -103,7 +119,8 @@ bool is_forbidden_errno(int val);
 int test_api(DrewLoader *ldr, const char *name, const char *algo,
 		const void *tbl);
 int test_external(DrewLoader *ldr, const char *name, const void *tbl,
-		const char *filename, struct test_external *tes);
+		const char *filename, struct test_external *tes,
+		struct test_formatter *fmt);
 int test_external_parse(DrewLoader *ldr, const char *filename,
 		struct test_external *tes);
 int test_external_cleanup(struct test_external *tes);

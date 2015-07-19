@@ -41,8 +41,10 @@ static int rol31(int x)
 	return r;
 }
 
-static int execute_test_external(int ret, struct test_external *tep, size_t i)
+static int execute_test_external(int ret, struct test_external *tep, size_t i,
+		const char *algoname, struct test_formatter *fmt)
 {
+	struct test_data *td = fmt->data;
 	ret = test_execute(tep->data[i], tep->name, tep->tbl, tep);
 	switch (TEST_CODE(ret)) {
 		case TEST_FAILED:
@@ -52,6 +54,9 @@ static int execute_test_external(int ret, struct test_external *tep, size_t i)
 			tep->results = rol31(tep->results);
 			tep->results |= ret;
 			tep->ntests++;
+			td->cur_testno++;
+			td->ids = tep->ids;
+			fmt->test(fmt->data, algoname, test_get_id(tep->data[i]), ret);
 			break;
 	}
 	return ret;
@@ -112,7 +117,8 @@ int test_external_free_params(drew_param_t **param)
 
 #define NDATA_CHUNK	512
 int test_external(DrewLoader *ldr, const char *name, const void *tbl,
-		const char *filename, struct test_external *tes)
+		const char *filename, struct test_external *tes,
+		struct test_formatter *fmt)
 {
 	int ret = 0;
 
@@ -124,7 +130,7 @@ int test_external(DrewLoader *ldr, const char *name, const void *tbl,
 			break;
 		tes->name = name;
 		tes->tbl = tbl;
-		ret = execute_test_external(ret, tes, i);
+		ret = execute_test_external(ret, tes, i, name, fmt);
 		if (TEST_CODE(ret) == TEST_CORRUPT)
 			break;
 	}
@@ -135,9 +141,10 @@ int test_external(DrewLoader *ldr, const char *name, const void *tbl,
 		tes->results = -DREW_ERR_INVALID;
 	}
 	else {
+		struct test_data *td = fmt->data;
 		if (tes->nids)
 			add_id(tes, NULL);
-		tes->results = print_test_results(tes->results, tes->ids);
+		fmt->postalgo(fmt->data, td->algodesc, tes->results);
 	}
 	for (size_t i = 0; i < tes->nids; i++)
 		drew_mem_free(tes->ids[i]);
