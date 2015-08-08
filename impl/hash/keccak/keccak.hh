@@ -45,7 +45,7 @@ class Keccak
 			memset(m_hash, 0, sizeof(m_hash));
 		}
 		virtual void Reset();
-		inline void Update(const uint8_t *data, size_t len)
+		void Update(const uint8_t *data, size_t len)
 		{
 			const size_t off = m_len % m_r;
 			uint8_t *buf = m_buf;
@@ -103,7 +103,7 @@ class Keccak
 		size_t m_c, m_r;
 		size_t m_len;
 		uint64_t m_hash[25];
-		uint8_t m_buf[1152 / 8];
+		uint8_t m_buf[1600 / 8];
 	private:
 };
 
@@ -166,6 +166,38 @@ class SHA3384 : public SHA3<384 / 8>
 
 class SHA3512 : public SHA3<512 / 8>
 {
+};
+
+template<size_t Security>
+class SHAKE : public KeccakCompact
+{
+	public:
+		SHAKE(size_t len) : KeccakCompact(Security)
+		{
+			m_pad = 0x1f;
+			m_digestlen = len;
+		}
+		virtual ~SHAKE() {};
+		size_t GetDigestSize() const
+		{
+			return m_digestlen;
+		}
+		static const size_t block_size = 1600 / 8;
+		static const size_t buffer_size = (1600 / 8) - Security * 2;
+	protected:
+		size_t m_digestlen;
+};
+
+class SHAKE128 : public SHAKE<128 / 8>
+{
+	public:
+		SHAKE128(size_t len) : SHAKE<128 / 8>(len) {}
+};
+
+class SHAKE256 : public SHAKE<256 / 8>
+{
+	public:
+		SHAKE256(size_t len) : SHAKE<256 / 8>(len) {}
 };
 }
 UNHIDE()

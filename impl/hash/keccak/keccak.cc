@@ -86,7 +86,7 @@ static int keccak_test(void *, const drew_loader_t *)
 	return res;
 }
 
-static int keccak_get_digest_size(const drew_param_t *param)
+static int keccak_get_digest_size(const drew_param_t *param, bool unlimited)
 {
 	size_t digestsizeval = 0, result = 0;
 
@@ -101,13 +101,13 @@ static int keccak_get_digest_size(const drew_param_t *param)
 		result = digestsizeval;
 	if (!result)
 		return -DREW_ERR_MORE_INFO;
-	if (result > (512/8))
+	if (!unlimited && result > (512/8))
 		return -DREW_ERR_INVALID;
 	return result;
 }
 
 template<class T>
-static int keccak_info(int op, void *p)
+static int keccak_info(int op, void *p, bool unlimited = false)
 {
 	using namespace drew;
 	const drew_param_t *param = reinterpret_cast<const drew_param_t *>(p);
@@ -116,7 +116,7 @@ static int keccak_info(int op, void *p)
 		case DREW_HASH_VERSION:
 			return 3;
 		case DREW_HASH_SIZE:
-			return keccak_get_digest_size(param);
+			return keccak_get_digest_size(param, unlimited);
 		case DREW_HASH_BLKSIZE:
 			if (p)
 				return ((const T *)ctx->ctx)->GetBlockSize();
@@ -146,13 +146,15 @@ static const int buffer_sizes[] = {
 
 template<class T>
 static int keccak_info2(const drew_hash_t *ctxt, int op, drew_param_t *outp,
-		const drew_param_t *inp)
+		const drew_param_t *inp, bool unlimited = false)
 {
 	using namespace drew;
 	switch (op) {
 		case DREW_HASH_VERSION:
 			return 3;
 		case DREW_HASH_SIZE_LIST:
+			if (unlimited)
+				return -DREW_ERR_UNLIMITED;
 			for (drew_param_t *p = outp; p; p = p->next)
 				if (!strcmp(p->name, "digestSize")) {
 					p->param.array.ptr = (void *)hash_sizes;
@@ -198,10 +200,11 @@ static int keccak_info2(const drew_hash_t *ctxt, int op, drew_param_t *outp,
 
 template<class T>
 static int keccak_init(drew_hash_t *ctx, int flags, const drew_loader_t *,
-		const drew_param_t *param, const drew_hash_functbl_t *tbl)
+		const drew_param_t *param, const drew_hash_functbl_t *tbl,
+		bool unlimited = false)
 {
 	T *p;
-	int size = keccak_get_digest_size(param);
+	int size = keccak_get_digest_size(param, unlimited);
 	if (size <= 0)
 		return size;
 	if (flags & DREW_HASH_FIXED)
@@ -217,6 +220,8 @@ extern "C" {
 PLUGIN_STRUCTURE2(keccak, Keccak)
 PLUGIN_STRUCTURE2(keccakwln, KeccakWithLimitedNots)
 PLUGIN_STRUCTURE2(keccakcompact, KeccakCompact)
+PLUGIN_STRUCTURE2(shake128, SHAKE128)
+PLUGIN_STRUCTURE2(shake256, SHAKE256)
 PLUGIN_STRUCTURE(sha3512, SHA3512)
 PLUGIN_STRUCTURE(sha3384, SHA3384)
 PLUGIN_STRUCTURE(sha3256, SHA3256)
@@ -229,6 +234,8 @@ PLUGIN_DATA(sha3512, "SHA-3-512")
 PLUGIN_DATA(sha3384, "SHA-3-384")
 PLUGIN_DATA(sha3256, "SHA-3-256")
 PLUGIN_DATA(sha3224, "SHA-3-224")
+PLUGIN_DATA(shake128, "SHAKE128")
+PLUGIN_DATA(shake256, "SHAKE256")
 PLUGIN_DATA_END()
 PLUGIN_INTERFACE(keccak)
 
@@ -300,6 +307,42 @@ static int keccakcompacttest(void *p, const drew_loader_t *ldr)
 	return keccak_test<drew::KeccakCompact>(p, ldr);
 }
 
+static int shake128info(int op, void *p)
+{
+	return keccak_info<drew::SHAKE128>(op, p, true);
+}
+
+static int shake128info2(const drew_hash_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	return keccak_info2<drew::SHAKE128>(ctx, op, out, in, true);
+}
+
+static int shake128init(drew_hash_t *ctx, int flags, const drew_loader_t *ldr,
+		const drew_param_t *param)
+{
+	return keccak_init<drew::SHAKE128>(ctx, flags, ldr, param,
+			&shake128functbl, true);
+}
+
+static int shake256info(int op, void *p)
+{
+	return keccak_info<drew::SHAKE256>(op, p, true);
+}
+
+static int shake256info2(const drew_hash_t *ctx, int op, drew_param_t *out,
+		const drew_param_t *in)
+{
+	return keccak_info2<drew::SHAKE256>(ctx, op, out, in, true);
+}
+
+static int shake256init(drew_hash_t *ctx, int flags, const drew_loader_t *ldr,
+		const drew_param_t *param)
+{
+	return keccak_init<drew::SHAKE256>(ctx, flags, ldr, param,
+			&shake256functbl, true);
+}
+
 // Test vectors from http://www.di-mgt.com.au/sha_testvectors.html.
 static int sha3224test(void *p, const drew_loader_t *ldr)
 {
@@ -368,6 +411,16 @@ static int sha3512test(void *p, const drew_loader_t *ldr)
 	res |= !HashTestCase<SHA3512>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 15625).Test("3c3a876da14034ab60627c077bb98f7e120a2a5370212dffb3385a18d4f38859ed311d0a9d5141ce9cc5c66ee689b266a8aa18ace8282a0e0db596c90b0a7b87");
 
 	return res;
+}
+
+static int shake128test(void *p, const drew_loader_t *ldr)
+{
+	return -DREW_ERR_NOT_IMPL;
+}
+
+static int shake256test(void *p, const drew_loader_t *ldr)
+{
+	return -DREW_ERR_NOT_IMPL;
 }
 
 }
@@ -765,7 +818,7 @@ void drew::KeccakWithLimitedNots::Transform(uint64_t state[25],
 void drew::Keccak::Transform(uint64_t state[25], const uint8_t *block,
 		size_t r)
 {
-	uint64_t blk[1152/64];
+	uint64_t blk[1600/64];
 	const uint64_t *b;
 	const size_t nwords = r / sizeof(uint64_t);
 	b = E::CopyIfNeeded(blk, block, r);
@@ -798,7 +851,7 @@ void drew::KeccakWithLimitedNots::Reset()
 void drew::KeccakWithLimitedNots::Transform(uint64_t state[25],
 		const uint8_t *block, size_t r)
 {
-	uint64_t blk[1152/64];
+	uint64_t blk[1600/64];
 	const uint64_t *b;
 	const size_t nwords = r / sizeof(uint64_t);
 	b = E::CopyIfNeeded(blk, block, r);
@@ -816,11 +869,13 @@ void drew::Keccak::GetDigest(uint8_t *digest, size_t len, bool nopad)
 	const size_t nwords = m_r / sizeof(uint64_t);
 	uint8_t *d = digest;
 	for (size_t i = 0; i < len; i += m_r, d += m_r) {
-		uint64_t b[1152/64];
+		uint64_t b[1600/64];
 		for (size_t y = 0; y < DivideAndRoundUp(nwords, 5); y++)
 			for (size_t x = 0; x < 5 && (x+(5*y)) < nwords; x++)
 				b[x + (5*y)] = m_hash[x+5*y];
 		E::CopyCarefully(d, b, std::min(m_r, len - i));
+		if (i + m_r < len)
+			Transform(m_hash, NULL, 0);
 	}
 }
 
@@ -839,7 +894,7 @@ void drew::KeccakWithLimitedNots::GetDigest(uint8_t *digest, size_t len,
 	const size_t nwords = m_r / sizeof(uint64_t);
 	uint8_t *d = digest;
 	for (size_t i = 0; i < len; i += m_r, d += m_r) {
-		uint64_t b[1152/64];
+		uint64_t b[1600/64];
 		for (size_t y = 0; y < DivideAndRoundUp(nwords, 5); y++)
 			for (size_t x = 0; x < 5 && (x+(5*y)) < nwords; x++)
 				b[x + (5*y)] = m_hash[x+5*y];
@@ -850,7 +905,7 @@ void drew::KeccakWithLimitedNots::GetDigest(uint8_t *digest, size_t len,
 void drew::KeccakCompact::Transform(uint64_t state[25], const uint8_t *block,
 		size_t r)
 {
-	uint64_t blk[1152/64];
+	uint64_t blk[1600/64];
 	const uint64_t *b;
 	const size_t nwords = r / sizeof(uint64_t);
 	b = E::CopyIfNeeded(blk, block, r);
