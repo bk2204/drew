@@ -31,7 +31,7 @@ while (<>) {
 		}
 		$state = 3;
 	}
-	elsif (/^Md\s+=\s+([0-9a-f]+)/) {
+	elsif (/^(?:Md|Squeezed)\s+=\s+([0-9a-f]+)/) {
 		next unless $state;
 		if ($state == 3) {
 			printf "T%04x c%s\n", $cnt, $1;
