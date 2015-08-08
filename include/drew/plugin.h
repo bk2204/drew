@@ -96,6 +96,10 @@ typedef struct {
 #define DREW_ERR_FAILED			0x1000b
 /* Retained for compatibility. */
 #define DREW_ERR_VERIFY_FAILED	DREW_ERR_FAILED
+/* A request was made for a finite amount of data (e.g. a list), but the data
+ * requested are of infinite length or practically so.
+ */
+#define DREW_ERR_UNLIMITED		0x1000c
 
 typedef struct _DrewLoader DrewLoader;
 typedef struct _DrewLoaderClass DrewLoaderClass;
