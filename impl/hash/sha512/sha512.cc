@@ -412,6 +412,7 @@ void drew::SHA512Transform::Transform(uint64_t *state, const uint8_t *block)
 	const size_t block_size = 128;
 	const size_t words = block_size / sizeof(uint64_t);
 	uint64_t blk[words];
+	const uint64_t *kp = k;
 	size_t i;
 	uint64_t a, b, c, d, e, f, g, h;
 
@@ -426,33 +427,33 @@ void drew::SHA512Transform::Transform(uint64_t *state, const uint8_t *block)
 
 	endian::Copy(blk, block, block_size);
 
-	for (i = 0; i < words; i += 8) {
-		ROUND(a, b, c, d, e, f, g, h, k[i  ], blk[i  ]);
-		ROUND(h, a, b, c, d, e, f, g, k[i+1], blk[i+1]);
-		ROUND(g, h, a, b, c, d, e, f, k[i+2], blk[i+2]);
-		ROUND(f, g, h, a, b, c, d, e, k[i+3], blk[i+3]);
-		ROUND(e, f, g, h, a, b, c, d, k[i+4], blk[i+4]);
-		ROUND(d, e, f, g, h, a, b, c, k[i+5], blk[i+5]);
-		ROUND(c, d, e, f, g, h, a, b, k[i+6], blk[i+6]);
-		ROUND(b, c, d, e, f, g, h, a, k[i+7], blk[i+7]);
+	for (i = 0; i < words; i += 8, kp += 8) {
+		ROUND(a, b, c, d, e, f, g, h, kp[0], blk[i  ]);
+		ROUND(h, a, b, c, d, e, f, g, kp[1], blk[i+1]);
+		ROUND(g, h, a, b, c, d, e, f, kp[2], blk[i+2]);
+		ROUND(f, g, h, a, b, c, d, e, kp[3], blk[i+3]);
+		ROUND(e, f, g, h, a, b, c, d, kp[4], blk[i+4]);
+		ROUND(d, e, f, g, h, a, b, c, kp[5], blk[i+5]);
+		ROUND(c, d, e, f, g, h, a, b, kp[6], blk[i+6]);
+		ROUND(b, c, d, e, f, g, h, a, kp[7], blk[i+7]);
 	}
-	for (i = words; i < 80; i += 16) {
-		ROUND2(a, b, c, d, e, f, g, h, k[i   ],  0);
-		ROUND2(h, a, b, c, d, e, f, g, k[i+ 1],  1);
-		ROUND2(g, h, a, b, c, d, e, f, k[i+ 2],  2);
-		ROUND2(f, g, h, a, b, c, d, e, k[i+ 3],  3);
-		ROUND2(e, f, g, h, a, b, c, d, k[i+ 4],  4);
-		ROUND2(d, e, f, g, h, a, b, c, k[i+ 5],  5);
-		ROUND2(c, d, e, f, g, h, a, b, k[i+ 6],  6);
-		ROUND2(b, c, d, e, f, g, h, a, k[i+ 7],  7);
-		ROUND2(a, b, c, d, e, f, g, h, k[i+ 8],  8);
-		ROUND2(h, a, b, c, d, e, f, g, k[i+ 9],  9);
-		ROUND2(g, h, a, b, c, d, e, f, k[i+10], 10);
-		ROUND2(f, g, h, a, b, c, d, e, k[i+11], 11);
-		ROUND2(e, f, g, h, a, b, c, d, k[i+12], 12);
-		ROUND2(d, e, f, g, h, a, b, c, k[i+13], 13);
-		ROUND2(c, d, e, f, g, h, a, b, k[i+14], 14);
-		ROUND2(b, c, d, e, f, g, h, a, k[i+15], 15);
+	for (i = words; i < 80; i += 16, kp += 16) {
+		ROUND2(a, b, c, d, e, f, g, h, kp[ 0],  0);
+		ROUND2(h, a, b, c, d, e, f, g, kp[ 1],  1);
+		ROUND2(g, h, a, b, c, d, e, f, kp[ 2],  2);
+		ROUND2(f, g, h, a, b, c, d, e, kp[ 3],  3);
+		ROUND2(e, f, g, h, a, b, c, d, kp[ 4],  4);
+		ROUND2(d, e, f, g, h, a, b, c, kp[ 5],  5);
+		ROUND2(c, d, e, f, g, h, a, b, kp[ 6],  6);
+		ROUND2(b, c, d, e, f, g, h, a, kp[ 7],  7);
+		ROUND2(a, b, c, d, e, f, g, h, kp[ 8],  8);
+		ROUND2(h, a, b, c, d, e, f, g, kp[ 9],  9);
+		ROUND2(g, h, a, b, c, d, e, f, kp[10], 10);
+		ROUND2(f, g, h, a, b, c, d, e, kp[11], 11);
+		ROUND2(e, f, g, h, a, b, c, d, kp[12], 12);
+		ROUND2(d, e, f, g, h, a, b, c, kp[13], 13);
+		ROUND2(c, d, e, f, g, h, a, b, kp[14], 14);
+		ROUND2(b, c, d, e, f, g, h, a, kp[15], 15);
 	}
 
 	state[0] += a;
