@@ -413,7 +413,6 @@ void drew::SHA512Transform::Transform(uint64_t *state, const uint8_t *block)
 	const size_t words = block_size / sizeof(uint64_t);
 	uint64_t blk[words] ALIGNED_T;
 	const uint64_t *kp = k;
-	size_t i;
 	uint64_t a, b, c, d, e, f, g, h;
 
 	a = state[0];
@@ -427,7 +426,7 @@ void drew::SHA512Transform::Transform(uint64_t *state, const uint8_t *block)
 
 	endian::Copy(blk, block, block_size);
 
-	for (i = 0; i < words; i += 8, kp += 8) {
+	for (size_t i = 0; i < words; i += 8, kp += 8) {
 		ROUND(a, b, c, d, e, f, g, h, kp[0], blk[i  ]);
 		ROUND(h, a, b, c, d, e, f, g, kp[1], blk[i+1]);
 		ROUND(g, h, a, b, c, d, e, f, kp[2], blk[i+2]);
@@ -437,7 +436,7 @@ void drew::SHA512Transform::Transform(uint64_t *state, const uint8_t *block)
 		ROUND(c, d, e, f, g, h, a, b, kp[6], blk[i+6]);
 		ROUND(b, c, d, e, f, g, h, a, kp[7], blk[i+7]);
 	}
-	for (i = words; i < 80; i += 16, kp += 16) {
+	for (size_t i = words; i < 80; i += 16, kp += 16) {
 		ROUND2(a, b, c, d, e, f, g, h, kp[ 0],  0);
 		ROUND2(h, a, b, c, d, e, f, g, kp[ 1],  1);
 		ROUND2(g, h, a, b, c, d, e, f, kp[ 2],  2);
