@@ -411,7 +411,7 @@ void drew::SHA512Transform::Transform(uint64_t *state, const uint8_t *block)
 	// This is normally defined automatically by Hash.
 	const size_t block_size = 128;
 	const size_t words = block_size / sizeof(uint64_t);
-	uint64_t blk[words];
+	uint64_t blk[words] ALIGNED_T;
 	const uint64_t *kp = k;
 	size_t i;
 	uint64_t a, b, c, d, e, f, g, h;
