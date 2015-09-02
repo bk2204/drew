@@ -1,10 +1,15 @@
 #!/usr/bin/perl -w
 
+use strict;
+use warnings;
+
 use List::MoreUtils;
 use RDF::Trine::Model;
 use RDF::Trine::Parser;
 
-sub serialize($$$$$) {
+our $verbose = 0;
+
+sub serialize {
 	my ($output, $pnode, $subj, $pred, $obj) = @_;
 	my ($ssubj, $spred, $sobj, $sobjtype);
 
@@ -38,9 +43,10 @@ sub serialize($$$$$) {
 	print $output <<EOL;
 \t{1, $ssubj, "$spred", DREW_LOADER_MD_$sobjtype, "$sobj"},
 EOL
+	return;
 }
 
-sub process_file($$) {
+sub process_file {
 	my ($file, $output) = @_;
 
 	my $model = RDF::Trine::Model->temporary_model;
@@ -88,10 +94,10 @@ sub process_file($$) {
 	}
 
 	print $output "#define DREW_PLUGIN_METADATA_NONEMPTY 1\n" if $nonempty;
+	return;
 }
 
-$verbose = 0;
-$verbose = 1, shift if $ARGV[0] eq "-v";
+$verbose = shift if $ARGV[0] eq "-v";
 
 for my $file (@ARGV) {
 	my $gen = $file;
