@@ -1,12 +1,14 @@
 #!/usr/bin/perl -w
 # There are several sets of test vectors on the skepticfiles.org page.  In some
 # cases, the plaintext and ciphertext are reversed without warning.  The set of
-# vectors  that should be used here is the set that Dennis Coskun posted,
+# vectors that should be used here is the set that Dennis Coskun posted,
 # possibly with the addition of Joe Cychosz's.
 
+use strict;
+use warnings;
 
-$p = qr/[A-Fa-f0-9]{16}/;
-$cnt = 0;
+my $p = qr/[A-Fa-f0-9]{16}/;
+my $cnt = 0;
 
 while (<>) {
 	chomp;
