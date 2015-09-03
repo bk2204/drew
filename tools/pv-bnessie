@@ -1,12 +1,15 @@
 #!/usr/bin/perl -w
 # This reads the Nessie test vector information for block ciphers.
 
-$want = 0;
-$cnt = -1;
-$keysz = 0;
-$blksz = 0;
-$cursz = 0;
-$wantsz = 0;
+use strict;
+use warnings;
+
+my $want = 0;
+my $cnt = -1;
+my $keysz = 0;
+my $blksz = 0;
+my $cursz = 0;
+my $wantsz = 0;
 
 while (<>) {
 	if (/Primitive Name:\s+(\w+)/) {
