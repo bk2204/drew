@@ -7,10 +7,10 @@ unless (scalar @ARGV) {
 	print STDERR <<EOM;
 Need an argument.
 
-Use -block for block cipher tests.
-Use -cfb   for CFB128 tests.
-Use -cfb8  for CFB8 tests.
-Use -ofb   for OFB128 tests.
+Use --block for block cipher tests.
+Use --cfb   for CFB128 tests.
+Use --cfb8  for CFB8 tests.
+Use --ofb   for OFB128 tests.
 EOM
 	exit 1;
 }
@@ -19,9 +19,9 @@ my $p = qr/[A-Fa-f0-9]/;
 my $cnt = -2;
 
 my $mode = shift @ARGV;
-$mode =~ y/a-z/A-Z/;
-$mode = "" if $mode eq "-BLOCK";
-$mode =~ /(.FB)(\d*)/;
+$mode = lc $mode;
+$mode = '' if $mode eq '--block';
+$mode =~ /(.fb)(\d*)/;
 $mode =  $1 ? "m$1 " : "";
 my $fbits = $2 ? "F$2 " : ($mode ? "F128 " : "");
 
