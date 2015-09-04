@@ -1,12 +1,15 @@
 #!/usr/bin/perl -w
 
+use strict;
+use warnings;
+
 # 0 = garbage, 1 = processing lines matching /\w+ = /, 2 = continuation lines
 # 3 = continuation lines for key, 4 = continuation lines for nonce.
-$state = 0;
-$p = qr/[A-Fa-f0-9]/;
-$cnt = 0;
-$key = "";
-$iv = "";
+my $state = 0;
+my $p = qr/[A-Fa-f0-9]/;
+my $cnt = 0;
+my $key = "";
+my $iv = "";
 
 while (<>) {
 	chomp;
