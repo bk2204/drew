@@ -1,5 +1,8 @@
 #!/usr/bin/perl -w
 
+use strict;
+use warnings;
+
 unless (scalar @ARGV) {
 	print STDERR <<EOM;
 Need an argument.
@@ -12,15 +15,15 @@ EOM
 	exit 1;
 }
 
-$p = qr/[A-Fa-f0-9]/;
-$cnt = -2;
+my $p = qr/[A-Fa-f0-9]/;
+my $cnt = -2;
 
-$mode = shift @ARGV;
+my $mode = shift @ARGV;
 $mode =~ y/a-z/A-Z/;
 $mode = "" if $mode eq "-BLOCK";
 $mode =~ /(.FB)(\d*)/;
 $mode =  $1 ? "m$1 " : "";
-$fbits = $2 ? "F$2 " : ($mode ? "F128 " : "");
+my $fbits = $2 ? "F$2 " : ($mode ? "F128 " : "");
 
 while (<>) {
 	if (/KEY = ($p+)/) {
