@@ -7,10 +7,13 @@
 # Suitable vectors for input to this program can be found at
 # <http://www.gnu.org/software/gnu-crypto/vectors/>.
 
-$cnt = 0;
-$p = qr/[A-Fa-f0-9]/;
-$p16 = qr/$p{32}/;
-$name = "";
+use strict;
+use warnings;
+
+my $cnt = 0;
+my $p = qr/[A-Fa-f0-9]/;
+my $p16 = qr/$p{32}/;
+my $name = "";
 
 sub tag {
 	return sprintf "T%s-pvk%04x ", $name, $cnt;
