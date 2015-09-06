@@ -1,13 +1,16 @@
 #! /usr/bin/perl
 
-$algname = "";
-$altalgname = "";
-$cnt = 0;
-$keysz = 0;
-$key = "";
-$altkey = "";
-$altkeysz = 0;
-$mlen = 0;
+use strict;
+use warnings;
+
+my $algname = "";
+my $altalgname = "";
+my $cnt = 0;
+my $keysz = 0;
+my $key = "";
+my $altkey = "";
+my $altkeysz = 0;
+my $mlen = 0;
 
 while (<>) {
 	if (/Algorithms tested:Alg = (\w+) KeySize = (\d+)/) {
