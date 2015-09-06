@@ -1,13 +1,16 @@
 #!/usr/bin/perl -w
 # This reads the Nessie test vector information for MACs.
 
-$want = 0;
-$cnt = -1;
-$keysz = 0;
-$macsz = 24;
-$bytesread = 0;
-$needed = 0;
-$ignore = 0;
+use strict;
+use warnings;
+
+my $want = 0;
+my $cnt = -1;
+my $keysz = 0;
+my $macsz = 24;
+my $bytesread = 0;
+my $needed = 0;
+my $ignore = 0;
 
 while (<>) {
 	chomp;
