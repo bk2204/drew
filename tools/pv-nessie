@@ -1,10 +1,13 @@
 #!/usr/bin/perl -w
 # This reads parts of the Nessie test vector information, such as for Tiger.
 
-$algo = "Tiger";
-$digestlen = 24;
-$want = 0;
-$cnt = 0;
+use strict;
+use warnings;
+
+my $algo = "Tiger";
+my $digestlen = 24;
+my $want = 0;
+my $cnt = 0;
 
 printf "T%04x a%s C%d\n", 0, $algo, $digestlen;
 while (<>) {
