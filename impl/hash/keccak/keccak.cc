@@ -744,9 +744,8 @@ void drew::Keccak::Transform(uint64_t state[25], const uint8_t *block,
 	const uint64_t *b;
 	const size_t nwords = r / sizeof(uint64_t);
 	b = E::CopyIfNeeded(blk, block, r);
-	for (size_t y = 0; y < DivideAndRoundUp(nwords, 5); y++)
-		for (size_t x = 0; x < 5 && (x+(5*y)) < nwords; x++)
-			state[x+5*y] ^= b[x + (5*y)];
+	for (size_t i = 0; i < nwords; i++)
+		state[i] ^= b[i];
 	keccak_f<0>(state);
 }
 
