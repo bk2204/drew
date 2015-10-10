@@ -620,7 +620,8 @@ static void keccak_f(uint64_t state[25])
 }
 
 // This optimized implementation is based the 64-bit optimized version (in the
-// public domain) provided by the Keccak designers.
+// public domain) provided by the Keccak designers.  It has been updated to
+// include the limited-nots modification to improve performance.
 static inline void round2(uint64_t a[25], uint64_t e[25], uint64_t c[5],
 		uint64_t k)
 {
@@ -639,11 +640,11 @@ static inline void round2(uint64_t a[25], uint64_t e[25], uint64_t c[5],
 	b3 = RotateLeft(a[18] ^= d3, 21);
 	b4 = RotateLeft(a[24] ^= d4, 14);
 
-	c[0] = e[ 0] = b0 ^ ((~b1) & b2) ^ k;
-	c[1] = e[ 1] = b1 ^ ((~b2) & b3);
-	c[2] = e[ 2] = b2 ^ ((~b3) & b4);
-	c[3] = e[ 3] = b3 ^ ((~b4) & b0);
-	c[4] = e[ 4] = b4 ^ ((~b0) & b1);
+	c[0] = e[ 0] =  b0 ^ ( b1 |  b2) ^ k;
+	c[1] = e[ 1] =  b1 ^ (~b2 |  b3);
+	c[2] = e[ 2] =  b2 ^ ( b3 &  b4);
+	c[3] = e[ 3] =  b3 ^ ( b4 |  b0);
+	c[4] = e[ 4] =  b4 ^ ( b0 &  b1);
 
 	// Piece 2.
 	b0 = RotateLeft(a[ 3] ^= d3, 28);
@@ -652,11 +653,11 @@ static inline void round2(uint64_t a[25], uint64_t e[25], uint64_t c[5],
 	b3 = RotateLeft(a[16] ^= d1, 45);
 	b4 = RotateLeft(a[22] ^= d2, 61);
 
-	c[0] ^= e[ 5] = b0 ^ ((~b1) & b2);
-	c[1] ^= e[ 6] = b1 ^ ((~b2) & b3);
-	c[2] ^= e[ 7] = b2 ^ ((~b3) & b4);
-	c[3] ^= e[ 8] = b3 ^ ((~b4) & b0);
-	c[4] ^= e[ 9] = b4 ^ ((~b0) & b1);
+	c[0] ^= e[ 5] =  b0 ^ ( b1 |  b2);
+	c[1] ^= e[ 6] =  b1 ^ ( b2 &  b3);
+	c[2] ^= e[ 7] =  b2 ^ ( b3 | ~b4);
+	c[3] ^= e[ 8] =  b3 ^ ( b4 |  b0);
+	c[4] ^= e[ 9] =  b4 ^ ( b0 &  b1);
 
 	// Piece 3.
 	b0 = RotateLeft(a[ 1] ^= d1,  1);
@@ -665,11 +666,11 @@ static inline void round2(uint64_t a[25], uint64_t e[25], uint64_t c[5],
 	b3 = RotateLeft(a[19] ^= d4,  8);
 	b4 = RotateLeft(a[20] ^= d0, 18);
 
-	c[0] ^= e[10] = b0 ^ ((~b1) & b2);
-	c[1] ^= e[11] = b1 ^ ((~b2) & b3);
-	c[2] ^= e[12] = b2 ^ ((~b3) & b4);
-	c[3] ^= e[13] = b3 ^ ((~b4) & b0);
-	c[4] ^= e[14] = b4 ^ ((~b0) & b1);
+	c[0] ^= e[10] =  b0 ^ ( b1 |  b2);
+	c[1] ^= e[11] =  b1 ^ ( b2 &  b3);
+	c[2] ^= e[12] =  b2 ^ (~b3 &  b4);
+	c[3] ^= e[13] = ~b3 ^ ( b4 |  b0);
+	c[4] ^= e[14] =  b4 ^ ( b0 &  b1);
 
 	// Piece 4.
 	b0 = RotateLeft(a[ 4] ^= d4, 27);
@@ -678,11 +679,11 @@ static inline void round2(uint64_t a[25], uint64_t e[25], uint64_t c[5],
 	b3 = RotateLeft(a[17] ^= d2, 15);
 	b4 = RotateLeft(a[23] ^= d3, 56);
 
-	c[0] ^= e[15] = b0 ^ ((~b1) & b2);
-	c[1] ^= e[16] = b1 ^ ((~b2) & b3);
-	c[2] ^= e[17] = b2 ^ ((~b3) & b4);
-	c[3] ^= e[18] = b3 ^ ((~b4) & b0);
-	c[4] ^= e[19] = b4 ^ ((~b0) & b1);
+	c[0] ^= e[15] =  b0 ^ ( b1 &  b2);
+	c[1] ^= e[16] =  b1 ^ ( b2 |  b3);
+	c[2] ^= e[17] =  b2 ^ (~b3 |  b4);
+	c[3] ^= e[18] = ~b3 ^ ( b4 &  b0);
+	c[4] ^= e[19] =  b4 ^ ( b0 |  b1);
 
 	// Piece 5.
 	b0 = RotateLeft(a[ 2] ^= d2, 62);
@@ -691,11 +692,11 @@ static inline void round2(uint64_t a[25], uint64_t e[25], uint64_t c[5],
 	b3 = RotateLeft(a[15] ^= d0, 41);
 	b4 = RotateLeft(a[21] ^= d1,  2);
 
-	c[0] ^= e[20] = b0 ^ ((~b1) & b2);
-	c[1] ^= e[21] = b1 ^ ((~b2) & b3);
-	c[2] ^= e[22] = b2 ^ ((~b3) & b4);
-	c[3] ^= e[23] = b3 ^ ((~b4) & b0);
-	c[4] ^= e[24] = b4 ^ ((~b0) & b1);
+	c[0] ^= e[20] =  b0 ^ (~b1 &  b2);
+	c[1] ^= e[21] = ~b1 ^ ( b2 |  b3);
+	c[2] ^= e[22] =  b2 ^ ( b3 &  b4);
+	c[3] ^= e[23] =  b3 ^ ( b4 |  b0);
+	c[4] ^= e[24] =  b4 ^ ( b0 &  b1);
 }
 
 static void round1(uint64_t a[25], uint64_t e[25], uint64_t c[5],
@@ -769,6 +770,19 @@ void drew::KeccakWithLimitedNots::Reset()
 	m_hash[0+5*4] = ~0;
 }
 
+void drew::KeccakCompact::Reset()
+{
+	m_len = 0;
+	memset(m_buf, 0, sizeof(m_buf));
+	memset(m_hash, 0, sizeof(m_hash));
+	m_hash[1+5*0] = ~0;
+	m_hash[2+5*0] = ~0;
+	m_hash[3+5*1] = ~0;
+	m_hash[2+5*2] = ~0;
+	m_hash[2+5*3] = ~0;
+	m_hash[0+5*4] = ~0;
+}
+
 void drew::KeccakWithLimitedNots::Transform(uint64_t state[25],
 		const uint8_t *block, size_t r)
 {
@@ -801,6 +815,29 @@ void drew::Keccak::GetDigest(uint8_t *digest, size_t len, bool nopad)
 }
 
 void drew::KeccakWithLimitedNots::GetDigest(uint8_t *digest, size_t len,
+		bool nopad)
+{
+	if (!nopad)
+		Pad();
+
+	m_hash[1+5*0] = ~m_hash[1+5*0];
+	m_hash[2+5*0] = ~m_hash[2+5*0];
+	m_hash[3+5*1] = ~m_hash[3+5*1];
+	m_hash[2+5*2] = ~m_hash[2+5*2];
+	m_hash[2+5*3] = ~m_hash[2+5*3];
+	m_hash[0+5*4] = ~m_hash[0+5*4];
+	const size_t nwords = m_r / sizeof(uint64_t);
+	uint8_t *d = digest;
+	for (size_t i = 0; i < len; i += m_r, d += m_r) {
+		uint64_t b[1600/64];
+		for (size_t y = 0; y < DivideAndRoundUp(nwords, 5); y++)
+			for (size_t x = 0; x < 5 && (x+(5*y)) < nwords; x++)
+				b[x + (5*y)] = m_hash[x+5*y];
+		E::CopyCarefully(d, b, std::min(m_r, len - i));
+	}
+}
+
+void drew::KeccakCompact::GetDigest(uint8_t *digest, size_t len,
 		bool nopad)
 {
 	if (!nopad)

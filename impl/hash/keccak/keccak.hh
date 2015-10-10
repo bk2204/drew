@@ -26,7 +26,7 @@
 
 // The current fastest implementation.
 #ifndef DREW_KECCAK_IMPL
-#define DREW_KECCAK_IMPL drew::KeccakWithLimitedNots
+#define DREW_KECCAK_IMPL drew::KeccakCompact
 #endif
 
 HIDE()
@@ -128,7 +128,9 @@ class KeccakCompact : public Keccak
 {
 	public:
 		KeccakCompact(size_t);
+		virtual void Reset();
 		static inline void Transform(uint64_t [25], const uint8_t *data);
+		virtual void GetDigest(uint8_t *digest, size_t len, bool nopad);
 	protected:
 		static inline void Transform(uint64_t [25], const uint8_t *data,
 				size_t);
