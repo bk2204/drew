@@ -843,12 +843,6 @@ void drew::KeccakCompact::GetDigest(uint8_t *digest, size_t len,
 	if (!nopad)
 		Pad();
 
-	m_hash[1+5*0] = ~m_hash[1+5*0];
-	m_hash[2+5*0] = ~m_hash[2+5*0];
-	m_hash[3+5*1] = ~m_hash[3+5*1];
-	m_hash[2+5*2] = ~m_hash[2+5*2];
-	m_hash[2+5*3] = ~m_hash[2+5*3];
-	m_hash[0+5*4] = ~m_hash[0+5*4];
 	const size_t nwords = m_r / sizeof(uint64_t);
 	uint8_t *d = digest;
 	for (size_t i = 0; i < len; i += m_r, d += m_r) {
@@ -856,7 +850,15 @@ void drew::KeccakCompact::GetDigest(uint8_t *digest, size_t len,
 		for (size_t y = 0; y < DivideAndRoundUp(nwords, 5); y++)
 			for (size_t x = 0; x < 5 && (x+(5*y)) < nwords; x++)
 				b[x + (5*y)] = m_hash[x+5*y];
+		b[1+5*0] = ~b[1+5*0];
+		b[2+5*0] = ~b[2+5*0];
+		b[3+5*1] = ~b[3+5*1];
+		b[2+5*2] = ~b[2+5*2];
+		b[2+5*3] = ~b[2+5*3];
+		b[0+5*4] = ~b[0+5*4];
 		E::CopyCarefully(d, b, std::min(m_r, len - i));
+		if (i + m_r < len)
+			Transform(m_hash, NULL, 0);
 	}
 }
 
