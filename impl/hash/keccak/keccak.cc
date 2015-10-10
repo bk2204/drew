@@ -621,7 +621,7 @@ static void keccak_f(uint64_t state[25])
 
 // This optimized implementation is based the 64-bit optimized version (in the
 // public domain) provided by the Keccak designers.
-static void round2(uint64_t a[25], uint64_t e[25], uint64_t c[5],
+static inline void round2(uint64_t a[25], uint64_t e[25], uint64_t c[5],
 		uint64_t k)
 {
 	uint64_t b0, b1, b2, b3, b4;
@@ -706,85 +706,6 @@ static void round1(uint64_t a[25], uint64_t e[25], uint64_t c[5],
 	c[2] = a[ 2] ^ a[ 7] ^ a[12] ^ a[17] ^ a[22];
 	c[3] = a[ 3] ^ a[ 8] ^ a[13] ^ a[18] ^ a[23];
 	c[4] = a[ 4] ^ a[ 9] ^ a[14] ^ a[19] ^ a[24];
-
-	round2(a, e, c, k);
-}
-
-static void round3(uint64_t a[25], uint64_t e[25], const uint64_t c[5],
-		uint64_t k)
-{
-	uint64_t b0, b1, b2, b3, b4;
-	uint64_t d0, d1, d2, d3, d4;
-	d0 = c[4] ^ RotateLeft(c[1], 1);
-	d1 = c[0] ^ RotateLeft(c[2], 1);
-	d2 = c[1] ^ RotateLeft(c[3], 1);
-	d3 = c[2] ^ RotateLeft(c[4], 1);
-	d4 = c[3] ^ RotateLeft(c[0], 1);
-
-	// Piece 1.
-	b0 = a[0] ^= d0;
-	b1 = RotateLeft(a[ 6] ^= d1, 44);
-	b2 = RotateLeft(a[12] ^= d2, 43);
-	b3 = RotateLeft(a[18] ^= d3, 21);
-	b4 = RotateLeft(a[24] ^= d4, 14);
-
-	e[ 0] = b0 ^ ((~b1) & b2) ^ k;
-	e[ 1] = b1 ^ ((~b2) & b3);
-	e[ 2] = b2 ^ ((~b3) & b4);
-	e[ 3] = b3 ^ ((~b4) & b0);
-	e[ 4] = b4 ^ ((~b0) & b1);
-
-	// Piece 2.
-	b0 = RotateLeft(a[ 3] ^= d3, 28);
-	b1 = RotateLeft(a[ 9] ^= d4, 20);
-	b2 = RotateLeft(a[10] ^= d0,  3);
-	b3 = RotateLeft(a[16] ^= d1, 45);
-	b4 = RotateLeft(a[22] ^= d2, 61);
-
-	e[ 5] = b0 ^ ((~b1) & b2);
-	e[ 6] = b1 ^ ((~b2) & b3);
-	e[ 7] = b2 ^ ((~b3) & b4);
-	e[ 8] = b3 ^ ((~b4) & b0);
-	e[ 9] = b4 ^ ((~b0) & b1);
-
-	// Piece 3.
-	b0 = RotateLeft(a[ 1] ^= d1,  1);
-	b1 = RotateLeft(a[ 7] ^= d2,  6);
-	b2 = RotateLeft(a[13] ^= d3, 25);
-	b3 = RotateLeft(a[19] ^= d4,  8);
-	b4 = RotateLeft(a[20] ^= d0, 18);
-
-	e[10] = b0 ^ ((~b1) & b2);
-	e[11] = b1 ^ ((~b2) & b3);
-	e[12] = b2 ^ ((~b3) & b4);
-	e[13] = b3 ^ ((~b4) & b0);
-	e[14] = b4 ^ ((~b0) & b1);
-
-	// Piece 4.
-	b0 = RotateLeft(a[ 4] ^= d4, 27);
-	b1 = RotateLeft(a[ 5] ^= d0, 36);
-	b2 = RotateLeft(a[11] ^= d1, 10);
-	b3 = RotateLeft(a[17] ^= d2, 15);
-	b4 = RotateLeft(a[23] ^= d3, 56);
-
-	e[15] = b0 ^ ((~b1) & b2);
-	e[16] = b1 ^ ((~b2) & b3);
-	e[17] = b2 ^ ((~b3) & b4);
-	e[18] = b3 ^ ((~b4) & b0);
-	e[19] = b4 ^ ((~b0) & b1);
-
-	// Piece 5.
-	b0 = RotateLeft(a[ 2] ^= d2, 62);
-	b1 = RotateLeft(a[ 8] ^= d3, 55);
-	b2 = RotateLeft(a[14] ^= d4, 39);
-	b3 = RotateLeft(a[15] ^= d0, 41);
-	b4 = RotateLeft(a[21] ^= d1,  2);
-
-	e[20] = b0 ^ ((~b1) & b2);
-	e[21] = b1 ^ ((~b2) & b3);
-	e[22] = b2 ^ ((~b3) & b4);
-	e[23] = b3 ^ ((~b4) & b0);
-	e[24] = b4 ^ ((~b0) & b1);
 }
 
 template<>
@@ -794,11 +715,12 @@ void keccak_f<2>(uint64_t state[25])
 	dump("s", state);
 	memcpy(a, state, sizeof(a));
 	round1(a, e, c, rc[0]);
-	for (size_t i = 1; i < 23; i += 2) {
-		round2(e, a, c, rc[i+0]);
-		round2(a, e, c, rc[i+1]);
+	for (size_t i = 0; i < 24; i += 4) {
+		round2(a, e, c, rc[i+0]);
+		round2(e, a, c, rc[i+1]);
+		round2(a, e, c, rc[i+2]);
+		round2(e, a, c, rc[i+3]);
 	}
-	round3(e, a, c, rc[23]);
 	memcpy(state, a, sizeof(a));
 	dump("e", state);
 }
