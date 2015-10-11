@@ -847,9 +847,8 @@ void drew::KeccakCompact::GetDigest(uint8_t *digest, size_t len,
 	uint8_t *d = digest;
 	for (size_t i = 0; i < len; i += m_r, d += m_r) {
 		uint64_t b[1600/64];
-		for (size_t y = 0; y < DivideAndRoundUp(nwords, 5); y++)
-			for (size_t x = 0; x < 5 && (x+(5*y)) < nwords; x++)
-				b[x + (5*y)] = m_hash[x+5*y];
+		for (size_t j = 0; j < nwords; j++)
+			b[j] = m_hash[j];
 		b[1+5*0] = ~b[1+5*0];
 		b[2+5*0] = ~b[2+5*0];
 		b[3+5*1] = ~b[3+5*1];
