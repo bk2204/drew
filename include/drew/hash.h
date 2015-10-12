@@ -64,6 +64,14 @@
 #define DREW_HASH_SIZE_CTX 10
 #define DREW_HASH_BLKSIZE_CTX 11
 #define DREW_HASH_BUFSIZE_CTX 12
+/* Returns the next set of parameters in sequence, from smallest to largest, as
+ * a drew_hash_parameters_t.
+ */
+#define DREW_HASH_PARAM 13
+/* Returns the set of parameters for the current context as a
+ * drew_hash_parameters_t.
+ */
+#define DREW_HASH_PARAM_CTX 13
 
 /* This bit indicates that the ctx member of drew_hash_t is externally
  * allocated and sufficiently large.
@@ -75,6 +83,14 @@
 #define DREW_HASH_NO_PAD 2
 
 #define DREW_HASH_ALIGNMENT 16
+
+typedef struct {
+	int offset;
+	size_t digest_size;
+	size_t block_size;
+	size_t buffer_size;
+	size_t pad[5];
+} drew_hash_parameters_t;
 
 typedef struct {
 	int (*info)(int op, void *p);

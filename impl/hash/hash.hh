@@ -27,6 +27,7 @@
 #include <algorithm>
 
 #include <internal.h>
+#include <drew/plugin.h>
 
 #include "util.hh"
 
@@ -136,6 +137,18 @@ class Hash
 		static size_t GetBufferSize()
 		{
 			return BufSize;
+		}
+		static int GetParameters(int seq, size_t &sz, size_t &blocksz,
+				size_t &bufsz)
+		{
+			if (seq == -1)
+				return 1;
+			if (seq != 0)
+				return -DREW_ERR_NONEXISTENT;
+			sz = Size;
+			blocksz = BlkSize;
+			bufsz = BufSize;
+			return 0;
 		}
 		static inline void Transform(T *, const uint8_t *data);
 	protected:

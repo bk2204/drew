@@ -114,6 +114,14 @@ static int prefix ## info2(const drew_hash_t *ctx, int op, drew_param_t *out, \
 			return hname::buffer_size; \
 		case DREW_HASH_INTSIZE: \
 			return sizeof(hname); \
+		case DREW_HASH_PARAM: \
+			for (p = out; p; p = p->next) \
+				if (!strcmp(p->name, "parameters")) { \
+					drew_hash_parameters_t *q = \
+						(drew_hash_parameters_t *)p->param.array.ptr; \
+					return hname::GetParameters(q->offset, q->digest_size, \
+							q->block_size, q->buffer_size); \
+				} \
 		case DREW_HASH_ENDIAN: \
 			return hname::endian_t::GetEndianness(); \
 		default: \
