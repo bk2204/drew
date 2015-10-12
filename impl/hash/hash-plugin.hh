@@ -48,7 +48,14 @@ static int prefix ## info(int op, void *p) \
 		case DREW_HASH_BLKSIZE: \
 			return hname::block_size; \
 		case DREW_HASH_BUFSIZE: \
-			return hname::buffer_size; \
+			if (ctx && ctx->ctx) { \
+				const hname *s = (const hname *)ctx->ctx; \
+				return s->GetBufferSize(); \
+			} \
+			else if (hname::HasVariableBufferSize()) \
+				return -DREW_ERR_MORE_INFO; \
+			else \
+				return hname::GetBufferSize(); \
 		case DREW_HASH_INTSIZE: \
 			return sizeof(hname); \
 		case DREW_HASH_ENDIAN: \

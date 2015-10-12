@@ -129,6 +129,14 @@ class Hash
 		{
 			return Size;
 		}
+		static bool HasVariableBufferSize()
+		{
+			return false;
+		}
+		static size_t GetBufferSize()
+		{
+			return BufSize;
+		}
 		static inline void Transform(T *, const uint8_t *data);
 	protected:
 		virtual void Transform(const uint8_t *data) = 0;

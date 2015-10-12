@@ -226,6 +226,10 @@ class Gr\u00f8stlHash
 		{
 			drew::Gr\u00f8stl512::Transform(state, data);
 		}
+		static bool HasVariableBufferSize()
+		{
+			return true;
+		}
 	protected:
 	private:
 		Gr\u00f8stlImplementation *m_impl;
