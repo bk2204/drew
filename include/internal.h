@@ -28,7 +28,7 @@
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 700
 #endif
-#define _BSD_SOURCE 1
+#define _DEFAULT_SOURCE 1
 #define DREW_IN_BUILD 1
 #define CURRENT_ABI	3
 
