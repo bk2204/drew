@@ -13,7 +13,7 @@ sub script {
 
 	my $args = {};
 
-	Getopt::Long::GetOptionsFromArray(\@argv, $args, 'help', 'type|t=s');
+	Getopt::Long::GetOptionsFromArray(\@argv, $args, 'help', 'type|t=s', 'oneline');
 
 	return usage(0) if $args->{help};
 
@@ -23,6 +23,7 @@ sub script {
 	my $flags = {
 		plength => $args->{type} && $args->{type} =~ /^pk/ ? 2 : 1,
 		silentk => $args->{type} && $args->{type} eq 'kdf',
+        oneline => $args->{oneline},
 	};
 
 	process($infh, \*STDOUT, $flags);
@@ -52,7 +53,12 @@ sub emit_line {
 }
 
 sub emit_block {
-	my ($block, $outfh) = @_;
+	my ($block, $outfh, $flags) = @_;
+
+    if ($flags->{oneline}) {
+        emit_line($block, $outfh, qw/a m g r R C F K k N n S E p d c/);
+        return;
+    }
 
 	# Algorithm description and parameters; repetition and iteration counts.
 	emit_line($block, $outfh, qw/a m g r R C F/);
@@ -87,7 +93,7 @@ sub process {
 		elsif ($line =~ /^T(\S+)/) {
 			my $tag = $1;
 			if ($curtag ne $tag) {
-				emit_block($block, $outfh) if $curtag;
+				emit_block($block, $outfh, $flags) if $curtag;
 				my @reject = map { /^s/ || ref $block->{$_} } keys %$block;
 				delete $block->{@reject};
 				$outfh->print($comment);
@@ -120,7 +126,7 @@ sub usage {
 	my ($ret) = @_;
 
 	print <<EOM;
-canonicalize-vectors [--type ALGOTYPE] [FILE]
+canonicalize-vectors [--type ALGOTYPE] [--oneline] [FILE]
 
 Take vectors which may be missing parameters and fill them in using the last set
 value for that parameter.
@@ -128,6 +134,8 @@ value for that parameter.
 ALGOTYPE is the type of vector (e.g. block, stream) to canonicalize.  If not
 specified, it defaults to a mode that works on all algorithm types except public
 key types.
+
+If --oneline is specified, print each vector on its own line.
 
 If FILE is not specified, defaults to stdin.
 
